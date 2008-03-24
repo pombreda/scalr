@@ -4,6 +4,7 @@ All the images uses Ubuntu 7
 
 = Details =
 
+|| type || manifest || ami ||
 || app server || scalr-ami/app-stable/image.manifest.xml || ami-50d53039 ||
 || load balancer image || scalr-ami/www-stable/image.manifest.xml || ami-5ed53037 ||
 || mysql Server || scalr-ami/mysql-stable/image.manifest.xml || ami-53d5303a ||
