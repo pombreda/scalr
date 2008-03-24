@@ -29,12 +29,12 @@ Default SOA owner: admin.scalr.net
 Default SOA parent: ns1.scalr.net
 
 Named.conf Zone template: 	
-
+{{{
 zone "{zone}" {
    type master;
    file "{db_filename}";
 };
- 
+}}}
 
 
 	
@@ -45,7 +45,7 @@ Key name: UIBXXXXXXTMN3
 Security groups prefix: scalr.
 
 S3cfg template: 	
-
+{{{
 [default]
 access_key = [access_key]
 acl_public = False
@@ -56,6 +56,7 @@ recv_chunk = 4096
 secret_key = [secret_key]
 send_chunk = 4096
 verbosity = WARNING
+}}}
 
 Instances limit: 20
  
