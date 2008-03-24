@@ -1,0 +1,108 @@
+= Introduction =
+
+Guide for installing the application. Please add any relevant information.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
+
+1. Install the PHP app on your host
+
+2. change the permissions on the following:
+chmod -R 0777 app/cache/smarty
+chmod -R 0777 app/cache/smarty_bin
+chmod -R 0777 app/logs
+chmod -R 0777 app/etc/client_keys
+chmod -R 0777 app/cron/cron.pid
+
+3. Add your AWS cert and private key in etc/
+
+4. Install and configure BIND. The following examples use ns1.scalr.net and ns2.scalr.net
+
+5. Login to the app as admin and setup the nameservers (settings > nameservers)
+
+6. Change core settings (example):
+	
+	
+Dynamic A record TTL: 	90 seconds
+Default SOA owner: admin.scalr.net 	
+Default SOA parent: ns1.scalr.net
+Named.conf Zone template: 	
+zone "{zone}" {
+   type master;
+   file "{db_filename}";
+};
+ 
+	
+Account ID: 1234567890
+Key name: UIBXXXXXXTMN3
+Security groups prefix: scalr.
+S3cfg template: 	
+
+[default]
+access_key = [access_key]
+acl_public = False
+force = False
+host = s3.amazonaws.com
+human_readable_sizes = False
+recv_chunk = 4096
+secret_key = [secret_key]
+send_chunk = 4096
+verbosity = WARNING
+
+Instances limit: 20
+ 
+Path to snmpinform: 	/usr/bin/snmptrap
+Event handler URL: 67.19.29.18 (ip of the app)
+Terminate instance if it will not send 'rebootFinish' event after reboot in seconds. 160
+Terminate instance if it will not send 'hostUp' or 'hostInit' event after launch in seconds. 160
+ 
+	
+  		 
+	
+	
+	
+Privacy Policy - About - Control Panel
+
+ 
+	Add new	
+ 
+ 
+	View all	
+ 
+ 
+	View all	
+ 
+ 
+	System log	
+ 
+ 
+	Event log	
+ 
+ 
+	View all	
+ 
+ 
+	Nameservers	
+ 
+ 
+	Manage shared roles	
+ 
+ 
+ 
+	Core settings	
+ 
+ 
+ 
+	Manage templates	
+ 
+ 
+	Add new	
+ 
+ 
+	View all	
+ 
