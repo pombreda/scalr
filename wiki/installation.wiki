@@ -40,7 +40,7 @@ zone "{zone}" {
 	
 Account ID: 1234567890
 
-Key name: UIBXXXXXXTMN3
+Key name: UIBXXXXXXTMN3 (from the cert and key files in etc/)
 
 Security groups prefix: scalr.
 
