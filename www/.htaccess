@@ -1,0 +1,38 @@
+Order Deny,Allow
+Allow from any
+
+
+RewriteEngine On
+
+RewriteRule ^farm_amis\.xml$ farm_amis_xml.php?%{QUERY_STRING}    [NE,L]
+
+
+
+#errors
+ErrorDocument 404 /404.php?error=404
+ErrorDocument 401 /404.php?error=
+ErrorDocument 400 /404.php?error=
+ErrorDocument 500 /404.php?error=
+
+########################################
+# Error handling and debugging         #
+########################################
+# errors
+#php_flag error_reporting 0
+#php_flag display_errors 0
+#php_flag log_errors 0
+#php_value error_log D:\inetpub\radiohoster\web\app\debug\error.log
+
+# tracing
+#php_value xdebug.auto_trace On
+#php_value xdebug.collect_return 1
+#php_value xdebug.show_local_vars 1
+#php_value xdebug.trace_output_dir D:\inetpub\radiohoster\web\app\debug
+
+# profiling
+#php_value xdebug.profiler_enable On
+#php_value xdebug.auto_profile Off
+#php_value xdebug.profiler_output_dir D:\inetpub\radiohoster\web\app\debug
+# for XDEBUG_PROFILE GET/POST parameter
+#php_value xdebug.profiler_enable_trigger 1
+
