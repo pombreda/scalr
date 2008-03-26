@@ -23,7 +23,7 @@ chmod -R 0777 app/cron/cron.pid
 
 6. Login to the app as admin and setup the nameservers (settings > nameservers)
 
-7. Change core settings (example):
+7. Change core settings (if you imported the sql script this should already be set):
 	
 Dynamic A record TTL: 	90 seconds
 
