@@ -1,2 +1,4 @@
 #labels Featured
 http://scalr.googlecode.com/files/processes.png
+
+http://scalr.googlecode.com/files/network_diagram_smaller.gif
