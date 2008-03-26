@@ -4,21 +4,21 @@ Create the following security groups. Replace the owner ID with your own.
 The group names follow the alias name prefixed by 'scalr.'. Both are defined in the config table.
 
 
-|| Owner || Name || From Port/ICMP || To Port/ICMP || Source CIDR ||
+|| Owner || Name || Protocol || From Port/ICMP || To Port/ICMP || Source CIDR ||
 || 123456789012 || scalr.mysql || tcp ||22 || 22 || 0.0.0.0/0 ||
 || 123456789012 || scalr.mysql || tcp ||3306 || 3306|| 0.0.0.0/0 ||
 || 123456789012 || scalr.mysql || udp ||161 || 162|| 0.0.0.0/0 ||
 
-|| Owner || Name || From Port/ICMP || To Port/ICMP || Source CIDR ||
+|| Owner || Name || Protocol || From Port/ICMP || To Port/ICMP || Source CIDR ||
 || 123456789012 || scalr.app || tcp ||22 || 22|| 0.0.0.0/0 ||
 || 123456789012 || scalr.app || tcp ||80 || 80|| 0.0.0.0/0 ||
 || 123456789012 || scalr.app || udp ||161 || 162 || 0.0.0.0/0 ||
 
-|| Owner || Name || From Port/ICMP || To Port/ICMP || Source CIDR ||
+|| Owner || Name || Protocol || From Port/ICMP || To Port/ICMP || Source CIDR ||
 || 123456789012 || scalr.www || tcp ||22 || 22 || 0.0.0.0/0 ||
 || 123456789012 || scalr.www || tcp ||80 || 80 || 0.0.0.0/0 ||
 || 123456789012 || scalr.www || udp ||161 || 162 || 0.0.0.0/0 ||
 
-|| Owner || Name || From Port/ICMP || To Port/ICMP || Source CIDR ||
+|| Owner || Name || Protocol || From Port/ICMP || To Port/ICMP || Source CIDR ||
 || 123456789012 || scalr.base || tcp ||22 || 22 || 0.0.0.0/0 ||
 || 123456789012 || scalr.base || udp ||161 || 162 || 0.0.0.0/0 ||
