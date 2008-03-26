@@ -1,4 +1,4 @@
-#labels Featured
+#labels Featured,installing
 = Introduction =
 
 Guide for installing the application. Please add any relevant information.
@@ -6,22 +6,24 @@ Guide for installing the application. Please add any relevant information.
 
 = Details =
 
-1. Install the PHP app on your host
+1. create a database and import [http://scalr.googlecode.com/files/scalrdump.sql SQL].
 
-2. change the permissions on the following:
+2. Install the PHP app on your host and set the database credentials in etc/config.ini
+
+3. change the permissions on the following:
 chmod -R 0777 app/cache/smarty
 chmod -R 0777 app/cache/smarty_bin
 chmod -R 0777 app/logs
 chmod -R 0777 app/etc/client_keys
 chmod -R 0777 app/cron/cron.pid
 
-3. Add your AWS cert and private key in etc/
+4. Add your AWS cert and private key in etc/
 
-4. Install and configure BIND. The following examples use ns1.scalr.net and ns2.scalr.net
+5. Install and configure BIND. The following examples use ns1.scalr.net and ns2.scalr.net
 
-5. Login to the app as admin and setup the nameservers (settings > nameservers)
+6. Login to the app as admin and setup the nameservers (settings > nameservers)
 
-6. Change core settings (example):
+7. Change core settings (example):
 	
 Dynamic A record TTL: 	90 seconds
 
