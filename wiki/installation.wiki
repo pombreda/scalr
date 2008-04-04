@@ -9,7 +9,7 @@ prereqs: you have to have soap installed with PHP
 
 1. create a database and import [http://scalr.googlecode.com/files/scalrdump.sql SQL].
 
-2. Install the PHP app on your host and set the database credentials in etc/config.ini
+2. Install the PHP app on your host and set the database credentials in etc/config.ini. Point public_html to www.
 
 3. change the permissions on the following:
 chmod -R 0777 cache/smarty cache/smarty_bin logs etc/client_keys cron/cron.pid 
