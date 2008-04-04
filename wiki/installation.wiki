@@ -5,17 +5,14 @@ Guide for installing the application. Please add any relevant information.
 
 
 = Details =
+prereqs: you have to have soap installed with PHP
 
 1. create a database and import [http://scalr.googlecode.com/files/scalrdump.sql SQL].
 
 2. Install the PHP app on your host and set the database credentials in etc/config.ini
 
 3. change the permissions on the following:
-chmod -R 0777 app/cache/smarty
-chmod -R 0777 app/cache/smarty_bin
-chmod -R 0777 app/logs
-chmod -R 0777 app/etc/client_keys
-chmod -R 0777 app/cron/cron.pid
+chmod -R 0777 cache/smarty cache/smarty_bin logs etc/client_keys cron/cron.pid 
 
 4. Add your AWS cert and private key in etc/
 
