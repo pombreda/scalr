@@ -1,0 +1,5 @@
+== Scalr 2 Functional diagrams ==
+
+http://scalr.googlecode.com/files/scalr2_functional.instance-crash.png
+
+http://scalr.googlecode.com/files/scalr2_functional.curing-scaling.png
