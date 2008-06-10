@@ -1,4 +1,4 @@
-#summary Configuring nameservers for use in Scalr
+#summary This guide will help you to set up scalr nameservers
 
 = Configuring nameservers for use in Scalr =
 
