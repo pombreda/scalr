@@ -7,7 +7,8 @@
         function __construct()
         {
             $this->DB = Core::GetDBInstance(null, true);
-            $this->Crypto = new Crypto(CF_CRYPTOKEY);
+            $this->Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
+            $this->Logger = LoggerManager::getLogger(__CLASS__);
         }
         
         function Delete($zoneid)
@@ -17,7 +18,7 @@
             $zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));            
 			if (!$zoneinfo)
 			{
-                Core::RaiseWarning("Zone with zoneid {$zoneid} not found.");
+                $this->Logger->warn("Zone with zoneid {$zoneid} not found.");
 			    return false;
 			}
 			
@@ -31,16 +32,17 @@
 											$ns["rndc_path"],
 											$ns["namedconf_path"],
 											$ns["named_path"], 
-											CF_NAMEDCONFTPL
+											CONFIG::$NAMEDCONFTPL
 										  );
 				    
 					$dosave = false;
+					$Bind->SetBackup(true);
 					$status = $Bind->DeleteZone($zoneinfo["zone"]);
 					
 					if (!$status)
 					{
                         foreach ($GLOBALS["warnings"] as $warn)
-                            Log::Log("[Error]{$warn}", E_WARNING);
+                            $this->Logger->warn($warn);
                             
                         return false;
 					}
@@ -49,7 +51,7 @@
 			
 			return $retval;
         }
-        
+                
         function Update($zoneid)
         {
 			$cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
@@ -57,13 +59,15 @@
             $zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));            
 			if (!$zoneinfo)
 			{
-                Core::RaiseWarning("Zone with zoneid {$zoneid} not found.");
+                $this->Logger->warn("Zone with zoneid {$zoneid} not found.");
 			    return false;
 			}
+			
+            $GLOBALS["warnings"] = array();
             
 			$this->Zone = new DNSZone($zoneinfo["zone"]);
 			
-            $SOA = new SOADNSRecord($zoneinfo["zone"], CF_DEF_SOA_PARENT, CF_DEF_SOA_OWNER, false, $zoneinfo["soa_serial"]);
+            $SOA = new SOADNSRecord($zoneinfo["zone"], CONFIG::$DEF_SOA_PARENT, CONFIG::$DEF_SOA_OWNER, false, $zoneinfo["soa_serial"]);
 			if (!$SOA->__toString())				        
 			    $error = true;
 			else 
@@ -106,9 +110,9 @@
             
 		    if (Core::HasWarnings())
 		    {
-			    Log::Log(sprintf(_("Generating DNS zone for '%s'... Failed!"), $zoneinfo["zone"]), E_WARNING);
+			    $this->Logger->fatal(sprintf(_("Generating DNS zone for '%s'... Failed!"), $zoneinfo["zone"]));
 			    foreach ($GLOBALS["warnings"] as $warn)
-			        Log::Log("[Error]{$warn}", E_WARNING);
+			        $this->Logger->error($warn);
 			        
 			    return false;
 			}
@@ -125,7 +129,7 @@
 											$ns["rndc_path"],
 											$ns["namedconf_path"],
 											$ns["named_path"], 
-											CF_NAMEDCONFTPL
+											CONFIG::$NAMEDCONFTPL
 										  );
 				    
 					$dosave = false;
@@ -134,10 +138,12 @@
 					if (!$status)
 					{
                         foreach ($GLOBALS["warnings"] as $warn)
-                            Log::Log("[Error]{$warn}", E_WARNING);
+                            $this->Logger->error("{$warn}");
                             
                         return false;
 					}
+					
+					unset($Bind);
 				}
 			}
 			

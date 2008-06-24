@@ -1,18 +1,35 @@
 <?
-
-	// Attempt to normalize settings
-	@error_reporting(E_ALL ^E_NOTICE);
-	@ini_set('display_errors', '1');
-	@ini_set('display_startup_errors', '1');
-	@ini_set('magic_quotes_runtime', '');
-	@ini_set('variables_order', 'GPCS');
-	@ini_set('gpc_order', 'GPC');
-	@ini_set('register_globals', '0');
-	@ini_set('session.bug_compat_warn', '0');
-	@ini_set('session.bug_compat_42', '0');
+	define("TRANSACTION_ID", uniqid("tran"));
 	define("DEFAULT_LOCALE", "en_US");
 	
+	// Start session
+	session_start();
+	
+	// 	Attempt to normalize settings
+	@error_reporting(E_ALL ^E_NOTICE ^E_USER_NOTICE);
+	@ini_set('magic_quotes_runtime', '0');
+	@ini_set('magic_quotes_gpc', '0');
+	@ini_set('variables_order', 'GPCS');
+	@ini_set('gpc_order', 'GPC');
+	
+	@ini_set('session.bug_compat_42', '0');
+	@ini_set('session.bug_compat_warn', '0');
+	
+	// Increase execution time limit	
 	set_time_limit(180);
+	
+	// A kind of sanitization :-/
+	if (get_magic_quotes_gpc())
+	{
+		function mstripslashes(&$item, $key)
+		{
+			$item = stripslashes($item);
+		}
+		
+		array_walk_recursive($_POST, "mstripslashes");
+		array_walk_recursive($_GET, "mstripslashes");
+		array_walk_recursive($_REQUEST, "mstripslashes");
+	}
 	
 	//
 	// Locale init
@@ -35,15 +52,6 @@
 	bind_textdomain_codeset(TEXT_DOMAIN, "UTF-8");
 	$display["lang"] = LOCALE;
 	
-	// Globalize
-	if (get_magic_quotes_gpc()) 
-	{
-        foreach($_POST as &$value)
-        {
-            if (!is_array($value))
-                $value = stripslashes($value);
-        }
-    }
 	
 	// Globalize
 	@extract($_GET, EXTR_PREFIX_ALL, "get");
@@ -53,29 +61,47 @@
 	
 	// Environment stuff
 	$base = dirname(__FILE__);
+	define("SRCPATH", $base);
 	define("APPPATH", "{$base}/..");
-	$srcpath = "$base";
-	$libpath = "{$srcpath}/Lib";
-	define("LIBPATH", $libpath);
-	$cachepath = "$base/../cache";
+	define("LIBPATH", "{$base}/Lib");
+	define("CACHEPATH", "$base/../cache");
+
 	$ADODB_CACHE_DIR = "$cachepath/adodb";
 	
-	define("CF_TEMPLATES_PATH", "{$base}/../templates/".LOCALE);
-	define("CF_SMARTYBIN_PATH", "{$cachepath}/smarty_bin/".LOCALE);
-	define("CF_SMARTYCACHE_PATH", "{$cachepath}/smarty/".LOCALE);
+	define("CF_TEMPLATES_PATH", APPPATH."/templates/".LOCALE);
+	define("CF_SMARTYBIN_PATH", CACHEPATH."/smarty_bin/".LOCALE);
+	define("CF_SMARTYCACHE_PATH", CACHEPATH."/smarty/".LOCALE);
 
-	define("CF_DEBUG_DB", false);
-	session_start();
+	// Load enums
+	require_once(SRCPATH."/types/enum.APPCONTEXT.php");
+	require_once(SRCPATH."/types/enum.FORM_FIELD_TYPE.php");
+	require_once(SRCPATH."/types/enum.SUBSCRIPTION_STATUS.php");
+	require_once(SRCPATH."/types/enum.INSTANCE_TYPE.php");
+	require_once(SRCPATH."/types/enum.INSTANCE_ARCHITECTURE.php");
+		
+	//Load structs
+	require_once(SRCPATH."/structs/struct.CONTEXTS.php");
+	require_once(SRCPATH."/structs/struct.CONFIG.php");
 	
+	require_once(SRCPATH."/exceptions/class.ApplicationException.php");
+	require_once(SRCPATH."/class.UI.php");
+	require_once(SRCPATH."/class.Debug.php");
+	
+	require_once(SRCPATH."/class.DataForm.php");
+	require_once(SRCPATH."/class.DataFormField.php");
+	
+	// All uncaught exceptions will raise ApplicationException
+	function exception_handler($exception) 
+	{
+		UI::DisplayException($exception);
+	}
+	set_exception_handler("exception_handler");
+		
 	////////////////////////////////////////
 	// LibWebta		                      //
 	////////////////////////////////////////
-	require_once("{$srcpath}/class.CustomException.php");
-	require("{$srcpath}/LibWebta/prepend.inc.php");
-	Core::Load("CoreException");
-	Core::Load("CoreUtils");
+	require(SRCPATH."/LibWebta/prepend.inc.php");
 	Core::Load("Security/Crypto");
-	Core::Load("IO/Logging/Log");
 	Core::Load("Data/DB/ADODB/adodb-exceptions.inc.php", LIBPATH);
 	Core::Load("Data/DB/ADODB/adodb.inc.php", LIBPATH);
 	Core::Load("UI/Smarty/Smarty.class.php", LIBPATH);
@@ -90,57 +116,60 @@
 	Core::Load("NET/SSH");
 	Core::Load("NET/API/AWS/AmazonEC2");
 	Core::Load("NET/API/AWS/AmazonS3");
-	Core::Load("DNSZoneController", $base);
-		
-	Core::SetExceptionClassName("CustomException");
-	
-	try 
-	{
-		$cfg = parse_ini_file("{$base}/../etc/config.ini", true);
-	}
-	catch (Exception $e)
-	{
-		throw new CustomException("Cannot parse config.ini file", 0);
-	}
-	
-	define(HASH_METHOD, CF_CRYPTO_ALGO);
-	
+	Core::Load("DNSZoneController", SRCPATH);
+			
+	$cfg = parse_ini_file(APPPATH."/etc/config.ini", true);
+	if (!count($cfg)) { 
+		die("Cannot parse config.ini file"); 
+	};
+
+	define("CF_DEBUG_DB", $cfg["debug"]["db"]);
+
 	// ADODB init 
 	$db = Core::GetDBInstance($cfg["db"]);		
 	
 	// Select config from db
 	foreach ($db->GetAll("select * from config") as $rsk)
 		$cfg[$rsk["key"]] = $rsk["value"];
+		
+	// Define Constants and paste config into CONFIG struct
 	foreach ($cfg as $k=>$v) 
-	{ 
+	{ 	
 		if (is_array($v)) 
-		{
-			foreach ($v as $kk=>$vv) 
-				 define(strtoupper("CF_{$k}_{$kk}"), $vv); 
-		}
+			foreach ($v as $kk=>$vv)
+			{
+				$key = strtoupper("{$k}_{$kk}");
+				CONFIG::$$key = $vv;
+				define("CF_{$key}", $vv);
+				
+			}
 		else
 		{
 			if (is_array($k))
-				define(strtoupper("CF_".$k[0]."_".$k[1].""), $v); 
+				$nk = strtoupper("{$k[0]}_{$k[1]}");
 			else
-				define(strtoupper("CF_".$k), $v); 
+				$nk = strtoupper("{$k}");
+
+			CONFIG::$$nk = $v;
+			define("CF_{$nk}", $v);
 		}
 	}
 	
-	// Logger init
-	if (!Log::HasLogger("Default"))
-	{
-        Log::RegisterLogger("DB", "Default", "syslog");						
-    	Log::SetAdapterOption("fieldMessage", "message", "Default");
-    	Log::SetAdapterOption("fieldLevel", "severity", "Default");
-    	Log::SetAdapterOption("fieldDatetime", "dtadded", "Default");
-    	Log::SetAdapterOption("fieldTimestamp", "dtadded_time", "Default");
-	}
-	Log::SetDefaultLogger("Default");
+	unset($cfg);
 	
-	// Crypto init
-	Core::GetInstance("Crypto", CF_CRYPTOKEY);
+	// Define log4php contants
+	define("LOG4PHP_DIR", LIBPATH.'/IO/Logging/log4php/src/main/php');
+	define("LOG4PHP_CONFIGURATION", APPPATH.'/etc/log4php.xml');
 	
+	// Require log4php stuff
+	require_once (SRCPATH.'/class.LoggerAppenderScalr.php');
+	require_once (SRCPATH.'/class.LoggerAppenderEmergMail.php');
+	require_once (LOG4PHP_DIR.'/LoggerManager.php');
+
+	// Get Global Logger intance
+	$Logger = LoggerManager::getLogger('Application');
+
+	// Define json_encode function if extension not installed
 	if (!function_exists("json_encode"))
 	{
 		Core::Load("Data/JSON/JSON.php");
@@ -157,13 +186,13 @@
 			return $json->decode($text);
 		}
 	}
-	
+		
 	// Smarty init
 	if (!defined("NO_TEMPLATES"))
 	{
 		$Smarty = Core::GetSmartyInstance();
 		// Cache control
-		if (defined("CF_DEBUG_APP") && CF_DEBUG_APP)
+		if (CONFIG::$DEBUG_APP)
 		{
 			$Smarty->clear_all_cache();
 			$Smarty->caching = false;
@@ -174,8 +203,11 @@
 	
 	// PHPSmartyMailer init
 	$Mailer = Core::GetPHPSmartyMailerInstance();
-	$Mailer->From 		= CF_EMAIL_ADDRESS;
-	$Mailer->FromName 	= CF_EMAIL_NAME;
+	$Mailer->From 		= CONFIG::$EMAIL_ADDRESS;
+	$Mailer->FromName 	= CONFIG::$EMAIL_NAME;
+	
+	// Crtypto init
+	$Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
 	
 	require_once("{$base}/appfunctions.inc.php");
 		

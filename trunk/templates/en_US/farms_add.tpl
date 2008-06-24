@@ -6,18 +6,19 @@
     <br />
     <table width="100%" cellpadding="10" cellspacing="0" border="0" style="height:100%">
         <tr valign="top">
-            <td width="400">
+            <td width="300">
                 {include file="inc/table_header.tpl" nofilter=1}
                 <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 	<tr>
                 		<td>
                 		    <div style="padding:5px;">
-                		      <div id="inventory_tree" style="width:400px;height:500px;"></div>
+                		      <div id="inventory_tree" style="width:300px;height:500px;"></div>
                 		    </div>                            
                             <div id="AttachLoader" style="display:none;text-align:center;padding-top:250px;background-color:#f4f4f4;position:absolute;top:94px;left:23px;width:400px;height:262px;">
                 		      <img src="/images/snake-loader.gif" style="vertical-align:middle;display:;"> Processing...
                 		    </div>
                             <script language="Javascript" type="text/javascript">
+                                                                
                                 tree = new dhtmlXTreeObject($('inventory_tree'),"100%","100%",0);
                                 tree.setImagePath("images/dhtmlxtree/csh_vista/");
                                 tree.enableCheckBoxes(true);
@@ -70,6 +71,8 @@
             					        if ($('no_servers').style.display == '')
             					           $('no_servers').style.display = "none";
             					           
+            					        var arch = tree.getUserData(nodeid, "Arch");
+            					           
             					        tr = document.createElement("TR");
             					        tr.id = "item_"+nodeid;
             					        td1 = document.createElement("TD");
@@ -79,20 +82,57 @@
             					        td1.innerHTML = tree._globalIdStorageFind(nodeid).label+"<input type='hidden' name='ami_id[]' value='"+nodeid+"'>";
             					        tr.appendChild(td1);
             					        
-            					        var k = ['minCount', 'maxCount', 'minLA', 'maxLA'];
+            					        var k = ['minCount', 'maxCount', 'minLA', 'maxLA', 'availZone', 'iType'];
             					        for(var i = 0; i < k.length; i++)
             					        {
                 					        td0 = document.createElement("TD");
                 					        td0.nowrap = "nowrap";
                 					        td0.className = "Item";
                 					        td0.vAlign = "top";
-                					        td0.innerHTML = '<input type="text" size="5" class="text" name="'+k[i]+'[]" value="1">';
+                					        
+                					        if (k[i] == 'availZone')
+                					        {
+                					        	td0.innerHTML = '<select name="'+k[i]+'[]" class="text">'+
+                					        	{/literal}
+                                    			{section name=zid loop=$avail_zones}
+		                                    		'<option value="{$avail_zones[zid]}">{$avail_zones[zid]}</option>'+
+		                                    	{/section}
+		                                    	{literal}
+		                                    	'</select>';
+                					        }
+                					        else if (k[i] == 'iType')
+                					        {
+                					        	if (arch == 'i386')
+                					        	{
+	                					        	td0.innerHTML = '<select name="'+k[i]+'[]" class="text">'+
+	                					        	{/literal}
+	                                    			{section name=tid loop=$32bit_types}
+			                                    		'<option value="{$32bit_types[tid]}">{$32bit_types[tid]}</option>'+
+			                                    	{/section}
+			                                    	{literal}
+			                                    	'</select>';
+			                                    }
+			                                    else
+			                                    {
+			                                    	td0.innerHTML = '<select name="'+k[i]+'[]" class="text">'+
+	                					        	{/literal}
+	                                    			{section name=tid loop=$64bit_types}
+			                                    		'<option value="{$64bit_types[tid]}">{$64bit_types[tid]}</option>'+
+			                                    	{/section}
+			                                    	{literal}
+			                                    	'</select>';
+			                                    }
+                					        }
+                					        else
+                					        {
+                					        	td0.innerHTML = '<input type="text" size="5" class="text" name="'+k[i]+'[]" value="1">';
+                					        }
                 					        tr.appendChild(td0);
             					        }
             					        
             					        $('table_body').insertBefore(tr, $('last'));
             					        
-            					        if (tree._globalIdStorageFind(nodeid).label == "mysql")
+            					        if (tree.getUserData(nodeid, 'alias') == "mysql")
             					        {
             					            $('mysql_settings').style.display = "";
             					        }
@@ -107,7 +147,7 @@
             					        if ($('table_body').childNodes.length == 3)
             					           $('no_servers').style.display = "";
             					           
-            					        if (tree._globalIdStorageFind(nodeid).label == "mysql")
+            					        if (tree.getUserData(nodeid, 'alias') == "mysql")
             					        {
             					            $('mysql_settings').style.display = "none";
             					        }
@@ -139,7 +179,7 @@
                                 {include file="inc/intable_footer.tpl" color="Gray"}
                                 
                                 
-                                {include file="inc/intable_header.tpl" intableid='mysql_settings' visible=$mysql_visible header="Setting for mysql role" color="Gray"}
+                                {include file="inc/intable_header.tpl" intableid='mysql_settings' visible=$mysql_visible header="Settings for mysql role" color="Gray"}
                             	<tr>
                             		<td colspan="2">Rebundle and save instance snapshot of mysql role every: <input type="text" size="3" class="text" name="mysql_rebundle_every" value="{$farminfo.mysql_rebundle_every}" /> hours</td>
                             	</tr>
@@ -159,11 +199,13 @@
                             		<th align="left" nowrap>Max Instances</th>
                             		<th align="left" nowrap>Min LA</th>
                             		<th align="left" nowrap>Max LA</th>
+                            		<th align="left" nowrap>Avail zone</th>
+                            		<th align="left" nowrap>Type</th>
                             	</tr>
                             	</thead>
                             	<tbody id="table_body">
                             	<tr>
-                            		<td colspan="6" align="center" height="10"> </td>
+                            		<td colspan="7" align="center" height="10"> </td>
                             	</tr>
                             	{section name=id loop=$servers}
                                 <tr id="item_{$servers[id].ami_id}">
@@ -172,13 +214,27 @@
                                     <td><input type="text" size="5" class="text" name="maxCount[{$servers[id].id}]" value="{$servers[id].max_count}"></td>
                                     <td><input type="text" size="5" class="text" name="minLA[{$servers[id].id}]" value="{$servers[id].min_LA}"></td>
                                     <td><input type="text" size="5" class="text" name="maxLA[{$servers[id].id}]" value="{$servers[id].max_LA}"></td>
+                                    <td>
+                                    	<select name="availZone[{$servers[id].id}]" class="text">
+                                    		{section name=zid loop=$avail_zones}
+                                    			<option {if $servers[id].avail_zone == $avail_zones[zid]}selected{/if} value="{$avail_zones[zid]}">{$avail_zones[zid]}</option>
+                                    		{/section}
+                                    	</select>
+                                    </td>
+                                    <td>
+                                    	<select name="iType[{$servers[id].id}]" class="text">
+                                    		{section name=zid loop=$servers[id].types}
+                                    			<option {if $servers[id].instance_type == $servers[id].types[zid]}selected{/if} value="{$servers[id].types[zid]}">{$servers[id].types[zid]}</option>
+                                    		{/section}
+                                    	</select>
+                                    </td>
                                 </tr>
                             	{/section}
                             	<tr id="no_servers" style="display:{if $servers|@count == 0}{else}none{/if};">
                             		<td colspan="11" align="center">No servers assigned to farm</td>
                             	</tr>
                             	<tr id="last">
-                            		<td colspan="5" align="center" height="10"> </td>
+                            		<td colspan="7" align="center" height="10"> </td>
                             	</tr>
                             	</tbody>
                         	</table>

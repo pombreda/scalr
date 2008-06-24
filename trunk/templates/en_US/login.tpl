@@ -42,7 +42,6 @@
 			<td width="7"><div class="TableFooterRight"></div></td>
 		</tr>
 		</table>
-			  
-	
+	</div>
 	</center>
 {include file="inc/login_footer.tpl"}

@@ -6,11 +6,18 @@
 	
     if ($req_step == 4)
     {
-        $_SESSION["wizard"]["dnsami"] = $post_dnsami;
+        if ($db->GetOne("SELECT id FROM zones WHERE zone=?", array($_SESSION['wizard']["domainname"])))
+        {
+        	$errmsg = "'{$_SESSION['wizard']["domainname"]}' domain already exists in database.";
+        	UI::Redirect("app_wizard.php");
+        }
+    	
+    	
+    	$_SESSION["wizard"]["dnsami"] = $post_dnsami;
         
         $AmazonEC2Root = new AmazonEC2(
-            APPPATH . "/etc/pk-{$cfg['aws_keyname']}.pem", 
-            APPPATH . "/etc/cert-{$cfg['aws_keyname']}.pem");
+            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
+            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
         	                            
         $AmazonEC2Client = new AmazonEC2(
             APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/pk.pem", 
@@ -48,13 +55,13 @@
                    $AmazonEC2Root->ModifyImageAttribute($ami_id, "add", array("userId" => $_SESSION["aws_accountid"]));
             }
             
-            $security_group_name = CF_SECGROUP_PREFIX.$rolename;
+            $security_group_name = CONFIG::$SECGROUP_PREFIX.$rolename;
                
             $addSecGroup = true;
             
             $client_security_groups = $AmazonEC2Client->DescribeSecurityGroups();
             if (!$client_security_groups)
-                Core::RaiseError("Cannot describe security groups for client.");
+                throw new ApplicationException("Cannot describe security groups for client.", E_ERROR);
                 
             $client_security_groups = $client_security_groups->securityGroupInfo->item;
             
@@ -63,14 +70,14 @@
             {
                 foreach ($client_security_groups as $group)
                 {
-                    if ($group->groupName == $security_group_name)
+                    if (strtolower($group->groupName) == strtolower($security_group_name))
                     {
                        $addSecGroup = false;
                        break;
                     }
                 }
             }
-            elseif ($client_security_groups->groupName == $security_group_name)
+            elseif (strtolower($client_security_groups->groupName) == strtolower($security_group_name))
                $addSecGroup = false;
             
             if ($addSecGroup)
@@ -79,7 +86,7 @@
                 {
                     $res = $AmazonEC2Client->CreateSecurityGroup($security_group_name, $rolename);
                     if (!$res)
-                       Core::RaiseError("Cannot create security group", E_USER_ERROR);	                        
+                       throw new ApplicationException("Cannot create security group", E_USER_ERROR);	                        
                        
                     // Set permissions for group
                     $group_rules = $db->GetAll("SELECT * FROM security_rules WHERE roleid='{$roleid}'");	                        
@@ -94,10 +101,12 @@
                 }
                 catch (Exception $e)
                 {
-                    Core::RaiseError($e->getMessage(), E_USER_ERROR);
+                    throw new ApplicationException($e->getMessage(), E_USER_ERROR);
                 }
             }
         }
+        
+        $db->BeginTrans();
         
         //
         // Add farm information to database
@@ -118,37 +127,51 @@
             if ($result->keyMaterial)
                 $db->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farmid));
             else 
-                Core::RaiseError("Cannot create key pair for farm.", E_ERROR);
+                throw new Exception("Cannot create key pair for farm.", E_ERROR);
         }
         catch (Exception $e)
         {
-            Core::RaiseError($e->getMessage(), E_ERROR);
+            $db->RollbackTrans();
+        	throw new ApplicationException($e->getMessage(), E_ERROR);
         }
         
         //
         // Add farm amis information
         //
-        foreach ($_SESSION['wizard']['amis'] as $ami_id)
+        try
         {
-            $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$ami_id}'");
-            
-            $db->Execute("INSERT INTO 
-                                       farm_amis 
-                                  SET 
-                                       farmid=?, 
-                                       ami_id=?, 
-                                       min_count=?, 
-                                       max_count=?, 
-                                       min_LA=?, 
-                                       max_LA=?
-                         ", array( $farmid, 
-                                   $ami_id, 
-                                   1, 
-                                   2,
-                                   ($roleinfo["default_minLA"] ? $roleinfo["default_minLA"] : 5),
-                                   ($roleinfo["default_maxLA"] ? $roleinfo["default_maxLA"] : 10)
-                                 )
-                         );
+	        foreach ($_SESSION['wizard']['amis'] as $ami_id)
+	        {
+	            $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$ami_id}'");
+	            
+	            $itype = ($roleinfo["architecture"] == INSTANCE_ARCHITECTURE::I386) ? I386_TYPE::M1_SMALL : X86_64_TYPE::M1_LARGE;
+	            
+	            
+	            $db->Execute("INSERT INTO 
+	                                       farm_amis 
+	                                  SET 
+	                                       farmid=?, 
+	                                       ami_id=?, 
+	                                       min_count=?, 
+	                                       max_count=?, 
+	                                       min_LA=?, 
+	                                       max_LA=?,
+	                                       instance_type = ?
+	                         ", array( $farmid, 
+	                                   $ami_id, 
+	                                   1, 
+	                                   2,
+	                                   ($roleinfo["default_minLA"] ? $roleinfo["default_minLA"] : 5),
+	                                   ($roleinfo["default_maxLA"] ? $roleinfo["default_maxLA"] : 10),
+	                                   $itype
+	                                 )
+	                         );
+	        }
+        }
+        catch(Exception $e)
+        {
+        	$db->RollbackTrans();
+        	throw new ApplicationException($e->getMessage(), E_ERROR);
         }
 
         //
@@ -174,31 +197,49 @@
         }
         catch (Exception $e)
         {
-            Core::RaiseError($e->getMessage(), E_ERROR);
+            $db->RollbackTrans();
+        	throw new ApplicationException($e->getMessage(), E_ERROR);
         }
-        	                
-        //
-        // Add DNS Zone
-        //
-        $records = array();
-		$nss = $db->GetAll("SELECT * FROM nameservers");
-		foreach ($nss as $ns)
-            $records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$_SESSION['wizard']["domainname"]}.", "issystem" => 1);
-		 
-            
-		$db->Execute("insert into zones (`zone`, `soa_owner`, `soa_ttl`, `soa_parent`, `soa_serial`, `soa_refresh`, `soa_retry`, `soa_expire`, `min_ttl`, `dtupdated`, `farmid`, `ami_id`, `clientid`)
-		values (?,'{$cfg["def_soa_owner"]}','14400','{$cfg["def_soa_parent"]}',?,'14400','7200','3600000','86400',NOW(), ?, ?, ?)", 
-		array($_SESSION['wizard']["domainname"], date("Ymd")."01", $farmid, $_SESSION['wizard']["dnsami"], $_SESSION["uid"]));
-		$zoneid = $db->Insert_ID();
+
+        try
+        {
+	        //
+	        // Add DNS Zone
+	        //
+	        $records = array();
+			$nss = $db->GetAll("SELECT * FROM nameservers");
+			foreach ($nss as $ns)
+	            $records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$_SESSION['wizard']["domainname"]}.", "issystem" => 1);
+			
+        	$def_records = $db->GetAll("SELECT * FROM default_records WHERE clientid='{$_SESSION['uid']}'");
+            foreach ($def_records as $record)
+            {
+                $record["rkey"] = str_replace("%hostname%", "{$_SESSION['wizard']["domainname"]}.", $record["rkey"]);
+                $record["rvalue"] = str_replace("%hostname%", "{$_SESSION['wizard']["domainname"]}.", $record["rvalue"]);
+            	$records[] = $record;
+            }
+	            
+			$db->Execute("insert into zones (`zone`, `soa_owner`, `soa_ttl`, `soa_parent`, `soa_serial`, `soa_refresh`, `soa_retry`, `soa_expire`, `min_ttl`, `dtupdated`, `farmid`, `ami_id`, `clientid`, `role_name`)
+			values (?,'".CONFIG::$DEF_SOA_OWNER."','14400','".CONFIG::$DEF_SOA_PARENT."',?,'14400','7200','3600000','86400',NOW(), ?, ?, ?, ?)", 
+			array($_SESSION['wizard']["domainname"], date("Ymd")."01", $farmid, $_SESSION['wizard']["dnsami"], $_SESSION["uid"], $roleinfo["name"]));
+			$zoneid = $db->Insert_ID();
+			
+			$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$zoneid}'");
+			
+			foreach ($records as $k=>$v)
+			{
+				if ($v["rkey"] != '' && $v["rvalue"] != '')
+					$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
+			}
+        }
+        catch(Exception $e)
+        {
+        	$db->RollbackTrans();
+        	throw new ApplicationException($e->getMessage(), E_ERROR);
+        }
 		
-		$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$zoneid}'");
-		
-		foreach ($records as $k=>$v)
-		{
-			if ($v["rkey"] != '' && $v["rvalue"] != '')
-				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
-		}
-		
+        $db->CommitTrans();
+        
 		$ZoneControler = new DNSZoneControler();
 			
 		if (!$ZoneControler->Update($zoneid))
@@ -207,7 +248,7 @@
 		}
 		
 		$okmsg = "Application successfully created.";
-		CoreUtils::Redirect("farms_control.php?farmid={$farmid}&new=1");
+		UI::Redirect("farms_control.php?farmid={$farmid}&new=1");
     }
     
 	if ($req_step == 3)
@@ -220,17 +261,17 @@
 	    else 
 	    {
 	        $total_max_count = count($post_amis)*2; 	    
-            $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid=(SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
-            if ($used_slots+$total_max_count > CF_CLIENT_MAX_INSTANCES)
+            $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
+            if ($used_slots+$total_max_count > CONFIG::$CLIENT_MAX_INSTANCES)
             {
-                $err[] = "You cannot launch more than ".CF_CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
+                $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
                 $req_step = 2;
             }
 	        else 
 	        {
     	        $_SESSION["wizard"]["amis"] = $post_amis;
     	        
-    	        $roles = $db->GetAll("SELECT * FROM ami_roles WHERE clientid='0' OR clientid='{$_SESSION['uid']}'");
+    	        $roles = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
     	        foreach ($roles as $role)
     	        {
     	            if (in_array($role["ami_id"], $post_amis))
@@ -257,7 +298,7 @@
 	        $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
             $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
             	       
-           if ($num >= $clientinfo['farms_limit'])
+           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
            {
                $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
                $req_step = 1;
@@ -265,7 +306,7 @@
 	        
             if (count($err) == 0)
             {
-    	        if ($db->GetOne("SELECT * FROM zones WHERE zone='{$post_domainname}'"))
+    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=?", array($post_domainname)))
     	        {
     	           $err[] = "Selected domain name already exists in database.";
     	           $req_step = 1;
@@ -273,7 +314,7 @@
     	        else
     	        {
         	        $display["amis"] = $post_amis;
-        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE clientid='0' OR clientid='{$_SESSION['uid']}'");
+        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
         	        $_SESSION["wizard"]["domainname"] = $post_domainname;
     	        }
             }

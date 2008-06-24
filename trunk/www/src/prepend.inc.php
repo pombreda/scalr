@@ -3,6 +3,9 @@
 	session_start();
 	require_once (dirname(__FILE__)."/../../src/prepend.inc.php");
 
+	// Define current context
+	CONTEXTS::$APPCONTEXT = APPCONTEXT::CONTROL_PANEL;
+	
 	if (!defined("NO_AUTH"))
 	{
     	Core::load("Data/JSON/JSON.php");
@@ -10,10 +13,9 @@
     	
     	define("NOW", str_replace("..","", substr(basename($_SERVER['PHP_SELF']),0, -4)));
 	
-	
     	// Auth
     	if ($_SESSION["uid"] == 0)
-        	$newhash = $Crypto->Hash(CF_ADMIN_LOGIN.":".CF_ADMIN_PASSWORD.":".$_SESSION["sault"]);
+        	$newhash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);
     	else 
     	{
     	    $user = $db->GetRow("SELECT * FROM clients WHERE id=?", $_SESSION['uid']);
@@ -25,63 +27,13 @@
     	if (!$valid && !stristr($_SERVER['PHP_SELF'], "login.php"))
     	{
     		$mess = "Please login";
-    		CoreUtils::Redirect("login.php");
+    		UI::Redirect("login.php");
     	}
 
     	//
     	// Load menu
     	//
-    	if (!$get_searchpage)
-    		$XMLNav = new XMLNavigation();
-    	else
-    		$XMLNav = new XMLNavigation($get_searchpage);
-    		
-        if ($_SESSION["uid"] == 0)
-        	$XMLNav->LoadXMLFile(dirname(__FILE__)."/../../etc/admin_nav.xml");
-        else 
-            $XMLNav->LoadXMLFile(dirname(__FILE__)."/../../etc/client_nav.xml");
-    	
-    	//
-    	// Add languages to menu
-    	$DOMLang = new DOMDocument();
-    	$DOMLang->loadXML("<?xml version=\"1.0\" encoding=\"UTF-8\"?><menu></menu>");
-    	$LangRoot = $DOMLang->documentElement;
-    	
-    	// Settings Node
-    	$node_Settings = $DOMLang->createElement("node");
-    	$node_Settings->setAttribute("title", "Settings");
-    	$LangRoot->appendChild($node_Settings);
-    	
-    	// Language Node
-    	$node = $DOMLang->createElement("node");
-    	$node->setAttribute("title", "Language");
-    	$node_Settings->appendChild($node);
-    	
-    	foreach ((array)$display["languages"] as $k=>$lng)
-    	{
-    	    if ($lng)
-    	    {
-        	    $item = $DOMLang->createElement("item");
-        	    $item->setAttribute("href", "index.php?lang={$lng["name"]}");
-        	    $item->nodeValue = $lng["language"];
-        	    $node->appendChild($item);
-    	    }
-    	}	
-    	$XMLNav->AddNode($LangRoot, $XMLNav->XML->documentElement);
-    	
-    	$XMLNav->Generate();
-    		
-    	$display["dmenu"] = $XMLNav->DMenu;
-    	
-    	// Index page menu
-    	if (NOW == "index")
-    		if (!$get_searchpage)
-    			$display["index_menu"] = $XMLNav->IMenu;
-    		else
-    		{
-    			$display["index_menu"] = $XMLNav->SMenu;
-    			$display["title"] = "Search results for '{$get_searchpage}'";
-    		}
+    	require_once (dirname(__FILE__)."/navigation.inc.php");
     	
     	
     	if ($get_search)
@@ -94,5 +46,16 @@
     	
     	// title 
     	$display["title"] = "Control Panel";
+    	
+    	if ($_SESSION['uid'] != 0)
+    	{
+    		if (!$_SESSION["aws_accesskey"])
+    		{
+    			if (!stristr($_SERVER['PHP_SELF'], 'aws_settings.php') && !stristr($_SERVER['PHP_SELF'], 'login.php'))
+    				UI::Redirect("aws_settings.php");
+    				
+    			$errmsg = "Welcome to Scalr - in order to get started, we need some additional information.  Please enter the reqested information below.";
+    		}
+    	}
     }
 ?>

@@ -1,31 +1,54 @@
 <? 
 	require("src/prepend.inc.php");
-
-	$time = date("d M, Y h:i a");
+		
+	Core::Load("Data/Formater");
 	
-	$display["title"] = "System log&nbsp;&raquo;&nbsp;View (Current time: {$time})";
+	$display["title"] = _("Logs");
+	$display["help"] = _("Almost all Scalr activity being logged. You should check logs in case of any issues.");
 	
     $display["load_calendar"] = 1;
 
     $paging = new SQLPaging();
-	$sql = "SELECT * FROM syslog WHERE dtadded_time > 0";
-	
-	if (isset($req_severity))
+	$sql = "SELECT *, min(id) FROM syslog WHERE 1=1";
+
+	if ($req_search)
 	{
-	    if ($req_severity > 0)
-	    {
-    	    $id = (int)$req_severity;
-    	    $paging->AddURLFilter("severity", $id);
-    	    $sql .= " AND severity='{$id}'";
-    	    
-    	    $display["severity"] = $id;
-	    }
+	    $search = str_replace("'", "\'", $_POST["search"]);
+	    $sql .= " AND (message LIKE '%{$search}%' OR transactionid LIKE '%{$search}%' OR id = '{$search}')";
+	    $display["search"] = $_POST["search"];
+	    $paging->AddURLFilter("search", $search);
 	}
+	
+	if ($req_severity || $req_severities)
+	{
+		$severities = ($req_severity) ? $req_severity : explode($req_severities);
+					
+		foreach($severities as $severity)
+		{
+			$_sql[] = "severity = '{$severity}'";
+			$display["checked_severities"][$severity] = true;
+		}
+						
+		if (count($_sql) > 0)
+			$sql .= " AND (".implode(" OR ", $_sql).")";
+		
+		$paging->AddURLFilter("severities", implode(",", $severities));
+	}
+	
+	if ($req_dt)
+	{
+		$date = strtotime($req_dt);
+		$sql .= " AND TO_DAYS(dtadded) = TO_DAYS(FROM_UNIXTIME('{$date}'))";
+		$paging->AddURLFilter("dt", $req_dt);
+		$display["dt"] = $req_dt;
+	}
+	else
+		$display["dt"] = date("m/d/Y");
 	
 	//Paging
 	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "ORDER BY dtadded_time DESC, id DESC";
-	$paging->ApplyFilter($_POST["filter_q"], array("message"));
+	$paging->AdditionalSQL = "GROUP BY transactionid ORDER BY dtadded_time DESC";
+	$paging->ApplyFilter($_POST["filter_q"], array("message", "transactionid"));
 	$paging->ApplySQLPaging();
 	$paging->ParseHTML();
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
@@ -35,41 +58,50 @@
 	// Rows
 	$rows = $db->Execute($paging->SQL);
 	
-	$display["severities"] = array (
-               E_ERROR          => 'SYSTEM ERROR',
-               E_WARNING        => 'SYSTEM WARNING',
-               E_NOTICE         => 'SYSTEM NOTICE',
-               E_CORE_ERROR     => 'APP ERROR',
-               E_CORE_WARNING   => 'APP WARNING',
-               E_USER_ERROR     => 'ERROR',
-               E_USER_WARNING   => 'WARNING',
-               E_USER_NOTICE    => 'NOTICE'
-               );
-	
-	$errorType = array (
-               E_ERROR          => '<span style="color:red;font-weight:bold;">SYSTEM ERROR</span>',
-               E_WARNING        => '<span style="color:red;font-weight:bold;">SYSTEM WARNING</span>',
-               E_PARSE          => 'PARSING ERROR',
-               E_NOTICE         => '<span style="color:gray;">SYSTEM NOTICE</span>',
-               E_CORE_ERROR     => '<span style="color:purple">APP ERROR</span>',
-               E_CORE_WARNING   => '<span style="color:purple">APP WARNING</span>',
-               E_COMPILE_ERROR  => 'COMPILE ERROR',
-               E_COMPILE_WARNING => 'COMPILE WARNING',
-               E_USER_ERROR     => '<span style="color:red;">ERROR</span>',
-               E_USER_WARNING   => '<span style="color:red;">WARNING</span>',
-               E_USER_NOTICE    => '<span style="color:gray;">NOTICE</span>',
-               E_STRICT         => 'STRICT NOTICE',
-               E_RECOVERABLE_ERROR => 'RECOVERABLE ERROR'
-               );
-	    	
+    $added = array();  	
 	while ($row = $rows->FetchRow())
 	{
-	    $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
-	    $row["message"] = strip_tags(stripslashes($row["message"]));
-	    $row["severity"] = $errorType[$row["severity"]];
-	    
-	    $display["rows"][] = $row;
+	    if (!$added[$row['transactionid']])
+	    {
+    	    $row = $db->GetRow("SELECT * FROM syslog WHERE transactionid='{$row['transactionid']}' ORDER BY dtadded_time ASC");
+    	    
+    	    $row["ipaddr"] = long2ip($row["ipaddr"]);
+    	    
+    	    $row["warns"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
+    	    								AND severity='WARN'
+    	    							 ");
+    	    
+    	    $row["errors"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
+    	    								AND (severity='FATAL' OR severity='ERROR')
+    	    							 ");
+    	    
+    	    $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
+    	    $row["action"] = stripslashes($row["message"]);
+    	    $row["action"] = htmlentities($row["action"], ENT_QUOTES, "UTF-8");
+    	    
+    	    $display["rows"][] = $row;
+    	    $added[$row['transactionid']] = 1;
+	    }
 	}
-		
+	
+	$display["page_data_options"] = array();
+	
+	if (!$display["checked_severities"])
+	{
+		$display["checked_severities"]['FATAL'] = 1;
+		$display["checked_severities"]['ERROR'] = 1;
+		$display["checked_severities"]['WARN'] = 1;
+		$display["checked_severities"]['INFO'] = 1;
+		$display["checked_severities"]['DEBUG'] = 0;
+	}
+	
+	$display["severities"] = array (
+               'FATAL'          => 'Fatal error',
+               'ERROR'     		=> 'Error',
+               'WARN'     		=> 'Warning',
+               'INFO'        	=> 'Information',                              
+               'DEBUG'   		=> 'Debug'
+               );
+	
 	require("src/append.inc.php");
 ?>

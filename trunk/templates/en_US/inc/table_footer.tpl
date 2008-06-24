@@ -8,10 +8,7 @@
 			<td colspan="{if $colspan}{$colspan}{else}14{/if}"><table border="0" width="100%" class="WebtaTable_Footer">
 					<tr>
 						<td  colspan="4" align="left">
-						{if $cancel_btn}
-							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;
-						{/if}
-						
+												
 						{if $prev_page}
 							<input type="submit" class="btn" value="Prev" name="back">&nbsp;
 						{/if}
@@ -32,6 +29,9 @@
 						{/if}
 						{if $button2}
 								&nbsp;<input type="submit" class="btn" name="cbtn_2" value="{$button2_name}" />	
+						{/if}
+						{if $cancel_btn}
+							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;
 						{/if}
 						{if $button3}
 								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="{$button3_name}" />	

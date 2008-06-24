@@ -7,13 +7,13 @@
     {        
         if ($('add_portfrom').value == "" || parseInt($('add_portfrom').value) <= 0 || parseInt($('add_portfrom').value) > 65536)
         {
-            alert("'From port' must be an integer from 1 to 65536");
+            alert("'From port' must be a number between 1 and 65536");
             return false;
         }
         
         if ($('add_portto').value == "" || parseInt($('add_portto').value) <= 0 || parseInt($('add_portto').value) > 65536)
         {
-            alert("'To port' must be an integer from 1 to 65536");
+            alert("'To port' must be a number between 1 and 65536");
             return false;
         }
         
@@ -72,6 +72,10 @@
     	<tr>
     		<td width="20%">AMI:</td>
     		<td>{$ami_id}<input type="hidden" name="ami_id" value="{$ami_id}"></td>
+    	</tr>
+    	<tr>
+    		<td width="20%">Architecture:</td>
+    		<td>{$arch}<input type="hidden" name="arch" value="{$arch}"></td>
     	</tr>
 		<tr>
     		<td width="20%">Role name:</td>
