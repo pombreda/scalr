@@ -20,10 +20,7 @@
 	//
 	// Default AMIs
 	//
-	if ($_SESSION['uid'] != 0)
-		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1' AND (roletype = 'SHARED' OR (roletype = 'CUSTOM' AND clientid='{$_SESSION['uid']}'))");
-	else
-		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1'");
+	$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1'");
 	
     $sharedNode = $tree->createElement("item");
     $sharedNode->setAttribute("text", "Shared Roles");
@@ -61,14 +58,6 @@
         $idomNode->setAttribute("im1", "icon_hardware.gif");
         $idomNode->setAttribute("im2", "icon_hardware.gif");
         
-        $userData = $tree->createElement("userdata", $ami["architecture"]);
-    	$userData->setAttribute("name", "Arch");
-    	$idomNode->appendChild($userData);
-        
-    	$userData = $tree->createElement("userdata", $ami["alias"]);
-    	$userData->setAttribute("name", "alias");
-    	$idomNode->appendChild($userData);
-    	
         if ($farminfo)
         {
             if ($db->GetOne("SELECT id FROM farm_amis WHERE ami_id=? AND farmid=?", array($ami["ami_id"], $farminfo["id"])))

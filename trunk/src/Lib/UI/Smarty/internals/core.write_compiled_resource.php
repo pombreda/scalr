@@ -14,9 +14,10 @@
  */
 function smarty_core_write_compiled_resource($params, &$smarty)
 {
-    if (!@file_exists($smarty->compile_dir))
-    	@mkdir($smarty->compile_dir, 0777);
-	
+    // If compile_dir doesn't exists, try to create it
+	if (!@file_exists($smarty->compile_dir))
+    	@mkdir($smarty->compile_dir, 0777, true);
+
 	if(!@is_writable($smarty->compile_dir)) {
         // compile_dir not writable, see if it exists
         if(!@is_dir($smarty->compile_dir)) {

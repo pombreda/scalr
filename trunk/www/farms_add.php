@@ -7,7 +7,7 @@
         $req_farmid = ($req_farmid) ? $req_farmid : $req_id;
         
         if (!$req_farmid)   
-            UI::Redirect("farms_view.php");
+            CoreUtils::Redirect("farms_view.php");
         else 
         {
             $uid = $db->GetOne("SELECT clientid FROM farms WHERE id='{$req_farmid}'");
@@ -18,22 +18,9 @@
         $uid = $_SESSION['uid'];
     }
 	
-    $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$uid}')");
-    $avail_slots = CONFIG::$CLIENT_MAX_INSTANCES - $used_slots;
+    $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid=(SELECT id FROM farms WHERE clientid='{$uid}')");
+    $avail_slots = CF_CLIENT_MAX_INSTANCES - $used_slots;
     $errmsg = "You have {$avail_slots} spare instances available on your account.";
-    
-    $AmazonEC2Client = new AmazonEC2(
-                    APPPATH . "/etc/clients_keys/{$uid}/pk.pem", 
-                    APPPATH . "/etc/clients_keys/{$uid}/cert.pem");
-                    
-    // Get Avail zones
-    $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
-    $display["avail_zones"] = array();
-    foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
-    {
-    	if ($zone->zoneState == 'available')
-    		array_push($display["avail_zones"], (string)$zone->zoneName);
-    }
     
 	if ($_POST)
 	{	    	    
@@ -51,7 +38,7 @@
 	         
 	        if (!$post_farmid)
 	        {
-	           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
+	           if ($num >= $clientinfo['farms_limit'])
 	               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
 	        }
 	           
@@ -64,45 +51,50 @@
                 
                 $minCount = (int)$post_minCount[$k];
                 if ($minCount <=0 || $minCount > 99)
-                   $err[] = "Min instances for '{$rolename}' must be a number between 1 and 99";
+                   $err[] = "Min instances for '{$rolename}' must be an integer from 1 to 99";
                    
                 $maxCount = (int)$post_maxCount[$k];
                 if ($maxCount <=0 || $maxCount > 99)
-                   $err[] = "Max instances for '{$rolename}' must be a number between 1 and 99";
+                   $err[] = "Max instances for '{$rolename}' must be an integer from 1 to 99";
                    
                 $total_max_count = $total_max_count+$maxCount;
                    
-                $minLA = (float)$post_minLA[$k];
+                $minLA = (int)$post_minLA[$k];
                 if ($minLA <=0 || $minLA > 200)
-                   $err[] = "Min LA for '{$rolename}' must be a number between 0.01 and 200";
+                   $err[] = "Min LA for '{$rolename}' must be an integer from 1 to 200";
                    
-                $maxLA = (float)$post_maxLA[$k];
+                $maxLA = (int)$post_maxLA[$k];
                 if ($maxLA <=0 || $maxLA > 200)
-                   $err[] = "Max LA for '{$rolename}' must be a number between 0.01 and 99";
+                   $err[] = "Max LA for '{$rolename}' must be an integer from 1 to 99";
                    
                 if ($rolename == "mysql")
                 {
                     if (!$Validator->IsNumeric($post_mysql_rebundle_every) || $post_mysql_rebundle_every < 1)
-                        $err[] = "'Mysql rebundle every' must be a number > 0";
+                        $err[] = "'Mysql rebundle every' must be an integer > 0";
                         
                     if ($post_mysql_bcp == 1)
                     {
                         if (!$Validator->IsNumeric($post_mysql_bcp_every) || $post_mysql_bcp_every < 1)
-                            $err[] = "'Mysql backup every' must be a number > 0";
+                            $err[] = "'Mysql backup every' must be an integer > 0";
                     }
                 }
             }
 	           
-            $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$uid}' AND id!='{$post_farmid}')");
-            if ($used_slots+$total_max_count > CONFIG::$CLIENT_MAX_INSTANCES)
-                $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
+            $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid=(SELECT id FROM farms WHERE clientid='{$uid}' AND id!='{$post_farmid}')");
+            if ($used_slots+$total_max_count > CF_CLIENT_MAX_INSTANCES)
+                $err[] = "You cannot launch more than ".CF_CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
             
 	        if (count($err) == 0)
 	        {
     	        $AmazonEC2Root = new AmazonEC2(
-                    APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-                    APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
+                    APPPATH . "/etc/pk-{$cfg['aws_keyname']}.pem", 
+                    APPPATH . "/etc/cert-{$cfg['aws_keyname']}.pem");
                 	    
+                                                
+                $AmazonEC2Client = new AmazonEC2(
+                    APPPATH . "/etc/clients_keys/{$uid}/pk.pem", 
+                    APPPATH . "/etc/clients_keys/{$uid}/cert.pem");
+	            
                 if ($post_farmid)
                 {
                     $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
@@ -120,15 +112,15 @@
                     $role = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $ami_id);
                     $rolename = $role["name"];
                     $roleid = $role["id"];
-                                       	                     
+                    
+                    //get current permisssions for role ami
+                    $perms = $AmazonEC2Root->DescribeImageAttribute($ami_id, "launchPermission");
+                    $perms = $perms->launchPermission;
+                    
                     // check current permissions for AMIs
                     if ($role["clientid"] != $uid)
                     {
-                        //get current permisssions for role ami
-                    	$perms = $AmazonEC2Root->DescribeImageAttribute($ami_id, "launchPermission");
-                    	$perms = $perms->launchPermission;
-                    	
-                    	$set_perms = true;	                    
+                        $set_perms = true;	                    
                         if (is_array($perms->item) && $perms->item[1])
                         {
                             foreach ($perms->item as $item)
@@ -143,29 +135,29 @@
                            $AmazonEC2Root->ModifyImageAttribute($ami_id, "add", array("userId" => $aws_accountid));
                     }
                     
-                    $security_group_name = CONFIG::$SECGROUP_PREFIX.$rolename;
+                    $security_group_name = CF_SECGROUP_PREFIX.$rolename;
                        
                     $addSecGroup = true;
                     
                     $client_security_groups = $AmazonEC2Client->DescribeSecurityGroups();
                     if (!$client_security_groups)
-                        throw new ApplicationException("Cannot describe security groups for client.", E_ERROR);
+                        Core::RaiseError("Cannot describe security groups for client.");
                         
                     $client_security_groups = $client_security_groups->securityGroupInfo->item;
-                                        
+                    
                     // Now we need add missed security groups
                     if (is_array($client_security_groups))
                     {
                         foreach ($client_security_groups as $group)
                         {
-                            if (strtolower($group->groupName) == strtolower($security_group_name))
+                            if ($group->groupName == $security_group_name)
                             {
                                $addSecGroup = false;
                                break;
                             }
                         }
                     }
-                    elseif (strtolower($client_security_groups->groupName) == strtolower($security_group_name))
+                    elseif ($client_security_groups->groupName == $security_group_name)
                        $addSecGroup = false;
                     
                     if ($addSecGroup)
@@ -174,7 +166,7 @@
                         {
 	                        $res = $AmazonEC2Client->CreateSecurityGroup($security_group_name, $rolename);
 	                        if (!$res)
-	                           throw new ApplicationException("Cannot create security group", E_USER_ERROR);	                        
+	                           Core::RaiseError("Cannot create security group", E_USER_ERROR);	                        
 	                           
 	                        // Set permissions for group
     	                    $group_rules = $db->GetAll("SELECT * FROM security_rules WHERE roleid='{$roleid}'");	                        
@@ -189,7 +181,7 @@
                         }
                         catch (Exception $e)
                         {
-                            throw new ApplicationException($e->getMessage(), E_USER_ERROR);
+                            Core::RaiseError($e->getMessage(), E_USER_ERROR);
                         }
                     }
                 }
@@ -229,11 +221,11 @@
                         if ($result->keyMaterial)
                             $db->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farmid));
                         else 
-                            throw new ApplicationException("Cannot create key pair for farm.", E_ERROR);
+                            Core::RaiseError("Cannot create key pair for farm.", E_ERROR);
                     }
                     catch (Exception $e)
                     {
-                        throw new ApplicationException($e->getMessage(), E_ERROR);
+                        Core::RaiseError($e->getMessage(), E_ERROR);
                     }
                     
 	                foreach ($post_ami_id as $k=>$ami_id)
@@ -246,17 +238,13 @@
 	                                               min_count=?, 
 	                                               max_count=?, 
 	                                               min_LA=?, 
-	                                               max_LA=?,
-	                                               avail_zone = ?,
-	                                               instance_type=?
+	                                               max_LA=?
 	                                 ", array( $farmid, 
 	                                           $ami_id, 
 	                                           $post_minCount[$k], 
 	                                           $post_maxCount[$k],
 	                                           $post_minLA[$k],
-	                                           $post_maxLA[$k],
-	                                           $post_availZone[$k],
-	                                           $post_iType[$k],
+	                                           $post_maxLA[$k]
 	                                         )
 	                                 );
 	                }
@@ -284,23 +272,23 @@
 	                }
 	                catch (Exception $e)
 	                {
-	                    throw new ApplicationException($e->getMessage(), E_ERROR);
+	                    Core::RaiseError($e->getMessage(), E_ERROR);
 	                }
 	                	                
 	                $okmsg = "Farm succesfully built.";
-	                UI::Redirect("farms_control.php?farmid={$farmid}&new=1");
+	                CoreUtils::Redirect("farms_control.php?farmid={$farmid}&new=1");
     	        }
     	        else 
     	        {
     	            $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
                     
     	            if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $farminfo["clientid"])
-                        UI::Redirect("farms_view.php");
+                        CoreUtils::Redirect("farms_view.php");
     	            
     	            if (!$farminfo)
                     {
                         $errmsg = "Farm not found";
-                        UI::Redirect("farms_view.php");
+                        CoreUtils::Redirect("farms_view.php");
                     }
                     
     	            $db->Execute("UPDATE 
@@ -332,11 +320,11 @@
     	                           {
     	                               $res = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
     	                               if ($res instanceof SoapFault )
-    	                                   $Logger->fatal("Cannot terminate instance '{$instance["instance_id"]}'. Please do it manualy. ({$res->faultString})");
+    	                                   Log::Log("Cannot terminate instance '{$instance["instance_id"]}'. Please do it manualy. ({$res->faultString})");
     	                           }
     	                           catch (Exception $err)
     	                           {
-    	                               $Logger->fatal("Cannot terminate instance '{$instance["instance_id"]}'. Please do it manualy. ({$err->getMessage()})");
+    	                               Log::Log("Cannot terminate instance '{$instance["instance_id"]}'. Please do it manualy. ({$err->getMessage()})");
     	                           }
     	                       }
     	                       
@@ -363,17 +351,13 @@
     	                                               min_count=?, 
     	                                               max_count=?, 
     	                                               min_LA=?, 
-    	                                               max_LA=?,
-    	                                               avail_zone=?,
-    	                                               instance_type=?
+    	                                               max_LA=?
     	                                          WHERE farmid=? AND ami_id=?
     	                                 ", array( 
     	                                           $post_minCount[$k], 
     	                                           $post_maxCount[$k],
     	                                           $post_minLA[$k],
     	                                           $post_maxLA[$k],
-    	                                           $post_availZone[$k],
-    	                                           $post_iType[$k],
     	                                           $post_farmid, 
     	                                           $ami
     	                                         )
@@ -389,17 +373,13 @@
 	                                               min_count=?, 
 	                                               max_count=?, 
 	                                               min_LA=?, 
-	                                               max_LA=?,
-	                                               avail_zone=?,
-	                                               instance_type=?
+	                                               max_LA=?
 	                                 ", array( $post_farmid, 
 	                                           $ami, 
 	                                           $post_minCount[$k], 
 	                                           $post_maxCount[$k],
 	                                           $post_minLA[$k],
-	                                           $post_maxLA[$k],
-	                                           $post_availZone[$k],
-	                                           $post_iType[$k],
+	                                           $post_maxLA[$k]
 	                                         )
 	                                 );
     	                }
@@ -408,7 +388,7 @@
     	            if (count($err) == 0)
     	            {
     	               $okmsg = "Farm successfully updated";
-    	               UI::Redirect("farms_view.php");
+    	               CoreUtils::Redirect("farms_view.php");
     	            }
     	            else 
     	                $req_id = $req_farmid;
@@ -424,39 +404,25 @@
         $display["farminfo"] = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
         
         if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $display["farminfo"]["clientid"])
-            UI::Redirect("farms_view.php");
+            CoreUtils::Redirect("farms_view.php");
         
         if (!$display["farminfo"])
         {
             $errmsg = "Farm not found";
-            UI::Redirect("farms_view.php");
+            CoreUtils::Redirect("farms_view.php");
         }
         
         $display["servers"] = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=?", array($req_id));
         foreach ($display["servers"] as &$row)
         {
-            $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($row['ami_id']));
-        	$row["role"] = $ami_info["name"]; 
-            if ($ami_info["alias"] == "mysql")
+            $row["role"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$row['ami_id']}'");
+            if ($row["role"] == "mysql")
                 $display["mysql_visible"] = "";
-                
-            if ($ami_info['architecture'] == INSTANCE_ARCHITECTURE::I386)
-            	$TypesClass = new ReflectionClass("I386_TYPE");
-            elseif ($ami_info['architecture'] == INSTANCE_ARCHITECTURE::X86_64)
-            	$TypesClass = new ReflectionClass("X86_64_TYPE");
-            
-            $row["types"] = array_values($TypesClass->getConstants());
         }
             
         $display["id"] = $req_id;
     }
 	
-    $r = new ReflectionClass("X86_64_TYPE");
-    $display["64bit_types"] = array_values($r->getConstants());
-    
-    $r = new ReflectionClass("I386_TYPE");
-    $display["32bit_types"] = array_values($r->getConstants());
-    unset($r);
     
 	require("src/append.inc.php"); 
 ?>

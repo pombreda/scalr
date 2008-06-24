@@ -8,7 +8,7 @@
 		  {section name=id loop=$roles}
 		      <option value="{$roles[id].ami_id}">{$roles[id].name}</option>
 		  {/section}
-		  </select> (<b>www</b> is a common choice)
+		  </select>
 		</td>
 	</tr>
 {include file="inc/intable_footer.tpl" color="Gray"}

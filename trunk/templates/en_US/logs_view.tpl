@@ -1,24 +1,4 @@
 {include file="inc/header.tpl"}
-	{include file="inc/table_header.tpl" filter=0 paging=""}
-    {include file="inc/intable_header.tpl" header="Search" color="Gray"}
-        <tr>
-			<td nowrap="nowrap">Search string:</td>
-			<td><input type="text" name="search" class="text" id="search" value="{$search}" size="20" /></td>
-		</tr>
-		<tr>
-			<td nowrap="nowrap">Farm:</td>
-			<td>
-				<select name="farmid">
-					<option></option>
-					{section name=id loop=$farms}
-					<option {if $farmid == $farms[id].id}selected{/if} value="{$farms[id].id}">{$farms[id].name}</option>
-					{/section}
-				</select>
-			</td>
-		</tr>
-    {include file="inc/intable_footer.tpl" color="Gray"}
-    {include file="inc/table_footer.tpl" colspan=9 button2=1 button2_name="Search"}
-    <br>
     {include file="inc/table_header.tpl"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
 	<thead>

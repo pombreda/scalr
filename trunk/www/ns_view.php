@@ -2,7 +2,7 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	   CoreUtils::Redirect("index.php");
 	
 	$display["title"] = "Nameservers&nbsp;&raquo;&nbsp;View";
 
@@ -27,9 +27,9 @@
                         {
                             $db->Execute("DELETE FROM records WHERE id='{$record['id']}'");
                             if (!$DNSZoneController->Update($record["zoneid"]))
-                                $Logger->fatal("Cannot delete NS record '{$info['host']}' from zone '{$zoneinfo['zone']}'", E_ERROR);
+                                Log::Log("Cannot delete NS record '{$info['host']}' from zone '{$zoneinfo['zone']}'", E_ERROR);
                             else 
-                                $Logger->info("NS record '{$info['host']}' removed from zone '{$zoneinfo['zone']}'", E_USER_NOTICE);
+                                Log::Log("NS record '{$info['host']}' removed from zone '{$zoneinfo['zone']}'", E_USER_NOTICE);
                         }
                     }
     			    
@@ -38,7 +38,7 @@
 			}
 			
 			$mess = "{$i} Nameservers deleted";
-			UI::Redirect("ns_view.php");
+			CoreUtils::Redirect("ns_view.php");
 		}
 	};
 	

@@ -17,8 +17,14 @@
  			parent::__construct($message, $code);
  		    
  		    $Smarty = Core::GetSmartyInstance();
-		
- 			if (CONFIG::$DEBUG_APP)
+
+ 		    if ( class_exists("Log") && Log::HasLogger("Default"))
+ 			{
+ 			    Log::$DoRaiseExceptions = false;
+ 			    Log::Log("{$this->getMessage()}", $code, "Default");
+ 			}
+ 			
+ 			if (CF_DEBUG_APP)
  				$bt = $this->Backtrace();
 
  		    if ($Smarty && !defined("NO_TEMPLATES"))

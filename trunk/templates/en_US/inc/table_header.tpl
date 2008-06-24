@@ -22,7 +22,7 @@
             			<td><div class="TableHeaderCenter"></div></td>
             			<td width="7"><div class="TableHeaderRight"></div></td>
             		</tr>
-            		<tr bgcolor="#C3D9FF">
+            		<tr>
             			<td width="7" class="TableHeaderCenter"></td>
             			<td nowrap style="padding-bottom:5px;">
             			 {$table_header_text}

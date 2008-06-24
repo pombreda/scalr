@@ -12,10 +12,9 @@
 			<th>Instances</th>
 			<th>Applications</th>
 			<th>Private key</th>
-			<th>Event log</th>
 			<th width="1%">Action</th>
 			<th width="1%">Edit</th>
-			<td width="1%" nowrap>Delete</td>
+			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
 		</tr>
 	</thead>
 	<tbody>
@@ -27,10 +26,13 @@
 		<td class="Item" valign="top" nowrap>{$rows[id].instanses} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].sites} [<a href="sites_view.php?farmid={$rows[id].id}">View</a>] {if $smarty.session.uid != 0}[<a href="sites_add.php?farmid={$rows[id].id}">Add</a>]{/if}</td>
 		<td class="Item" valign="top"><a href="farms_view.php?id={$rows[id].id}&task=download_private_key">Download</a></td>
-		<td class="Item" valign="top"><a href="logs_view.php?farmid={$rows[id].id}">View</a></td>
 		<td class="ItemEdit" valign="top"><a href="farms_control.php?farmid={$rows[id].id}">{if $rows[id].status == 1}Terminate{else}Launch{/if}</a></td>
 		<td class="ItemEdit" valign="top"><a href="farms_add.php?id={$rows[id].id}">Edit</a></td>
-		<td class="ItemDelete" valign="top"><a href="farm_delete.php?id={$rows[id].id}">Delete</a></td>
+		<td class="ItemDelete" valign="top">
+			<span>
+				<input type="checkbox" id="delete[]" name="delete[]" value="{$rows[id].id}">
+			</span>
+		</td>
 	</tr>
 	{sectionelse}
 	<tr>
@@ -38,12 +40,12 @@
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="7" align="center">&nbsp;</td>
+		<td colspan="6" align="center">&nbsp;</td>
 		<td class="ItemEdit" valign="top">&nbsp;</td>
 		<td class="ItemEdit" valign="top">&nbsp;</td>
 		<td class="ItemDelete" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>
 	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
+	{include file="inc/table_footer.tpl" colspan=9 on_delete_alert_message="This will terminate all instances in this farm! Are you sure?"}
 {include file="inc/footer.tpl"}
