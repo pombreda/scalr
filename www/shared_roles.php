@@ -40,6 +40,7 @@
 	{
 		$rowz[$pk]->isPublicStr = $rowz[$pk]->isPublic ? "true" : "false";
 		$rowz[$pk]->roleName = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId);
+		$rowz[$pk]->instanceType = $db->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId);
 		
 		if ($rowz[$pk]->roleName)
 		{

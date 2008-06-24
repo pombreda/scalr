@@ -1,5 +1,4 @@
 {include file="inc/header.tpl" noheader=1}
-
     <link rel="STYLESHEET" type="text/css" href="/css/dhtmlXTree.css">
     <script language="javascript" type="text/javascript" src="/js/dhtmlxtree/dhtmlXTree.js"></script>
     <script language="javascript" type="text/javascript" src="/js/dhtmlxtree/dhtmlXCommon.js"></script>
