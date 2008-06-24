@@ -1,5 +1,4 @@
 <? 
-	define("CF_PAGING_ITEMS", 20);
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
@@ -10,7 +9,7 @@
 	if (!$farminfo)
 	{
 	    $errmsg = "Farm not found";
-	    CoreUtils::Redirect("farms_view.php");
+	    UI::Redirect("farms_view.php");
 	}
 	
 	$AmazonEC2Client = new AmazonEC2(
@@ -26,7 +25,6 @@
 		$i = 0;
 		if (is_array($post_actid))
 		{
-			
 			try 
 			{
 				$instances = array();
@@ -52,7 +50,7 @@
 			$i++;
 		}	
 		$okmsg = "{$i} instances succesfully " . ($post_action == "reboot" ? "rebooted" : "terminated");
-		CoreUtils::Redirect("?state=" . ($post_action == "reboot" ? "running" : "shutting-down")."&farmid={$req_farmid}");
+		UI::Redirect("?state=" . ($post_action == "reboot" ? "running" : "shutting-down")."&farmid={$req_farmid}");
 	}
 	
 	//Paging
@@ -67,7 +65,7 @@
 	    $rowz[] = $response->reservationSet->item;
 	else 
 	   $rowz = $response->reservationSet->item;
-	
+	   
 	// Custom properties
 	foreach ($rowz as $pk=>$pv)
 	{
@@ -85,7 +83,7 @@
 		else
 			$rowz[$pk]->groupsList = $rowz[$pk]->groupSet->item->groupId;
 		
-	    $rowz[$pk]->Role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($rowz[$pk]->instancesSet->item->imageId));
+	    $rowz[$pk]->Role = $db->GetOne("SELECT role_name FROM farm_instances WHERE instance_id=?", array($rowz[$pk]->instancesSet->item->instanceId));
 		
 	    if ($rowz[$pk]->instancesSet->item->launchTime)
 	    {
@@ -95,6 +93,7 @@
 	    
 	    $rowz[$pk]->IP = $db->GetOne("SELECT external_ip FROM farm_instances WHERE instance_id='{$rowz[$pk]->instancesSet->item->instanceId}'");
 	    
+	    $rowz[$pk]->IsActive = $db->GetOne("SELECT isactive FROM farm_instances WHERE instance_id='{$rowz[$pk]->instancesSet->item->instanceId}'");
 	    ///
 	    ///
 	    ///
@@ -102,7 +101,7 @@
 	    {
             $community = $db->GetOne("SELECT hash FROM farms WHERE id=(SELECT farmid FROM farm_instances WHERE instance_id='{$rowz[$pk]->instancesSet->item->instanceId}')");
             
-            $SNMP->Connect($rowz[$pk]->IP, null, $community);
+            $SNMP->Connect($rowz[$pk]->IP, null, $community, null, null, true);
             $res = $SNMP->Get(".1.3.6.1.4.1.2021.10.1.3.3");
             if (!$res)
                 $rowz[$pk]->LA = "Unknown";
@@ -148,7 +147,7 @@
 	
 	$paging->ParseHTML();
 	
-	$display["rows"] = (count($rowz) > CF_PAGING_ITEMS) ? array_slice($rowz, $paging->PageNo * CF_PAGING_ITEMS, CF_PAGING_ITEMS) : $rowz;
+	$display["rows"] = (count($rowz) > CONFIG::$PAGING_ITEMS) ? array_slice($rowz, ($paging->PageNo-1) * CONFIG::$PAGING_ITEMS, CONFIG::$PAGING_ITEMS) : $rowz;
 	
 	$display["paging"] = $paging->GetHTML("inc/paging.tpl");
 	

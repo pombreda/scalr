@@ -11,10 +11,11 @@
 			foreach ((array)$post_delete as $k=>$v)
 			{
 				if ($_SESSION["uid"] != 0)
-			     $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id='{$v}' AND clientid='{$_SESSION['uid']}'");
+					$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id='{$v}' AND clientid='{$_SESSION['uid']}'");
 			    else 
-			     $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id='{$v}'");
-			    if ($roleinfo && $roleinfo["iscompleted"] == 1)
+					$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id='{$v}'");
+			     
+			    if ($roleinfo && $roleinfo["iscompleted"] != 0)
 			    {
     			    $info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($roleinfo["ami_id"]));
     			    if (!$info)
@@ -33,8 +34,8 @@
 			
 			if (count($err) == 0)
 			{
-			     $okmess = "{$i} client roles deleted";
-			     CoreUtils::Redirect("client_roles_view.php");
+			     $okmsg = "{$i} client roles deleted";
+			     UI::Redirect("client_roles_view.php");
 			}
 		}
 	}
@@ -73,10 +74,9 @@
 	//
 	foreach ($rows as &$row)
 	{
-		//$row["instanses"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid='{$row['id']}'");
-		//$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM farm_amis WHERE farmid='{$row['id']}'");
-		//$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$row['id']}'");
 		$row["isreplaced"] = (bool)$db->GetOne("SELECT id FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
+		
+		$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
 		
 		if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == 'SHARED')
     	   $display["rows"][] = $row;

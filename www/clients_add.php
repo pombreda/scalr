@@ -2,7 +2,7 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   CoreUtils::Redirect("index.php");
+	   UI::Redirect("index.php");
 	
 	$display["title"] = "Clients&nbsp;&raquo;&nbsp;Add / Edit";
 	
@@ -20,24 +20,12 @@
             
         if (!$Validator->AreEqual($post_password, $post_password2))
             $err[] = "Two passwords are not equal";
-            
-        if (!$Validator->IsNotEmpty($post_aws_accesskeyid))
-            $err[] = "AWS key ID required";
-        
-        if (!$Validator->IsNotEmpty($post_aws_accesskey))
-            $err[] = "AWS key required";
-                
-        if (!$Validator->IsNumeric($post_aws_accountid))
-            $err[] = "AWS account ID required";
-            
-        if (!$post_id && (!$_FILES['cert_file'] || !$_FILES['pk_file']))
-            $err[] = "Certificate file and Private key file must be specified";
 	    
         if (!@is_writeable(APPPATH."/etc/clients_keys"))
             $err[] = "'".APPPATH."/etc/clients_keys"."' - not writable";
             
-        if (!$Validator->IsNumeric($post_farms_limit) || $post_farms_limit < 1)
-            $err[] = "Farms limit must be an integer";
+        if (!$Validator->IsNumeric($post_farms_limit) || $post_farms_limit < 0)
+            $err[] = "Farms limit must be a number";
           
         if (count($err) == 0)
         {  
@@ -46,20 +34,46 @@
     		    try
                 {
         		    // Add user to database
-        		    $db->Execute("INSERT INTO 
-        			                         clients 
-        			                      SET
-        			                         email           = ?,
-        			                         password        = ?,
-        			                         aws_accesskeyid = ?,
-        			                         aws_accesskey = ?,
-        			                         aws_accountid   = ?,
-        			                         farms_limit     = ?
-        			             ", array($post_email, $Crypto->Hash($post_password), $post_aws_accesskeyid, $post_aws_accesskey, $post_aws_accountid, $post_farms_limit));
+        		    $db->Execute("INSERT INTO clients SET
+						email           = ?,
+						password        = ?,
+						aws_accesskeyid = ?,
+						aws_accesskey = ?,
+						aws_accountid   = ?,
+						farms_limit     = ?,
+						fullname	= ?,
+						org			= ?,
+						country		= ?,
+						state		= ?,
+						city		= ?,
+						zipcode		= ?,
+						address1	= ?,
+						address2	= ?,
+						phone		= ?,
+						fax			= ?,
+						isactive    = '1'
+        			 ", array(
+        		    	$post_email, 
+        		    	$Crypto->Hash($post_password), 
+        		    	$post_aws_accesskeyid, 
+        		    	$post_aws_accesskey, 
+        		    	$post_aws_accountid, 
+        		    	$post_farms_limit,
+        		    	$post_name, 
+						$post_org, 
+						$post_country, 
+						$post_state, 
+						$post_city, 
+						$post_zipcode, 
+						$post_address1, 
+						$post_address2,
+						$post_phone,
+						$post_fax
+        		    ));
         		}
                 catch (Exception $e)
                 {
-                    Core::RaiseError($e->getMessage(), E_ERROR);
+                    throw new ApplicationException($e->getMessage(), E_ERROR);
                 }
                     	
     			$clientid = $db->Insert_ID();
@@ -77,7 +91,7 @@
                 if (count($err) == 0)
                 {
                     $okmsg = "Client successfully added!";
-                    CoreUtils::Redirect("clients_view.php");
+                    UI::Redirect("clients_view.php");
                 }
                 else 
                     $db->Execute("DELETE FROM clients WHERE id='{$clientid}'");
@@ -93,21 +107,47 @@
                     try
                     {
         			    // Add user to database
-            		    $db->Execute("UPDATE 
-            			                         clients 
-            			                      SET
-            			                         email           = ?,
-            			                         {$password}
-            			                         aws_accesskeyid = ?,
-            			                         aws_accesskey   = ?,
-            			                         aws_accountid   = ?,
-            			                         farms_limit     = ?
-            			                    WHERE id = ?
-            			             ", array($post_email, $post_aws_accesskeyid, $post_aws_accesskey, $post_aws_accountid, $post_farms_limit, $post_id));
+            		    $db->Execute("UPDATE clients SET
+							email           = ?,
+							{$password}
+							aws_accesskeyid = ?,
+							aws_accesskey   = ?,
+							aws_accountid   = ?,
+							farms_limit     = ?,
+							fullname	= ?,
+							org			= ?,
+							country		= ?,
+							state		= ?,
+							city		= ?,
+							zipcode		= ?,
+							address1	= ?,
+							address2	= ?,
+							phone		= ?,
+							fax			= ?
+            			    	WHERE id = ?
+            			    ", 
+							array(
+								$post_email, 
+								$post_aws_accesskeyid, 
+								$post_aws_accesskey, 
+								$post_aws_accountid,
+								$post_farms_limit,
+								$post_name, 
+								$post_org, 
+								$post_country, 
+								$post_state, 
+								$post_city, 
+								$post_zipcode, 
+								$post_address1, 
+								$post_address2,
+								$post_phone,
+								$post_fax,
+								$post_id
+						));
                     }
                     catch (Exception $e)
                     {
-                        Core::RaiseError($e->getMessage(), E_ERROR);
+                        throw new ApplicationException($e->getMessage(), E_ERROR);
                     }
     			    
                     if (!file_exists(APPPATH."/etc/clients_keys/{$post_id}"))
@@ -128,17 +168,19 @@
         		    if (count($err) == 0)
         		    {
         		        $okmsg = "Client successfully updated";
-        		        CoreUtils::Redirect("clients_view.php");
+        		        UI::Redirect("clients_view.php");
         		    }
     			}
     			else
     			{
     			    $errmsg = "Client not found";
-    			    CoreUtils::Redirect("clients_view.php");
+    			    UI::Redirect("clients_view.php");
     			}
     		}
         }
 	}
+	
+	$display["countries"] = $db->GetAll("SELECT * FROM countries");
 	
 	if ($get_id)
 	{

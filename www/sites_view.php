@@ -11,24 +11,41 @@
 		    
 		    foreach ((array)$_POST["delete"] as $dd)
 			{	
-				if ($_SESSION["uid"] != 0)
-			     $zone = $db->GetRow("SELECT * FROM zones WHERE id=? AND clientid=?", array($dd, $_SESSION["uid"]));
-			    else 
-			     $zone = $db->GetRow("SELECT * FROM zones WHERE id=?", array($dd));
-				if ($zone)
+				$db->BeginTrans();
+				 
+				try
 				{
-    				$ZoneControler->Delete($zone["id"]);   			
-    			
-    				$db->Execute("DELETE from zones WHERE id='{$dd}'");
-    				$db->Execute("DELETE from records WHERE zoneid='{$dd}'");
-    				Log::Log("DNS zone '{$zone["zone"]}' deleted from database!", E_NOTICE);
-    				
-    				$i++;
+					if ($_SESSION["uid"] != 0)
+						$zone = $db->GetRow("SELECT * FROM zones WHERE id=? AND clientid=?", array($dd, $_SESSION["uid"]));
+					else 
+						$zone = $db->GetRow("SELECT * FROM zones WHERE id=?", array($dd));
+					
+				    if ($zone)
+					{
+	    				$ZoneControler->Delete($zone["id"]);   			
+	    			
+	    				$db->Execute("DELETE from zones WHERE id='{$dd}'");
+	    				$db->Execute("DELETE from records WHERE zoneid='{$dd}'");
+	    				$Logger->info("DNS zone '{$zone["zone"]}' deleted from database!");
+	    				
+	    				$i++;
+					}
 				}
+				catch(Exception $e)
+				{
+					$db->RollbackTrans();
+		    		$Logger->fatal("Exception thrown during role synchronization: {$e->getMessage()}");
+		    		$err[] = "Cannot synchronize role. Please try again later.";
+				}
+				
+				
 			}
 			
-			$okmsg = "{$i} DNS zone(s) deleted";
-			CoreUtils::Redirect("sites_view.php?farmid={$req_farmid}");
+			if (count($err) == 0)
+			{
+				$okmsg = "{$i} applications deleted";
+				UI::Redirect("sites_view.php?farmid={$req_farmid}");
+			}
 		}
 	};
 	
@@ -68,9 +85,6 @@
 	    $row["role"] = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
 	    $row["farm"] = $db->GetRow("SELECT * FROM farms WHERE id=?", $row["farmid"]);
 	}
-	
-	if ($_SESSION["uid"] != 0)
-	   $display["page_data_options_add"] = true;
 	
 	$display["page_data_options"] = array(array("name" => "Delete", "action" => "delete"));
 	
