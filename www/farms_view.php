@@ -1,5 +1,58 @@
 <?
 	require_once('src/prepend.inc.php');
+
+	// Post actions
+	if ($_POST && $post_actionsubmit)
+	{
+		if ($post_action == "delete")
+		{
+			// Delete users
+			$i = 0;			
+			foreach ((array)$post_delete as $k=>$v)
+			{
+				if ($_SESSION['uid'] != 0)
+                    $info = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($v, $_SESSION['uid']));
+                else 
+                    $info = $db->GetRow("SELECT * FROM farms WHERE id=?", array($v));
+                    
+			    if ($info)
+			    {
+			        $AmazonEC2Client = new AmazonEC2(
+                        APPPATH . "/etc/clients_keys/{$info['clientid']}/pk.pem", 
+                        APPPATH . "/etc/clients_keys/{$info['clientid']}/cert.pem");
+			        
+			        $i++;
+    				$db->Execute("DELETE FROM farms WHERE id=?", array($v));
+    				
+    				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$v}'");
+    				foreach ($instances as $instance)
+    				{
+    				    try 
+            			{            
+            				$response = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
+            					
+            				if ($response instanceof SoapFault)
+            				{
+            					$err[] = $response->faultstring;
+            				}
+            			}
+            			catch (Exception $e)
+            			{
+            				$err[] = $e->getMessage(); 
+            			}
+    				}
+    				
+    				$db->Execute("DELETE FROM farm_amis WHERE farmid='{$v}'");
+    				$db->Execute("DELETE FROM farm_instances WHERE farmid='{$v}'");
+    				$db->Execute("DELETE FROM records WHERE zoneid IN (SELECT id FROM zones WHERE farmid='{$v}')");
+    				$db->Execute("DELETE FROM zones WHERE farmid='{$v}'");
+			    }
+			}
+			
+			$okmess = "{$i} farms deleted";
+			CoreUtils::Redirect("farms_view.php");
+		}
+	}
     
 	if ($get_task == "download_private_key")
 	{
@@ -11,7 +64,7 @@
 	    if (!$farminfo)
 	    {
 	        $errmsg = "Farm not found";
-	        UI::Redirect("farms_view.php");
+	        CoreUtils::Redirect("farms_view.php");
 	    }
 	    
 	    $keyname = preg_replace("/[^A-Za-z0-9]+/", "", $farminfo["name"]);

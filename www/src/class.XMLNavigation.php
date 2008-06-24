@@ -324,10 +324,6 @@
 						{
 							$query = (string)$node->getAttribute('search');
 							
-							$query = str_replace('{$_SESSION[\'uid\']}', $_SESSION["uid"], $query);
-							
-							$this->SearchString = str_replace('\'', '', $this->SearchString);
-							
 							$res = $this->DB->GetOne(sprintf($query, "%{$this->SearchString}%", "%{$this->SearchString}%", "%{$this->SearchString}%", "%{$this->SearchString}%"));
 							
 							$this->SMenu .= "<li><a href='{$node->getAttribute('href')}?search={$this->SearchString}'>{$node->nodeValue}</a> ({$res})</li>";

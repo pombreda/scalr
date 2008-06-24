@@ -5,10 +5,10 @@
 	
 	<node title="Clients">
 		<item href="clients_add.php">Add new</item>
-		<item href="clients_view.php" search="SELECT COUNT(*) FROM clients WHERE email LIKE '%s' OR aws_accountid LIKE '%s' OR fullname LIKE '%s'">View all</item>		
+		<item href="clients_view.php">View all</item>		
 	</node>
 	<node title="Server Farms">
-		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s'">View all</item>
+		<item href="farms_view.php">View all</item>
 	</node>	
 
 	<node title="Logs">
@@ -17,7 +17,7 @@
 	</node>
 
 	<node title="Custom roles">
-		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s'">View all</item>		
+		<item href="client_roles_view.php">View all</item>		
 	</node>
 
 	<node title="Settings">
@@ -25,8 +25,6 @@
 			<item href="ns_add.php">Add new</item>
 			<item href="ns_view.php">View all</item>			
 		</node>
-		<item href="default_records.php">Default DNS records</item>
-		<separator />
 		<item href="shared_roles.php">Manage shared roles</item>
 		<separator />
 		<item href="settings_core.php">Core settings</item>

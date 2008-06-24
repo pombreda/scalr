@@ -2,7 +2,7 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	   CoreUtils::Redirect("index.php");
 	   
 	$display["title"] = "Nameservers&nbsp;&raquo;&nbsp;Add";
 	
@@ -55,9 +55,9 @@
                             if ($zone["isdeleted"] == 0)
                             {
                                 if (!$DNSZoneController->Update($zone["id"]))
-                                    $Logger->fatal("Cannot add NS record to zone '{$zone['zone']}'", E_ERROR);
+                                    Log::Log("Cannot add NS record to zone '{$zone['zone']}'", E_ERROR);
                                 else 
-                                    $Logger->info("NS record for instance {$instanceinfo['instance_id']} with host {$post_host} added to zone '{$zone['zone']}'", E_USER_NOTICE);
+                                    Log::Log("NS record for instance {$instanceinfo['instance_id']} with host {$post_host} added to zone '{$zone['zone']}'", E_USER_NOTICE);
                             }
                         }
                     }
@@ -65,7 +65,7 @@
     			     	
     			$mess = "Nameserver successfully added";
     		
-    			UI::Redirect("ns_view.php");
+    			CoreUtils::Redirect("ns_view.php");
     			
     		}
     		else
@@ -78,7 +78,7 @@
     
     							
     			$mess = "Nameserver succesfully updated";
-    			UI::Redirect("ns_view.php");
+    			CoreUtils::Redirect("ns_view.php");
     		}
 	    }
 	}

@@ -9,12 +9,10 @@
 	width:339px; 
 	height:175px; 
 	background-repeat:no-repeat; 
-	padding-top:40px; 
+	padding-top:60px; 
 	background-color: #C3D9FF;
-	padding-bottom: 7px;
 }
 
 #loginform_inner {
 	margin: 0px 10px 0px 80px;
-	
 }

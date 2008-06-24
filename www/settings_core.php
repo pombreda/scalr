@@ -2,15 +2,11 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	   CoreUtils::Redirect("index.php");
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;General";
 	if ($_POST) 
 	{
-		unset($_POST['Submit']);
-		unset($_POST['id']);
-		unset($_POST['page']);
-		unset($_POST['f']);
 		
 		//Pass
 		if ($post_pass != "******")
@@ -23,7 +19,7 @@
 			if (!is_writable(dirname(__FILE__)."/../etc/.passwd"))
 			{
 			    $errmsg = dirname(__FILE__)."/../etc/.passwd - not writable. Please check file permissions.";
-			    UI::Redirect("settings_core.php");
+			    CoreUtils::Redirect("settings_core.php");
 			}
 			
 			try 
@@ -47,10 +43,10 @@
 					// If we cannot update at least one password, rollback all changes
 					$db->RollbackTrans();
 					$errmsg = "Cannot update password in database.";
-					UI::Redirect("settings_core.php");
+					CoreUtils::Redirect("settings_core.php");
 				}
 				
-				$enc = $Crypto->Encrypt($post_pass, CONFIG::$CRYPTOKEY);
+				$enc = $Crypto->Encrypt($post_pass, $cfg["cryptokey"]);
 				$pwd = @fopen(dirname(__FILE__)."/../etc/.passwd", "w+");
 				$res = @fwrite($pwd, $enc);
 				@fclose($pwd);
@@ -59,7 +55,7 @@
 				{
 				    $db->RollbackTrans();
 					$errmsg = "Failed to write etc/.passwd file";
-					UI::Redirect("settings_core.php");
+					CoreUtils::Redirect("settings_core.php");
 				}
 				else 
 				{
@@ -72,11 +68,9 @@
 				// If we cannot update at least one password, rollback all changes
 				$db->RollbackTrans();
 				$mess = "Failed to rehash passwords. ".$e->getMessage();
-				UI::Redirect("settings_core.php");
+				CoreUtils::Redirect("settings_core.php");
 			}
 		}
-		
-		$_POST["paypal_isdemo"] = (isset($_POST["paypal_isdemo"])) ? 1 : 0;
 		
 		// Regular keys
 		foreach($_POST as $k => $v)
@@ -86,13 +80,10 @@
 		}
 		
 		
-		$okmsg = "Settings succesfully updated";
-		UI::Redirect("settings_core.php");
+		$okmsg = "Succesfully updated";
+		CoreUtils::Redirect("settings_core.php");
 	}
-	
-	foreach ($db->GetAll("select * from config") as $rsk)
-		$cfg[$rsk["key"]] = $rsk["value"];
-	
+
 	$display = array_merge($display, array_map('stripslashes', $cfg));
 	
 	require("src/append.inc.php"); 

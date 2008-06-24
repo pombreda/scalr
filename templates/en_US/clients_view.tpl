@@ -9,7 +9,6 @@
 			<th>Instances</th>
 			<th>Custom roles</th>
 			<th>Farms limit</th>
-			<th>Active</th>
 			<th width="1%">Edit</th>
 			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
 		</tr>
@@ -22,8 +21,7 @@
 		<td class="Item" valign="top">{$rows[id].farms} [<a href="farms_view.php?clientid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top">{$rows[id].instances}</td>
 		<td class="Item" valign="top">{$rows[id].amis} [<a href="client_roles_view.php?clientid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top">{if $rows[id].farms_limit == 0}Unlimited{else}{$rows[id].farms_limit}{/if}</td>
-		<td class="Item" valign="top">{if $rows[id].isactive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
+		<td class="Item" valign="top">{$rows[id].farms_limit}</td>
 		<td class="ItemEdit" valign="top"><a href="clients_add.php?id={$rows[id].id}">Edit</a></td>
 		<td class="ItemDelete" valign="top">
 			<span>
@@ -33,11 +31,11 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="9" align="center">No clients found!</td>
+		<td colspan="8" align="center">No clients found!</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="7" align="center">&nbsp;</td>
+		<td colspan="6" align="center">&nbsp;</td>
 		<td class="ItemEdit" valign="top">&nbsp;</td>
 		<td class="ItemDelete" valign="top">&nbsp;</td>
 	</tr>

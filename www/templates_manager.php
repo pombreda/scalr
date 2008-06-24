@@ -2,7 +2,7 @@
 	require_once('src/prepend.inc.php');
 	
 	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	   CoreUtils::Redirect("index.php");
 	
 	if ($get_action == "delete")
 	{
