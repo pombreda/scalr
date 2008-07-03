@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menu>
+	<item href="index.php">Home</item>
+
+	<node title="Server Farms">
+		<item href="farms_add.php">Build new</item>
+		<item href="farms_view.php">View all</item>		
+	</node>
+
+	<node title="Applications">
+		<item href="sites_view.php">View all</item>		
+		<item href="sites_add.php">Add new</item>				
+	</node>
+
+	<node title="Server Roles">
+		<item href="client_roles_add.php">Add new</item>
+		<item href="client_roles_view.php">View all</item>		
+	</node>
+
+	<item href="logs_view.php">Log</item>
+	
+</menu>
