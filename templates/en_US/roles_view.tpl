@@ -5,6 +5,7 @@
 	<thead>
 		<tr>
 			<th>Role name</th>
+			<th>Placement</th>
 			<th>Min instances</th>
 			<th>Max instances</th>
 			<th>Min LA</th>
@@ -19,6 +20,7 @@
 	{section name=id loop=$rows}
 	<tr id='tr_{$smarty.section.id.iteration}'>
 		<td class="Item" valign="top">{$rows[id].name}</td>
+		<td class="Item" valign="top">{$rows[id].avail_zone}</td>
 		<td class="Item" valign="top">{$rows[id].min_count}</td>
 		<td class="Item" valign="top">{$rows[id].max_count}</td>
 		<td class="Item" valign="top">{$rows[id].min_LA}</td>
@@ -34,11 +36,11 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="10" align="center">No roles found!</td>
+		<td colspan="11" align="center">No roles found!</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="8" align="center">&nbsp;</td>
+		<td colspan="9" align="center">&nbsp;</td>
 		<td class="ItemDelete" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>
