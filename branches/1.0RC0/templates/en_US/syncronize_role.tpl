@@ -2,8 +2,8 @@
 	{include file="inc/table_header.tpl"}
 		{include file="inc/intable_header.tpl" header="Syncronize role" color="Gray"}
     	<tr>
-    		<td colspan="2" align="center">
-   		   Yes, I made changes on instance <b>{$instance_id}</b>. I want these changes to propagate across other <b>{$rolename}</b> instances. For this, poller will rebundle this instance and will terminate old <b>{$rolename}</b> instances one-by-one. At the same time, new instances will be launched one-by-one, replacing old ones.
+    		<td colspan="2" align="left">
+   		   Yes, I made changes on instance <b>{$instance_id}</b>. I want these changes to propagate across other <b>{$rolename}</b> instances. For this, poller will rebundle this instance and will terminate old <b>{$rolename}</b> instances one-by-one. At the same time, new instances will be launched one-by-one, replacing old ones. If you leave the role name intact, instances on <b>all your farms</b> will be replaced.
     		</td>
     	</tr>
     	<tr>

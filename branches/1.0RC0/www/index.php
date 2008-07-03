@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-//	$display["title"] = "Control Panel";
+	$display["title"] = "Dashboard";
 	
 	require("src/append.inc.php"); 
 ?>

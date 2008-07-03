@@ -5,9 +5,17 @@
     		<td colspan="2">
     		{if $action == 'Launch'}
     		  {if $new}Farm succesfully built. {/if}Would you like to launch '{$farminfo.name}' now? This will launch <b>{$num}</b> new instance(s).
-    		{else}
-    		  Do you really want to terminate farm '{$farminfo.name}'? All <b>{$num}</b> instance(s) in this farm will be terminated.
     		  <br>
+    		  <br>
+    		  <input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="mark_active" value="1"> Mark instances as 'Active'.
+    		{else}
+    		  Do you really want to terminate farm '{$farminfo.name}'? {if $num > 0}All <b>{$num}</b> instance(s) in this farm will be terminated.{/if}
+    		  <br>
+    		  {if $sync_count > 0}
+    		  <br />
+    		  You have <b>{$sync_count}</b> roles that currently being synchronized. Synchronization will be terminated and your changes on instance(s) will be lost.
+    		  <br />
+    		  {/if}
     		  <br>
     		  <input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="deleteDNS" value="1"> Delete DNS zone from nameservers. It will be recreated when the farm is launched.
     		{/if}

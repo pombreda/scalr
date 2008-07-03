@@ -88,3 +88,14 @@ div.TableHeaderRight, div.TableHeaderRight_Blue { width: 7px; background-image: 
 div.TableFooterLeft, div.TableFooterLeft_Blue	{ width: 7px; background-image: url(../images/bl.gif); clear: left; }
 div.TableFooterRight, div.TableFooterRight_Blue { width: 7px; background-image: url(../images/br.gif);}
 
+
+.placeholder
+{
+	background: url(/images/icon_ihelp.gif) no-repeat 7px 7px;
+	padding:10px;
+	background-color:#FFFFE1;
+	border:1px solid #CCCCCC;
+	margin: 7px 0 5px 0; 
+	padding-left: 35px;
+}
+
