@@ -39,9 +39,6 @@
                         {if $backbtn}
 								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />	
 						{/if}
-						{if $button3}
-								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="{$button3_name}" />	
-						{/if}
 						{if $loader}
 						    <span style="display:none;" id="btn_loader">
                                 <img style="vertical-align:middle;" src="images/snake-loader.gif"> {$loader}
@@ -54,12 +51,12 @@
 							<input name="f" type="hidden" id="f" value="{$f}">
 							{if $page_data_options|@count > 0}
 								Selected:
-								<select name="action" id="action" class="text" style="vertical-align:middle;">
+								<select name="action" class="text" style="vertical-align:middle;">
 									{section name=id loop=$page_data_options}
 								     <option value="{$page_data_options[id].action}">{$page_data_options[id].name}</option> 
 								    {/section}
 								</select>
-								<input type="submit" name="actionsubmit" {if $on_delete_alert_message}onclick="if ($('action').value == 'delete'){literal} { {/literal}return window.confirm('{$on_delete_alert_message}'){literal} }{/literal}"{/if} style="vertical-align:middle;" value="Apply" class="btn">
+								<input type="submit" name="actionsubmit" style="vertical-align:middle;" value="Apply" class="btn">
 							{/if}
 						
 						</td>
