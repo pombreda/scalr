@@ -1,0 +1,5 @@
+#summary Shared AMIs for standard Scalr roles
+
+
+|| name || AMI ID || Platform
+|| base64 || ami-0aad4963  	x86_64 ||
