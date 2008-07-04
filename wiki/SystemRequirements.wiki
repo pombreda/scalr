@@ -11,24 +11,49 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
   * MySQL 5.0 or higher (MySQL 5.1 or higher preferred)
 
 
-=== Required PHP configuration options ===
+== Required PHP configuration options ==
   * safe_mode must be set to Off 
   * register_globals must be Off
 
-=== Required PHP extensions ===
-  * [mysqli|http://php.net/mysqli]
-  * cURL [http://php.net/curl]
-  * [http://php.net/curl|Sockets (--enable-sockets) with SSL support (--with-openssl)]
-  * [[http://php.net/gettext|GetText]]
-  * [[http://php.net/SimpleXML|SimpleXML]]
-  * [[http://php.net/mcrypt|mcrypt]]
-  * [[http://php.net/mhash|mhash]]
-  * [[http://php.net/pcntl|pcntl]]
-  * [[http://php.net/posix|posix]]
-  * [[http://php.net/ssh2|ssh2]]
-  * [[http://php.net/dom|DOM]]
+== Required PHP extensions ==
+  * [http://php.net/mysqli mysqli]
+  * [http://php.net/curl cURL]
+  * [http://php.net/sockets Sockets (--enable-sockets) with SSL support (--with-openssl)]
+  * [http://php.net/gettext GetText]
+  * [http://php.net/SimpleXML SimpleXML]
+  * [http://php.net/mcrypt mcrypt]
+  * [http://php.net/mhash mhash]
+  * [http://php.net/pcntl pcntl]
+  * [http://php.net/posix posix]
+  * [http://php.net/ssh2 ssh2]
+  * [http://php.net/dom DOM]
 
 
-===== Installation =====
+== Installation ==
 
-==== Installing from tar.gz package ====
+Copy contents of app folder on your webserver.
+Only app/www folder must be readable by webserver, all other folders must be underneath web root.
+
+=== Set folders permissions ===
+Set permissions on the following folders (and subfolders) and files to 777 (world-writable):
+* cache
+* cron/cron.pid
+* etc/.passwd
+* etc/clients_keys
+
+
+=== Create and configure database ===
+
+  # Create new MySQL database 
+  # Import database dump from sql/database.sql file.
+  # Edit database connection details in etc/config.ini file.
+
+
+=== Set Cron jobs ===
+
+For system to work properly, it needs to run a few tasks periodicaly.
+Scalr has a single cron/cron.php file that must be executed with various command-line switches.
+The following recurring tasks must be sheduled:
+
+=== Configure logging ===
+Edit [http://logging.apache.org/log4php/ log4php] config in _etc/log4php.xml_
