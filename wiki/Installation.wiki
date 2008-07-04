@@ -10,7 +10,7 @@ To quickly check either your server meets Scalr system requirements, use testenv
 Simply upload php file on your host and open it in browser. It should find most of major issues.
 
 Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.) operating system, as long as the following requirements are met:
-  * PHP 5.2.0 or higher (5.2.6 preferred), 
+  * PHP 5.2.5 or higher, 
   * MySQL 5.0 or higher (MySQL 5.1 or higher preferred)
 
 
