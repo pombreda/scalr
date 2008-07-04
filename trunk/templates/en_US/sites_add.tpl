@@ -24,7 +24,7 @@
 		<td colspan="6">{$farm.name} <input type='hidden' name='farmid' value="{$farm.id}" /></td>
 	</tr>
 	<tr>
-		<td width="15%">Role:</td>
+		<td width="15%">Instance of this role will create A records in DNS zone:</td>
 		<td colspan="6">
 		  <select name="ami_id" class="text">
 		  {section name=id loop=$roles}

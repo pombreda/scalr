@@ -33,7 +33,8 @@
 				    </tr>
 				  </table>
 				  </div>
-				  </div></td>
+				  </div>
+				  </td>
 			<td width="7" class="TableHeaderCenter"></td>
 		</tr>
 		<tr>
@@ -42,7 +43,8 @@
 			<td width="7"><div class="TableFooterRight"></div></td>
 		</tr>
 		</table>
-			  
-	
+		<br>
+		<a href="login.php?action=pwdrecovery">Forgot password?</a>
+	</div>
 	</center>
 {include file="inc/login_footer.tpl"}

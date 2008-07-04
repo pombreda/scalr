@@ -8,7 +8,7 @@
         $farm_id = (int)$req_FarmID;
         $hash = preg_replace("/[^A-Za-z0-9]+/", "", $req_Hash);
         
-        Log::Log("Instance={$req_InstanceID} from FarmID={$farm_id} with Hash={$hash} trying to view option '{$req_option}'", E_USER_NOTICE);
+        $Logger->debug("Instance={$req_InstanceID} from FarmID={$farm_id} with Hash={$hash} trying to view option '{$req_option}'");
                 
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND hash=?", array($farm_id, $hash));
         
@@ -26,8 +26,11 @@
                     {
                         case "role":
                             
-                            $havemaster = $db->GetOne("SELECT id FROM farm_instances WHERE farmid=? AND isdbmaster='1'", array($farm_id));
-                            if (!$havemaster)
+                            $havemaster = $db->GetOne("SELECT instance_id FROM farm_instances WHERE farmid=? AND isdbmaster='1'", array($farm_id));
+                            
+                            if ($havemaster == $req_InstanceID)
+                            	print "master";
+                            elseif (!$havemaster)
                             {
                                 $db->Execute("UPDATE farm_instances SET isdbmaster='1' WHERE farmid=? AND instance_id=?", array($farm_id, $req_InstanceID));
                                 print "master";
@@ -71,6 +74,10 @@
                                 $instanses = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running' AND ami_id=?", array($farm_id, $ami["ami_id"]));
                                 foreach ($instanses as $instanse)
                                     print "{$instanse['internal_ip']}\n";
+                                    
+                                $real_servers = $db->GetAll("SELECT * FROM real_servers WHERE farmid=? AND ami_id=?", array($farm_id, $ami["ami_id"]));
+                                foreach ($real_servers as $real_server)
+                                    print "{$real_server['ipaddress']}\n";
                             }
                         }
                         

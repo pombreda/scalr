@@ -1,0 +1,13 @@
+[subject]Welcome to Scalr[/subject]
+Dear {$client.fullname},
+
+Welcome to Scalr!
+Use the information below to log in to scalr:
+
+{$site_url}
+Email: {$client.email}
+Password: {$client.password}
+
+Please keep this information confidential!
+
+Scalr Team

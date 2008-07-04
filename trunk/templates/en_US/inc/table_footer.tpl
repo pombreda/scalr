@@ -8,10 +8,7 @@
 			<td colspan="{if $colspan}{$colspan}{else}14{/if}"><table border="0" width="100%" class="WebtaTable_Footer">
 					<tr>
 						<td  colspan="4" align="left">
-						{if $cancel_btn}
-							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;
-						{/if}
-						
+												
 						{if $prev_page}
 							<input type="submit" class="btn" value="Prev" name="back">&nbsp;
 						{/if}
@@ -33,8 +30,14 @@
 						{if $button2}
 								&nbsp;<input type="submit" class="btn" name="cbtn_2" value="{$button2_name}" />	
 						{/if}
-						{if $button3}
-								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="{$button3_name}" />	
+						{if $cancel_btn}
+							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;
+						{/if}
+						{if $retry_btn}
+								&nbsp;<input type="button" class="btn" name="retrybtn" value="Retry" onclick="window.location=get_url;return false;" />	
+						{/if}
+                        {if $backbtn}
+								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />	
 						{/if}
 						{if $loader}
 						    <span style="display:none;" id="btn_loader">
@@ -48,17 +51,24 @@
 							<input name="f" type="hidden" id="f" value="{$f}">
 							{if $page_data_options|@count > 0}
 								Selected:
-								<select name="action" id="action" class="text" style="vertical-align:middle;">
+								<select name="action" class="text" style="vertical-align:middle;">
 									{section name=id loop=$page_data_options}
 								     <option value="{$page_data_options[id].action}">{$page_data_options[id].name}</option> 
 								    {/section}
 								</select>
-								<input type="submit" name="actionsubmit" {if $on_delete_alert_message}onclick="if ($('action').value == 'delete'){literal} { {/literal}return window.confirm('{$on_delete_alert_message}'){literal} }{/literal}"{/if} style="vertical-align:middle;" value="Apply" class="btn">
+								<input type="submit" name="actionsubmit" style="vertical-align:middle;" value="Apply" class="btn">
 							{/if}
 						
 						</td>
 						<td width="1" align="left">&nbsp;</td>
 					</tr>
+					{if $extra_html}
+					<tr>
+						<td colspan="10">
+							{$extra_html}
+						</td>
+					</tr>
+					{/if}
 			</table></td>
 		</tr>
 		{/if}

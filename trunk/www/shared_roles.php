@@ -3,7 +3,7 @@
 	$display["title"] = "Shared roles&nbsp;&raquo;&nbsp;View";
 	
 	if ($_SESSION["uid"] != 0)
-	   CoreUtils::Redirect("index.php");
+	   UI::Redirect("index.php");
 	
 	if ($req_task == "delete")
 	{
@@ -14,34 +14,41 @@
 	        $db->Execute("DELETE FROM security_rules WHERE roleid='{$info['id']}'");
 	        
 	        $okmsg = "Role successfully unassigned from AMI";
-	        CoreUtils::Redirect("shared_roles.php");
+	        UI::Redirect("shared_roles.php");
 	    }
 	    else 
 	       $errmsg = "Role not found";
 	}
 	
-	define("CF_PAGING_ITEMS", 20);
-
 	//Paging
 	$paging = new Paging();
 	$paging->ItemsOnPage = 20;
 	
 	// Filter by our accountid
 	$DescribeImagesType = new DescribeImagesType();
-	$DescribeImagesType->ownersSet = array("item" => array("owner" => CF_AWS_ACCOUNTID));
+	$DescribeImagesType->ownersSet = array("item" => array("owner" => CONFIG::$AWS_ACCOUNTID));
 
-
-	$AmazonEC2 = new AmazonEC2(
-            APPPATH . "/etc/pk-{$cfg['aws_keyname']}.pem", 
-            APPPATH . "/etc/cert-{$cfg['aws_keyname']}.pem");
-	// Rows
-	$response = $AmazonEC2->describeImages($DescribeImagesType);
-	$rowz = $response->imagesSet->item;
+	
+	try
+	{
+		$AmazonEC2 = new AmazonEC2(
+	            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
+	            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
+		// Rows
+		$response = $AmazonEC2->describeImages($DescribeImagesType);
+	}
+	catch(Exception $e)
+	{
+		throw new ApplicationException($e->getMessage());
+	}
+	
+	$rowz = (array)$response->imagesSet->item;
 	$rows = array();
 	foreach ($rowz as $pk=>$pv)
 	{
 		$rowz[$pk]->isPublicStr = $rowz[$pk]->isPublic ? "true" : "false";
 		$rowz[$pk]->roleName = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId);
+		$rowz[$pk]->instanceType = $db->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId);
 		
 		if ($rowz[$pk]->roleName)
 		{
@@ -56,7 +63,12 @@
 	
 	$paging->ParseHTML();
 	// Slice 
-	$display["rows"] = (count($rows) > CF_PAGING_ITEMS) ? array_slice($rows, $paging->PageNo * CF_PAGING_ITEMS, CF_PAGING_ITEMS) : $rows;
+	$display["rows"] = (count($rows) > CONFIG::$PAGING_ITEMS) ? array_slice($rows, ($paging->PageNo-1) * CONFIG::$PAGING_ITEMS, CONFIG::$PAGING_ITEMS) : $rows;
+	
+	foreach ($display["rows"] as &$row)
+	{
+		$row->farmsCount = $db->GetOne("SELECT COUNT(farmid) FROM farm_amis WHERE ami_id=?", array($row->imageId));
+	}
 	
 	#$display["filter"] = $paging->GetFilterHTML("$tplpath/table_filter.tpl");
 	$display["paging"] = $paging->GetHTML("paging.tpl");

@@ -26,7 +26,7 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
 
 
 /* --------------------------- NEW STYLES ---------------------------------------------------------------------------------------------------*/
-.Webta_Items 		{ border: none; background-color: #FFFFFF; border-collapse:collapse; }
+.Webta_Items 		{ border: none; background-color: #FFFFFF; border-collapse:collapse; width:100%; }
 .Webta_Items thead	{ border: none; background-color: #C3D9FF; }
 .Webta_Items thead th, .Webta_Items thead td
 					{ border: none; font-weight: normal; text-align: left; padding: 0 5px 0 3px; font-size:14px; }
@@ -36,7 +36,15 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
 .Webta_Items tbody td { padding: 1px 5px 1px 5px; font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; color: #000000; border-bottom: 1px dashed #DDDDDD; font-size:14px; }
 .Webta_Items tbody td.Item	{ }
 
-
+.Webta_Items_farm 		{ border: none; background-color: #FFFFFF; border-collapse:collapse; }
+.Webta_Items_farm thead	{ border: none; background-color: #C3D9FF; }
+.Webta_Items_farm thead th, .Webta_Items_farm thead td
+					{ border: none; font-weight: normal; text-align: left; padding: 0 5px 0 3px; font-size:14px; }
+.Webta_Items_farm thead td 
+					{ text-align: center; }
+.Webta_Items_farm tbody	{ border: 1px solid #A2BBDD; } 
+.Webta_Items_farm tbody td { padding: 1px 5px 1px 5px; font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; color: #000000; font-size:14px; }
+.Webta_Items_farm tbody td.Item	{ border-bottom: 1px dashed #DDDDDD; }
 
 
 .mg					{ font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; padding-right: 3px; font-size: 13px; font-weight: bold; }
@@ -56,6 +64,21 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
     font-size:16px; 
     line-height:18px;
 }
+
+.Webta_ExperimentalMsg
+{
+	background: url(../images/icon_warn.gif) no-repeat 7px 7px; 
+    background-color: #fffaaa; 
+    border:1px solid #e07112; 
+    color: #cf650e;
+    padding: 4px; 
+    padding-left: 35px; 
+    padding-bottom:4px; 
+    margin: 8px 0 5px 0; 
+    font-size:16px; 
+    line-height:18px;
+}
+
 .Webta_ErrMsg		{ background: url(../images/icon_err.gif) no-repeat 5px 2px; background-color: #FFE3D9; border:1px solid #E63512; color: #CB3216; padding: 4px; padding-left: 35px; padding-bottom:4px; margin: 8px 0 5px 0; font-size:16px; line-height:18px;}
 
 .ItemDelete,.ItemEdit { background-color: #E8EEF7; border-color:#a2bbdd #fff #fff #a2bbdd; border-style: none solid dashed; border-width: 1px; color: #446688;}
