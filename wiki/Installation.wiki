@@ -1,0 +1,81 @@
+#summary Scalr v1 Instalation and Configuration
+#labels Featured
+
+= Scalr v1 Instalation and Configuration =
+
+== System Requirements ==
+
+
+To quickly check either your server meets Scalr system requirements, use testenvironment.php script from app/www folder.
+Simply upload php file on your host and open it in browser. It should find most of major issues.
+
+Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.) operating system, as long as the following requirements are met:
+  * PHP 5.2.0 or higher (5.2.6 preferred), 
+  * MySQL 5.0 or higher (MySQL 5.1 or higher preferred)
+
+
+=== Required PHP configuration options ===
+  * safe_mode must be set to Off 
+  * register_globals must be Off
+
+=== Required PHP extensions ===
+  * [http://php.net/mysqli mysqli]
+  * [http://php.net/curl cURL]
+  * [http://php.net/sockets Sockets (--enable-sockets) with SSL support (--with-openssl)]
+  * [http://php.net/gettext GetText]
+  * [http://php.net/SimpleXML SimpleXML]
+  * [http://php.net/mcrypt mcrypt]
+  * [http://php.net/mhash mhash]
+  * [http://php.net/pcntl pcntl]
+  * [http://php.net/posix posix]
+  * [http://php.net/ssh2 ssh2]
+  * [http://php.net/dom DOM]
+
+
+== Installation ==
+
+Copy contents of app folder on your webserver.
+Only app/www folder must be readable by webserver, all other folders must be underneath web root.
+
+=== Set folders permissions ===
+Set permissions on the following folders (and subfolders) and files to 777 (world-writable):
+  * cache
+  * cron/cron.pid
+  * etc/.passwd
+  * etc/clients_keys
+
+
+=== Create and configure database ===
+
+  # Create new MySQL database 
+  # Import database dump from sql/database.sql file.
+  # Edit database connection details in etc/config.ini file.
+
+
+=== Set Cron jobs ===
+
+For system to work properly, it needs to run a few tasks periodicaly.
+Scalr has a single cron/cron.php file that must be executed with various command-line switches.
+The following tasks must be sheduled:
+
+{{{
+* * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --Poller
+1 1 * * * /path/to/php -q /scalr_home_dir/cron/cron.php --RotateLogs
+*/15 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --MySQLMaintenance
+*/6 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSMaintenance
+*/3 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSZoneListUpdate
+}}}
+
+=== Configure logging ===
+Edit [http://logging.apache.org/log4php/ log4php] config in _etc/log4php.xml_
+
+=== Configure primary AWS account ===
+Sclar needs to have AWS access.
+  # Put your EC2 access certificate into etc/cert-XXXXXXXXXXXX.pem
+  # Put your EC2 private key into etc/pk-XXXXXXXXXXXX.pem
+Where XXXXXXXXXXXX is a Key Name.
+
+
+=== Configuration ===
+Installation complete! You may now proceed to configuration.
+Log in as admin / admin, go to *Settings->Core settings* and edit settings.
