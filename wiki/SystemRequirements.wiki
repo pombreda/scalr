@@ -16,7 +16,7 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
   * register_globals must be Off
 
 === Required PHP extensions ===
-  * [http://php.net/mysqli]
+  * [mysqli|http://php.net/mysqli]
   * cURL [http://php.net/curl]
   * [http://php.net/curl|Sockets (--enable-sockets) with SSL support (--with-openssl)]
   * [[http://php.net/gettext|GetText]]
@@ -32,4 +32,3 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
 ===== Installation =====
 
 ==== Installing from tar.gz package ====
-
