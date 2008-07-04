@@ -1,4 +1,5 @@
 #summary Shared AMIs for standard Scalr roles
+#labels Featured
 
 == Shared AMIs ==
 
