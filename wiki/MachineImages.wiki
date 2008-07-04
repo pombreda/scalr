@@ -1,7 +1,7 @@
 #labels Featured
-Machine image locations and description
+Shared AMIs for standard Scalr roles.
 
-All the images uses Ubuntu 7
+All the images use Ubuntu 7
 
 = Details =
 
