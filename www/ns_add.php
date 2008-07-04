@@ -2,7 +2,7 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   CoreUtils::Redirect("index.php");
+	   UI::Redirect("index.php");
 	   
 	$display["title"] = "Nameservers&nbsp;&raquo;&nbsp;Add";
 	
@@ -52,12 +52,12 @@
                             $db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='NS', ttl=?, rvalue=?, rkey='@', issystem='1'", 
                             array(14400, "{$post_host}."));
                             
-                            if ($zone["isdeleted"] == 0)
+                            if ($zone["status"] != ZONE_STATUS::DELETED && $zone["status"] != ZONE_STATUS::INACTIVE)
                             {
                                 if (!$DNSZoneController->Update($zone["id"]))
-                                    Log::Log("Cannot add NS record to zone '{$zone['zone']}'", E_ERROR);
+                                    $Logger->fatal("Cannot add NS record to zone '{$zone['zone']}'", E_ERROR);
                                 else 
-                                    Log::Log("NS record for instance {$instanceinfo['instance_id']} with host {$post_host} added to zone '{$zone['zone']}'", E_USER_NOTICE);
+                                    $Logger->info("NS record for instance {$instanceinfo['instance_id']} with host {$post_host} added to zone '{$zone['zone']}'", E_USER_NOTICE);
                             }
                         }
                     }
@@ -65,7 +65,7 @@
     			     	
     			$mess = "Nameserver successfully added";
     		
-    			CoreUtils::Redirect("ns_view.php");
+    			UI::Redirect("ns_view.php");
     			
     		}
     		else
@@ -73,12 +73,12 @@
     			$password = ($post_password != '******') ? "password='".$Crypto->Encrypt($post_password, $_SESSION['cpwd'])."'," : "";
     			
     			$db->Execute("UPDATE nameservers SET port=?, username=?, $password rndc_path=?, named_path=?, namedconf_path=?
-    							WHERE id='{$post_id}'",
-    							array($post_port, $post_username, $post_rndc_path, $post_named_path, $post_namedconf_path));
+    							WHERE id=?",
+    							array($post_port, $post_username, $post_rndc_path, $post_named_path, $post_namedconf_path, $post_id));
     
     							
     			$mess = "Nameserver succesfully updated";
-    			CoreUtils::Redirect("ns_view.php");
+    			UI::Redirect("ns_view.php");
     		}
 	    }
 	}

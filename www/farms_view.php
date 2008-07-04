@@ -1,58 +1,5 @@
 <?
 	require_once('src/prepend.inc.php');
-
-	// Post actions
-	if ($_POST && $post_actionsubmit)
-	{
-		if ($post_action == "delete")
-		{
-			// Delete users
-			$i = 0;			
-			foreach ((array)$post_delete as $k=>$v)
-			{
-				if ($_SESSION['uid'] != 0)
-                    $info = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($v, $_SESSION['uid']));
-                else 
-                    $info = $db->GetRow("SELECT * FROM farms WHERE id=?", array($v));
-                    
-			    if ($info)
-			    {
-			        $AmazonEC2Client = new AmazonEC2(
-                        APPPATH . "/etc/clients_keys/{$info['clientid']}/pk.pem", 
-                        APPPATH . "/etc/clients_keys/{$info['clientid']}/cert.pem");
-			        
-			        $i++;
-    				$db->Execute("DELETE FROM farms WHERE id=?", array($v));
-    				
-    				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$v}'");
-    				foreach ($instances as $instance)
-    				{
-    				    try 
-            			{            
-            				$response = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
-            					
-            				if ($response instanceof SoapFault)
-            				{
-            					$err[] = $response->faultstring;
-            				}
-            			}
-            			catch (Exception $e)
-            			{
-            				$err[] = $e->getMessage(); 
-            			}
-    				}
-    				
-    				$db->Execute("DELETE FROM farm_amis WHERE farmid='{$v}'");
-    				$db->Execute("DELETE FROM farm_instances WHERE farmid='{$v}'");
-    				$db->Execute("DELETE FROM records WHERE zoneid IN (SELECT id FROM zones WHERE farmid='{$v}')");
-    				$db->Execute("DELETE FROM zones WHERE farmid='{$v}'");
-			    }
-			}
-			
-			$okmess = "{$i} farms deleted";
-			CoreUtils::Redirect("farms_view.php");
-		}
-	}
     
 	if ($get_task == "download_private_key")
 	{
@@ -64,13 +11,13 @@
 	    if (!$farminfo)
 	    {
 	        $errmsg = "Farm not found";
-	        CoreUtils::Redirect("farms_view.php");
+	        UI::Redirect("farms_view.php");
 	    }
 	    
-	    $keyname = preg_replace("/[^A-Za-z0-9]+/", "", $farminfo["name"]);
-	    
+	    header('Pragma: private');
+		header('Cache-control: private, must-revalidate');
 	    header('Content-type: plain/text');
-        header('Content-Disposition: attachment; filename="'.$keyname.'.pk"');
+        header('Content-Disposition: attachment; filename="'.$farminfo["name"].'.pem"');
         header('Content-Length: '.strlen($farminfo['private_key']));
 
         print $farminfo['private_key'];
@@ -119,7 +66,10 @@
 	{
 		$row["instanses"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid='{$row['id']}'");
 		$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM farm_amis WHERE farmid='{$row['id']}'");
-		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$row['id']}'");
+		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$row['id']}' AND status != ?", array(ZONE_STATUS::DELETED));
+		
+		if ($_SESSION['uid'] == 0)
+			$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
 	}
 	
 	$display["title"] = "Farms > View";

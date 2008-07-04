@@ -11,24 +11,38 @@
 		    
 		    foreach ((array)$_POST["delete"] as $dd)
 			{	
-				if ($_SESSION["uid"] != 0)
-			     $zone = $db->GetRow("SELECT * FROM zones WHERE id=? AND clientid=?", array($dd, $_SESSION["uid"]));
-			    else 
-			     $zone = $db->GetRow("SELECT * FROM zones WHERE id=?", array($dd));
-				if ($zone)
+				$db->BeginTrans();
+				 
+				try
 				{
-    				$ZoneControler->Delete($zone["id"]);   			
-    			
-    				$db->Execute("DELETE from zones WHERE id='{$dd}'");
-    				$db->Execute("DELETE from records WHERE zoneid='{$dd}'");
-    				Log::Log("DNS zone '{$zone["zone"]}' deleted from database!", E_NOTICE);
-    				
-    				$i++;
+					if ($_SESSION["uid"] != 0)
+						$zone = $db->GetRow("SELECT * FROM zones WHERE id=? AND clientid=?", array($dd, $_SESSION["uid"]));
+					else 
+						$zone = $db->GetRow("SELECT * FROM zones WHERE id=?", array($dd));
+					
+				    if ($zone)
+					{
+	    				$ZoneControler->Delete($zone["id"]);	    				
+	    				$i++;
+					}
 				}
+				catch(Exception $e)
+				{
+					$db->RollbackTrans();
+		    		$Logger->fatal("Exception thrown during application delete: {$e->getMessage()}");
+		    		$err[] = "Cannot delete application '{$zone['name']}'. Please try again later.";
+				}
+				
+				
 			}
 			
-			$okmsg = "{$i} DNS zone(s) deleted";
-			CoreUtils::Redirect("sites_view.php?farmid={$req_farmid}");
+			if (count($err) == 0)
+			{
+				$db->CommitTrans();
+				
+				$okmsg = "Applications you are trying to delete have been marked for deletion. They will be deleted in few minutes.";
+				UI::Redirect("sites_view.php?farmid={$req_farmid}");
+			}
 		}
 	};
 	
@@ -67,10 +81,23 @@
 	{
 	    $row["role"] = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
 	    $row["farm"] = $db->GetRow("SELECT * FROM farms WHERE id=?", $row["farmid"]);
+	    
+	    switch($row["status"])
+	    {
+	    	case ZONE_STATUS::ACTIVE:
+	    		$row["string_status"] = "Active";
+	    		break;
+	    	case ZONE_STATUS::DELETED:
+	    		$row["string_status"] = "Pending delete";
+	    		break;
+	    	case ZONE_STATUS::PENDING:
+	    		$row["string_status"] = "Pending create";
+	    		break;
+	    	case ZONE_STATUS::INACTIVE:
+	    		$row["string_status"] = "Inactive";
+	    		break;
+	    }
 	}
-	
-	if ($_SESSION["uid"] != 0)
-	   $display["page_data_options_add"] = true;
 	
 	$display["page_data_options"] = array(array("name" => "Delete", "action" => "delete"));
 	

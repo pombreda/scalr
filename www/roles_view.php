@@ -9,7 +9,7 @@
 	if (!$farminfo)
 	{
 	    $errmsg = "Farm not found";
-	    CoreUtils::Redirect("farms_view.php");
+	    UI::Redirect("farms_view.php");
 	}
 	
 	// Post actions
@@ -42,7 +42,7 @@
         				// increase min_count for farm ami
         				$db->Execute("UPDATE farm_amis SET min_count=min_count+1 WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
         				
-                        $res = RunInstance($AmazonEC2Client, CF_SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $v);                        
+                        $res = RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $v, false, true);                        
                         if (!$res)
                             $err[] = "Cannot run instance. See system log for details!";
                         else
@@ -51,7 +51,7 @@
     			}
     			
     			$okmsg = "{$i} instanses launched";
-    			CoreUtils::Redirect("roles_view.php?farmid={$req_farmid}");
+    			UI::Redirect("roles_view.php?farmid={$req_farmid}");
 			}
 		}
 	}
@@ -80,7 +80,7 @@
 	foreach ($display["rows"] as &$row)
 	{
 		$row["name"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$row['ami_id']}'");
-		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id='{$row['ami_id']}' AND farmid='{$row['farmid']}'");
+		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE role_name='{$row["name"]}' AND farmid='{$row['farmid']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
 		$row["r_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Running' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
 		$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Pending' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
 	}
