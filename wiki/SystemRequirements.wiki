@@ -1,0 +1,35 @@
+#summary Scalr v1 System Requirements
+
+= Scalr v1 System Requirements =
+
+
+To quickly check either your server meets EPP-DRS system requirements, use testenvironment.php script from app/www folder.
+Simply upload php file on your host and open it in browser. It should find most of major issues.
+
+Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.) operating system, as long as the following requirements are met:
+  * PHP 5.2.0 or higher (5.2.6 preferred), 
+  * MySQL 5.0 or higher (MySQL 5.1 or higher preferred)
+
+
+=== Required PHP configuration options ===
+  * safe_mode must be set to Off 
+  * register_globals must be Off
+
+=== Required PHP extensions ===
+  * [http://php.net/mysqli]
+  * cURL [http://php.net/curl]
+  * [http://php.net/curl|Sockets (--enable-sockets) with SSL support (--with-openssl)]
+  * [[http://php.net/gettext|GetText]]
+  * [[http://php.net/SimpleXML|SimpleXML]]
+  * [[http://php.net/mcrypt|mcrypt]]
+  * [[http://php.net/mhash|mhash]]
+  * [[http://php.net/pcntl|pcntl]]
+  * [[http://php.net/posix|posix]]
+  * [[http://php.net/ssh2|ssh2]]
+  * [[http://php.net/dom|DOM]]
+
+
+===== Installation =====
+
+==== Installing from tar.gz package ====
+
