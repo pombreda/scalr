@@ -1,3 +1,4 @@
+#labels Phase-Design
 == Scalr 2 Functional diagrams ==
 
 http://scalr.googlecode.com/files/scalr2_functional.instance-crash.png
