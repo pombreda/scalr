@@ -36,6 +36,7 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
 
 Copy contents of app folder on your webserver.
 Only app/www folder must be readable by webserver, all other folders must be underneath web root.
+This also means that Scalr will not work from the subfolder (i.e. domain.com/something). Please create a subdomain and install in it's web root. 
 
 === Set folders permissions ===
 Set permissions on the following folders (and subfolders) and files to 777 (world-writable):
