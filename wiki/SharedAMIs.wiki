@@ -4,7 +4,7 @@
 == Shared AMIs ==
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || Purpose ||
-|| mysql || mysql64 || ami-abaf4bc2 || ami-16ac487f || MySQL server ||
+|| mysql || mysql64 || ami-bd8763d4 || ami-16ac487f || MySQL server ||
 || app || app64 || ami-bfbd59d6 || ami-e5a2468c || Application server ||
 || www || www64 || ami-e6ad498f || ami-e3a2468a || Frontend load balancer and HTTP server ||
 || base || base64 || ami-e2aa4e8b || ami-0aad4963 || The clean image for building custom roles ||
