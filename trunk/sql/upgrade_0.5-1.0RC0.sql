@@ -94,7 +94,7 @@ update ami_roles set ami_id = 'ami-bd8763d4' where name = 'mysql';
 update ami_roles set ami_id = 'ami-bfbd59d6' where name = 'app';
 update ami_roles set ami_id = 'ami-e6ad498f' where name = 'www';
 update ami_roles set ami_id = 'ami-e2aa4e8b' where name = 'base';
-update ami_roles set ami_id = 'ami-16ac487f' where name = 'mysql64';
+update ami_roles set ami_id = 'ami-a68266cf' where name = 'mysql64';
 update ami_roles set ami_id = 'ami-e5a2468c' where name = 'app64';
 update ami_roles set ami_id = 'ami-e3a2468a' where name = 'www64';
 update ami_roles set ami_id = 'ami-0aad4963' where name = 'base64';
