@@ -53,6 +53,10 @@ Set permissions on the following folders (and subfolders) and files to 777 (worl
   # Edit database connection details in etc/config.ini file.
 
 
+=== Configure logging ===
+Edit [http://logging.apache.org/log4php/ log4php] config in _etc/log4php.xml_
+
+
 === Set Cron jobs ===
 
 For system to work properly, it needs to run a few tasks periodicaly.
@@ -66,9 +70,6 @@ The following tasks must be sheduled:
 */6 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSMaintenance
 */3 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSZoneListUpdate
 }}}
-
-=== Configure logging ===
-Edit [http://logging.apache.org/log4php/ log4php] config in _etc/log4php.xml_
 
 === Configure primary AWS account ===
 Sclar needs to have AWS access.
