@@ -75,7 +75,7 @@ The following tasks must be sheduled:
 Sclar needs to have AWS access.
   # Put your EC2 access certificate into etc/cert-XXXXXXXXXXXX.pem
   # Put your EC2 private key into etc/pk-XXXXXXXXXXXX.pem
-Where XXXXXXXXXXXX is a Key Name.
+Where XXXXXXXXXXXX is Your Access Key name, which you specify on "Settings->Core settings" page.
 
 
 === Configuration ===
