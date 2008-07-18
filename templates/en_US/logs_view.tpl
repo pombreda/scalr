@@ -5,6 +5,16 @@
 			<td nowrap="nowrap">Search string:</td>
 			<td><input type="text" name="search" class="text" id="search" value="{$search}" size="20" /></td>
 		</tr>
+		<tr valign="top">
+			<td nowrap="nowrap">Show only:</td>
+			<td>
+				<div style="width:600px;">
+				{foreach item=item key=key from=$severities}
+				    <div style="float:left;word-wrap:pre;width:200px;"><input name="severity[]" style="vertical-align:middle;" type="checkbox" {if $checked_severities[$key]}checked{/if} value="{$key}"> {$item}</div>
+				{/foreach}
+				</div>
+			</td>
+		</tr>
 		<tr>
 			<td nowrap="nowrap">Farm:</td>
 			<td>
@@ -23,10 +33,9 @@
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
 	<thead>
 		<tr>
-			<th>Severity</th>
-			<th>Instance</th>
-			<th>Source</th>
 			<th>Time</th>
+			<th>Severity</th>
+			<th>Caller</th>
 			<th>Message</th>
 			<!--
 			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
@@ -36,11 +45,9 @@
 	<tbody>
 	{section name=id loop=$rows}
 	<tr id='tr_{$smarty.section.id.iteration}'>
-	
-		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
-		<td class="Item" valign="top" nowrap><a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a></td>
-		<td class="Item" valign="top" nowrap>{$rows[id].source}</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].time}</td>
+		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
+		<td class="Item" valign="top" nowrap>{if $rows[id].servername}<a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a>/{$rows[id].source}{else}{$rows[id].source}{/if}</td>
 		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
 		<!--
 		<td class="ItemDelete" valign="top">

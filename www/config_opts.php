@@ -69,16 +69,9 @@
                     {
                         foreach ($amis as $ami)
                         {
-                            if ($db->GetOne("SELECT * FROM farm_amis WHERE farmid=? AND ami_id=?", array($farm_id, $ami["ami_id"])))
-                            {
-                                $instanses = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running' AND ami_id=?", array($farm_id, $ami["ami_id"]));
-                                foreach ($instanses as $instanse)
-                                    print "{$instanse['internal_ip']}\n";
-                                    
-                                $real_servers = $db->GetAll("SELECT * FROM real_servers WHERE farmid=? AND ami_id=?", array($farm_id, $ami["ami_id"]));
-                                foreach ($real_servers as $real_server)
-                                    print "{$real_server['ipaddress']}\n";
-                            }
+							$instanses = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running' AND ami_id=?", array($farm_id, $ami["ami_id"]));
+							foreach ($instanses as $instanse)
+								print "{$instanse['internal_ip']}\n";                                    
                         }
                         
                         exit();

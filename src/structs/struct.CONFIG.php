@@ -77,6 +77,14 @@
 		public static $ZONE_LOCK_WAIT_TIMEOUT;
 		public static $ZONE_LOCK_WAIT_RETRIES;
 		
+		public static $EVENTS_RSS_CACHE_LIFETIME;
+		public static $EVENTS_TIMELINE_CACHE_LIFETIME;
+		
+		public static $HTTP_PROTO;
+		
+		public static $RRDTOOL_PATH;
+		public static $RRD_DEFAULT_FONT_PATH;
+		
 		/**
 		 * List all available properties through reflection
 		 * FIXME: Move to parent class Struct, when php will have late static binding

@@ -8,8 +8,8 @@
 }
 </style>
 {/literal}
-
-{include file="inc/table_header.tpl"}
+<br>
+{include file="inc/table_header.tpl" nofilter=1}
 <center>
 <div align="center" style="width: 600px; margin:50px; padding:30px;">
 	<div style="font-size:24px; background-color:red;padding:10px; color:white;">Unrecoverable error</div>
@@ -22,9 +22,9 @@
 	{/if}
     <div style="height:2px; background-color:#CCCCCC; font-size:1px;"></div>
     {if $post_serialized != ''}
-    	{include file="inc/table_footer.tpl" button2=1 button2_name='Retry' backbtn=1}
+    	{include file="inc/table_footer.tpl" button2=1 button2_name='Retry' backbtn=1 page_data_options=0}
     {else}
-		{include file="inc/table_footer.tpl" retry_btn=1 backbtn=1}
+		{include file="inc/table_footer.tpl" retry_btn=1 backbtn=1 page_data_options=0}
 	{/if}
 </div>
 </center>

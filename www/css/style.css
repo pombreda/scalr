@@ -79,6 +79,19 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
     line-height:18px;
 }
 
+.Webta_Ihelp {	
+	BORDER-RIGHT: #cccccc 1px solid;
+	PADDING-RIGHT: 3px;	
+	BORDER-TOP: #cccccc 1px solid;	
+	PADDING-LEFT: 19px;	
+	BACKGROUND: url(/images/icon_shelp.gif) #ffffe1 no-repeat 4px 3px;	
+	PADDING-BOTTOM: 0px;	
+	MARGIN: 0px;	
+	BORDER-LEFT: #cccccc 1px solid;	
+	PADDING-TOP: 0px;	
+	BORDER-BOTTOM: #cccccc 1px solid
+}
+
 .Webta_ErrMsg		{ background: url(../images/icon_err.gif) no-repeat 5px 2px; background-color: #FFE3D9; border:1px solid #E63512; color: #CB3216; padding: 4px; padding-left: 35px; padding-bottom:4px; margin: 8px 0 5px 0; font-size:16px; line-height:18px;}
 
 .ItemDelete,.ItemEdit { background-color: #E8EEF7; border-color:#a2bbdd #fff #fff #a2bbdd; border-style: none solid dashed; border-width: 1px; color: #446688;}

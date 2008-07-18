@@ -4,10 +4,12 @@
     	<tr>
     		<td colspan="2">
     		{if $action == 'Launch'}
-    		  {if $new}Farm succesfully built. {/if}Would you like to launch '{$farminfo.name}' now? This will launch <b>{$num}</b> new instance(s).
+    		  {if $new}Farm succesfully built. {/if}Would you like to launch '{$farminfo.name}' now? {if $num > 0}This will launch <b>{$num}</b> new instance(s).{/if}
     		  <br>
     		  <br>
-    		  <input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="mark_active" value="1"> Mark instances as 'Active'.
+    		  {if $num > 0}
+    		  	<input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="mark_active" value="1"> Mark instances as 'Active'.
+    		  {/if}
     		{else}
     		  Do you really want to terminate farm '{$farminfo.name}'? {if $num > 0}All <b>{$num}</b> instance(s) in this farm will be terminated.{/if}
     		  <br>

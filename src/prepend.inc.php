@@ -79,6 +79,7 @@
 	require_once(SRCPATH."/types/enum.INSTANCE_TYPE.php");
 	require_once(SRCPATH."/types/enum.INSTANCE_ARCHITECTURE.php");
 	require_once(SRCPATH."/types/enum.ZONE_STATUS.php");
+	require_once(SRCPATH."/types/enum.EVENT_TYPE.php");
 		
 	//Load structs
 	require_once(SRCPATH."/structs/struct.CONTEXTS.php");
@@ -111,6 +112,7 @@
 	Core::Load("Data/Formater/Formater");
 	Core::Load("Data/Validation/Validator");
 	Core::Load("UI/Paging/Paging");
+	Core::Load("IO/Basic");
 	Core::Load("UI/Paging/SQLPaging");
 	Core::Load("System/Independent/Shell/class.ShellFactory.php");
 	Core::Load("Data/Formater");
@@ -163,6 +165,7 @@
 	define("LOG4PHP_CONFIGURATION", APPPATH.'/etc/log4php.xml');
 	
 	// Require log4php stuff
+	require_once (SRCPATH.'/class.FarmLogMessage.php');
 	require_once (SRCPATH.'/class.LoggerPatternLayoutScalr.php');
 	require_once (SRCPATH.'/class.LoggerPatternParserScalr.php');
 	require_once (SRCPATH.'/class.LoggerBasicPatternConverterScalr.php');
@@ -221,4 +224,19 @@
     // Set zone lock timeouts
     CONFIG::$ZONE_LOCK_WAIT_TIMEOUT = 5000000; // in miliseconds (1000000 = 1 second)
     CONFIG::$ZONE_LOCK_WAIT_RETRIES = 3;
+    
+    CONFIG::$HTTP_PROTO = (CONFIG::$HTTP_PROTO) ? CONFIG::$HTTP_PROTO : "http://";
+    
+    // cache lifetime
+    CONFIG::$EVENTS_RSS_CACHE_LIFETIME = 300; // in seconds
+
+    // Get control password
+    $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
+       
+    // Require observers
+    require_once (APPPATH.'/observers/class.MailEventObserver.php');
+    require_once (APPPATH.'/observers/class.RESTEventObserver.php');
+    require_once (APPPATH.'/observers/interface.IEventObserver.php');
+    
+    require_once (SRCPATH.'/class.Scalr.php');
 ?>

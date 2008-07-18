@@ -82,8 +82,19 @@
 			<td width="82%"><input name="snmptrap_path" type="text" class="text" id="snmptrap_path" value="{$snmptrap_path}" size="30"></td>
 		</tr>
 		<tr>
+			<td width="18%">Path to rrdtool:</td>
+			<td width="82%"><input name="rrdtool_path" type="text" class="text" id="rrdtool_path" value="{$rrdtool_path}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Path to font (for rrdtool):</td>
+			<td width="82%"><input name="rrd_default_font_path" type="text" class="text" id="rrd_default_font_path" value="{$rrd_default_font_path}" size="30"></td>
+		</tr>
+		<tr>
 			<td width="18%">Event handler URL:</td>
-			<td width="82%"><input name="eventhandler_url" type="text" class="text" id="eventhandler_url" value="{$eventhandler_url}" size="30"></td>
+			<td width="82%"><select name="http_proto" class="text" style="vertical-align:middle;">
+				<option {if $http_proto == 'http://'}selected{/if} value="http://">http://</option>
+				<option {if $http_proto == 'https://'}selected{/if} value="https://">https://</option>
+			</select><input name="eventhandler_url" type="text" class="text" id="eventhandler_url" value="{$eventhandler_url}" size="30"></td>
 		</tr>
 		<tr>
 			<td colspan="2">Terminate instance if it doesn't send 'rebootFinish' event after reboot in <input name="reboot_timeout" type="text" class="text" id="reboot_timeout" value="{$reboot_timeout}" size="3"> seconds.</td>

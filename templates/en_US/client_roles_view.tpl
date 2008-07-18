@@ -24,8 +24,10 @@
 		{if $rows[id].isreplaced && $rows[id].iscompleted != 2}
 		  Being synchronized...
 		{else}
-		  {if $rows[id].iscompleted == 1}Active{elseif $rows[id].iscompleted == 0}Bundling...{else}Failed {if $rows[id].fail_details}(<a href="custom_roles_failed_details.php?id={$rows[id].id}">View details</a>){/if}{/if}</td>
+		  {if $rows[id].iscompleted == 1}Active{elseif $rows[id].iscompleted == 0}Bundling...{else}Failed {if $rows[id].fail_details}(<a href="custom_roles_failed_details.php?id={$rows[id].id}">View details</a>){/if}{/if}
 		{/if}
+		{if $rows[id].abort_id}(<a href="client_roles_view.php?task=abort&id={$rows[id].abort_id}">Abort</a>){/if}
+		</td>
 		<td class="Item" valign="top">{$rows[id].dtbuilt}</td>
 		<td class="Item" valign="top"><a href="custom_role_log.php?id={if $rows[id].isreplaced}{$rows[id].isreplaced}{else}{$rows[id].id}{/if}">View</a></td>
 		<td class="ItemDelete" valign="top">

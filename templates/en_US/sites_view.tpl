@@ -22,7 +22,7 @@
 		<td class="ItemEdit" valign="top" nowrap>{if $rows[id].status == 0}<a href="sites_add.php?ezone={$rows[id].zone}">Edit DNS Zone</a>{/if}</td>
 		<td class="ItemDelete">
 			<span>
-				<input type="checkbox" id="delete[]" {if $rows[id].status != 0}disabled{/if} name="delete[]" value="{$rows[id].id}">
+				<input type="checkbox" id="delete[]" {if $rows[id].status > 1}disabled{/if} name="delete[]" value="{$rows[id].id}">
 			</span>
 		</td>
 	</tr>

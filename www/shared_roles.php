@@ -33,7 +33,7 @@
 	{
 		$AmazonEC2 = new AmazonEC2(
 	            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-	            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
+	            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", true);
 		// Rows
 		$response = $AmazonEC2->describeImages($DescribeImagesType);
 	}

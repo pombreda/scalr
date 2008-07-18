@@ -1,4 +1,9 @@
 {include file="inc/header.tpl"}
+{if $ezone}
+<p class="placeholder">
+	Scalr nameservers support <a href="http://en.wikipedia.org/wiki/DNS_zone_transfer" target="_blank">DNS zone transfers</a>. If you want to deploy your own backup DNS, click <a href="dns_zone_config.php?zone={$ezone}">here</a> to configure IP adresses of your DNS servers.
+</p>
+{/if}
 <script language="javascript" type="text/javascript">
 {literal}
 	function CheckPrAdd(tp, id, val)
@@ -16,7 +21,7 @@
 	}
 {/literal}
 </script>
-{include file="inc/table_header.tpl"}
+{include file="inc/table_header.tpl" nofilter=1}
 {if !$domainname && !$ezone}
     {include file="inc/intable_header.tpl" header="Application information" color="Gray"}
     <tr>

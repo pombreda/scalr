@@ -29,7 +29,7 @@ CREATE TABLE `ami_roles` (
 
 /*Data for the table `ami_roles` */
 
-insert  into `ami_roles`(`id`,`ami_id`,`name`,`roletype`,`clientid`,`prototype_iid`,`iscompleted`,`comments`,`dtbuilt`,`description`,`replace`,`default_minLA`,`default_maxLA`,`alias`,`instance_type`,`architecture`) values (1,'ami-e2aa4e8b','base','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.small','i386'),(2,'ami-bd8763d4','mysql','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.small','i386'),(3,'ami-e6ad498f','www','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.small','i386'),(7,'ami-bfbd59d6','app','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.small','i386'),(16,'ami-0aad4963','base64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.large','x86_64'),(17,'ami-a68266cf','mysql64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.large','x86_64'),(18,'ami-e3a2468a','www64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.large','x86_64'),(19,'ami-e5a2468c','app64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.large','x86_64');
+insert  into `ami_roles`(`id`,`ami_id`,`name`,`roletype`,`clientid`,`prototype_iid`,`iscompleted`,`comments`,`dtbuilt`,`description`,`replace`,`default_minLA`,`default_maxLA`,`alias`,`instance_type`,`architecture`) values (1,'ami-5dd53034','base','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.small','i386'),(2,'ami-53d5303a','mysql','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.small','i386'),(3,'ami-5ed53037','www','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.small','i386'),(7,'ami-50d53039','app','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.small','i386'),(16,'ami-0aad4963','base64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.large','x86_64'),(17,'ami-16ac487f','mysql64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.large','x86_64'),(18,'ami-e3a2468a','www64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.large','x86_64'),(19,'ami-e5a2468c','app64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.large','x86_64');
 
 /*Table structure for table `client_settings` */
 
@@ -345,3 +345,53 @@ update ami_roles SET rebundle_trap_received='1';
 update farms SET mysql_bcp_every = mysql_bcp_every*60;
 
 create table `rebundle_log`( `id` int(11) NOT NULL AUTO_INCREMENT , `roleid` int(11) , `dtadded` datetime , `message` text , PRIMARY KEY (`id`))  ;
+
+CREATE TABLE `ipaccess` (
+  `id` int(11) NOT NULL auto_increment,
+  `ipaddress` varchar(255) default NULL,
+  `comment` varchar(255) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `events` (
+  `id` int(11) NOT NULL auto_increment,
+  `farmid` int(11) default NULL,
+  `type` varchar(25) default NULL,
+  `dtadded` datetime default NULL,
+  `message` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `farmid` (`farmid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `farm_event_observers` (
+  `id` int(11) NOT NULL auto_increment,
+  `farmid` int(11) default NULL,
+  `event_observer_name` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `NewIndex1` (`farmid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `farm_event_observers_config` (
+  `id` int(11) NOT NULL auto_increment,
+  `observerid` int(11) default NULL,
+  `key` varchar(255) default NULL,
+  `value` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `NewIndex1` (`observerid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+alter table `events` add column `ishandled` tinyint(1) DEFAULT '0' NULL after `message`;
+
+alter table `logentries` add index `farmidindex` (`farmid`);
+alter table `logentries` add index `severityindex` (`severity`);
+
+alter table `clients` add column `aws_private_key_enc` text NULL after `fax`, add column `aws_certificate_enc` text NULL after `aws_private_key_enc`;
+
+alter table `zones` add column `axfr_allowed_hosts` text NULL after `lockedby`;
+alter table `zones` add column `hosts_list_updated` tinyint(1) DEFAULT '0' NULL after `axfr_allowed_hosts`;
+
+create table `garbage_queue`( `id` int(11) NOT NULL AUTO_INCREMENT , `clientid` int(11) , `data` text , PRIMARY KEY (`id`))  Engine=InnoDB;
+
+alter table `garbage_queue` add unique `clientindex` (`clientid`);
+
+insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');

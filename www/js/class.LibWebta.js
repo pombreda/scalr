@@ -74,13 +74,16 @@ LibWebta.prototype = {
 	},
 	
 	
-	checkall: function()
+	checkall: function(chk_name)
 	{
+		if (!chk_name)
+			chk_name = "delete[]";
+		
 		var frm = $("frm");
 		for (var i=0; i<frm.elements.length; i++) 
 		{
 			var e = frm.elements[i];
-			if (((e.name == "delete[]" || e.name == "actid[]") && e.type=='checkbox') && !e.disabled) {
+			if (((e.name == chk_name || e.name == "actid[]") && e.type=='checkbox') && !e.disabled) {
 				e.checked = !this.allchecked;
 			}
 		}
