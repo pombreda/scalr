@@ -66,7 +66,7 @@
 		            	if (!$db->GetOne("SELECT id FROM farm_instances 
 		            		WHERE farmid='{$farminfo['id']}' AND 
 		            		(external_ip = '{$record['rvalue']}' OR 
-		            		internal_ip = '{$record['rvalue']}')")
+		            		internal_ip = '{$record['rvalue']}') AND isactive='1'")
 		            	) {
 		            		$this->Logger->warn("[FarmID: {$farminfo['id']}] Found zomby record: '{$record['rkey']} {$record['ttl']} IN A {$record['rvalue']}'");
 		            		$malformed_zones[$record['zoneid']] = 1;
@@ -76,11 +76,12 @@
 		            	if ($record["rkey"] == "@")
 		            	{
 		            		$instance_rolename = $db->GetOne("SELECT role_name FROM farm_instances 
-		            			WHERE external_ip=? AND farmid=?",
+		            			WHERE external_ip=? AND farmid=? AND isactive='1'",
 		            		array($record["rvalue"], $zoneinfo["farmid"]));
 		            		
 		            		if (!$instance_rolename || $instance_rolename != $zoneinfo["role_name"])
 		            		{
+		            			$malformed_zones[$record['zoneid']] = 1;
 		            			$db->Execute("DELETE FROM records WHERE id='{$record['id']}'");
 		            		}
 		            	}
@@ -109,7 +110,7 @@
 	            	
 	            	// Check for A records
 	            	$this->Logger->info("[FarmID: {$farminfo['id']}] Checking for malformed A records");
-	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}' AND state='Running'");
+	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}' AND state='Running' AND isactive='1'");
 	            	foreach ($instances as $instance)
 	            	{
 	            		if ($instance["role_name"] == $zone["role_name"])
@@ -175,6 +176,9 @@
             			}
 	            	}
 	            }
+	            
+	            // Set more retries for locked zone for maintenance process
+	            CONFIG::$ZONE_LOCK_WAIT_RETRIES = 10;
 	            
 	            if (count($malformed_zones) > 0)
 	            {

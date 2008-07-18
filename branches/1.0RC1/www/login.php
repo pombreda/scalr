@@ -52,20 +52,25 @@
 	{
 	    if (($post_login == CONFIG::$ADMIN_LOGIN) && ($Crypto->Hash($post_pass) == CONFIG::$ADMIN_PASSWORD))
 		{		    
-		    $sault = $Crypto->Sault();
-			$_SESSION["sault"] = $sault;
-			$_SESSION["hash"] = $Crypto->Hash("{$post_login}:".$Crypto->Hash($post_pass).":{$sault}");
-			$_SESSION["uid"] = 0;
-			$_SESSION["cpwd"] = $post_pass;
-			
-			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
-			unset($_SESSION["REQUEST_URI"]);
-			
-			UI::Redirect("{$rpath}");
+		    if (CheckIPAcceess())
+		    {
+				$sault = $Crypto->Sault();
+				$_SESSION["sault"] = $sault;
+				$_SESSION["hash"] = $Crypto->Hash("{$post_login}:".$Crypto->Hash($post_pass).":{$sault}");
+				$_SESSION["uid"] = 0;
+				$_SESSION["cpwd"] = $post_pass;
+				
+				$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
+				unset($_SESSION["REQUEST_URI"]);
+				
+				UI::Redirect("{$rpath}");
+		    }
+		    else
+		    	$err[] = "Incorrect login or password";
 		}
 		else
 		{
-			if($req_isadmin)
+			if($req_isadmin && CheckIPAcceess())
 			{
 				$hash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);
 				$valid_hash = ($newhash == $_SESSION["hash"] && !empty($_SESSION["hash"]));
@@ -94,9 +99,12 @@
 	        			$_SESSION["hash"] = $Crypto->Hash("{$user['email']}:{$user["password"]}:{$sault}");
 	        			$_SESSION["uid"] = $user["id"];
 	        			$_SESSION["cpwd"] = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-	        			$_SESSION["aws_accesskey"] = $user["aws_accesskey"];
-	        			$_SESSION["aws_accesskeyid"] = $user["aws_accesskeyid"];
+	        			$_SESSION["aws_accesskey"] = $Crypto->Decrypt($user["aws_accesskey"], $_SESSION["cpwd"]);
+	        			$_SESSION["aws_accesskeyid"] = $Crypto->Decrypt($user["aws_accesskeyid"], $_SESSION["cpwd"]);
 	        			$_SESSION["aws_accountid"] = $user["aws_accountid"];
+	        			
+	        			$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
+	        			$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
 	        			
 	        			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
 	        			unset($_SESSION["REQUEST_URI"]);
@@ -113,6 +121,48 @@
 			else 
                 $err[] = "Incorrect login or password";
 		}
+	}
+	
+	function CheckIPAcceess()
+	{
+	    global $db;
+	    
+	    $current_ip = $_SERVER["REMOTE_ADDR"];
+    	$current_ip_parts = explode(".", $current_ip);
+    	
+    	$ipaccesstable = $db->Execute("SELECT * FROM ipaccess");
+    	while ($row = $ipaccesstable->fetchRow())
+    	{
+    	    $allowedhost = $row["ipaddress"];
+    	    
+    	    if (preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/si", $allowedhost))
+    	    {
+    	        if (ip2long($allowedhost) == ip2long($current_ip))
+    	           return true;
+    	    }
+    	    elseif (stristr($allowedhost, "*"))
+    	    {
+    	        $ip_parts = explode(".", trim($allowedhost));
+    	        if (
+    				($ip_parts[0] == "*" || $ip_parts[0] == $current_ip_parts[0]) &&
+    				($ip_parts[1] == "*" || $ip_parts[1] == $current_ip_parts[1]) &&
+    				($ip_parts[2] == "*" || $ip_parts[2] == $current_ip_parts[2]) &&
+    				($ip_parts[3] == "*" || $ip_parts[3] == $current_ip_parts[3])
+    			   )
+    			return true;
+    	    }
+    	    else 
+    	    {
+    	        $ip = @gethostbyname($allowedhost);
+    	        if ($ip != $allowedhost)
+    	        {
+    	            if (ip2long($ip) == ip2long($current_ip))
+    	               return true;
+    	        }
+    	    }
+    	}
+    	
+        return false;
 	}
 	
 	require("src/append.inc.php"); 

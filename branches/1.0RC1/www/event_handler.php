@@ -1,6 +1,5 @@
 <?
 define("NO_AUTH", true);
-define("NO_TEMPLATES", true);
 include("src/prepend.inc.php");
 
 if ($req_FarmID && $req_Hash)
@@ -14,9 +13,15 @@ if ($req_FarmID && $req_Hash)
 	$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=?
                                      AND instance_id=?", array($farm_id, $req_InstanceID));
 
-	$AmazonEC2Client = new AmazonEC2(
-	APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/pk.pem",
-	APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/cert.pem");
+	$cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
+	
+	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo['clientid']));
+	
+	// Decrypt client prvate key and certificate
+    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+	
+	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
 
 
 	if ($farminfo && $instanceinfo)
@@ -31,7 +36,7 @@ if ($req_FarmID && $req_Hash)
 		switch ($req_EventType)
 		{
 			case "go2Halt":
-
+				
 				$Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$instanceinfo["instance_id"]}' sent event 'go2halt'");
 				$db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $instanceinfo["instance_id"]));
 
@@ -88,7 +93,7 @@ if ($req_FarmID && $req_Hash)
 					}
 					catch(Exception $e)
 					{
-						$Logger->warn("[FarmID: {$farminfo['id']}] Update DNS zone on go2halt event failed: {$e->getMessage()}");
+						$Logger->warn(new FarmLogMessage($farminfo['id'], "Update DNS zone on go2halt event failed: {$e->getMessage()}"));
 					}
 				}
 				
@@ -101,14 +106,16 @@ if ($req_FarmID && $req_Hash)
 					$db->Execute("UPDATE ami_roles SET iscompleted='2', `replace`='', prototype_iid='', fail_details=? WHERE id='{$sync_role['id']}'", array("Instance terminated during synchronization."));
 				}
 				
+				Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $instanceinfo);
+				
 				break;
 
 			case "mysqlBckComplete":
 
 				if ($data["operation"] == "backup")
-				$db->Execute("UPDATE farms SET dtlastbcp='".time()."' WHERE id='{$farminfo['id']}'");
+					$db->Execute("UPDATE farms SET dtlastbcp='".time()."' WHERE id='{$farminfo['id']}'");
 				else
-				$db->Execute("UPDATE farms SET dtlastrebundle='".time()."' WHERE id='{$farminfo['id']}'");
+					$db->Execute("UPDATE farms SET dtlastrebundle='".time()."' WHERE id='{$farminfo['id']}'");
 
 				$db->Execute("UPDATE farms SET isbcprunning='0' WHERE id='{$farminfo['id']}'");
 
@@ -127,7 +134,9 @@ if ($req_FarmID && $req_Hash)
 			case "rebootStart":
 
 				$db->Execute("UPDATE farm_instances SET isrebootlaunched='1', dtrebootstart=NOW() WHERE id='{$instanceinfo['id']}'");
-
+				
+				Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::REBOOT_BEGIN, $instanceinfo);
+				
 				break;
 
 			case "rebundleStatus":
@@ -146,7 +155,9 @@ if ($req_FarmID && $req_Hash)
 			case "rebootFinish":
 
 				$db->Execute("UPDATE farm_instances SET isrebootlaunched='0', dtrebootstart=NULL WHERE id='{$instanceinfo['id']}'");
-
+				
+				Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::REBOOT_COMPLETE, $instanceinfo);
+				
 				break;
 				 
 			case "newMysqlMaster":
@@ -169,7 +180,7 @@ if ($req_FarmID && $req_Hash)
 
 			case "hostInit":
 
-				$Logger->debug("Instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') initialized");
+				$Logger->debug("Instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') initialized.");
 				
 				$db->BeginTrans();
 				
@@ -178,8 +189,8 @@ if ($req_FarmID && $req_Hash)
 					$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$farminfo['clientid']}'");
 	
 					$s3cfg = CONFIG::$S3CFG_TEMPLATE;
-					$s3cfg = str_replace("[access_key]", $clientinfo["aws_accesskeyid"], $s3cfg);
-					$s3cfg = str_replace("[secret_key]", $clientinfo["aws_accesskey"], $s3cfg);
+					$s3cfg = str_replace("[access_key]", $Crypto->Decrypt($clientinfo["aws_accesskeyid"], $cpwd), $s3cfg);
+					$s3cfg = str_replace("[secret_key]", $Crypto->Decrypt($clientinfo["aws_accesskey"], $cpwd), $s3cfg);
 					$s3cfg = str_replace("\r\n", "\n", $s3cfg);
 	
 					$local_ip = $data["localip"];
@@ -201,17 +212,22 @@ if ($req_FarmID && $req_Hash)
 					$SSH2->AddPubkey("root", $pub_key_file, $priv_key_file);
 					if ($SSH2->Connect($_SERVER['REMOTE_ADDR'], 22))
 					{
-						$res = $SSH2->SendFile("/etc/aws/keys/pk.pem", APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/pk.pem");
-						$res2 = $SSH2->SendFile("/etc/aws/keys/cert.pem", APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/cert.pem");
+						// Upload keys and s3 config to instance
+						$res = $SSH2->SendFile("/etc/aws/keys/pk.pem", $private_key, "w+", false);
+						$res2 = $SSH2->SendFile("/etc/aws/keys/cert.pem", $certificate, "w+", false);
 						$res3 = $SSH2->SendFile("/etc/aws/keys/s3cmd.cfg", $s3cfg, "w+", false);
+						
+						@unlink($pub_key_file);
+						@unlink($priv_key_file);
 					}
 					else
 					{
-						throw new Exception("Cannot upload keys on '{$req_InstanceID}'. Failed to connect to  ('{$_SERVER['REMOTE_ADDR']}').");	
+						@unlink($pub_key_file);
+						@unlink($priv_key_file);
+						
+						$Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot upload ec2 keys to '{$req_InstanceID}' instance. Failed to connect to SSH ('{$_SERVER['REMOTE_ADDR']}':22)"));
+						throw new Exception("Cannot upload keys on '{$req_InstanceID}'. Failed to connect to  ('{$_SERVER['REMOTE_ADDR']}').");
 					}
-	
-					@unlink($pub_key_file);
-					@unlink($priv_key_file);
 				}
 				catch(Exception $e)
 				{
@@ -247,6 +263,7 @@ if ($req_FarmID && $req_Hash)
 
 				$db->Execute("UPDATE ami_roles SET iscompleted='2', `replace`='', fail_details=? WHERE prototype_iid=? AND iscompleted='0'", array("Rebundle script failed. See event log for more information.", $req_InstanceID));
 				
+				Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::REBUNDLE_FAILED, $instanceinfo);
 								
 				break;
 
@@ -278,6 +295,8 @@ if ($req_FarmID && $req_Hash)
 				$roleid = $db->GetOne("SELECT id FROM ami_roles WHERE ami_id=?", array($newAMI));
 				$db->Execute("INSERT INTO rebundle_log SET roleid=?, dtadded=NOW(), message=?", array($roleid, "Rebundle complete."));
 				
+				Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::REBUNDLE_COMPLETE, $ami_info, $instanceinfo);
+				
 				break;
 
 			case "hostUp":
@@ -286,56 +305,77 @@ if ($req_FarmID && $req_Hash)
 				{
 					case "Pending":
 
-						$Logger->debug("Instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') started.");
-
+						$Logger->info(new FarmLogMessage($farminfo['id'], "Instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') initialized and started."));
+						
 						$db->Execute("UPDATE farm_instances SET state='Running' WHERE id='{$instanceinfo['id']}'");
 						
 						//
 						// Update DNS
 						//
-						try
+						if ($instanceinfo['isactive'] == 1)
 						{
-							$zones = $db->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
-							if (count($zones) > 0)
+							try
 							{
-								$DNSZoneController = new DNSZoneControler();
-								
-								foreach ($zones as $zone)
-								{								
-									$records_attrs = array();
+								$zones = $db->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
+								if (count($zones) > 0)
+								{
+									$DNSZoneController = new DNSZoneControler();
 									
-									if ($zone['id'])
-									{									
-										if ($zone["role_name"] == $instanceinfo['role_name'])
-											$records_attrs[] = array("@", $_SERVER['REMOTE_ADDR'], CONFIG::$DYNAMIC_A_REC_TTL);
+									foreach ($zones as $zone)
+									{								
+										$records_attrs = array();
 										
-										if ($instanceinfo["isdbmaster"] == 1)
-										{
-											$records_attrs[] = array("int-{$instanceinfo['role_name']}-master", $instanceinfo["internal_ip"], 20);
-											$records_attrs[] = array("ext-{$instanceinfo['role_name']}-master", $_SERVER['REMOTE_ADDR'], 20);
-										}
-											
-										$records_attrs[] = array("int-{$instanceinfo['role_name']}", $instanceinfo["internal_ip"], 20);
-										
-										$records_attrs[] = array("ext-{$instanceinfo['role_name']}", $_SERVER['REMOTE_ADDR'], 20);
-											
-										foreach ($records_attrs as $record_attrs)
+										if ($zone['id'])
 										{									
-											$db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
-											array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
+											$replace = false;
+											if ($instanceinfo["replace_iid"])
+											{
+												$old_instance_info = $db->GetRow("SELECT role_name FROM farm_instances 
+													WHERE instance_id=?", 
+													array($instanceinfo["replace_iid"])
+												);
+												
+												if ($old_instance_info['role_name'] == $zone["role_name"])
+													$replace = true;
+											}
+											
+											if ($zone["role_name"] == $instanceinfo['role_name'] || $replace)
+											{
+												$records_attrs[] = array("@", $_SERVER['REMOTE_ADDR'], CONFIG::$DYNAMIC_A_REC_TTL);
+												
+												$Logger->info(new FarmLogMessage($farminfo['id'], "Adding '@ IN A {$_SERVER['REMOTE_ADDR']}' to zone {$zone['zone']} pointed to role '{$zone["role_name"]}'"));
+											}
+											
+											if ($instanceinfo["isdbmaster"] == 1)
+											{
+												$records_attrs[] = array("int-{$instanceinfo['role_name']}-master", $instanceinfo["internal_ip"], 20);
+												$records_attrs[] = array("ext-{$instanceinfo['role_name']}-master", $_SERVER['REMOTE_ADDR'], 20);
+											}
+												
+											$records_attrs[] = array("int-{$instanceinfo['role_name']}", $instanceinfo["internal_ip"], 20);
+											
+											$records_attrs[] = array("ext-{$instanceinfo['role_name']}", $_SERVER['REMOTE_ADDR'], 20);
+	
+											$Logger->info(new FarmLogMessage($farminfo['id'], "Adding ext-* and int-* to zone {$zone['zone']}"));
+											
+											foreach ($records_attrs as $record_attrs)
+											{									
+												$db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
+												array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
+											}
+											
+											if (!$DNSZoneController->Update($zone["id"]))
+												$Logger->error("Cannot update zone when 'hostUp' event raised.");
+											else
+												$Logger->debug("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
 										}
-										
-										if (!$DNSZoneController->Update($zone["id"]))
-											$Logger->error("Cannot update zone when 'hostUp' event raised.");
-										else
-											$Logger->debug("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
 									}
 								}
 							}
-						}
-						catch(Exception $e)
-						{
-							$Logger->fatal("Eventhandler::hostUp. DNS zone update failed: ".$e->getMessage());
+							catch(Exception $e)
+							{
+								$Logger->fatal("Eventhandler::hostUp. DNS zone update failed: ".$e->getMessage());
+							}
 						}
 
 						$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo["role_name"]}' AND iscompleted='1'");
@@ -370,20 +410,6 @@ if ($req_FarmID && $req_Hash)
 									}
 									else
 									$Logger->warn("Instance '{$old_instance["instance_id"]}' has been swapped with the instance {$instanceinfo['instance_id']}");
-
-									$DNSZoneController = new DNSZoneControler();
-
-									$zones = $db->GetAll("SELECT * FROM zones WHERE id IN (SELECT zoneid FROM records WHERE (rvalue='{$old_instance['external_ip']}' OR rvalue='{$old_instance['internal_ip']}') AND `rtype`='A') AND status != ?", array(ZONE_STATUS::DELETED));
-									foreach ($zones as $zone)
-									{
-										$db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey='@', issystem='1'",
-										array(CONFIG::$DYNAMIC_A_REC_TTL, $_SERVER['REMOTE_ADDR']));
-										 
-										if (!$DNSZoneController->Update($zone["id"]))
-										$Logger->error("Cannot update zone when 'hostUp' event raised for instance swap.");
-										else
-										$Logger->debug("A record for instance {$instanceinfo['instance_id']} with IP {$_SERVER['REMOTE_ADDR']} added to zone '{$zone['zone']}'");
-									}
 								}
 							}
 						}
@@ -391,7 +417,9 @@ if ($req_FarmID && $req_Hash)
 						{
 							$Logger->fatal($e->getMessage());
 						}
-
+						
+						Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::HOST_UP, $instanceinfo);
+						
 						break;
 
 					case "Running":
@@ -422,4 +450,5 @@ if ($req_FarmID && $req_Hash)
 		}
 	}
 }
+	exit();
 ?>

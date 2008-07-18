@@ -14,11 +14,11 @@ table.trackbar img{border:0;}
 div.tickdiv {margin:0; padding:0; border:0; float:none;}
 
 /* Styles */
-.trackbar_red {width:250px; background:repeat-x url(/js/FC_TrackBar/imgtrackbar/b_bg_on_red.gif) top left;}
-.trackbar_yellow {width:250px; background:repeat-x url(/js/FC_TrackBar/imgtrackbar/b_bg_on_yellow.gif) top left;}
-.trackbar_normal {width:250px; background:repeat-x url(/js/FC_TrackBar/imgtrackbar/b_bg_on_normal.gif) top left;}
+.trackbar_red {width:250px; background:repeat url(/js/FC_TrackBar/imgtrackbar/b_bg_on_red.gif) top left;}
+.trackbar_yellow {width:250px; background:repeat url(/js/FC_TrackBar/imgtrackbar/b_bg_on_yellow.gif) top left;}
+.trackbar_normal {width:250px; background:repeat url(/js/FC_TrackBar/imgtrackbar/b_bg_on_normal.gif) top left;}
 
-table.trackbar {width:250px; background:repeat-x url(/js/FC_TrackBar/imgtrackbar/b_bg_on_normal.gif) top left;}
+table.trackbar {width:250px; background:repeat url(/js/FC_TrackBar/imgtrackbar/b_bg_on_normal.gif) top left;}
 table.trackbar .l {width:1%; text-align: right; font-size: 1px; background:repeat-x url(/js/FC_TrackBar/imgtrackbar/b_bg_off.gif) top left;}
 table.trackbar .l div {position:relative; width:0; text-align: right; z-index:500; white-space:nowrap;}
 table.trackbar .l div img {cursor:pointer;}

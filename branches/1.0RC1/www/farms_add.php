@@ -24,9 +24,21 @@
     $avail_slots = CONFIG::$CLIENT_MAX_INSTANCES - $used_slots;
     $errmsg = "You have {$avail_slots} spare instances available on your account.";
     
-    $AmazonEC2Client = new AmazonEC2(
-                    APPPATH . "/etc/clients_keys/{$uid}/pk.pem", 
-                    APPPATH . "/etc/clients_keys/{$uid}/cert.pem");
+    if ($_SESSION['uid'] == 0)
+    {
+	    $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($uid));
+		
+		// Decrypt client prvate key and certificate
+	    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+	    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+    }
+    else
+    {
+    	$private_key = $_SESSION["aws_private_key"];
+    	$certificate = $_SESSION["aws_certificate"];
+    }
+	
+	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
                     
     // Get Avail zones
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
@@ -107,11 +119,7 @@
                 $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
             
 	        if (count($err) == 0)
-	        {
-    	        $AmazonEC2Root = new AmazonEC2(
-                    APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-                    APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
-                	    
+	        {                	    
                 if ($post_farmid)
                 {
                     $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
@@ -241,6 +249,7 @@
 	                $db->CommitTrans();
 	                
 	                $okmsg = "Farm succesfully built.";
+	                $errmsg = false;
 	                UI::Redirect("farms_control.php?farmid={$farmid}&new=1");
     	        }
     	        else 
@@ -378,6 +387,7 @@
     	            {
     	               $db->CommitTrans();
     	            	
+    	               $errmsg = false;
     	               $okmsg = "Farm successfully updated";
     	               UI::Redirect("farms_view.php");
     	            }

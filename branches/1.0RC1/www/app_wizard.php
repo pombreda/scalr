@@ -4,6 +4,9 @@
 	$display["title"] = "Application creation wizard";
     $Validator = new Validator();
     
+    if ($_SESSION['uid'] == 0)
+    	UI::Redirect("index.php");
+    
     if ($req_step == 4)
     {
         if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", array($_SESSION['wizard']["domainname"], ZONE_STATUS::DELETED)))
@@ -13,14 +16,8 @@
         }
     	
     	$_SESSION["wizard"]["dnsami"] = $post_dnsami;
-        
-        $AmazonEC2Root = new AmazonEC2(
-            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
         	                            
-        $AmazonEC2Client = new AmazonEC2(
-            APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/pk.pem", 
-            APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/cert.pem");
+        $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
                 
         $db->BeginTrans();
         
@@ -122,6 +119,8 @@
 	        //
 	        // Add DNS Zone
 	        //
+	        $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$_SESSION['wizard']["dnsami"]}'");
+        	
 	        $records = array();
 			$nss = $db->GetAll("SELECT * FROM nameservers");
 			foreach ($nss as $ns)

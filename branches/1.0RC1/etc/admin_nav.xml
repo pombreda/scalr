@@ -37,7 +37,13 @@
 		<item href="settings_core.php">Core settings</item>
 		<separator />
 		<item href="templates_manager.php">Manage templates</item>
-		
+		<separator />
+		<node title="Security">
+			<node title="IP whitelist">
+				<item href="ipaccess_add.php">Add new IP</item>
+				<item href="ipaccess_view.php">View all IPs</item>			
+			</node>		
+		</node>
 	</node>
 	
 </menu>

@@ -33,6 +33,10 @@
 	    		$db->Execute("DELETE FROM farm_instances WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM records WHERE zoneid IN (SELECT id FROM zones WHERE farmid=?)", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM zones WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM logentries WHERE farmid=?", array($farminfo['id']));
+	    		
+	    		// Remove statistics information (Graphics and RRD databases)
+	    		IOTool::UnlinkRecursive(APPPATH."/data/{$farminfo['id']}");
 	    	}
 	    	catch(Exception $e)
 	    	{

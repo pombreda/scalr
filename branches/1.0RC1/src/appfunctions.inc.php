@@ -77,7 +77,7 @@
         
         $RunInstancesType->additionalInfo = "";
         $RunInstancesType->keyName = "FARM-{$farmid}";
-        $RunInstancesType->SetUserData("farmid={$farmid};role={$alias};eventhandlerurl=".CONFIG::$EVENTHANDLER_URL.";hash={$farmhash};s3bucket=FARM-{$farmid}-{$clientinfo['aws_accountid']}");
+        $RunInstancesType->SetUserData("farmid={$farmid};role={$alias};eventhandlerurl=".CONFIG::$EVENTHANDLER_URL.";hash={$farmhash};s3bucket=FARM-{$farmid}-{$clientinfo['aws_accountid']};realrolename={$role_name};httpproto=".CONFIG::$HTTP_PROTO);
         $RunInstancesType->instanceType = $i_type;
                 
         $result = $AmazonEC2Client->RunInstances($RunInstancesType);

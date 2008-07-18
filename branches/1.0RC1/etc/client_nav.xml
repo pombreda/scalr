@@ -26,4 +26,8 @@
 		<separator />
 		<item href="default_records.php">Default DNS records</item>
 	</node>
+	
+	<node title="Misc">
+		<item href="garbage.php">Delete unused objects</item>
+	</node>
 </menu>

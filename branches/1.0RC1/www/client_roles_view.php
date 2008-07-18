@@ -1,6 +1,92 @@
 <?
 	require_once('src/prepend.inc.php');
 
+	if ($req_task == 'abort')
+	{
+		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($req_id));
+		if ($roleinfo['clientid'] != $_SESSION["uid"] && $_SESSION["uid"] != 0)
+			UI::Redirect("client_roles_view.php");
+			
+		if ($roleinfo["replace"] != '' && $roleinfo["iscompleted"] == 1 && $roleinfo["ami_id"])
+		{
+			$db->BeginTrans();
+			
+			try
+			{
+				$db->Execute("UPDATE farm_amis SET replace_to_ami = '' WHERE replace_to_ami=?", 
+					array($roleinfo['ami_id'])
+				);
+				
+				$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=? 
+					WHERE id=?",
+					array("Rebundle complete, but the rebundled AMI is not operable by Scalr.", $roleinfo["id"])
+				);
+				
+				// Terminate unoperable instances
+				$instances = $db->GetAll("SELECT * FROM farm_instances 
+					WHERE ami_id=? AND replace_iid IS NOT NULL", 
+					array($roleinfo['ami_id'])
+				);
+			}
+			catch(Exception $e)
+			{
+				$db->RollbackTrans();
+	    		throw new ApplicationException($e->getMessage());
+			}
+			
+			$db->CommitTrans();
+
+			if (count($instances) > 0)
+			{
+				if ($_SESSION['uid'] == 0)
+			    {
+			    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($roleinfo['clientid']));
+				
+					// Decrypt client prvate key and certificate
+			    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+			    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+			    }
+			    else
+			    {
+			    	$private_key = $_SESSION["aws_private_key"];
+			    	$certificate = $_SESSION["aws_certificate"];
+			    }
+				
+			    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+			    
+				foreach ($instances as $instance)
+				{
+					try 
+	    			{    				
+	    				$response = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
+	    					
+	    				if ($response instanceof SoapFault)
+	    				{
+	    					$err[] = $response->faultstring;
+	    				}
+	    			}
+	    			catch (Exception $e)
+	    			{
+	    				$err[] = $e->getMessage(); 
+	    			}
+				}
+			}
+			
+			if (count($err) > 0)
+			{
+				$errmsg = "Role synchronization aborted with the following errors:";
+				UI::Redirect("client_roles_view.php");
+			}
+			else
+			{
+				$okmsg = "Role synchronization aborted";
+				UI::Redirect("client_roles_view.php");
+			}
+		}
+		else
+			UI::Redirect("client_roles_view.php");
+	}
+	
 	// Post actions
 	if ($_POST && $post_actionsubmit)
 	{
@@ -79,6 +165,14 @@
 		
 		$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
 		
+		if ($row["isreplaced"])
+			$infrole = $db->GetRow("SELECT * FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
+		else
+			$infrole = $row;
+			
+		if ($infrole["replace"] != '' && $infrole["iscompleted"] == 1 && $infrole["ami_id"])
+			$row["abort_id"] = $infrole['id'];
+			
 		if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == 'SHARED')
     	   $display["rows"][] = $row;
 	}

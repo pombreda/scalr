@@ -62,8 +62,9 @@
 	
 	if ($req_ami_id)
 	{
-	    $id = preg_replace("/[^A-Za-z0-9-]+/", "", $req_ami_id);
-	    $sql .= " AND ami_id='{$id}'";
+	    $ami_id = $db->qstr($req_ami_id);
+	    
+	    $sql .= " AND ami_id={$ami_id}";
 	    $paging->AddURLFilter("ami_id", $id);
 	}
 	//Paging
@@ -79,7 +80,9 @@
 	$display["rows"] = $db->GetAll($paging->SQL);	
 	foreach ($display["rows"] as &$row)
 	{
-	    $row["role"] = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
+	    if ($row["ami_id"])
+			$row["role"] = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
+			
 	    $row["farm"] = $db->GetRow("SELECT * FROM farms WHERE id=?", $row["farmid"]);
 	    
 	    switch($row["status"])

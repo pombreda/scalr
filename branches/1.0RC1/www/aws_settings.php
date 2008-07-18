@@ -38,14 +38,14 @@
         if ($_FILES['cert_file']['tmp_name'] || $_FILES['pk_file']['tmp_name'])
         {        	
         	if ($_FILES['pk_file']['tmp_name'])
-        		$path_to_pk = $_FILES['pk_file']['tmp_name'];
+        		$private_key = @file_get_contents($_FILES['pk_file']['tmp_name']);
         	else
-        		$path_to_pk = APPPATH."/etc/clients_keys/{$_SESSION['uid']}/pk.pem";
+        		$private_key = $_SESSION["aws_private_key"];
         		
         	if ($_FILES['cert_file']['tmp_name'])
-        		$path_to_cert = $_FILES['cert_file']['tmp_name'];
+        		$cert = @file_get_contents($_FILES['cert_file']['tmp_name']);
         	else
-        		$path_to_pk = APPPATH."/etc/clients_keys/{$_SESSION['uid']}/cert.pem";
+        		$cert = $_SESSION["aws_certificate"];
         		
         	$validate_cert = true;
         }
@@ -54,7 +54,7 @@
         {
         	try
         	{
-	        	$AmazonEC2Client = new AmazonEC2($path_to_pk, $path_to_cert);
+	        	$AmazonEC2Client = new AmazonEC2($private_key, $cert);
 	
 	            $RunInstancesType = new RunInstancesType();
 		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM ami_roles WHERE roletype='SHARED' AND architecture='i386'");
@@ -75,12 +75,25 @@
         	}
         }
         
+        if ($post_aws_accesskey != '******' || $post_aws_accesskeyid != $_SESSION["aws_accesskeyid"])
+        {
+        	try
+        	{
+        		$AmazonS3 = new AmazonS3($post_aws_accesskeyid, $post_aws_accesskey);
+    	    	$buckets = $AmazonS3->ListBuckets();
+        	}
+        	catch(Exception $e)
+        	{
+        		$err[] = "Failed to verify your access key and access key id. ".$e->getMessage();
+        	}
+        }
+        
         ///////////////////////////////////////////
             
         if (count($err) == 0)
         {                      
 			$aws_accesskey = $db->qstr($post_aws_accesskey);
-        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = {$aws_accesskey}," : "";
+        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = '{$Crypto->Encrypt($aws_accesskey, $_SESSION["cpwd"])}'," : "";
         	
         	try
 			{
@@ -90,34 +103,68 @@
 					{$akey}
 					aws_accountid   = ?
 					WHERE id = ?
-				", array($post_aws_accesskeyid, $post_aws_accountid, $_SESSION['uid']
+				", array($Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), $post_aws_accountid, $_SESSION['uid']
 				));
 			}
 			catch (Exception $e)
 			{
 				throw new ApplicationException($e->getMessage(), E_ERROR);
 			}
-        
-            if (!file_exists(APPPATH."/etc/clients_keys/{$_SESSION['uid']}"))
-				@mkdir(APPPATH."/etc/clients_keys/{$_SESSION['uid']}");
                     
             if ($_FILES['cert_file']['tmp_name'])
             {
-				if (!@move_uploaded_file($_FILES['cert_file']['tmp_name'], APPPATH."/etc/clients_keys/{$_SESSION['uid']}/cert.pem"))
-					$err[] = "Cannot write cert file";
+				$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);
+				if ($contents)
+				{
+					$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+					
+					$db->Execute("UPDATE clients SET
+						aws_certificate_enc = ?
+						WHERE id = ?
+					", array($enc_contents, $_SESSION['uid']));
+					
+					$aws_certificate = $contents;
+				}
+				else
+				{
+					$Logger->fatal("Internal error: cannot read uploaded file");
+					$err[] = "Internal error: cannot read uploaded file";
+				}
             }
+            else
+            	$aws_certificate = $_SESSION["aws_certificate"];
                     
             if ($_FILES['pk_file']['tmp_name'])
             {
-				if (!@move_uploaded_file($_FILES['pk_file']['tmp_name'], APPPATH."/etc/clients_keys/{$_SESSION['uid']}/pk.pem"))
-					$err[] = "Cannot write pk file";
+            	$contents = @file_get_contents($_FILES['pk_file']['tmp_name']);
+				if ($contents)
+				{
+					$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+					
+					$db->Execute("UPDATE clients SET
+						aws_private_key_enc = ?
+						WHERE id = ?
+					", array($enc_contents, $_SESSION['uid']));
+					
+					$aws_private_key = $contents;
+				}
+				else
+				{
+					$Logger->fatal("Internal error: cannot read uploaded file");
+					$err[] = "Internal error: cannot read uploaded file";
+				}
             }
+            else
+            	$aws_private_key = $_SESSION["aws_private_key"];
             
             if (count($err) == 0)
             {
                 $_SESSION["aws_accesskey"] = $post_aws_accesskey;
         		$_SESSION["aws_accesskeyid"] = $post_aws_accesskeyid;
         		$_SESSION["aws_accountid"] = $post_aws_accountid;
+        		
+        		$_SESSION["aws_private_key"] = $aws_private_key;
+        		$_SESSION["aws_certificate"] = $aws_certificate;
         		
         		$errmsg = false;
             	$okmsg = "AWS settings successfully saved";
@@ -127,6 +174,9 @@
 	}
 	
 	$info = $db->GetRow("SELECT * FROM `clients` WHERE id='{$_SESSION['uid']}'");
+	$info["aws_accesskeyid"] = $Crypto->Decrypt($info["aws_accesskeyid"], $_SESSION["cpwd"]);
+	$info["aws_accesskey"] = $Crypto->Decrypt($info["aws_accesskey"], $_SESSION["cpwd"]);
+	
 	$display = array_merge($info, $display);
 		
 	require("src/append.inc.php"); 

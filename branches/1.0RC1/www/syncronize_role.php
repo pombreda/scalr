@@ -16,10 +16,6 @@
             	CoreUtils::Redirect("farms.view.php");
             }
             
-            $AmazonEC2Client = new AmazonEC2(
-                        APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/pk.pem", 
-                        APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/cert.pem");
-            
             $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$farminfo['clientid']}'");
             
             if ($farminfo["clientid"] != $_SESSION['uid'] && $_SESSION['uid'] != 0)

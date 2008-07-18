@@ -10,36 +10,28 @@
     Core::Load("System/Independent/Shell/ShellFactory");
     Core::Load("NET/SNMP");
         
-    register_shutdown_function("shutdown");
-    
-    function shutdown()
-    {
-   		@file_put_contents(dirname(__FILE__)."/cron.pid", "");
-    }
-    
     $fname = basename($argv[0]);
 
     $JobLauncher = new JobLauncher(dirname(__FILE__));
     
-	$Shell = ShellFactory::GetShellInstance();
-	    
-    $pid = file_get_contents(dirname(__FILE__)."/cron.pid");
-    if ($pid)
+    // DBQueueEvent - it is a daemon process so we must skepp this check
+    if ($JobLauncher->GetProcessName() != 'DBQueueEvent')
     {
-        $ps = $Shell->QueryRaw("ps aux | grep '{$pid}' | grep 'cron' | grep '{$JobLauncher->GetProcessName()}'");    
-        if ($ps)
-        {
-            $Logger->info("'{$fname} --{$JobLauncher->GetProcessName()}' already running. Exiting.");
-            exit();
-        }
-    }
-    
-    @file_put_contents(dirname(__FILE__)."/cron.pid", posix_getpid());
-		
-	
-	
-	$Logger->info(sprintf("Starting %s cronjob...", $JobLauncher->GetProcessName()));
-	
-	$JobLauncher->Launch(10);
-?>
+	    $Shell = ShellFactory::GetShellInstance();
+	    // Set terminal width
+	    putenv("COLUMNS=200");
 
+	    // Execute command
+	    $parent_pid = posix_getppid();
+		$ps = $Shell->QueryRaw("ps x -o pid,command | grep -v {$parent_pid} |grep -v ".posix_getpid()." | grep -v 'ps x' | grep '".dirname(__FILE__)."' | grep '\-\-{$JobLauncher->GetProcessName()}'");
+		
+		if ($ps)
+		{
+			$Logger->info("'{$fname} --{$JobLauncher->GetProcessName()}' already running. Exiting.");
+			exit();
+		}
+    }
+
+	$Logger->info(sprintf("Starting %s cronjob...", $JobLauncher->GetProcessName()));	
+	$JobLauncher->Launch(5);
+?>
