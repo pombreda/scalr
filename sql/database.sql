@@ -28,8 +28,15 @@ CREATE TABLE `ami_roles` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 /*Data for the table `ami_roles` */
-
-insert  into `ami_roles`(`id`,`ami_id`,`name`,`roletype`,`clientid`,`prototype_iid`,`iscompleted`,`comments`,`dtbuilt`,`description`,`replace`,`default_minLA`,`default_maxLA`,`alias`,`instance_type`,`architecture`) values (1,'ami-5dd53034','base','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.small','i386'),(2,'ami-53d5303a','mysql','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.small','i386'),(3,'ami-5ed53037','www','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.small','i386'),(7,'ami-50d53039','app','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.small','i386'),(16,'ami-0aad4963','base64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.large','x86_64'),(17,'ami-16ac487f','mysql64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.large','x86_64'),(18,'ami-e3a2468a','www64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.large','x86_64'),(19,'ami-e5a2468c','app64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.large','x86_64');
+INSERT INTO `ami_roles` (`id`, `ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, `comments`, `dtbuilt`, `description`, `replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, `architecture`, `dtbuildstarted`, `rebundle_trap_received`, `fail_details`) VALUES
+(1, 'ami-e2aa4e8b', 'base', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 5, 10, 'base', 'm1.small', 'i386', NULL, 1, NULL),
+(2, 'ami-bd8763d4', 'mysql', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.small', 'i386', NULL, 1, NULL),
+(18, 'ami-8c8f6be5', 'www', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.small', 'i386', NULL, 1, NULL),
+(20, 'ami-bfbd59d6', 'app', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.small', 'i386', NULL, 1, NULL),
+(47, 'ami-e5a2468c', 'app64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.large', 'x86_64', NULL, 1, NULL),
+(48, 'ami-0aad4963', 'base64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'base', 'm1.large', 'x86_64', NULL, 1, NULL),
+(49, 'ami-a68266cf', 'mysql64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.large', 'x86_64', NULL, 1, NULL),
+(50, 'ami-b48f6bdd', 'www64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.large', 'x86_64', NULL, 1, NULL);
 
 /*Table structure for table `client_settings` */
 
@@ -274,8 +281,37 @@ CREATE TABLE `security_rules` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 /*Data for the table `security_rules` */
-
-insert  into `security_rules`(`id`,`roleid`,`rule`) values (1,1,'tcp:22:22:0.0.0.0/0'),(2,1,'udp:161:162:0.0.0.0/0'),(3,2,'tcp:22:22:0.0.0.0/0'),(4,2,'tcp:3306:3306:0.0.0.0/0'),(5,2,'udp:161:162:0.0.0.0/0'),(35,3,'tcp:80:80:0.0.0.0/0'),(34,3,'tcp:22:22:0.0.0.0/0'),(33,3,'udp:161:162:0.0.0.0/0'),(32,7,'udp:161:162:0.0.0.0/0'),(31,7,'tcp:22:22:0.0.0.0/0'),(30,7,'tcp:80:80:0.0.0.0/0'),(15,9,'tcp:80:80:0.0.0.0/0'),(16,9,'tcp:22:22:0.0.0.0/0'),(17,9,'udp:161:162:0.0.0.0/0'),(27,10,'tcp:80:80:0.0.0.0/0'),(28,10,'tcp:22:22:0.0.0.0/0'),(29,10,'udp:161:162:0.0.0.0/0'),(36,15,'udp:161:162:0.0.0.0/0'),(37,15,'tcp:22:22:0.0.0.0/0'),(38,15,'tcp:80:80:0.0.0.0/0'),(39,16,'tcp:22:22:0.0.0.0/0'),(40,16,'udp:161:162:0.0.0.0/0'),(41,17,'tcp:22:22:0.0.0.0/0'),(42,17,'tcp:3306:3306:0.0.0.0/0'),(43,17,'udp:161:162:0.0.0.0/0'),(44,18,'tcp:80:80:0.0.0.0/0'),(45,18,'tcp:22:22:0.0.0.0/0'),(46,18,'udp:161:162:0.0.0.0/0'),(47,19,'udp:161:162:0.0.0.0/0'),(48,19,'tcp:22:22:0.0.0.0/0'),(49,19,'tcp:80:80:0.0.0.0/0');
+INSERT INTO `security_rules` (`id`, `roleid`, `rule`) VALUES
+(1, 1, 'tcp:22:22:0.0.0.0/0'),
+(2, 1, 'udp:161:162:0.0.0.0/0'),
+(45, 18, 'tcp:22:22:0.0.0.0/0'),
+(46, 18, 'tcp:80:80:0.0.0.0/0'),
+(47, 18, 'udp:161:162:0.0.0.0/0'),
+(54, 2, 'udp:161:162:0.0.0.0/0'),
+(55, 2, 'tcp:3306:3306:0.0.0.0/0'),
+(56, 2, 'tcp:22:22:0.0.0.0/0'),
+(57, 20, 'tcp:22:22:0.0.0.0/0'),
+(58, 20, 'tcp:80:80:0.0.0.0/0'),
+(59, 20, 'udp:161:162:0.0.0.0/0'),
+(135, 47, 'tcp:22:22:0.0.0.0/0'),
+(136, 47, 'tcp:80:80:0.0.0.0/0'),
+(137, 47, 'udp:161:162:0.0.0.0/0'),
+(138, 48, 'tcp:22:22:0.0.0.0/0'),
+(139, 48, 'udp:161:162:0.0.0.0/0'),
+(140, 49, 'tcp:3306:3306:0.0.0.0/0'),
+(141, 49, 'tcp:22:22:0.0.0.0/0'),
+(142, 49, 'udp:161:162:0.0.0.0/0'),
+(143, 50, 'tcp:22:22:0.0.0.0/0'),
+(144, 50, 'tcp:80:80:0.0.0.0/0'),
+(145, 50, 'udp:161:162:0.0.0.0/0'),
+(301, 1, 'icmp:-1:-1:0.0.0.0/0'),
+(302, 2, 'icmp:-1:-1:0.0.0.0/0'),
+(303, 18, 'icmp:-1:-1:0.0.0.0/0'),
+(304, 20, 'icmp:-1:-1:0.0.0.0/0'),
+(306, 47, 'icmp:-1:-1:0.0.0.0/0'),
+(307, 48, 'icmp:-1:-1:0.0.0.0/0'),
+(308, 49, 'icmp:-1:-1:0.0.0.0/0'),
+(309, 50, 'icmp:-1:-1:0.0.0.0/0');
 
 /*Table structure for table `syslog` */
 

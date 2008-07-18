@@ -47,3 +47,12 @@ create table `garbage_queue`( `id` int(11) NOT NULL AUTO_INCREMENT , `clientid` 
 alter table `garbage_queue` add unique `clientindex` (`clientid`);
 
 insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
+
+UPDATE ami_roles SET ami_id='ami-8c8f6be5' WHERE name='www';
+UPDATE ami_roles SET ami_id='ami-b48f6bdd' WHERE name='www64';
+UPDATE ami_roles SET ami_id='ami-bfbd59d6' WHERE name='app';
+UPDATE ami_roles SET ami_id='ami-e5a2468c' WHERE name='app64';
+UPDATE ami_roles SET ami_id='ami-bd8763d4' WHERE name='mysql';
+UPDATE ami_roles SET ami_id='ami-a68266cf' WHERE name='mysql64';
+UPDATE ami_roles SET ami_id='ami-e2aa4e8b' WHERE name='base';
+UPDATE ami_roles SET ami_id='ami-0aad4963' WHERE name='base64';
