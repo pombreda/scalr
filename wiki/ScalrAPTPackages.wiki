@@ -1,0 +1,31 @@
+#summary Using the Scalr APT Repository
+
+= What is it for? =
+
+Scalr APT repository contains .deb packages that are intended to be installed on EC2 instances and updated periodically.
+Packages contain shell scripts and service configuration files that can modified in the future when we improve Scalr algorithms, adding new features or fixing bugs.
+
+= Installation =
+== Add information about APT repository ==
+ 
+For this, download and install scalr_repository package:
+{{{
+wget http://apt.scalr.net/scalr-repository_0.1_all.deb
+dpkg -i scalr-repository_0.1_all.deb
+}}}
+
+Download the list of packages in repository:
+{{{
+apt-get update
+}}}
+
+Install scalr-ami-configs package 
+{{{ 
+apt-get install scalr-ami-configs
+}}}
+
+= Retaining custom modifications =
+What if I made changes to scripts and/or configs?
+In most cases, deb packages will not simply replace your config files (like nginx.conf), but rather patch them.
+You are not advised to modify Scalr scripts. Use include files (TODO: List of includes) instead. 
+If execution of include script fails, the main script continues executing.
