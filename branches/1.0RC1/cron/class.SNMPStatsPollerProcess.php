@@ -71,7 +71,10 @@
             
             // Check data folder for farm            
             if (!file_exists(APPPATH."/data/{$farminfo['id']}"))
+            {
             	mkdir(APPPATH."/data/{$farminfo['id']}", 0777);
+            	chmod(APPPATH."/data/{$farminfo['id']}", 0777);
+            }
             	
            	// SNMP Watcher instance
             $Watcher = new SNMPWatcher($SNMP_community, $farminfo['id']);
@@ -135,9 +138,6 @@
             			
             		// Update RRD database for role
             		$Watcher->UpdateRRDDatabase($watcher_name, $data, $farm_ami["role_name"]);
-            		
-            		// Plot graphic for role
-            		$Watcher->PlotGraphic($watcher_name, $farm_ami["role_name"]);
             	}
             }
             
@@ -155,9 +155,6 @@
             		
             	// Update farm RRD database
             	$Watcher->UpdateRRDDatabase($watcher_name, $data, "_FARM");
-            	
-            	// Plot graphic for FARM
-            	$Watcher->PlotGraphic($watcher_name, "_FARM");
             }
         }
     }

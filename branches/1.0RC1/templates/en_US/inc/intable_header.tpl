@@ -5,6 +5,7 @@
 	<tr>
 		<td width="7"><div class="TableHeaderLeft_{$color}"></div></td>
 		<td>
+		<a name="{$ancor_name}"></a>
 		<div id="webta_table_header{$header_id}" {if $header}onclick="webtacp.collapseSettings('Webta_InnerTable_{$header}', this);"{/if} class="SettingsHeader_{$color}">
 			{if $header}<img src="images/sort{if $section_closed}d{else}a{/if}.gif" valign="middle" /> <strong>{$header}</strong>{/if}
 		</div>

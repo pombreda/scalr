@@ -34,7 +34,7 @@
   		$date = gmdate("M d Y H:i:s T", strtotime($event["dtadded"]));
   		
   		$devent = $DOM->createElement("event", $event['message']);
-  		$devent->setAttribute('title', $event['message']);
+  		$devent->setAttribute('title', $event['short_message']);
   		$devent->setAttribute('start', $date);
   		
   		if ($event['type'] == EVENT_TYPE::FARM_LAUNCHED)

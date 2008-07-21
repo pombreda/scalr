@@ -431,3 +431,5 @@ create table `garbage_queue`( `id` int(11) NOT NULL AUTO_INCREMENT , `clientid` 
 alter table `garbage_queue` add unique `clientindex` (`clientid`);
 
 insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
+
+alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;
