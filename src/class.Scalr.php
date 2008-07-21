@@ -160,14 +160,17 @@
 				
 				// Generate event message 
 				$message = $Smarty->fetch("event_messages/{$event_type}.tpl");
+				$short_message = $Smarty->fetch("event_messages/{$event_type}.short.tpl");
 					
 				// Store event in database
 				$DB->Execute("INSERT INTO events SET 
-					farmid=?, 
-					type=?, 
-					dtadded=NOW(), 
-					message=?",
-					array($farmid, $event_type, $message)
+					farmid	= ?, 
+					type	= ?, 
+					dtadded	= NOW(), 
+					message	= ?,
+					short_message = ?
+					",
+					array($farmid, $event_type, $message, $short_message)
 				);
 			}
 			catch(Exception $e)

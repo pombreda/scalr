@@ -56,3 +56,5 @@ UPDATE ami_roles SET ami_id='ami-bd8763d4' WHERE name='mysql';
 UPDATE ami_roles SET ami_id='ami-a68266cf' WHERE name='mysql64';
 UPDATE ami_roles SET ami_id='ami-e2aa4e8b' WHERE name='base';
 UPDATE ami_roles SET ami_id='ami-0aad4963' WHERE name='base64';
+
+alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;

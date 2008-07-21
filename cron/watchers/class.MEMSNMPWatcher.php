@@ -137,7 +137,6 @@
         	}
         	else
         		@mkdir(dirname($image_path), 0777, true);
-
         		
         	$graph = new RRDGraph(440, 180, CONFIG::$RRDTOOL_PATH);
         	
@@ -216,7 +215,7 @@
             $graph->AddGPrint("swap_total_avg",  '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("swap_total_max",  '<tt>%4.1lf %s</tt>\\j');
             
-            $graph->AddArea("mem_buffer", self::COLOR_MEM_BUFF, "<tt>Buffer       </tt>", "STACK");
+            $graph->AddArea("mem_buffer", self::COLOR_MEM_BUFF, "<tt>Buffer        </tt>", "STACK");
             $graph->AddGPrint("mem_buffer_min",  '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_buffer_last", '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_buffer_avg",  '<tt>%4.1lf %s</tt>');
@@ -229,13 +228,13 @@
             $graph->AddGPrint("mem_cached_max",  '<tt>%4.1lf %s</tt>\\j');
             
             
-            $graph->AddArea("mem_free", self::COLOR_MEM_FREE,   "<tt>Free         </tt>", "STACK");
+            $graph->AddArea("mem_free", self::COLOR_MEM_FREE,   "<tt>Free          </tt>", "STACK");
             $graph->AddGPrint("mem_free_min",  '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_free_last", '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_free_avg",  '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_free_max",  '<tt>%4.1lf %s</tt>\\j');
             
-            $graph->AddArea("mem_avail", self::COLOR_MEM_REAL,  "<tt>Real         </tt>", "STACK");
+            $graph->AddArea("mem_avail", self::COLOR_MEM_REAL,  "<tt>Real          </tt>", "STACK");
             $graph->AddGPrint("mem_avail_min",  '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_avail_last", '<tt>%4.1lf %s</tt>');
             $graph->AddGPrint("mem_avail_avg",  '<tt>%4.1lf %s</tt>');
@@ -244,9 +243,9 @@
             
            $graph->AddLine(1, "swap_used", self::COLOR_MEM_SWAP,"<tt>Swap In Use   </tt>");
             $graph->AddGPrint("swap_used_min",  '<tt>%4.1lf %s</tt>');
-            $graph->AddGPrint("swap_used_last", '<tt>%3.1lf %s</tt>');
-            $graph->AddGPrint("swap_used_avg",  '<tt>%3.1lf %s</tt>');
-            $graph->AddGPrint("swap_used_max",  '<tt>%3.1lf %s</tt>\\j');
+            $graph->AddGPrint("swap_used_last", '<tt>%4.1lf %s</tt>');
+            $graph->AddGPrint("swap_used_avg",  '<tt>%4.1lf %s</tt>');
+            $graph->AddGPrint("swap_used_max",  '<tt>%4.1lf %s</tt>\\j');
            // $graph->AddGPrint("swap_used_last", '            Swap Total:%4.1lf%S\\j');
             
             if (CONFIG::$RRD_DEFAULT_FONT_PATH)

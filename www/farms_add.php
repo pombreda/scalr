@@ -159,7 +159,7 @@
 	                                           mysql_bcp = ?,
 	                                           mysql_bcp_every = ?,
 	                                           mysql_rebundle_every = ?
-	                             ", array( $post_name, 
+	                             ", array( trim($post_name), 
 	                                       $_SESSION['uid'], 
 	                                       $farmhash, 
 	                                       ($post_mysql_bcp == 1 ? '1' : '0'), 
@@ -275,7 +275,7 @@
 		                                       mysql_bcp_every = ?,
 		                                       mysql_rebundle_every = ? 
 		                                 WHERE id=?", 
-	    	                               array(  $post_name, 
+	    	                               array(  trim($post_name), 
 	    	                                       ($post_mysql_bcp == 1 ? '1' : '0'), 
 		                                           $post_mysql_bcp_every, 
 		                                           $post_mysql_rebundle_every, $post_farmid)
