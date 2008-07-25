@@ -30,7 +30,7 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
   * [http://php.net/posix posix]
   * [http://php.net/ssh2 ssh2]
   * [http://php.net/dom DOM]
-  * [http://php.net/Soap Soap]
+  * [http://php.net/Soap SOAP]
 
 
 == Installation ==
