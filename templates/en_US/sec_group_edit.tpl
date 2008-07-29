@@ -67,35 +67,8 @@
     }
     {/literal}
     </script>
-	{include file="inc/table_header.tpl"}
-		{include file="inc/intable_header.tpl" header="Role information" color="Gray"}
-    	<tr>
-    		<td width="20%">AMI:</td>
-    		<td>{$ami_id}<input type="hidden" name="ami_id" value="{$ami_id}"></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Architecture:</td>
-    		<td>{$arch}<input type="hidden" name="arch" value="{$arch}"></td>
-    	</tr>
-		<tr>
-    		<td width="20%">Role name:</td>
-    		<td><input type="text" class="text" name="name" value="{$name}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Prototype role:<br><span style="font-size:10px;">(base, mysql, www, app)</span></td>
-    		<td><input type="text" class="text" name="alias" value="{$alias}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Default mimimum LA for this role:</td>
-    		<td><input type="text" class="text" name="default_minLA" value="{$default_minLA}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Default maximum LA for this role:</td>
-    		<td><input type="text" class="text" name="default_maxLA" value="{$default_maxLA}" /></td>
-    	</tr>
-        {include file="inc/intable_footer.tpl" color="Gray"}
-        
-        {include file="inc/intable_header.tpl" header="Security settings" color="Gray"}
+	{include file="inc/table_header.tpl"}       
+        {include file="inc/intable_header.tpl" header="Security group rules" color="Gray"}
     	<tr>
     		<td colspan="2">
     		  <table cellpadding="5" cellspacing="15" width="700">
@@ -108,12 +81,12 @@
     		      </thead>
     		      <tbody id="rules_container">
     		      {section name=id loop=$rules}
-    		      <tr id="{$rules[id].id}">
-    		          <td>{$rules[id].protocol}</td>
-    		          <td>{$rules[id].portfrom}</td>
-    		          <td>{$rules[id].portto}</td>
-    		          <td>{$rules[id].ipranges}</td>
-    		          <td><input type='button' class='btn' name='dleterule' value='Delete' onclick='DeleteRule("{$rules[id].id}")'><input type='hidden' name='rules[]' value='{$rules[id].rule}'></td>
+    		      <tr id="{$rules[id]->id}">
+    		          <td>{$rules[id]->ipProtocol}</td>
+    		          <td>{$rules[id]->fromPort}</td>
+    		          <td>{$rules[id]->toPort}</td>
+    		          <td>{$rules[id]->ip}</td>
+    		          <td><input type='button' class='btn' name='dleterule' value='Delete' onclick='DeleteRule("{$rules[id]->id}")'><input type='hidden' name='rules[]' value='{$rules[id]->rule}'></td>
     		      </tr>
     		      {/section}
     		      </tbody>
@@ -141,5 +114,6 @@
        		</td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
+        <input type="hidden" name="name" value="{$group_name}">
 	{include file="inc/table_footer.tpl" edit_page=1}
 {include file="inc/footer.tpl"}

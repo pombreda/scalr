@@ -88,7 +88,7 @@
 		            }
 	            }
 	            
-	            $nss = $db->GetAll("SELECT * FROM nameservers");
+	            $nss = $db->GetAll("SELECT * FROM nameservers WHERE isproxy='0'");
 				
 	            // Check malformed zones
 	            $zones = $db->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}'");

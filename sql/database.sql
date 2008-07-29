@@ -433,3 +433,10 @@ alter table `garbage_queue` add unique `clientindex` (`clientid`);
 insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
 
 alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;
+
+alter table `farms` add column `bcp_instance_id` varchar(20) NULL after `isbcprunning`;
+
+alter table `nameservers` add column `isproxy` tinyint(1) DEFAULT '0' NULL after `namedconf_path`;
+
+create table `syslog_metadata`( `id` int(11) NOT NULL AUTO_INCREMENT , `transactionid` varchar(50) , `errors` int(5) , `warnings` int(5) , PRIMARY KEY (`id`))  ;
+alter table `syslog_metadata` add unique `transid` (`transactionid`);

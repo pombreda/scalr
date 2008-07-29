@@ -69,15 +69,17 @@
 			
             $SNMP_community = $farminfo["hash"];
             
-            // Check data folder for farm            
-            if (!file_exists(APPPATH."/data/{$farminfo['id']}"))
+            // Check data folder for farm
+			$farm_rrddb_dir = CONFIG::$RRD_DB_DIR."/{$farminfo['id']}";
+            
+            if (!file_exists($farm_rrddb_dir))
             {
-            	mkdir(APPPATH."/data/{$farminfo['id']}", 0777);
-            	chmod(APPPATH."/data/{$farminfo['id']}", 0777);
+            	mkdir($farm_rrddb_dir, 0777);
+            	chmod($farm_rrddb_dir, 0777);
             }
             	
            	// SNMP Watcher instance
-            $Watcher = new SNMPWatcher($SNMP_community, $farminfo['id']);
+            $Watcher = new SNMPWatcher($SNMP_community, $farm_rrddb_dir);
 
             $farm_data = array();
             
@@ -136,8 +138,15 @@
             		
             		$this->Logger->info("Data for role {$farm_ami["role_name"]} ($watcher_name): ".implode(", ", $data));
             			
-            		// Update RRD database for role
-            		$Watcher->UpdateRRDDatabase($watcher_name, $data, $farm_ami["role_name"]);
+            		try
+            		{
+	            		// Update RRD database for role
+	            		$Watcher->UpdateRRDDatabase($watcher_name, $data, $farm_ami["role_name"]);
+            		}
+            		catch(Exception $e)
+            		{
+            			$this->Logger->error("RRD Update for {$watcher_name} on role {$farm_ami["role_name"]} failed. {$e->getMessage()}");
+            		}
             	}
             }
             
@@ -153,8 +162,15 @@
             	
             	$this->Logger->info("Data for farm ($watcher_name): ".implode(", ", $data));
             		
-            	// Update farm RRD database
-            	$Watcher->UpdateRRDDatabase($watcher_name, $data, "_FARM");
+            	try
+            	{
+	            	// Update farm RRD database
+	            	$Watcher->UpdateRRDDatabase($watcher_name, $data, "_FARM");
+            	}
+            	catch(Exception $e)
+            	{
+            		$this->Logger->error("RRD Update for farm failed. {$e->getMessage()}");
+            	}
             }
         }
     }

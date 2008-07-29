@@ -33,11 +33,11 @@
          * This method is called after watcher assigned to node
          *
          */
-        public function CreateDatabase($name)
+        public function CreateDatabase($rrddbpath)
         {            
-            @mkdir($this->Path."/MEMSNMP/{$name}", 0777, true);
+            @mkdir(dirname($rrddbpath), 0777, true);
             
-            $this->RRD = new RRD($this->Path."/MEMSNMP/{$name}/mem.rrd");
+            $this->RRD = new RRD($rrddbpath);
             
             $this->RRD->AddDS(new RRDDS("swap", "GAUGE", 180));
             $this->RRD->AddDS(new RRDDS("swapavail", "GAUGE", 180));
@@ -65,7 +65,7 @@
             
             $res = $this->RRD->Create("-1m", 60);
             
-            @chmod($this->Path."/MEMSNMP/{$name}/mem.rrd", 0777);
+            @chmod($rrddbpath, 0777);
             
             return $res;
         }
@@ -109,11 +109,13 @@
         
     	public function UpdateRRDDatabase($name, $data)
         {
-        	if (!file_exists("{$this->Path}/MEMSNMP/{$name}/mem.rrd"))
-        		$this->CreateDatabase($name);
+        	$rrddbpath = $this->Path."/{$name}/MEMSNMP/db.rrd";
+        	
+        	if (!file_exists($rrddbpath))
+        		$this->CreateDatabase($rrddbpath);
         	
         	if (!$this->RRD)
-                $this->RRD = new RRD($this->Path."/MEMSNMP/{$name}/mem.rrd");
+                $this->RRD = new RRD($rrddbpath);
   
         	$this->RRD->Update($data);
         }
@@ -123,31 +125,19 @@
          *
          * @param integer $serverid
          */
-        public function PlotGraphic($name)
-        {
-        	$image_path = "{$this->Path}/graphics/{$name}/mem.gif";
+        public static function PlotGraphic($rrddbpath, $image_path, $r)
+        {        		
         	
-        	if (file_exists($image_path))
-        	{
-        		clearstatcache();
-        		$time = filemtime($image_path);
-        		
-        		if ($time > time()-300)
-        			return false;
-        	}
-        	else
-        		@mkdir(dirname($image_path), 0777, true);
-        		
         	$graph = new RRDGraph(440, 180, CONFIG::$RRDTOOL_PATH);
         	
-			$graph->AddDEF("mem1", $this->Path."/MEMSNMP/{$name}/mem.rrd", "swap", "AVERAGE");
-			$graph->AddDEF("mem2", $this->Path."/MEMSNMP/{$name}/mem.rrd", "swapavail", "AVERAGE");
-			$graph->AddDEF("mem3", $this->Path."/MEMSNMP/{$name}/mem.rrd", "total", "AVERAGE");
-			$graph->AddDEF("mem4", $this->Path."/MEMSNMP/{$name}/mem.rrd", "avail", "AVERAGE");
-			$graph->AddDEF("mem5", $this->Path."/MEMSNMP/{$name}/mem.rrd", "free", "AVERAGE");
-			$graph->AddDEF("mem6", $this->Path."/MEMSNMP/{$name}/mem.rrd", "shared", "AVERAGE");
-			$graph->AddDEF("mem7", $this->Path."/MEMSNMP/{$name}/mem.rrd", "buffer", "AVERAGE");
-			$graph->AddDEF("mem8", $this->Path."/MEMSNMP/{$name}/mem.rrd", "cached", "AVERAGE");
+			$graph->AddDEF("mem1", $rrddbpath, "swap", "AVERAGE");
+			$graph->AddDEF("mem2", $rrddbpath, "swapavail", "AVERAGE");
+			$graph->AddDEF("mem3", $rrddbpath, "total", "AVERAGE");
+			$graph->AddDEF("mem4", $rrddbpath, "avail", "AVERAGE");
+			$graph->AddDEF("mem5", $rrddbpath, "free", "AVERAGE");
+			$graph->AddDEF("mem6", $rrddbpath, "shared", "AVERAGE");
+			$graph->AddDEF("mem7", $rrddbpath, "buffer", "AVERAGE");
+			$graph->AddDEF("mem8", $rrddbpath, "cached", "AVERAGE");
             
             $graph->AddCDEF("swap_total", "mem1,1024,*");
             $graph->AddVDEF("swap_total_min", "swap_total,MINIMUM");
@@ -250,12 +240,13 @@
             
             if (CONFIG::$RRD_DEFAULT_FONT_PATH)
             	$graph->AddFont("DEFAULT", "0", CONFIG::$RRD_DEFAULT_FONT_PATH);
-            
+            	
             //
             // Plot graphics
             //   
-            $res = $graph->Plot($image_path, "-86400", false, 
+            $res = $graph->Plot($image_path, $r["start"], $r["end"], 
                             array(
+                            		"--step", $r["step"],
                             		"--pango-markup",
                             		"-v", "Memory Usage", 
                                     "-t", "Memory Usage",
@@ -266,7 +257,7 @@
                                     "--rigid",
                             		"--no-gridfit",
                             		"--slope-mode",
-                            		"--x-grid", "HOUR:1:HOUR:2:HOUR:2:0:%H"
+                            		"--x-grid", $r["x_grid"]
                                  )
                         );
          

@@ -182,9 +182,13 @@
 	    {
 	        $total_max_count = count($post_amis)*2; 	    
             $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
-            if ($used_slots+$total_max_count > CONFIG::$CLIENT_MAX_INSTANCES)
+            
+            $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $_SESSION['uid']));
+            $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
+            
+            if ($used_slots+$total_max_count > $i_limit)
             {
-                $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
+                $err[] = "You cannot launch more than {$i_limit} instances on your account. Please adjust Max Instances setting.";
             }
 	        else 
 	        {

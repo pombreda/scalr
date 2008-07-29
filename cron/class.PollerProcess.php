@@ -140,6 +140,8 @@
                 {
                     $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
                     
+                    $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
+                    
                     Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::HOST_CRASH, $farm_instance);
                     
                     // Add entry to farm log
@@ -156,6 +158,8 @@
                             $this->Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$farm_instance["instance_id"]}' not running (Terminated).");
                             $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
                             
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
+                            
                             $instance_terminated = true;
                             
                             break;
@@ -164,6 +168,8 @@
                             
                             $this->Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$farm_instance["instance_id"]}' not running (Shutting Down).");
                             $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
+                            
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
                             
                             $instance_terminated = true;
                             
@@ -413,6 +419,8 @@
                             // Update DB
                             $db->Execute("DELETE FROM farm_instances WHERE instance_id='{$item->instanceId}'");
                             
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($item->instanceId));
+                            
                             //
                             // SNMP Traps
                             //
@@ -570,6 +578,7 @@
 	                            	WHERE instance_id=? AND farmid=?", 
 	                            array($instanceinfo["instance_id"], $farminfo['id']));
 	                            
+	                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($instanceinfo["instance_id"]));
 	                            
 	                            // Add entry to farm log
                     			$this->Logger->info(new FarmLogMessage($farminfo['id'], "'{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) Terminated!"));

@@ -64,7 +64,6 @@
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
 
-	
 	// Rows
 	$rows = $db->Execute($paging->SQL);
 	
@@ -77,13 +76,10 @@
     	    
     	    $row["ipaddr"] = long2ip($row["ipaddr"]);
     	    
-    	    $row["warns"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
-    	    								AND severity='WARN'
-    	    							 ");
+    	    $meta = $db->GetRow("SELECT * FROM syslog_metadata WHERE transactionid=?", array($row['transactionid']));
     	    
-    	    $row["errors"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
-    	    								AND (severity='FATAL' OR severity='ERROR')
-    	    							 ");
+    	    $row["warns"] = $meta["warnings"] ? $meta["warnings"] : 0;
+    	    $row["errors"] = $meta["errors"] ? $meta["errors"] : 0;
     	    
     	    $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
     	    $row["action"] = stripslashes($row["message"]);

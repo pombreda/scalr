@@ -24,6 +24,9 @@
             $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instanceinfo['ami_id']}'");
             $rolename = $ami_info['name'];
             
+            if (!$ami_info)
+            	$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name='{$instanceinfo['role_name']}' AND roletype='SHARED'");
+            
             if ($db->GetOne("SELECT id FROM ami_roles WHERE `replace` = '{$ami_info["ami_id"]}' and clientid='{$farminfo['clientid']}'"))
             {
                 $errmsg = "This role already being synchronized...";
@@ -87,7 +90,19 @@
 		    
             if (count($err) == 0)
             {
-                $instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo["ami_id"]));  
+                $instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo["ami_id"]));
+                if (!$instance_ami_info)
+                {
+					$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE roletype='SHARED' AND name=?", array($instanceinfo["role_name"]));
+					$db->Execute("UPDATE farm_instances SET ami_id=? WHERE farmid=? AND ami_id=?", array($instance_ami_info["ami_id"], $instanceinfo["farmid"], $instanceinfo['ami_id']));
+                }
+                
+				if (!$instance_ami_info)
+				{
+					$errmsg = "Cannot synchronize role. Role with AMI {$instance_ami_info['ami_id']} not found in database.";
+		    		UI::Redirect("farms_view.php");	
+				}
+					
             	$alias = $instance_ami_info["alias"];
                 $architecture = $instance_ami_info["architecture"];
                 $i_type = $instance_ami_info["instance_type"];
@@ -100,7 +115,7 @@
 	                // Update last synchronization date
                 	$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instanceinfo['id']));
                 	
-                	$db->Execute("INSERT INTO ami_roles SET name=?, roletype='CUSTOM', clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW()", array($post_name, $farminfo["clientid"], $instanceinfo['instance_id'], $instanceinfo['ami_id'], $alias, $architecture, $i_type));
+                	$db->Execute("INSERT INTO ami_roles SET name=?, roletype='CUSTOM', clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW()", array($post_name, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type));
 	                
 	                $newroleid = $db->Insert_ID();
 	                

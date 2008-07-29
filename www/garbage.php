@@ -12,7 +12,7 @@
 		
 		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array($_SESSION['uid'], $remove_items));
 		
-		$okmsg = "Items removal has been scheduled. They wil be deleted in approximatey 10 minutes.";
+		$okmsg = "Items removal has been scheduled. They will be deleted in approximatey 10 minutes.";
 		UI::Redirect("index.php");
 	}
 			

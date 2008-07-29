@@ -31,11 +31,11 @@
          * This method is called after watcher assigned to node
          *
          */
-        public function CreateDatabase($name)
+        public function CreateDatabase($rrddbpath)
         {            
-            @mkdir($this->Path."/CPUSNMP/{$name}", 0777, true);
+            @mkdir(dirname($rrddbpath), 0777, true);
             
-            $this->RRD = new RRD($this->Path."/CPUSNMP/{$name}/cpu.rrd");
+            $this->RRD = new RRD($rrddbpath);
             
             $this->RRD->AddDS(new RRDDS("user", "COUNTER", 180));
             $this->RRD->AddDS(new RRDDS("system", "COUNTER", 180));
@@ -59,7 +59,7 @@
             
             $res = $this->RRD->Create("-1m", 60);
             
-            @chmod($this->Path."/CPUSNMP/{$name}/cpu.rrd", 0777);
+            @chmod($rrddbpath, 0777);
             
             return $res;
         }
@@ -90,11 +90,13 @@
         
     	public function UpdateRRDDatabase($name, $data)
         {
-        	if (!file_exists("{$this->Path}/CPUSNMP/{$name}/cpu.rrd"))
-        		$this->CreateDatabase($name);
+        	$rrddbpath = $this->Path."/{$name}/CPUSNMP/db.rrd";
+        	
+        	if (!file_exists($rrddbpath))
+        		$this->CreateDatabase($rrddbpath);
         	
         	if (!$this->RRD)
-                $this->RRD = new RRD($this->Path."/CPUSNMP/{$name}/cpu.rrd");
+                $this->RRD = new RRD($rrddbpath);
   
             $data = array_map("ceil", $data);
                 
@@ -106,27 +108,15 @@
          *
          * @param integer $serverid
          */
-        public function PlotGraphic($name)
-        {
-        	$image_path = "{$this->Path}/graphics/{$name}/cpu.gif";
+        public static function PlotGraphic($rrddbpath, $image_path, $r)
+        {		
         	
-        	if (file_exists($image_path))
-        	{
-        		clearstatcache();
-        		$time = filemtime($image_path);
-        		
-        		if ($time > time()-300)
-        			return false;
-        	}
-        	else
-        		@mkdir(dirname($image_path), 0777, true);
-
-        		
         	$graph = new RRDGraph(440, 160, CONFIG::$RRDTOOL_PATH);
-			$graph->AddDEF("a", $this->Path."/CPUSNMP/{$name}/cpu.rrd", "user", "AVERAGE");
-			$graph->AddDEF("b", $this->Path."/CPUSNMP/{$name}/cpu.rrd", "system", "AVERAGE");
-			$graph->AddDEF("c", $this->Path."/CPUSNMP/{$name}/cpu.rrd", "nice", "AVERAGE");
-			$graph->AddDEF("d", $this->Path."/CPUSNMP/{$name}/cpu.rrd", "idle", "AVERAGE");
+			
+        	$graph->AddDEF("a", $rrddbpath, "user", "AVERAGE");
+			$graph->AddDEF("b", $rrddbpath, "system", "AVERAGE");
+			$graph->AddDEF("c", $rrddbpath, "nice", "AVERAGE");
+			$graph->AddDEF("d", $rrddbpath, "idle", "AVERAGE");
 
 			        				
             $graph->AddCDEF("total", "a,b,c,d,+,+,+");
@@ -175,9 +165,10 @@
             
             if (CONFIG::$RRD_DEFAULT_FONT_PATH)
             	$graph->AddFont("DEFAULT", "0", CONFIG::$RRD_DEFAULT_FONT_PATH);
-            
-            $graph->Plot($image_path, "-86400", false, 
+            	
+            $res = $graph->Plot($image_path, $r["start"], $r["end"], 
                             array(
+                            		"--step", $r["step"],
                             		"--pango-markup",
                             		"-v", "Percent CPU Utilization", 
                                     "-t", "CPU Utilization",
@@ -187,7 +178,7 @@
                                     "--rigid",
                             		"--no-gridfit",
                             		"--slope-mode",
-                            		"--x-grid", "HOUR:1:HOUR:2:HOUR:2:0:%H"
+                            		"--x-grid", $r["x_grid"]
                                  )
                          );
          

@@ -26,6 +26,24 @@ if ($req_FarmID && $req_Hash)
 
 	if ($farminfo && $instanceinfo)
 	{
+		// Check instance external IP
+		if ($instanceinfo['external_ip'] && $instanceinfo['external_ip'] != $_SERVER['REMOTE_ADDR'])
+		{
+			try
+			{
+				// Set severity to fatal to track ip changes.
+				// Downgrade severity to info after few weeks
+				$Logger->fatal("IP changed for instance {$req_InstanceID}. Old: {$instanceinfo['external_ip']}, new: {$_SERVER['REMOTE_ADDR']}");
+				$db->Execute("UPDATE farm_instances SET external_ip=? WHERE id=?",
+					array($_SERVER['REMOTE_ADDR'], $instanceinfo["id"])
+				);
+			}
+			catch(Exception $e)
+			{
+				$Logger->fatal("Cannot update instance IP: {$e->getMessage()}");
+			}
+		}
+		
 		$chunks = explode(";", $req_Data);
 		foreach ($chunks as $chunk)
 		{
@@ -40,6 +58,8 @@ if ($req_FarmID && $req_Hash)
 				$Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$instanceinfo["instance_id"]}' sent event 'go2halt'");
 				$db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $instanceinfo["instance_id"]));
 
+				$db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($instanceinfo["instance_id"]));
+				
 				$farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
 
 				$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$instanceinfo['ami_id']}'");
@@ -169,7 +189,7 @@ if ($req_FarmID && $req_Hash)
                                      AND instance_id=?", array($farm_id, $req_InstanceID));
 
 				$Shell = ShellFactory::GetShellInstance();
-				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND role_name=?", array($farminfo["id"], $instanceinfo["role_name"]));
+				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($farminfo["id"], $instanceinfo["role_name"]));
 				foreach ((array)$instances as $instance)
 				{
 					$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.10.1 SNMPv2-MIB::sysName.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysLocation.0 s "'.$data['snapurl'].'" 2>&1', true);
@@ -216,6 +236,26 @@ if ($req_FarmID && $req_Hash)
 						$res = $SSH2->SendFile("/etc/aws/keys/pk.pem", $private_key, "w+", false);
 						$res2 = $SSH2->SendFile("/etc/aws/keys/cert.pem", $certificate, "w+", false);
 						$res3 = $SSH2->SendFile("/etc/aws/keys/s3cmd.cfg", $s3cfg, "w+", false);
+						
+						try
+						{
+							$hooks = glob(APPPATH."/hooks/hostInit/*.sh");
+							if (count($hooks) > 0)
+							{
+								foreach ($hooks as $hook)
+								{
+									$name = basename($hook);
+									$Logger->info("Executing onHostInit hook: {$name}");
+									$SSH2->SendFile("/usr/local/bin/{$name}", $hook, "w+");
+									$res = $SSH2->Exec("chmod 0700 /usr/local/bin/{$name} && /usr/local/bin/{$name}", $hook, "w+");
+									$Logger->info("{$name} hook execution output: {$res}");
+								}
+							}
+						}
+						catch(Exception $e)
+						{
+							$Logger->fatal("Cannot execute hostInit hooks: {$e->getMessage()}");
+						}
 						
 						@unlink($pub_key_file);
 						@unlink($priv_key_file);
@@ -309,6 +349,16 @@ if ($req_FarmID && $req_Hash)
 						
 						$db->Execute("UPDATE farm_instances SET state='Running' WHERE id='{$instanceinfo['id']}'");
 						
+						$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo["role_name"]}' AND iscompleted='1'");
+						 
+						$Shell = ShellFactory::GetShellInstance();
+						$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running'", array($farminfo["id"]));
+						foreach ((array)$instances as $instance)
+						{
+							$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.1 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$instanceinfo["role_name"].'" 2>&1', true);
+							$Logger->debug("Sending SNMP Trap 11.1 (hostUp) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+						}
+
 						//
 						// Update DNS
 						//
@@ -377,17 +427,7 @@ if ($req_FarmID && $req_Hash)
 								$Logger->fatal("Eventhandler::hostUp. DNS zone update failed: ".$e->getMessage());
 							}
 						}
-
-						$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo["role_name"]}' AND iscompleted='1'");
-						 
-						$Shell = ShellFactory::GetShellInstance();
-						$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running'", array($farminfo["id"]));
-						foreach ((array)$instances as $instance)
-						{
-							$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.1 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" 2>&1', true);
-							$Logger->debug("Sending SNMP Trap 11.1 (hostUp) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
-						}
-
+						
 						$Logger->debug("Going to termination old instance...");
 
 						try
