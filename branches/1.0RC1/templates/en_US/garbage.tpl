@@ -1,4 +1,5 @@
 {include file="inc/header.tpl"}
+<p class="placeholder">This tool allows you to delete objects that are not used by any of your farms.</p>
     {include file="inc/table_header.tpl" table_header_text="S3 buckets" nofilter='1'}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items_">
 	<thead>
@@ -19,7 +20,7 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="2" align="center">No buckets found!</td>
+		<td colspan="2" align="center">No unused buckets found</td>
 	</tr>
 	{/section}
 	<tr>
@@ -34,7 +35,7 @@
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items_">
 	<thead>
 		<tr>
-			<th>KayPair name</th>
+			<th>KeyPair</th>
 			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall('keypairs[]')"></td>
 		</tr>
 	</thead>
@@ -50,7 +51,7 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="2" align="center">No keypairs found!</td>
+		<td colspan="2" align="center">No unused keypairs found</td>
 	</tr>
 	{/section}
 	<tr>

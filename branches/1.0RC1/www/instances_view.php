@@ -189,7 +189,7 @@
 				
 				$i++;
 					
-				$okmsg = "{$i} instances succesfully " . ($post_action == "reboot" ? "rebooted" : "terminated");
+				$okmsg = "{$i} instances succesfully " . ($post_action == "reboot" ? "going to reboot" : "terminated");
 			}
 		}	
 		

@@ -25,7 +25,7 @@
             $db->Execute("UPDATE zones SET islocked='0' WHERE dtlocked < ? AND islocked='1'", array(time()-$timeout));
                         
             // Prepare nameservers
-            foreach((array)$db->GetAll("SELECT * FROM nameservers") as $ns)
+            foreach((array)$db->GetAll("SELECT * FROM nameservers WHERE isproxy='0'") as $ns)
 			{
 				if ($ns["host"]!='')
 				{

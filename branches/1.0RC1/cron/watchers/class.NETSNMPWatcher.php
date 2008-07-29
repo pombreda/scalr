@@ -29,11 +29,11 @@
          * This method is called after watcher assigned to node
          *
          */
-        public function CreateDatabase($name)
+        public function CreateDatabase($rrddbpath)
         {            
-            @mkdir($this->Path."/NETSNMP/{$name}", 0777, true);
+            @mkdir(dirname($rrddbpath), 0777, true);
             
-            $this->RRD = new RRD($this->Path."/NETSNMP/{$name}/net.rrd");
+            $this->RRD = new RRD($rrddbpath);
             
             $this->RRD->AddDS(new RRDDS("in", "COUNTER", 600));
             $this->RRD->AddDS(new RRDDS("out", "COUNTER", 600));
@@ -55,7 +55,7 @@
             
             $res = $this->RRD->Create("-1m", 60);
             
-            @chmod($this->Path."/NETSNMP/{$name}/net.rrd", 0777);
+            @chmod($rrddbpath, 0777);
             
             return $res;
         }
@@ -80,11 +80,13 @@
         
     	public function UpdateRRDDatabase($name, $data)
         {
-        	if (!file_exists("{$this->Path}/NETSNMP/{$name}/net.rrd"))
-        		$this->CreateDatabase($name);
+        	$rrddbpath = $this->Path."/{$name}/NETSNMP/db.rrd";
+        	
+        	if (!file_exists($rrddbpath))
+        		$this->CreateDatabase($rrddbpath);
         	
         	if (!$this->RRD)
-                $this->RRD = new RRD($this->Path."/NETSNMP/{$name}/net.rrd");
+                $this->RRD = new RRD($rrddbpath);
   
             $this->RRD->Update($data);
         }
@@ -94,25 +96,13 @@
          *
          * @param integer $serverid
          */
-        public function PlotGraphic($name)
-        {
-        	$image_path = "{$this->Path}/graphics/{$name}/net.gif";
+        public static function PlotGraphic($rrddbpath, $image_path, $r)
+        {		
         	
-        	if (file_exists($image_path))
-        	{
-        		clearstatcache();
-        		$time = filemtime($image_path);
-        		
-        		if ($time > time()-300)
-        			return false;
-        	}
-        	else
-        		@mkdir(dirname($image_path), 0777, true);
-
-        		
         	$graph = new RRDGraph(440, 100, CONFIG::$RRDTOOL_PATH);
-			$graph->AddDEF("in", $this->Path."/NETSNMP/{$name}/net.rrd", "in", "AVERAGE");
-			$graph->AddDEF("out", $this->Path."/NETSNMP/{$name}/net.rrd", "out", "AVERAGE");
+			
+        	$graph->AddDEF("in", $rrddbpath, "in", "AVERAGE");
+			$graph->AddDEF("out", $rrddbpath, "out", "AVERAGE");
 			
 			$graph->AddCDEF("in_bits", "in,8,*");
 			$graph->AddCDEF("out_bits", "out,8,*");
@@ -139,9 +129,10 @@
             
             if (CONFIG::$RRD_DEFAULT_FONT_PATH)
             	$graph->AddFont("DEFAULT", "0", CONFIG::$RRD_DEFAULT_FONT_PATH);
-            
-            $graph->Plot($image_path, "-86400", false, 
+            	
+            $res = $graph->Plot($image_path, $r["start"], $r["end"], 
                             array(
+                            		"--step", $r["step"],
                                     "--pango-markup",
                             		"-v", "Bits per second", 
                                     "-t", "Network usage",
@@ -151,7 +142,7 @@
                                     "--rigid",
                             		"--no-gridfit",
                             		"--slope-mode",
-                            		"--x-grid", "HOUR:1:HOUR:2:HOUR:2:0:%H"
+                            		"--x-grid", $r["x_grid"]
                                  )
                          );
          

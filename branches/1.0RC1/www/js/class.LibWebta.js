@@ -39,10 +39,9 @@ LibWebta.prototype = {
 			menucss:		'../js/dmenu/dmenu.css',
 			menujs:			'dmenu/dmenu.js',
 			
-			calendar_css:	'css/calendar/calendar-win2k-cold-1.css',
-			calendar_js:	'js/calendar/calendar.js',
-			calendar_en:	'js/calendar/lang/calendar-en.js',
-			calendar_inc:	'js/calendar/calendar-setup.js',
+			calendar_js:	'calendar/calendar.js',
+			calendar_en:	'calendar/lang/calendar-en.js',
+			calendar_inc:	'calendar/calendar-setup.js',
 			
 			treemenu_js:	'treemenu/treemenu.js',
 			treemenu_css:	'js/treemenu/tree.css'

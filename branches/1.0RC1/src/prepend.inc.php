@@ -80,7 +80,9 @@
 	require_once(SRCPATH."/types/enum.INSTANCE_ARCHITECTURE.php");
 	require_once(SRCPATH."/types/enum.ZONE_STATUS.php");
 	require_once(SRCPATH."/types/enum.EVENT_TYPE.php");
-		
+	require_once(SRCPATH."/types/enum.RRD_STORAGE_TYPE.php");
+	require_once(SRCPATH."/types/enum.GRAPH_TYPE.php");
+			
 	//Load structs
 	require_once(SRCPATH."/structs/struct.CONTEXTS.php");
 	require_once(SRCPATH."/structs/struct.CONFIG.php");

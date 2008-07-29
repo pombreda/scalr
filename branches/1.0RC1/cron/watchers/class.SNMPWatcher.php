@@ -23,7 +23,7 @@
          * Constructor
          *
          */
-        function __construct($community, $farmid)
+        function __construct($community, $path)
         {
             $this->DB = Core::GetDBInstance();
         	
@@ -31,7 +31,7 @@
 				
             $this->Community = $community;
             
-            $this->DataPath = APPPATH."/data/{$farmid}";
+            $this->DataPath = $path;
         }
         
         public function Connect($host)

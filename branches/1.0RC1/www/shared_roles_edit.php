@@ -6,7 +6,7 @@
 	
 	if (!$req_ami_id)
 	{
-	    $msgerr = "Please select AMI";
+	    $errmsg = "Please select AMI";
 	    UI::Redirect("shared_roles.php");
 	}
 	

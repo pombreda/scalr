@@ -52,6 +52,10 @@
 		<tr>
 			<td colspan="2">Terminate instance if it will not send 'hostUp' or 'hostInit' event after launch in <input name="launch_timeout" type="text" class="text" id="launch_timeout" value="{$launch_timeout}" size="3"> seconds.</td>
 		</tr>
+		<tr>
+			<td width="18%">Instances limit:</td>
+			<td width="82%"><input name="client_max_instances" type="text" class="text" id="client_max_instances" value="{$client_max_instances}" size="10"></td>
+		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
 		{include file="inc/intable_header.tpl" header="RSS feed settings" color="Gray"}

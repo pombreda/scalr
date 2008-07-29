@@ -132,7 +132,7 @@
 				{
 					$retval = true;
 					
-		            foreach((array)$this->DB->GetAll("SELECT * FROM nameservers") as $ns)
+		            foreach((array)$this->DB->GetAll("SELECT * FROM nameservers WHERE isproxy='0'") as $ns)
 					{
 						if ($ns["host"]!='')
 						{

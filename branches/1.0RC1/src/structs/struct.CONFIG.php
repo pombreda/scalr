@@ -35,6 +35,9 @@
 		public static $AWS_ACCOUNTID;
 		
 		public static $AWS_KEYNAME;
+		public static $AWS_ACCESSKEY;
+		public static $AWS_ACCESSKEY_ID;
+		
 		
 		public static $DEF_SOA_OWNER;
 		
@@ -84,6 +87,11 @@
 		
 		public static $RRDTOOL_PATH;
 		public static $RRD_DEFAULT_FONT_PATH;
+		
+		public static $RRD_DB_DIR;
+		public static $RRD_STATS_URL;
+		public static $RRD_GRAPH_STORAGE_TYPE;
+		public static $RRD_GRAPH_STORAGE_PATH;
 		
 		/**
 		 * List all available properties through reflection

@@ -63,6 +63,14 @@
 			<td width="82%"><input name="aws_keyname" type="text" class="text" id="aws_keyname" value="{$aws_keyname}" size="30"></td>
 		</tr>
 		<tr>
+			<td width="18%">Access key:</td>
+			<td width="82%"><input name="aws_accesskey" type="text" class="text" id="aws_accesskey" value="{$aws_accesskey}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Access key ID:</td>
+			<td width="82%"><input name="aws_accesskey_id" type="text" class="text" id="aws_accesskey_id" value="{$aws_accesskey_id}" size="30"></td>
+		</tr>
+		<tr>
 			<td width="18%">Security groups prefix:</td>
 			<td width="82%"><input name="secgroup_prefix" type="text" class="text" id="secgroup_prefix" value="{$secgroup_prefix}" size="30"></td>
 		</tr>
@@ -76,18 +84,46 @@
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
-		{include file="inc/intable_header.tpl" header="Application settings" color="Gray"}
+		{include file="inc/intable_header.tpl" header="RRD statistics settings" color="Gray"}
 		<tr>
-			<td width="18%">Path to snmpinform:</td>
-			<td width="82%"><input name="snmptrap_path" type="text" class="text" id="snmptrap_path" value="{$snmptrap_path}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">Path to rrdtool:</td>
+			<td width="18%">Path to rrdtool binary:</td>
 			<td width="82%"><input name="rrdtool_path" type="text" class="text" id="rrdtool_path" value="{$rrdtool_path}" size="30"></td>
 		</tr>
 		<tr>
 			<td width="18%">Path to font (for rrdtool):</td>
 			<td width="82%"><input name="rrd_default_font_path" type="text" class="text" id="rrd_default_font_path" value="{$rrd_default_font_path}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Path to RRD database dir:</td>
+			<td width="82%"><input name="rrd_db_dir" type="text" class="text" id="rrd_db_dir" value="{$rrd_db_dir}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Statistics URL:</td>
+			<td width="82%"><input name="rrd_stats_url" type="text" class="text" id="rrd_stats_url" value="{if $rrd_stats_url}{$rrd_stats_url}{else}http://{$smarty.server.SERVER_NAME}{/if}" size="30">
+			<span class="Webta_Ihelp">Allowed tags: %fid% - Farm ID, %rn% - role name, %wn% - watcher name</span>
+			</td>
+		</tr>
+		<tr>
+			<td width="18%">Store graphics in:</td>
+			<td width="82%">
+				<select name="rrd_graph_storage_type">
+					<option value="S3">Amazon S3</option>
+					<option value="LOCAL">Local filesystem</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td width="18%">Path to graphics:</td>
+			<td width="82%"><input name="rrd_graph_storage_path" type="text" class="text" id="rrd_graph_storage_path" value="{$rrd_graph_storage_path}" size="30">
+			<span class="Webta_Ihelp">Bucket name for Amazon S3 or path to folder for Local filesystem</span>
+			</td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
+		
+		{include file="inc/intable_header.tpl" header="Application settings" color="Gray"}
+		<tr>
+			<td width="18%">Path to snmpinform:</td>
+			<td width="82%"><input name="snmptrap_path" type="text" class="text" id="snmptrap_path" value="{$snmptrap_path}" size="30"></td>
 		</tr>
 		<tr>
 			<td width="18%">Event handler URL:</td>

@@ -143,9 +143,30 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	            
 	        	$level = $event->getLevel()->toString();
 	        	if ($level == "FATAL" || $level == "ERROR")
+	        	{
 	        		$event->backtrace = $this->db->qstr(Debug::Backtrace());
+	        		
+	        		// Set meta information
+	        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='1', warnings='0'
+	        			ON DUPLICATE KEY UPDATE errors=errors+1
+	        		",
+	        			array(TRANSACTION_ID)
+	        		);
+	        	}
 	        	else
+	        	{
+	        		if ($level == "WARN")
+	        		{
+	        			// Set meta information
+		        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='0', warnings='1'
+		        			ON DUPLICATE KEY UPDATE warnings=warnings+1
+		        		",
+		        			array(TRANSACTION_ID)
+		        		);	
+	        		}
+	        		
 	        		$event->backtrace = "''";
+	        	}
 	        		
 	            $query = $this->layout->format($event);
             

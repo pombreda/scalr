@@ -38,7 +38,7 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="11" align="center">No custom roles found!</td>
+		<td colspan="11" align="center">No custom roles found</td>
 	</tr>
 	{/section}
 	<tr>

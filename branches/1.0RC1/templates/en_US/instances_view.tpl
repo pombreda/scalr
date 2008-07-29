@@ -1,4 +1,6 @@
 {include file="inc/header.tpl"}
+<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
+<script type="text/javascript" src="js/class.SelectControl.js"></script>
     {include file="inc/table_header.tpl"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
@@ -13,9 +15,8 @@
 			<th>Public IP</th>
 			<th>SSH</th>
 			<th>Active</th>
-			<th>Synchronize</th>
-			<th>Logs</th>
-			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
+			<th width="1">Options</th>
+			<td width="1" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
 		</tr>
 	</thead>
 	<tbody>
@@ -31,21 +32,37 @@
 		<td class="Item" valign="top">{$rows[id]->IP}</td>
 		<td class="Item" align="center" valign="middle">{if $rows[id]->IP}<a href="instances_view.php?action=sshClient&farmid={$farmid}&instanceid={$rows[id]->instancesSet->item->instanceId}" target="_blank" ><img style="margin-right:3px;" src="images/terminal.png"></a>{/if}</td>
 		<td class="Item" align="center" valign="middle">{if $rows[id]->IsActive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
-		<td class="Item" valign="top" nowrap>{if $rows[id]->instancesSet->item->instanceState->name == 'running' && $rows[id]->LA != 'Unknown' && $rows[id]->IsRebootLaunched == 0}<a href="syncronize_role.php?iid={$rows[id]->instancesSet->item->instanceId}">Synchronize to all</a>{/if}</td>
-        <td class="Item" valign="top"><a href="logs_view.php?iid={$rows[id]->instancesSet->item->instanceId}">View</a></td>
+        <td class="ItemEdit" valign="top"><a id="control_{$rows[id]->instancesSet->item->instanceId}" href="javascript:void(0)">Options</a></td>
 		<td class="ItemDelete" valign="top">
 			<span>
 				<input type="checkbox" id="actid[]" name="actid[]" value="{$rows[id]->instancesSet->item->instanceId}">
 			</span>
 		</td>
 	</tr>
+	<script language="Javascript" type="text/javascript">
+    	var iid = '{$rows[id]->instancesSet->item->instanceId}';
+    	
+    	var menu = [
+            {if $rows[id]->instancesSet->item->instanceState->name == 'running' && $rows[id]->LA != 'Unknown' && $rows[id]->IsRebootLaunched == 0}{literal}{href: 'syncronize_role.php?iid='+iid, innerHTML: 'Synchronize to all'}{/literal},{/if}
+            {if $rows[id]->instancesSet->item->instanceState->name == 'running' && $rows[id]->IsRebootLaunched == 0}{literal}{href: 'console_output.php?iid='+iid, innerHTML: 'View console output'}{/literal},{/if}
+            {literal}{href: 'logs_view.php?iid='+iid, innerHTML: 'View logs'}{/literal}
+        ];
+        
+        
+        {literal}			
+        var control = new SelectControl({menu: menu});
+        control.attach('control_'+iid);
+        {/literal}
+	
+	</script>
 	{sectionelse}
 	<tr>
 		<td colspan="13" align="center">No instances found</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="12" align="center">&nbsp;</td>
+		<td colspan="10" align="center">&nbsp;</td>
+		<td class="ItemEdit" valign="top">&nbsp;</td>
 		<td class="ItemDelete" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>

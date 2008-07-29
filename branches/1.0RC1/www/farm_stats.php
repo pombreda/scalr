@@ -35,17 +35,22 @@
 	$display["roles"] = array_reverse($display["roles"]);
 	
 	
-	$watchers = array("cpu", "mem", "la", "net");
+	$watchers = array("MEMSNMP", "CPUSNMP", "NETSNMP", "LASNMP");
 	foreach ($display["roles"] as &$role)
 	{
 		foreach ($watchers as $watcher)
 		{
-			$filename = APPPATH."/data/{$farminfo['id']}/".strtoupper($watcher)."SNMP/{$role['name']}/{$watcher}.rrd";
-			if (!file_exists($filename))
+			if (CONFIG::$RRD_GRAPH_STORAGE_TYPE == RRD_STORAGE_TYPE::AMAZON_S3)
 			{
-				$role["not_avail"] = true;
-				break;
+				$expires = time()+720;
+				$s3_path = "/".CONFIG::$RRD_GRAPH_STORAGE_PATH."/{$req_farmid}/{$role['name']}_{$watcher}.daily.gif";
+				
+				$signature = urlencode(base64_encode(hash_hmac("SHA1", "GET\n\n\n{$expires}\n{$s3_path}", CONFIG::$AWS_ACCESSKEY, 1)));
+				$query_string = "?AWSAccessKeyId=".CONFIG::$AWS_ACCESSKEY_ID."&Expires={$expires}&Signature={$signature}";
 			}
+			
+			$url = str_replace(array("%fid%","%rn%","%wn%"), array($req_farmid, $role['name'], $watcher), CONFIG::$RRD_STATS_URL);
+			$role["images"][$watcher]['url'] = "{$url}daily.gif{$query_string}";
 		}
 	}
 	

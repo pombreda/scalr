@@ -55,7 +55,7 @@
                             $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.12.2 SNMPv2-MIB::sysName.0 s "backup" 2>&1', true);
                             $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 12.2 (startBackup) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
                             
-                            $db->Execute("UPDATE farms SET isbcprunning='1' WHERE id='{$farminfo['id']}'");
+                            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
                         }
                         else 
                             $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql instances for run backup procedure!");
@@ -81,7 +81,7 @@
 	                        $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.12.2 SNMPv2-MIB::sysName.0 s "bundle" 2>&1', true);
 	                        $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 12.2 (startBundle) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
 	                        
-	                        $db->Execute("UPDATE farms SET isbcprunning='1' WHERE id='{$farminfo['id']}'");
+	                        $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
 	                    }
 	                    else 
 	                        $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql master instances for run bundle procedure!");

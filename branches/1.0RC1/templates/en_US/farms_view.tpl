@@ -57,7 +57,7 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="{if $smarty.session.uid == 0}8{else}7{/if}" align="center">No farms found!</td>
+		<td colspan="{if $smarty.session.uid == 0}8{else}7{/if}" align="center">No farms found</td>
 	</tr>
 	{/section}
 	<tr>

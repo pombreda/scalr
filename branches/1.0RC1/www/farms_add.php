@@ -21,7 +21,11 @@
     }
 	
     $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$uid}')");
-    $avail_slots = CONFIG::$CLIENT_MAX_INSTANCES - $used_slots;
+    
+    $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $uid));
+    $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
+    
+    $avail_slots = $i_limit - $used_slots;
     $errmsg = "You have {$avail_slots} spare instances available on your account.";
     
     if ($_SESSION['uid'] == 0)
@@ -417,6 +421,9 @@
         foreach ($display["servers"] as &$row)
         {
             $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($row['ami_id']));
+            if (!$ami_info)
+            	continue;
+            
         	$row["role"] = $ami_info["name"]; 
             if ($ami_info["alias"] == "mysql")
             {

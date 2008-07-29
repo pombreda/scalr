@@ -42,9 +42,8 @@
 					    $db->Execute("DELETE FROM farm_amis WHERE farmid='{$farm["id"]}'");
 					    $db->Execute("DELETE FROM farm_instances WHERE farmid='{$farm["id"]}'");
 				    }
-					
-					@unlink(APPPATH . "/etc/clients_keys/{$clientid}/pk.pem");
-					@unlink(APPPATH . "/etc/clients_keys/{$clientid}/cert.pem");
+				    
+				    $db->Execute("DELETE FROM ami_roles WHERE clientid='{$clientid}'");
 				}
 				
 				$mess = "{$i} clients deleted";

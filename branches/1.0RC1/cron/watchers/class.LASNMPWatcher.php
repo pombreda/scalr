@@ -31,11 +31,11 @@
          * This method is called after watcher assigned to node
          *
          */
-        public function CreateDatabase($name)
+        public function CreateDatabase($rrddbpath)
         {            
-            @mkdir($this->Path."/LASNMP/{$name}", 0777, true);
+            @mkdir(dirname($rrddbpath), 0777, true);
             
-            $this->RRD = new RRD($this->Path."/LASNMP/{$name}/la.rrd");
+            $this->RRD = new RRD($rrddbpath);
             
             $this->RRD->AddDS(new RRDDS("la1", "GAUGE", 180));
             $this->RRD->AddDS(new RRDDS("la5", "GAUGE", 180));
@@ -58,7 +58,7 @@
             
             $res = $this->RRD->Create("-1m", 60);
             
-            @chmod($this->Path."/LASNMP/{$name}/la.rrd", 0777);
+            @chmod($rrddbpath, 0777);
             
             return $res;
         }
@@ -83,11 +83,13 @@
         
     	public function UpdateRRDDatabase($name, $data)
         {
-        	if (!file_exists("{$this->Path}/LASNMP/{$name}/la.rrd"))
-        		$this->CreateDatabase($name);
+        	$rrddbpath = $this->Path."/{$name}/LASNMP/db.rrd";
+        	
+        	if (!file_exists($rrddbpath))
+        		$this->CreateDatabase($rrddbpath);
         	
         	if (!$this->RRD)
-                $this->RRD = new RRD($this->Path."/LASNMP/{$name}/la.rrd");
+                $this->RRD = new RRD($rrddbpath);
   
         	$this->RRD->Update($data);
         }
@@ -97,38 +99,25 @@
          *
          * @param integer $serverid
          */
-        public function PlotGraphic($name)
+        public static function PlotGraphic($rrddbpath, $image_path, $r)
         {
-        	$image_path = "{$this->Path}/graphics/{$name}/la.gif";
-        	
-        	if (file_exists($image_path))
-        	{
-        		clearstatcache();
-        		$time = filemtime($image_path);
-        		
-        		if ($time > time()-300)
-        			return false;
-        	}
-        	else
-        		@mkdir(dirname($image_path), 0777, true);
 
-        		
         	$graph = new RRDGraph(440, 140, CONFIG::$RRDTOOL_PATH);
-			$graph->AddDEF("la1", $this->Path."/LASNMP/{$name}/la.rrd", "la1", "AVERAGE");
+			$graph->AddDEF("la1", $rrddbpath, "la1", "AVERAGE");
 			
 			$graph->AddVDEF("la1_min", "la1,MINIMUM");
             $graph->AddVDEF("la1_last", "la1,LAST");
             $graph->AddVDEF("la1_avg", "la1,AVERAGE");
             $graph->AddVDEF("la1_max", "la1,MAXIMUM");
 			
-			$graph->AddDEF("la5", $this->Path."/LASNMP/{$name}/la.rrd", "la5", "AVERAGE");
+			$graph->AddDEF("la5", $rrddbpath, "la5", "AVERAGE");
 			
 			$graph->AddVDEF("la5_min", "la5,MINIMUM");
             $graph->AddVDEF("la5_last", "la5,LAST");
             $graph->AddVDEF("la5_avg", "la5,AVERAGE");
             $graph->AddVDEF("la5_max", "la5,MAXIMUM");
 			
-			$graph->AddDEF("la15", $this->Path."/LASNMP/{$name}/la.rrd", "la15", "AVERAGE");
+			$graph->AddDEF("la15", $rrddbpath, "la15", "AVERAGE");
 			
 			$graph->AddVDEF("la15_min", "la15,MINIMUM");
             $graph->AddVDEF("la15_last", "la15,LAST");
@@ -157,9 +146,10 @@
 
             if (CONFIG::$RRD_DEFAULT_FONT_PATH)
             	$graph->AddFont("DEFAULT", "0", CONFIG::$RRD_DEFAULT_FONT_PATH);
-            
-            $graph->Plot($image_path, "-86400", false,
+            	
+            $res = $graph->Plot($image_path, $r["start"], $r["end"], 
                             array(
+                            		"--step", $r["step"],
                             		"--pango-markup",
                             		"-v", "Load averages", 
                                     "-t", "Load averages",
@@ -169,7 +159,7 @@
                                     "--rigid",
                             		"--no-gridfit",
                             		"--slope-mode",
-                            		"--x-grid", "HOUR:1:HOUR:2:HOUR:2:0:%H"
+                            		"--x-grid", $r["x_grid"]
                                  )
                         );
          
