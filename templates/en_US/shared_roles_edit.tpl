@@ -69,6 +69,7 @@
     </script>
 	{include file="inc/table_header.tpl"}
 		{include file="inc/intable_header.tpl" header="Role information" color="Gray"}
+    	{if $ami_id}
     	<tr>
     		<td width="20%">AMI:</td>
     		<td>{$ami_id}<input type="hidden" name="ami_id" value="{$ami_id}"></td>
@@ -77,13 +78,26 @@
     		<td width="20%">Architecture:</td>
     		<td>{$arch}<input type="hidden" name="arch" value="{$arch}"></td>
     	</tr>
+    	{else}
+    	<tr>
+    		<td width="20%">AMI:</td>
+    		<td><input type="text" class="text" name="ami_id" value=""></td>
+    	</tr>
+    	{/if}
 		<tr>
     		<td width="20%">Role name:</td>
     		<td><input type="text" class="text" name="name" value="{$name}" /></td>
     	</tr>
     	<tr>
-    		<td width="20%">Prototype role:<br><span style="font-size:10px;">(base, mysql, www, app)</span></td>
-    		<td><input type="text" class="text" name="alias" value="{$alias}" /></td>
+    		<td width="20%">Prototype role:</td>
+    		<td>
+    			<select name="alias" class="text">
+    				<option {if $alias == 'base'}selected{/if} value="base">base</option>
+    				<option {if $alias == 'www'}selected{/if} value="www">www</option>
+    				<option {if $alias == 'app'}selected{/if} value="app">app</option>
+    				<option {if $alias == 'mysql'}selected{/if} value="mysql">mysql</option>
+    			</select>
+    		</td>
     	</tr>
     	<tr>
     		<td width="20%">Default mimimum LA for this role:</td>
