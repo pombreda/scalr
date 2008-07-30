@@ -70,24 +70,20 @@
     $added = array();  	
 	while ($row = $rows->FetchRow())
 	{
-	    if (!$added[$row['transactionid']])
-	    {
-    	    $row = $db->GetRow("SELECT * FROM syslog WHERE transactionid='{$row['transactionid']}' ORDER BY dtadded_time ASC");
-    	    
-    	    $row["ipaddr"] = long2ip($row["ipaddr"]);
-    	    
-    	    $meta = $db->GetRow("SELECT * FROM syslog_metadata WHERE transactionid=?", array($row['transactionid']));
-    	    
-    	    $row["warns"] = $meta["warnings"] ? $meta["warnings"] : 0;
-    	    $row["errors"] = $meta["errors"] ? $meta["errors"] : 0;
-    	    
-    	    $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
-    	    $row["action"] = stripslashes($row["message"]);
-    	    $row["action"] = htmlentities($row["action"], ENT_QUOTES, "UTF-8");
-    	    
-    	    $display["rows"][] = $row;
-    	    $added[$row['transactionid']] = 1;
-	    }
+        $row = $db->GetRow("SELECT * FROM syslog WHERE transactionid='{$row['transactionid']}' ORDER BY dtadded_time ASC");
+        
+        $row["ipaddr"] = long2ip($row["ipaddr"]);
+        
+        $meta = $db->GetRow("SELECT * FROM syslog_metadata WHERE transactionid=?", array($row['transactionid']));
+        
+        $row["warns"] = $meta["warnings"] ? $meta["warnings"] : 0;
+        $row["errors"] = $meta["errors"] ? $meta["errors"] : 0;
+        
+        $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
+        $row["action"] = stripslashes($row["message"]);
+        $row["action"] = htmlentities($row["action"], ENT_QUOTES, "UTF-8");
+        
+        $display["rows"][] = $row;
 	}
 	
 	$display["page_data_options"] = array();
