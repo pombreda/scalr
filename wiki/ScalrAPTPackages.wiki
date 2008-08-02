@@ -26,6 +26,8 @@ apt-get install scalr-ami-configs
 
 = Retaining custom modifications =
 What if I made changes to scripts and/or configs?
+
 In most cases, deb packages will not simply replace your config files (like nginx.conf), but rather patch them.
+
 You are not advised to modify Scalr scripts. Use include files (TODO: List of includes) instead. 
 If execution of include script fails, the main script continues executing.
