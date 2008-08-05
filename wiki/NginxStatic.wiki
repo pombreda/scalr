@@ -1,0 +1,28 @@
+#summary How to configure nginx to serve static content on www role
+
+= Introduction =
+
+Scalr shared `www` role is running lightweight [http://nginx.net/ nginx] HTTP server. By default, it is configured to proxy all requests to all instances of `app` role (which are running Apache web server).
+However, if you are giving out a lot of static content (images, html files or downloads), serving them by Apache adds unnecessary overhead. 
+
+Nginx can serve static files of specified file extensions, while proxying the rest of requests to app instances.
+
+
+= HOW-TO  =
+
+ # Launch your farm and click on SSH icon to log in to one of instances of `www` role.
+ # Type `vi /etc/nginx/nginx.conf`. Press `i` to enter insert mode. Go to the end on `server {}`
+ section and paste a following section of code:
+
+{{{
+location ~* ^.+\.(jpg|jpeg|gif|png|ico|css|zip|tgz|gz|rar|bz2|pdf|txt|
+tar|wav|bmp|rtf|js|flv|swf|html|htm)$
+{
+    root   /var/www/static-content;
+}
+}}}
+
+where `/var/www/static-content` is your place for static files. 
+
+ # Issue `killall -HUP nginx` command to reload nginx.
+ # Go to Scalr and click "Synchronize to all" to propagate changes across all instances of `www` role.
