@@ -16,9 +16,6 @@
 	}
 {/literal}
 </script>
-
-<p class="placeholder">You can use a %hostname% tag, which will be replaced with full zone hostname.</p>
-
 {include file="inc/table_header.tpl"}
 <table cellpadding="4" cellspacing="0" width="100%" border="0">
 	<tr>

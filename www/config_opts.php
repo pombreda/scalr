@@ -1,6 +1,5 @@
 <?
     define("NO_AUTH", true);
-    define("NO_TEMPLATES", true);
     include("src/prepend.inc.php");
 
     if ($req_FarmID && $req_Hash)
@@ -19,6 +18,52 @@
         {
             switch ($option[0])
             {
+            	case "apache":
+            		
+            		if ($option[1] == "vhost")
+            		{
+            			$virtual_host_name = implode(".", array_slice($option, 3));
+            			
+            			switch($option[2])
+            			{
+            				case "http":
+            					$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND name=?", array($req_FarmID, $virtual_host_name));
+            					$template = CONFIG::$HTTP_VHOST_TEMPLATE;
+            					break;
+            					
+            				case "https":
+            					$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1'", array($req_FarmID));
+            					$template = CONFIG::$HTTPS_VHOST_TEMPLATE;
+            					break;
+            					
+            				case "list":
+            					
+            					$vhosts = $db->GetAll("SELECT name FROM vhosts WHERE farmid=?", array($req_FarmID));
+            					foreach ($vhosts as $vhost)
+	            					print "{$vhost['name']}\n";
+            					
+            					break;
+            			}
+            			
+            			if ($vhost_info)
+            			{
+            				$vars = array(
+            					"host" 			=> $vhost_info['name'],
+            					"document_root" => $vhost_info['document_root_dir'],
+            					"server_admin"	=> $vhost_info['server_admin'],
+            					"logs_dir"		=> $vhost_info['logs_dir']
+            				);
+            				
+            				$Smarty->assign($vars);
+            				
+            				print $Smarty->fetch("string:{$template}");
+            			}
+            		}
+            		
+            		exit();
+            		
+            		break;
+            	            	
             	case "roles":
             		
             		switch($option[1])
@@ -26,8 +71,19 @@
                         case "list":
                         	
                         $farm_amis = $db->GetAll("SELECT ami_id FROM farm_amis WHERE farmid='{$farm_id}'");
+                        $aliases = array();
                         foreach ($farm_amis as $farm_ami)
-                        	print $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$farm_ami['ami_id']}'")."\n";
+                        {
+                        	$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$farm_ami['ami_id']}'");
+                        	if (!$aliases[$info['alias']])
+                        	{
+                        		$aliases[$info['alias']] = true;
+                        		print "{$info["alias"]}\n";
+                        	}
+                        	
+                        	if ($info['alias'] != $info["name"])
+                        		print "{$info["name"]}\n";
+                        }
                         	
                         break;
                     }
@@ -75,7 +131,7 @@
                 case "servers":
                     
                     $role = $option[1];
-                    $amis = $db->GetAll("SELECT ami_id FROM ami_roles WHERE alias=?", array($role));
+                    $amis = $db->GetAll("SELECT ami_id FROM ami_roles WHERE name=? OR alias=?", array($role, $role));
                     
                     if ($amis)
                     {

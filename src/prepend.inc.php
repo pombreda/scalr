@@ -227,7 +227,7 @@
     CONFIG::$ZONE_LOCK_WAIT_TIMEOUT = 5000000; // in miliseconds (1000000 = 1 second)
     CONFIG::$ZONE_LOCK_WAIT_RETRIES = 3;
     
-    CONFIG::$HTTP_PROTO = (CONFIG::$HTTP_PROTO) ? CONFIG::$HTTP_PROTO : "http://";
+    CONFIG::$HTTP_PROTO = (CONFIG::$HTTP_PROTO) ? CONFIG::$HTTP_PROTO : "http";
     
     // cache lifetime
     CONFIG::$EVENTS_RSS_CACHE_LIFETIME = 300; // in seconds

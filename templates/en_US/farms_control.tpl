@@ -8,7 +8,7 @@
     		  <br>
     		  <br>
     		  {if $num > 0}
-    		  	<input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="mark_active" value="1"> Mark instances as 'Active'.
+    		  	<input style="vertical-align:middle;margin-left:-4px;" checked type="checkbox" name="mark_active" value="1"> Activate DNS zone now
     		  {/if}
     		{else}
     		  Do you really want to terminate farm '{$farminfo.name}'? {if $num > 0}All <b>{$num}</b> instance(s) in this farm will be terminated.{/if}

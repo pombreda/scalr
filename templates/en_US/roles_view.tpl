@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-    <p class="placeholder">Placeholder to show more info about functionality on this page.</p>
     {include file="inc/table_header.tpl"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>

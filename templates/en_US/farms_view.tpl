@@ -1,8 +1,6 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
 <script type="text/javascript" src="js/class.SelectControl.js"></script>
-<p class="placeholder">This is a list of all your Server Farms. A Server Farm is a logical group of EC2 machines that serve your application. It can include load balancers, databases, web severs, and other custom servers. Servers in these farms can be redundant, self curing, and auto-scaling.</p>
-
     {include file="inc/table_header.tpl"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>

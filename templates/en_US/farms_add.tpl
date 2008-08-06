@@ -228,7 +228,19 @@
                                 
                                 {include file="inc/intable_header.tpl" intableid='mysql_settings' visible=$mysql_visible header="Settings for mysql role" color="Gray"}
                             	<tr>
-                            		<td colspan="2">Rebundle and save instance snapshot of mysql role every: <input type="text" size="3" class="text" name="mysql_rebundle_every" value="{if $farminfo.mysql_rebundle_every}{$farminfo.mysql_rebundle_every}{else}48{/if}" /> hours</td>
+                            		<td colspan="2">
+                            			<p class="placeholder">
+                            			MySQL snapshots contain a hotcopy of mysql data directory, file that holds binary log position and debian.cnf
+                            			<br>
+										When farm starts:<br> 
+										1. MySQL master dowloads and extracts a snapshot from S3<br>
+										2. When data is loaded and master starts, slaves download and extract a snapshot as well.<br>
+										3. Slaves are syncing with master for some time<br>
+                            			</p>
+                            		</td>
+                            	</tr>
+                            	<tr>
+                            		<td colspan="2">Bundle and save mysql data snapshot every: <input type="text" size="3" class="text" name="mysql_rebundle_every" value="{if $farminfo.mysql_rebundle_every}{$farminfo.mysql_rebundle_every}{else}48{/if}" /> hours</td>
                             	</tr>
                             	<tr>
                             		<td colspan="2"><input style="vertical-align:middle;" type="checkbox" {if $farminfo.mysql_bcp == 1}checked{/if} name="mysql_bcp" value="1"> Periodically backup databases every: <input type="text" size="3" class="text" name="mysql_bcp_every" value="{if $farminfo.mysql_bcp_every}{$farminfo.mysql_bcp_every}{else}180{/if}" /> minutes</td>

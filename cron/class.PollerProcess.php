@@ -201,7 +201,7 @@
                             $isfirstinrole = '1';
                         }
                         
-                        $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$farm_instance['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+                        $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$farm_instance['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$farm_instance['role_name'].'" 2>&1', true);
                         $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance_snmp['instance_id']}' ('{$farm_instance_snmp['external_ip']}') complete ({$res})");
                     }
     
@@ -444,7 +444,7 @@
                                 
                                 $alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$db_item_info['ami_id']}'");
                                 
-                                $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$db_item_info['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+                                $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$db_item_info['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$db_item_info['role_name'].'" 2>&1', true);
                                 $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance['instance_id']}' ('{$farm_instance['external_ip']}') complete ({$res})");
                             }
                             //
@@ -613,7 +613,7 @@
 	                            
 	                            $alias = $db->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo['role_name']}' AND iscompleted='1'");
 	                            
-	                            $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+	                            $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$instanceinfo['role_name'].'" 2>&1', true);
 	                            $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance['instance_id']}' ('{$farm_instance['external_ip']}') complete ({$res})");
 	                        }
 	                        
