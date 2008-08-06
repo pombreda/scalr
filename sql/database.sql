@@ -27,17 +27,6 @@ CREATE TABLE `ami_roles` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-/*Data for the table `ami_roles` */
-INSERT INTO `ami_roles` (`id`, `ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, `comments`, `dtbuilt`, `description`, `replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, `architecture`, `dtbuildstarted`, `rebundle_trap_received`, `fail_details`) VALUES
-(1, 'ami-e2aa4e8b', 'base', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 5, 10, 'base', 'm1.small', 'i386', NULL, 1, NULL),
-(2, 'ami-bd8763d4', 'mysql', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.small', 'i386', NULL, 1, NULL),
-(18, 'ami-8c8f6be5', 'www', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.small', 'i386', NULL, 1, NULL),
-(20, 'ami-bfbd59d6', 'app', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.small', 'i386', NULL, 1, NULL),
-(47, 'ami-e5a2468c', 'app64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.large', 'x86_64', NULL, 1, NULL),
-(48, 'ami-0aad4963', 'base64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'base', 'm1.large', 'x86_64', NULL, 1, NULL),
-(49, 'ami-a68266cf', 'mysql64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.large', 'x86_64', NULL, 1, NULL),
-(50, 'ami-b48f6bdd', 'www64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.large', 'x86_64', NULL, 1, NULL);
-
 /*Table structure for table `client_settings` */
 
 DROP TABLE IF EXISTS `client_settings`;
@@ -431,6 +420,17 @@ create table `garbage_queue`( `id` int(11) NOT NULL AUTO_INCREMENT , `clientid` 
 alter table `garbage_queue` add unique `clientindex` (`clientid`);
 
 insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
+
+/*Data for the table `ami_roles` */
+INSERT INTO `ami_roles` (`id`, `ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, `comments`, `dtbuilt`, `description`, `replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, `architecture`, `dtbuildstarted`, `rebundle_trap_received`, `fail_details`) VALUES
+(1, 'ami-b39276da', 'base', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 5, 10, 'base', 'm1.small', 'i386', NULL, 1, NULL),
+(2, 'ami-dc9377b5', 'mysql', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.small', 'i386', NULL, 1, NULL),
+(18, 'ami-b19e7ad8', 'www', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.small', 'i386', NULL, 1, NULL),
+(20, 'ami-dd9377b4', 'app', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.small', 'i386', NULL, 1, NULL),
+(47, 'ami-b59e7adc', 'app64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.large', 'x86_64', NULL, 1, NULL),
+(48, 'ami-bc987cd5', 'base64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'base', 'm1.large', 'x86_64', NULL, 1, NULL),
+(49, 'ami-bb987cd2', 'mysql64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.large', 'x86_64', NULL, 1, NULL),
+(50, 'ami-bf9e7ad6', 'www64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.large', 'x86_64', NULL, 1, NULL);
 
 alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;
 

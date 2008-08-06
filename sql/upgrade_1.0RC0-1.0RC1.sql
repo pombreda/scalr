@@ -48,14 +48,14 @@ alter table `garbage_queue` add unique `clientindex` (`clientid`);
 
 insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
 
-UPDATE ami_roles SET ami_id='ami-8c8f6be5' WHERE name='www';
-UPDATE ami_roles SET ami_id='ami-b48f6bdd' WHERE name='www64';
-UPDATE ami_roles SET ami_id='ami-bfbd59d6' WHERE name='app';
-UPDATE ami_roles SET ami_id='ami-e5a2468c' WHERE name='app64';
-UPDATE ami_roles SET ami_id='ami-bd8763d4' WHERE name='mysql';
-UPDATE ami_roles SET ami_id='ami-a68266cf' WHERE name='mysql64';
-UPDATE ami_roles SET ami_id='ami-e2aa4e8b' WHERE name='base';
-UPDATE ami_roles SET ami_id='ami-0aad4963' WHERE name='base64';
+UPDATE ami_roles SET ami_id='ami-b19e7ad8' WHERE name='www';
+UPDATE ami_roles SET ami_id='ami-bf9e7ad6' WHERE name='www64';
+UPDATE ami_roles SET ami_id='ami-dd9377b4' WHERE name='app';
+UPDATE ami_roles SET ami_id='ami-b59e7adc' WHERE name='app64';
+UPDATE ami_roles SET ami_id='ami-dc9377b5' WHERE name='mysql';
+UPDATE ami_roles SET ami_id='ami-bb987cd2' WHERE name='mysql64';
+UPDATE ami_roles SET ami_id='ami-b39276da' WHERE name='base';
+UPDATE ami_roles SET ami_id='ami-bc987cd5' WHERE name='base64';
 
 alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;
 
