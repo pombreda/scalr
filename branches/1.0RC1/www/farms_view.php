@@ -80,5 +80,8 @@
 	$display["page_data_options"] = array(
 		array("name" => "Delete", "action" => "delete")
 	);
+	
+	$display["help"] = "This is a list of all your Server Farms. A Server Farm is a logical group of EC2 machines that serve your application. It can include load balancers, databases, web severs, and other custom servers. Servers in these farms can be redundant, self curing, and auto-scaling.";
+	
 	require_once ("src/append.inc.php");
 ?>

@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-<p class="placeholder">This tool allows you to delete objects that are not used by any of your farms.</p>
     {include file="inc/table_header.tpl" table_header_text="S3 buckets" nofilter='1'}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items_">
 	<thead>

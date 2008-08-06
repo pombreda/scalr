@@ -222,29 +222,38 @@
 	    }
 	    else 
 	    {
-	        $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
-            $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
-            	       
-           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
-           {
-               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
-               $req_step = 1;
-           }
-	        
-            if (count($err) == 0 || $skip_error_check)
-            {
-    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", array($post_domainname, ZONE_STATUS::DELETED)))
-    	        {
-    	           $err[] = "Selected domain name already exists in database.";
-    	           $req_step = 1;
-    	        }
-    	        else
-    	        {
-        	        $display["amis"] = $post_amis;
-        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
-        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
-    	        }
-            }
+	        if (stristr($post_domainname, "scalr.net"))
+	        {
+				$err[] = "You cannot use *.scalr.net as your application";
+				$req_step = 1;
+	        }
+			else
+			{
+	    	
+		    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
+	            $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
+	            	       
+	           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
+	           {
+	               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
+	               $req_step = 1;
+	           }
+		        
+	            if (count($err) == 0 || $skip_error_check)
+	            {
+	    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", array($post_domainname, ZONE_STATUS::DELETED)))
+	    	        {
+	    	           $err[] = "Selected domain name already exists in database.";
+	    	           $req_step = 1;
+	    	        }
+	    	        else
+	    	        {
+	        	        $display["amis"] = $post_amis;
+	        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
+	        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
+	    	        }
+	            }
+			}
 	    }
 	    
 	    $template_name = "app_wizard_step2.tpl";

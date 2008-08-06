@@ -111,6 +111,11 @@
 			if ($_SESSION["uid"] == 0)
 				UI::Redirect("index.php");
 		    
+			if (stristr($post_domainname, "scalr.net"))
+			{
+				$err[] = "You cannot use *.scalr.net as your application";
+			}
+				
 		    $status = false;
 			$post_hostname = $post_domainname;
 			
@@ -204,7 +209,7 @@
 				}
 				else 
 				{
-				    $okmsg = "Application succesfuly created. DNS zone for {$post_domainname} will be created in few minutes. Untill then, {$post_domainname} will not be resolving.";
+				    $okmsg = "Application succesfuly created. DNS zone for {$post_domainname} will be created in a few minutes. Until then, {$post_domainname} will not be resolving.";
 				    UI::Redirect("sites_view.php");
 				}
     		}
@@ -238,7 +243,15 @@
 		{
 			$db_chk = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($post_domainname));
 			if (!$db_chk["id"])
-				$display["domainname"] = $post_domainname;	
+			{
+				if (stristr($post_domainname, "scalr.net"))
+				{
+					$errmsg = "You cannot use *.scalr.net as your application";
+					$display["domainname"] = false;
+				}
+				else
+					$display["domainname"] = $post_domainname;
+			}	
 			else
 			{
 				$display["domainname"] = false;
@@ -323,6 +336,10 @@
 	$display["def_soa_owner"] = CONFIG::$DEF_SOA_OWNER;
 	$display["def_soa_parent"] = CONFIG::$DEF_SOA_PARENT;
 
+	if ($display["ezone"])
+	{
+		$display["help"] = "Scalr nameservers support <a href=\"http://en.wikipedia.org/wiki/DNS_zone_transfer\" target=\"_blank\">DNS zone transfers</a>. If you want to deploy your own backup DNS, click <a href=\"dns_zone_config.php?zone={$display["ezone"]}\">here</a> to configure IP adresses of your DNS servers.";
+	}
 		
 	require("src/append.inc.php"); 
 ?>

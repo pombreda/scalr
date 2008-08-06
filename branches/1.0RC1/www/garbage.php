@@ -67,5 +67,7 @@
    	$display["keypairs"] = $garbage_keypairs;
    	$display["buckets"] = $garbage_backets;
     	
+   	$display["help"] = "This tool allows you to delete objects that are not used by any of your farms.";
+   	
 	require("src/append.inc.php");
 ?>

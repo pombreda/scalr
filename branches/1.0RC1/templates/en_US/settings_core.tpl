@@ -128,8 +128,8 @@
 		<tr>
 			<td width="18%">Event handler URL:</td>
 			<td width="82%"><select name="http_proto" class="text" style="vertical-align:middle;">
-				<option {if $http_proto == 'http://'}selected{/if} value="http://">http://</option>
-				<option {if $http_proto == 'https://'}selected{/if} value="https://">https://</option>
+				<option {if $http_proto == 'http'}selected{/if} value="http">http://</option>
+				<option {if $http_proto == 'https'}selected{/if} value="https">https://</option>
 			</select><input name="eventhandler_url" type="text" class="text" id="eventhandler_url" value="{$eventhandler_url}" size="30"></td>
 		</tr>
 		<tr>

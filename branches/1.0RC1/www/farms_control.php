@@ -49,7 +49,7 @@
             }
         }
         
-        $db->Execute("UPDATE farms SET status='1' WHERE id='{$farminfo['id']}'");
+        $db->Execute("UPDATE farms SET status='1', isbcprunning='0' WHERE id='{$farminfo['id']}'");
         
         //
         // Reanimate DNS zones

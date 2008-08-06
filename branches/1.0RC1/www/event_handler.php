@@ -82,7 +82,7 @@ if ($req_FarmID && $req_Hash)
 						$isfirstinrole = '1';
 					}
 
-					$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+					$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$instanceinfo['role_name'].'" 2>&1', true);
 					$Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance_snmp['instance_id']}' ('{$farm_instance_snmp['external_ip']}') complete ({$res})");
 				}
 
@@ -189,7 +189,7 @@ if ($req_FarmID && $req_Hash)
                                      AND instance_id=?", array($farm_id, $req_InstanceID));
 
 				$Shell = ShellFactory::GetShellInstance();
-				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($farminfo["id"], $instanceinfo["role_name"]));
+				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($farminfo["id"]));
 				foreach ((array)$instances as $instance)
 				{
 					$res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.10.1 SNMPv2-MIB::sysName.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysLocation.0 s "'.$data['snapurl'].'" 2>&1', true);

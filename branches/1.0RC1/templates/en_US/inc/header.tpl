@@ -153,3 +153,6 @@
 				<form name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
 			{/if}
 		<a name="top"></a>
+		{if $help}
+			<p class="placeholder">{$help}</p>
+		{/if}
