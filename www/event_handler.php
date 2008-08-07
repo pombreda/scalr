@@ -196,6 +196,35 @@ if ($req_FarmID && $req_Hash)
 					$Logger->debug("Sending SNMP Trap 10.1 (newMysqlMaster) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})", E_USER_NOTICE);
 				}
 
+				// Update DNS
+				$zones = $db->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
+				if (count($zones) > 0)
+				{
+					$DNSZoneController = new DNSZoneControler();
+					
+					foreach ($zones as $zone)
+					{								
+						$records_attrs = array();
+						
+						if ($zone['id'])
+						{
+							$records_attrs[] = array("int-{$instanceinfo['role_name']}-master", $instanceinfo["internal_ip"], 20);
+							$records_attrs[] = array("ext-{$instanceinfo['role_name']}-master", $_SERVER['REMOTE_ADDR'], 20);
+							
+							foreach ($records_attrs as $record_attrs)
+							{									
+								$db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
+								array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
+							}
+							
+							if (!$DNSZoneController->Update($zone["id"]))
+								$Logger->error("Cannot update zone when 'hostUp' event raised.");
+							else
+								$Logger->debug("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
+						}
+					}
+				}
+				
 				break;
 
 			case "hostInit":
