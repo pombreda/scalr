@@ -48,8 +48,10 @@ Thus instance initialization is time-consuming on mysqllvm64 role.
 
 === m1.large===
 Total space available for data storage: ~350GB
+
 Average init time: 10 minutes
 
 === m1.xlarge===
 Total space available for data storage: ~750GB
+
 Average init time: 20 minutes
