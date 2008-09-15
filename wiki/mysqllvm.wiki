@@ -39,6 +39,8 @@ LV_SNAP_MPT="/mnt/mysql-snap"
 
 Unlike the regular bundle, it takes only few seconds to create a snapshot and release table locks.
 
+Snapshots are split into 150MB before upload to S3.
+
 = Volume sizes and initialization times =
 
 On big instance types LVM uses all available attached devices to create a volume group by default.
