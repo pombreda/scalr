@@ -6,5 +6,5 @@
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || Purpose ||
 || mysql || mysql64 || ami-2cf21645 || ami-e8c62281 || MySQL server ||
 || app || app64 || ami-bac420d3 || ami-0ac62263 || Application server ||
-|| www || www64 || ami-72f2161b || ami-bf9e7ad6 || Frontend load balancer and HTTP server ||
-|| base || base64 || ami-51f21638 || ami-bc987cd5 || The clean image for building custom roles ||
+|| www || www64 || ami-72f2161b || ami-01ca2e68 || Frontend load balancer and HTTP server ||
+|| base || base64 || ami-51f21638 || ami-03ca2e6a || The clean image for building custom roles ||
