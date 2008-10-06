@@ -1,0 +1,23 @@
+#summary How to handle instance termination or bootup in your application
+
+= Introduction =
+
+Your application might need to know when Scalr launches new instance or instance terminated due to crash, downscaling or synchronization.
+
+
+= Host up =
+
+Scalr sends `SNMPv2-MIB::snmpTrap.11.1 SNMP` trap to all instances.
+
+You can add your bash code to `/usr/local/aws/user/traps/hostup` file.
+
+= Host down =
+
+Scalr sends `SNMPv2-MIB::snmpTrap.11.0 SNMP` trap to all instances.
+
+You can add your bash code to `/usr/local/aws/user/traps/hostdown` file.
+
+You may find all traps and corresponding handlers in `/etc/snmp/snmptrapd.conf` file on any instance.
+
+
+
