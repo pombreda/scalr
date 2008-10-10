@@ -42,3 +42,26 @@ Currently, you need to manually edit nginx.conf and synchronize your instance.
   * %DOMAIN_NAME% - Your application hostname
   * %PATH_TO_CERT% - full path to a certificate in PEM format
   * %PATH_TO_PKEY% - full path to a private key in PEM format
+
+== Signed certiicate ==
+If you ordered a certificate from authority, in most cases you have .crt, .ca and .key files.
+.crt and .ca files should be put in one %PATH_TO_CERT% file and the .key in %PATH_TO_PKEY% 
+
+== Creating self-signed certificate ==
+
+Create the private key, it will require a passphrase (it will be removed later on):
+{{{
+      openssl genrsa -des3 -out domain.key 1024  
+}}}
+
+Remove the passphrase entered earlier when we create the key, if not, the box will ask us to enter the passphrase on every reboot.
+
+{{{
+      cp domain.key domain.key.1
+      openssl rsa -in pma.key.1 -out domain.key  
+}}}
+
+Create the certificate itself:
+{{{
+ openssl x509 -req -days 365 -in domain.csr -signkey domain.key -out domain.crt  
+}}}
