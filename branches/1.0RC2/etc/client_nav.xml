@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menu>
+	<item href="index.php">Home</item>
+	<node title="Applications">
+		<item href="sites_view.php" search="SELECT COUNT(*) FROM zones WHERE zone LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>		
+		<item href="sites_add.php">Add new</item>				
+	</node>
+
+	<node title="Farms">
+		<item href="farms_add.php">Build new</item>
+		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>		
+	</node>
+
+	<node title="Roles">
+		<item href="client_roles_add.php">Add new</item>
+		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="sec_groups_view.php">Security groups</item>
+	</node>
+		
+	<item href="logs_view.php">Log</item>
+	
+	<node title="Settings">
+		<item href="profile.php">Profile</item>
+		<item href="aws_settings.php">AWS settings</item>
+		<item href="system_settings.php">System settings</item>
+		<separator />
+		<item href="default_records.php">Default DNS records</item>
+	</node>
+	
+	<node title="Tools">
+		<item href="garbage.php">Delete unused objects</item>
+	</node>
+</menu>
