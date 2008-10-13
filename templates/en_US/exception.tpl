@@ -1,4 +1,4 @@
-{include file="site/inc/site_header.tpl"}
+{include file="inc/login_header.tpl"}
 {literal}
 <style type="text/css">
 .backtrace {
@@ -22,4 +22,4 @@
     <div style="height:2px; background-color:#CCCCCC; font-size:1px;"></div>
 </div>
 </center>
-{include file="site/inc/site_footer.tpl"}
+{include file="inc/login_footer.tpl"}
