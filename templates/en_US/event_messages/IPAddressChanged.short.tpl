@@ -1,0 +1,1 @@
+Instance {$instanceinfo.instance_id} has new IP: {$new_ip_address} 

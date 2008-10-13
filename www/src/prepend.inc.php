@@ -46,7 +46,7 @@
     	}
     	
     	// title 
-    	$display["title"] = "Control Panel";
+    	$display["title"] = "Scalr CP";
     	
     	if ($_SESSION['uid'] != 0)
     	{
@@ -54,7 +54,10 @@
     			!$_SESSION["aws_private_key"] || 
     			!$_SESSION["aws_certificate"]
     		) {
-    			if (!stristr($_SERVER['PHP_SELF'], 'aws_settings.php') && !stristr($_SERVER['PHP_SELF'], 'login.php'))
+    			if (!stristr($_SERVER['PHP_SELF'], 'aws_settings.php') && 
+    				!stristr($_SERVER['PHP_SELF'], 'login.php') &&
+    				!stristr($_SERVER['PHP_SELF'], 'profile.php')
+    			)
     				UI::Redirect("aws_settings.php");
     				
     			$errmsg = "Welcome to Scalr - in order to get started, we need some additional information.  Please enter the reqested information below.";

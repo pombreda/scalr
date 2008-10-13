@@ -31,9 +31,25 @@
 		    	$db->Execute("DELETE FROM farms WHERE id=?", array($farminfo['id']));	
 	    		$db->Execute("DELETE FROM farm_amis WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM farm_instances WHERE farmid=?", array($farminfo['id']));
-	    		$db->Execute("DELETE FROM records WHERE zoneid IN (SELECT id FROM zones WHERE farmid=?)", array($farminfo['id']));
-	    		$db->Execute("DELETE FROM zones WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM logentries WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM events WHERE farmid=?", array($farminfo['id']));
+	    		
+	    		// Clean observers
+	    		$observers = $db->Execute("SELECT * FROM farm_event_observers WHERE farmid=?", array($farminfo['id']));
+	    		while ($observer = $observers->FetchRow())
+	    		{
+	    			$db->Execute("DELETE FROM farm_event_observers WHERE id=?", array($observer['id']));
+	    			$db->Execute("DELETE FROM farm_event_observers_config WHERE observerid=?", array($observer['id']));
+	    		}
+	    		
+	    		// Remove DNS zones
+	    		$DNSZoneControler = new DNSZoneControler();
+	    		$zones = $db->GetAll("SELECT * FROM zones WHERE farmid=?", array($farminfo['id']));
+	    		foreach ($zones as $zone)
+	    		{
+	    			$DNSZoneControler->Delete($zone['id']);
+	    		}
 	    	}
 	    	catch(Exception $e)
 	    	{

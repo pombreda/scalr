@@ -70,6 +70,8 @@
 						
 						$DNSZoneController = new DNSZoneControler();
 						
+						$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+						
 						try
 						{
 							foreach ($zones as $zoneinfo)
@@ -86,7 +88,18 @@
 									$records[] = array("rtype" => "A", "rkey" => "int-{$instanceinfo['role_name']}-master", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
 									$records[] = array("rtype" => "A", "rkey" => "ext-{$instanceinfo['role_name']}-master", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
 								}
-									
+
+								if ($ami_info['alias'] == 'mysql' && $instanceinfo['role_name'] != 'mysql')
+								{
+									$records[] = array("rtype" => "A", "rkey" => "int-mysql", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
+									$records[] = array("rtype" => "A", "rkey" => "ext-mysql", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
+									if ($instanceinfo["isdbmaster"] == 1)
+									{
+										$records[] = array("rtype" => "A", "rkey" => "int-mysql-master", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
+										$records[] = array("rtype" => "A", "rkey" => "ext-mysql-master", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
+									}
+								}
+								
 								$records[] = array("rtype" => "A", "rkey" => "int-{$instanceinfo['role_name']}", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
 								$records[] = array("rtype" => "A", "rkey" => "ext-{$instanceinfo['role_name']}", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
 								
@@ -169,7 +182,10 @@
 				{
 					$instances = array();
 					foreach ($post_actid as $v)
+					{
 						array_push($instances, $v);
+						$i++;
+					}
 	
 					// Do something
 					if ($post_action == "terminate")
@@ -186,8 +202,6 @@
 				{
 					$err[] = $e->getMessage(); 
 				}
-				
-				$i++;
 					
 				$okmsg = "{$i} instances succesfully " . ($post_action == "reboot" ? "going to reboot" : "terminated");
 			}
@@ -204,10 +218,13 @@
 	// Rows
 	$response = $AmazonEC2Client->DescribeInstances();
 	
+		
 	$rowz = $response->reservationSet->item;
-	
+		
 	if ($rowz instanceof stdClass)
 		$rowz = array($rowz);
+	
+	//var_dump($rowz[0]->instancesSet->item->dnsName);
 		
 	// Custom properties
 	foreach ($rowz as $pk=>$pv)
@@ -229,20 +246,52 @@
 			
 		$iinfo = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id='{$rowz[$pk]->instancesSet->item->instanceId}'");
 			
-	    $rowz[$pk]->Role = $iinfo["role_name"];
+		$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$iinfo['ami_id']}'");
+		
+		if ($alias == ROLE_ALIAS::MYSQL && $iinfo['state'] == INSTANCE_STATE::RUNNING)
+			$prefix = $iinfo['isdbmaster'] ? " (master)" : " (slave)";
+		else
+			$prefix = "";
+		
+	    $rowz[$pk]->Role = $iinfo["role_name"].$prefix;
 		
 	    if ($rowz[$pk]->instancesSet->item->launchTime)
 	    {
 	        $ltime = strtotime($rowz[$pk]->instancesSet->item->launchTime);
-	        $rowz[$pk]->Uptime = Formater::Time2HumanReadable(time()-$ltime);
+	        
+	        $uptime = time()-$ltime;
+	        $uptime_days = floor($uptime/86400);
+
+	        $uptime_h = floor($uptime % 86400 / 3600);
+	        if ($uptime_h < 10)
+	        	$uptime_h = "0{$uptime_h}";
+	        
+	        $uptime_m = floor($uptime % 86400 % 3600 / 60);
+	        if ($uptime_m < 10)
+	        	$uptime_m = "0{$uptime_m}";	
+	        	
+	        $pr = $uptime_days > 1 ? "s" : "";
+	        $rowz[$pk]->Uptime = "{$uptime_days} day{$pr}, {$uptime_h}:{$uptime_m}";
 	    }
 	    
 	    	    
 	    $rowz[$pk]->IP = $iinfo["external_ip"];
 	    
+	    $eip = $db->GetOne("SELECT id FROM elastic_ips WHERE ipaddress=? AND farmid=?",
+	    	array($iinfo["external_ip"], $iinfo['farmid'])
+	    );
+	    $rowz[$pk]->IsElastic = ($iinfo['custom_elastic_ip'] || $eip) ? 1 : 0;
+	    
 	    $rowz[$pk]->IsActive = $iinfo["isactive"];
 	    
 	    $rowz[$pk]->IsRebootLaunched = $iinfo["isrebootlaunched"];
+	    
+	    $farm_ami_info = $db->GetRow("SELECT * From farm_amis WHERE ami_id=? AND farmid=?",
+	    	array($rowz[$pk]->instancesSet->item->imageId, $get_farmid)
+	    );
+	    $rowz[$pk]->canUseCustomEIPs = ($farm_ami_info['use_elastic_ips']) ? false : true;
+	    $rowz[$pk]->customEIP = $iinfo['custom_elastic_ip'];
+	    
 	    ///
 	    ///
 	    ///
@@ -264,7 +313,7 @@
 		$doadd = true;
 		if (isset($get_state))
 		{
-			if ($rowz[$pk]->instancesSet->item->instanceState->name != $get_state)	
+			if ($iinfo["state"] != $get_state)	
 				$doadd = false; 
 		}
 		
@@ -274,17 +323,22 @@
                 $doadd = false;
 		}
 		
+		if ($rowz[$pk]->instancesSet->item->instanceState->name == 'running' ||
+			$rowz[$pk]->instancesSet->item->instanceState->name == 'pending')
+			{
+				if ($iinfo["state"])
+					$rowz[$pk]->State = $iinfo["state"];
+				else
+					$rowz[$pk]->State = "Unknown";
+			}
+			else
+				$rowz[$pk]->State = ucfirst($rowz[$pk]->instancesSet->item->instanceState->name);
+		
 		if (isset($get_farmid))
 		{
 		    if (!$db->GetOne("SELECT id FROM farm_instances WHERE farmid=? AND instance_id=?", array($get_farmid, $rowz[$pk]->instancesSet->item->instanceId)))
 		      $doadd = false;
 		}
-		
-		if (!$get_nofarm)
-		{
-			if ($r[0] == "unknown")
-			$doadd = false; 
-		} 
 		
 		if ($doadd)
 			$rowz1[] = $rowz[$pk];
@@ -305,8 +359,8 @@
 	$display["page_data_options"] = array(
 		array("name" => "Terminate", "action" => "terminate"),
 		array("name" => "Reboot", "action" => "reboot"),
-		array("name" => "Mark as active", "action" => "setactive"),
-		array("name" => "Mark as inactive", "action" => "setinactive")
+		array("name" => "Create DNS records", "action" => "setactive"),
+		array("name" => "Delete DNS records", "action" => "setinactive")
 	);
 	$display["page_data_options_add"] = false;
 	

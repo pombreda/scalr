@@ -40,6 +40,12 @@
 		
 		
 		public static $DEF_SOA_OWNER;
+		public static $DEF_SOA_TTL = 14400;
+		public static $DEF_SOA_REFRESH = 14400;
+		public static $DEF_SOA_RETRY = 7200;
+		public static $DEF_SOA_EXPIRE = 3600000;
+		public static $DEF_SOA_MINTTL = 300;
+		public static $DEF_SOA_PARENT;
 		
 		public static $EVENTHANDLER_URL;
 		
@@ -48,9 +54,7 @@
 		public static $EMAIL_DSN;
 		
 		public static $REBOOT_TIMEOUT;
-		
-		public static $DEF_SOA_PARENT;
-		
+				
 		public static $NAMEDCONFTPL;
 		
 		public static $DYNAMIC_A_REC_TTL;
@@ -63,7 +67,8 @@
 		
 		public static $LAUNCH_TIMEOUT;
 		
-		public static $CLIENT_MAX_INSTANCES;
+		public static $CLIENT_MAX_INSTANCES = 20;
+		public static $CLIENT_MAX_EIPS = 5;
 		
 		
 		public static $PRICE;
@@ -80,8 +85,12 @@
 		public static $ZONE_LOCK_WAIT_TIMEOUT;
 		public static $ZONE_LOCK_WAIT_RETRIES;
 		
+		/**
+		 * Cache lifetimes
+		 */
 		public static $EVENTS_RSS_CACHE_LIFETIME;
 		public static $EVENTS_TIMELINE_CACHE_LIFETIME;
+		public static $AJAX_PROCESSLIST_CACHE_LIFETIME;
 		
 		public static $HTTP_PROTO;
 		
@@ -92,6 +101,23 @@
 		public static $RRD_STATS_URL;
 		public static $RRD_GRAPH_STORAGE_TYPE;
 		public static $RRD_GRAPH_STORAGE_PATH;
+		
+		
+		public static $HTTP_VHOST_TEMPLATE;
+		public static $HTTPS_VHOST_TEMPLATE;
+		public static $NGINX_HTTPS_VHOST_TEMPLATE;
+		
+		public static $APACHE_DOCROOT_DIR;
+		public static $APACHE_LOGS_DIR;
+		
+		public static $CRON_PROCESSES_NUMBER = 5;
+		
+		public static $MYSQL_STAT_USERNAME = "scalr_stat";
+		public static $MYSQL_STAT_SEC_GROUP = "scalr.mysql-stat";
+		
+		public static $APP_SYS_IPADDRESS;
+		
+		public static $SYNC_TIMEOUT = 300; // Minutes
 		
 		/**
 		 * List all available properties through reflection

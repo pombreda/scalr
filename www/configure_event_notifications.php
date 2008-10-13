@@ -1,7 +1,5 @@
 <?
     require("src/prepend.inc.php"); 
-        
-    $display["experimental"] = true;
     
     if ($_SESSION['uid'] == 0)
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
@@ -58,13 +56,16 @@
 	$display["farminfo"] = $farminfo;
 	$display["title"] = "Configure notifications for {$farminfo['name']} farm";
 	
-	$observers = glob(APPPATH."/observers/class.*Observer.php");
+	$observers = glob(APPPATH."/observers/class.*.php");
 	foreach ($observers as $observer)
 	{
-		preg_match("/class\.(.*?)EventObserver\.php/", basename($observer), $matches);
+		preg_match("/class\.(.*?)\.php/", basename($observer), $matches);
 		$name = $matches[1];
 		
-		$reflection = new ReflectionClass("{$name}EventObserver");
+		$reflection = new ReflectionClass("{$name}");
+		if (!$reflection->implementsInterface("IDeferredEventObserver"))
+			continue;
+			
 		$form = $reflection->getMethod("GetConfigurationForm")->invoke(null);
 
 		$farm_observer_id = $db->GetOne("SELECT * FROM farm_event_observers 

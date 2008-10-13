@@ -22,7 +22,7 @@
 		<td class="Item" valign="top">{$rows[id].architecture}</td>
 		<td class="Item" valign="top">
 		{if $rows[id].isreplaced && $rows[id].iscompleted != 2}
-		  Being synchronized...
+		  Synchronizing&#x2026;
 		{else}
 		  {if $rows[id].iscompleted == 1}Active{elseif $rows[id].iscompleted == 0}Bundling...{else}Failed {if $rows[id].fail_details}(<a href="custom_roles_failed_details.php?id={$rows[id].id}">View details</a>){/if}{/if}
 		{/if}

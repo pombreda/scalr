@@ -20,8 +20,9 @@
 	 		$code = ($code == null) ? E_USER_ERROR : $code;
 	 		
 	 		// Generate backtrace if debug mode flag set
- 			if (CONFIG::$DEBUG_APP)
- 				$bt = Debug::Backtrace($e);
+	 		// Do not show backtrace for clients. Put it to log only!
+ 			//if (CONFIG::$DEBUG_APP)
+ 			//	$bt = Debug::Backtrace($e);
  			
  			// In Application Exception we already add log entry
  			if (!($e instanceof ApplicationException))

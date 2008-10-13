@@ -47,6 +47,26 @@
 			<td width="18%">Default SOA parent:</td>
 			<td width="82%"><input name="def_soa_parent" type="text" class="text" id="def_soa_parent" value="{$def_soa_parent}" size="30"></td>
 		</tr>
+		<tr>
+			<td width="18%">Default SOA TTL:</td>
+			<td width="82%"><input name="def_soa_ttl" type="text" class="text" id="def_soa_ttl" value="{$def_soa_ttl}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Default SOA Refresh:</td>
+			<td width="82%"><input name="def_soa_refresh" type="text" class="text" id="def_soa_refresh" value="{$def_soa_refresh}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Default SOA Retry:</td>
+			<td width="82%"><input name="def_soa_retry" type="text" class="text" id="def_soa_retry" value="{$def_soa_retry}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Default SOA Expire:</td>
+			<td width="82%"><input name="def_soa_expire" type="text" class="text" id="def_soa_expire" value="{$def_soa_expire}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Default SOA Minimum TTL:</td>
+			<td width="82%"><input name="def_soa_minttl" type="text" class="text" id="def_soa_minttl" value="{$def_soa_minttl}" size="30"></td>
+		</tr>
 		<tr valign="top">
 			<td width="18%">Named.conf Zone template:</td>
 			<td width="82%"><textarea name="namedconftpl" class="text" id="namedconftpl" cols="60" rows="5">{$namedconftpl}</textarea></td>
@@ -138,6 +158,42 @@
 		<tr>
 			<td colspan="2">Terminate instance if it doesn't send 'hostUp' or 'hostInit' event after launch in <input name="launch_timeout" type="text" class="text" id="launch_timeout" value="{$launch_timeout}" size="3"> seconds.</td>
 		</tr>
+		<tr>
+			<td width="18%">Cron processes number:</td>
+			<td width="82%"><input name="cron_processes_number" type="text" class="text" id="cron_processes_number" value="{$cron_processes_number}" size="5"></td>
+		</tr>
+		<tr>
+			<td width="18%">Server IP address:</td>
+			<td width="82%"><input name="app_sys_ipaddress" type="text" class="text" id="app_sys_ipaddress" value="{$app_sys_ipaddress}"></td>
+		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
+		
+		<!--
+		{include file="inc/intable_header.tpl" header="Apache settings" color="Gray"}
+		<tr valign="top">
+			<td width="18%">HTTP virtual host template:</td>
+			<td width="82%"><textarea name="http_vhost_template" class="text" id="http_vhost_template" cols="75" rows="12">{$http_vhost_template}</textarea></td>
+		</tr>
+		<tr valign="top">
+			<td width="18%">HTTPS virtual host template:</td>
+			<td width="82%"><textarea name="https_vhost_template" class="text" id="https_vhost_template" cols="75" rows="12">{$https_vhost_template}</textarea></td>
+		</tr>
+		<tr>
+			<td width="18%">Default document root:</td>
+			<td width="82%"><input name="apache_docroot_dir" type="text" class="text" id="apache_docroot_dir" value="{$apache_docroot_dir}" size="30"></td>
+		</tr>
+		<tr>
+			<td width="18%">Default logs dir:</td>
+			<td width="82%"><input name="apache_logs_dir" type="text" class="text" id="apache_logs_dir" value="{$apache_logs_dir}" size="30"></td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
+		
+		{include file="inc/intable_header.tpl" header="Nginx settings" color="Gray"}
+		<tr valign="top">
+			<td width="18%">HTTPS virtual host template:</td>
+			<td width="82%"><textarea name="nginx_https_vhost_template" class="text" id="nginx_https_vhost_template" cols="75" rows="12">{$nginx_https_vhost_template}</textarea></td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
+		 -->
 	{include file="inc/table_footer.tpl" edit_page=1}
 {include file="inc/footer.tpl"}

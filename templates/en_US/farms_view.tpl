@@ -11,7 +11,7 @@
 			<th>Roles</th>
 			<th>Instances</th>
 			<th>Applications</th>
-			<th>Action</th>
+			<th>Status</th>
 			<th width="1%">Options</th>
 		</tr>
 	</thead>
@@ -24,23 +24,44 @@
 		<td class="Item" valign="top">{$rows[id].roles} [<a href="roles_view.php?farmid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].instanses} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].sites} [<a href="sites_view.php?farmid={$rows[id].id}">View</a>] {if $smarty.session.uid != 0}[<a href="sites_add.php?farmid={$rows[id].id}">Add</a>]{/if}</td>
-		<td class="Item" valign="top" nowrap><a href="farms_control.php?farmid={$rows[id].id}">{if $rows[id].status == 1}Terminate{else}Launch{/if}</a></td>		
+		<td class="Item" valign="top" nowrap>
+			<span style="color:{if $rows[id].status == 1}green{else}red{/if};">
+			{$rows[id].status_txt}
+			</span>
+		</td>		
 		<td class="ItemEdit" valign="top"><a id="control_{$rows[id].id}" href="javascript:void(0)">Options</a></td>
 	</tr>
 	<script language="Javascript" type="text/javascript">
     	var id = '{$rows[id].id}';
     	var name = '{$rows[id].name}';
-    	var control_action= '{if $rows[id].status == 1}Terminate{else}Launch{/if}';
+    	var control_action= '{if $rows[id].status == 1}Terminate{elseif $rows[id].status == 3}Forcefully terminate{else}Launch{/if}';
     	
     	var menu = [
+    	
+    		{if $rows[id].status == 1}
+            	{literal}{href: 'farm_map.php?id='+id, innerHTML: 'View map'}{/literal},
+            	{literal}{type: 'separator'}{/literal},
+            {/if}
+    	
             {literal}{href: '/storage/keys/'+id+'/'+name+'.pem', innerHTML: 'Download Private key'}{/literal},
             {literal}{type: 'separator'}{/literal},
-            {if $rows[id].status == 1}
-            {literal}{href: 'farm_stats.php?farmid='+id, innerHTML: 'View statistics'}{/literal},
-            {/if}
-            {literal}{href: 'events_view.php?farmid='+id, innerHTML: 'Events & Notifications'}{/literal},
-            {literal}{type: 'separator'}{/literal},
             {literal}{href: 'farms_control.php?farmid='+id, innerHTML: control_action}{/literal},
+            {literal}{type: 'separator'}{/literal},
+            {literal}{href: 'farm_usage_stats.php?farmid='+id, innerHTML: 'Usage statistics'}{/literal},
+            
+            {if $rows[id].status == 1}
+            {literal}{href: 'farm_stats.php?farmid='+id, innerHTML: 'Load statistics'}{/literal},
+            {/if}
+            
+            {literal}{href: 'ebs_manage.php?farmid='+id, innerHTML: 'EBS usage'}{/literal},
+            {literal}{href: 'elastic_ips.php?farmid='+id, innerHTML: 'Elastic IPs usage'}{/literal},
+            {literal}{href: 'events_view.php?farmid='+id, innerHTML: 'Events & Notifications'}{/literal},
+                                    
+            {if $rows[id].havemysqlrole}
+            {literal}{type: 'separator'}{/literal},
+            {literal}{href: 'farm_mysql_info.php?farmid='+id, innerHTML: 'MySQL status'}{/literal},
+            {/if}
+           	
             {literal}{type: 'separator'}{/literal},
             {literal}{href: 'farms_add.php?id='+id, innerHTML: 'Edit'}{/literal},
             {literal}{href: 'farm_delete.php?id='+id, innerHTML: 'Delete'}{/literal}

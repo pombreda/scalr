@@ -1,12 +1,12 @@
 <?php
-	class RESTEventObserver
+	class RESTEventObserver implements IDeferredEventObserver
 	{
 		private $Config;
 		public $ObserverName = 'REST';
 		
 		function __construct()
 		{
-			$this->DB = Core::GetDBInstance(null, true);
+			
 		}
 
 		public function SetConfig($config)

@@ -39,9 +39,7 @@
 	{
 		$rowz[$pk]->isPublicStr = $rowz[$pk]->isPublic ? "true" : "false";
 		if (!$db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId))
-		{
 			$rows[] = $rowz[$pk];
-		}
 	}
 	
 	$display["rows"] = $rows;

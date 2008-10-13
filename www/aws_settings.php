@@ -2,12 +2,17 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
+	{
+		$errmsg = "Requested page cannot be viewed from admin account";
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;AWS settings";
 	
 	$Validator = new Validator();
 		
+	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($_SESSION['uid']));
+	
 	if ($_POST) 
 	{		
 		$post_aws_accountid = preg_replace("/[^0-9]+/", "", $post_aws_accountid);
@@ -21,19 +26,13 @@
                 
         if (!$Validator->IsNumeric($post_aws_accountid) || strlen($post_aws_accountid) != 12)
             $err[] = "AWS numeric account ID required (See <a href='/faq'>FAQ</a> for info on where to get it). ";
-            
-        if (!$_SESSION["aws_accesskey"] && (!$_FILES['cert_file'] || !$_FILES['pk_file']))
-            $err[] = "Certificate file and Private key file must be specified";
-	    
-        if (!file_exists(APPPATH."/etc/clients_keys/{$_SESSION['uid']}/pk.pem") && !$_FILES['pk_file'])
-        	$err[] = "Private key file must be specified";
 
-       	if (!file_exists(APPPATH."/etc/clients_keys/{$_SESSION['uid']}/cert.pem") && !$_FILES['cert_file'])
+        if (!$clientinfo['aws_certificate_enc'] && !$_FILES['cert_file']["tmp_name"])
         	$err[] = "Certificate file must be specified";
         	
-        if (!@is_writeable(APPPATH."/etc/clients_keys"))
-            $err[] = "'".APPPATH."/etc/clients_keys"."' - not writable";
-          
+        if (!$clientinfo['aws_private_key_enc'] && !$_FILES['pk_file']["tmp_name"])
+            $err[] = "Private key file must be specified";
+	              
         // Try to validate certificates and keys //
         if ($_FILES['cert_file']['tmp_name'] || $_FILES['pk_file']['tmp_name'])
         {        	
@@ -57,7 +56,8 @@
 	        	$AmazonEC2Client = new AmazonEC2($private_key, $cert);
 	
 	            $RunInstancesType = new RunInstancesType();
-		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM ami_roles WHERE roletype='SHARED' AND architecture='i386'");
+		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM ami_roles WHERE roletype=? AND architecture=?",
+		        	array(ROLE_TYPE::SHARED, INSTANCE_ARCHITECTURE::I386));
 		        $RunInstancesType->minCount = 1;
 		        $RunInstancesType->maxCount = 1;
 		        $RunInstancesType->AddSecurityGroup("default");
@@ -92,8 +92,8 @@
             
         if (count($err) == 0)
         {                      
-			$aws_accesskey = $db->qstr($post_aws_accesskey);
-        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = '{$Crypto->Encrypt($aws_accesskey, $_SESSION["cpwd"])}'," : "";
+			$aws_accesskey = $post_aws_accesskey;
+        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = '{$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"])}'," : "";
         	
         	try
 			{

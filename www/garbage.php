@@ -3,8 +3,11 @@
 	
 	$display["title"] = "Delete unused objects";
 	
-	if ($_SESSION['uid'] == 0)
+	if ($_SESSION["uid"] == 0)
+	{
+		$errmsg = "Requested page cannot be viewed from admin account";
 		UI::Redirect("index.php");
+	}
 	
 	if ($_POST)
 	{

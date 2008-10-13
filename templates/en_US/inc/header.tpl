@@ -15,10 +15,11 @@
 		var load_treemenu = {$load_treemenu|default:"0"};
 		var get_url = '{$get_url}';
 	</script>
-	<script type="text/javascript" src="js/prototype.inc.js"></script>
-	<script type="text/javascript" src="js/class.Tweaker.js"></script>
-	<script type="text/javascript" src="js/class.LibWebta.js"></script>
-	<script type="text/javascript" src="js/common.inc.js"></script>
+	<script type="text/javascript" src="/js/prototype-1.6.0.2.js"></script>
+	<script type="text/javascript" src="/js/class.Tweaker.js"></script>
+	<script type="text/javascript" src="/js/class.LibWebta.js"></script>
+	<script type="text/javascript" src="/js/common.inc.js"></script>
+	<script type="text/javascript" src="/js/src/scriptaculous.js?effects"></script>
 	
 	<script language="Javascript" type="text/javascript">
 	{literal}
@@ -92,17 +93,31 @@
 	  </tr>
 	  <tr>
         <td>
+        	<div id="header_messages_container">
         	{if $experimental}
 				<div class="Webta_ExperimentalMsg" style="margin-top:10px;margin-bottom:10px;">
-					This page contains new features that should be considered "experimental". Drop us a line if you will notice any issues.
+					This page contains new features that should be considered "experimental". Drop us a line if you notice any issues.
 				</div>        
 			{/if}
+			
+			{if $warnmsg}
+				<div class="Webta_ExperimentalMsg" style="margin-top:10px;margin-bottom:10px;">
+					{$warnmsg}
+				</div>        
+			{/if}
+			
 			{if $mess != ''}
 				<div class="Webta_Message">{$mess}</div>
-			{elseif $errmsg != ''}
-				<div class="Webta_ErrMsg">
-				    {$errmsg}
-				    {if $err}
+			{/if}
+			
+			{if !$errmsg && $err}
+				{assign var="errmsg" value='The following errors have occured:'}
+			{/if}
+			
+			<div class="Webta_ErrMsg" id="Webta_ErrMsg" style="display:{if $errmsg != ''}{else}none{/if};">
+			{if $errmsg != ''}
+				{$errmsg}
+			    {if $err}
 				    <table style="margin-top:0px;" width="100%" cellpadding="5" cellspacing="1" bgcolor="">
     					<tr>
     						<td bgcolor="">
@@ -114,9 +129,17 @@
     						</td>
     					</tr>
           			</table>
-          			{/if}
-				</div>
-			{elseif $okmsg != ''}
+          		{/if}
+				
+				{literal}
+				<script language="Javascript" type="text/javascript">
+					Event.observe(window, 'load', function(){new Effect.Pulsate($('Webta_ErrMsg'));}); 
+				</script>
+				{/literal}
+			{/if}
+			</div>
+			
+			{if $okmsg != ''}
 				<div class="Webta_OkMsg">{$okmsg}</div>
 			{/if}
 			{if $err && !$errmsg}
@@ -152,7 +175,8 @@
 			{if !$noheader}
 				<form name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
 			{/if}
-		<a name="top"></a>
-		{if $help}
-			<p class="placeholder">{$help}</p>
-		{/if}
+			<a name="top"></a>
+			{if $help}
+				<p class="placeholder">{$help}</p>
+			{/if}
+		</div>
