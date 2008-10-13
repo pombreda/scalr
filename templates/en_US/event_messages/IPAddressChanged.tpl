@@ -1,0 +1,1 @@
+IP address for instance {$instanceinfo.instance_id} changed to {$new_ip_address} 

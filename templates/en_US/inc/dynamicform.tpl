@@ -4,7 +4,7 @@
 		<tr>
 			<td style="padding-left:20px;">{$field->Title}: </td>
 			<td>
-				<input type="text" class="text" name="{$field_prefix}{$field->Name}{$field_suffix}" value="{$field->Value}"/> {if $field->IsRequired}*{/if}
+				<input type="text" size="10" class="text" name="{$field_prefix}{$field->Name}{$field_suffix}" value="{$field->Value}"/> {if $field->IsRequired}*{/if}
 				{if $field->Hint}
 					<span class="Webta_Ihelp">{$field->Hint}</span>
 				{/if}				

@@ -2,6 +2,12 @@
     Core::Load("NET/API/BIND");
 	Core::Load("NET/DNS/DNSZoneParser");    
 
+	/**
+     * @name DNSZoneControler
+     * @package    APP
+     * @version 1.0
+     * @author Igor Savchenko
+     */
     class DNSZoneControler
     {
         function __construct()
@@ -13,9 +19,8 @@
         
         function Delete($zoneid)
         {
-            //$cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-            
-            $zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));            
+            // Check zone
+        	$zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));            
 			if (!$zoneinfo)
 			{
                 $this->Logger->warn("Zone with zoneid {$zoneid} not found.");
@@ -24,6 +29,9 @@
 			
 			// Mark zone as pending delete;
 			$this->DB->Execute("UPDATE zones SET status=? WHERE id=?", array(ZONE_STATUS::DELETED, $zoneid));
+			
+			// Add zone deletion task to queue
+			TaskQueue::Attach(QUEUE_NAME::DELETE_DNS_ZONE)->Put(new DeleteDNSZoneTask($zoneid));
 			
 			return true;
         }
@@ -50,6 +58,7 @@
 				// Check retries count
 				if ($retry > CONFIG::$ZONE_LOCK_WAIT_RETRIES)
 				{
+					$this->DB->Execute("UPDATE zones SET isobsoleted='1' WHERE id=?", array($zoneid));
 					$this->Logger->warn("Zone '{$zoneinfo['zone']}' lock wait timeout.");
 					throw new Exception(sprintf("Zone %s is locked by %s. I wait for %s seconds %s times and then gave up.",
 						$zoneinfo['zone'], APPCONTEXT::GetContextName($zoneinfo['lockedby']), round(CONFIG::$ZONE_LOCK_WAIT_TIMEOUT/1000000, 2), CONFIG::$ZONE_LOCK_WAIT_RETRIES));
@@ -78,8 +87,18 @@
 				$serial = AbstractDNSZone::RaiseSerial($zoneinfo["soa_serial"]);
 				
 				$this->DB->Execute("UPDATE zones SET soa_serial='{$serial}' WHERE id='{$zoneinfo['id']}'");
-				
-	            $SOA = new SOADNSRecord($zoneinfo["zone"], CONFIG::$DEF_SOA_PARENT, CONFIG::$DEF_SOA_OWNER, false, $serial);
+								
+	            $SOA = new SOADNSRecord(
+	            	$zoneinfo["zone"], 
+	            	CONFIG::$DEF_SOA_PARENT, 
+	            	CONFIG::$DEF_SOA_OWNER, 
+	            	CONFIG::$DEF_SOA_TTL, 
+	            	$serial,
+	            	$zoneinfo["soa_refresh"],
+	            	$zoneinfo["soa_retry"],
+	            	$zoneinfo["soa_expire"],
+	            	$zoneinfo["min_ttl"]
+	            );
 				if (!$SOA->__toString())				        
 				    $error = true;
 				else 
@@ -101,6 +120,11 @@
 	        						
 	        					case "NS":
 	        							$record = new NSDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);        							
+	        							$this->Zone->AddRecord($record);
+	        						break;
+
+	        					case "TXT":
+	        							$record = new TXTDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 	        						

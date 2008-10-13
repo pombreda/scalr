@@ -73,10 +73,10 @@
     		<td colspan="2">
     		  <table cellpadding="5" cellspacing="15" width="700">
     		      <thead>
-    		          <th>Protocol</th>
-    		          <th>From Port</th>
-    		          <th>To Port</th>
-    		          <th>IP Ranges</th>
+    		          <th style="font-weight:bold;">Protocol</th>
+    		          <th style="font-weight:bold;">From Port</th>
+    		          <th style="font-weight:bold;">To Port</th>
+    		          <th style="font-weight:bold;">IP Ranges</th>
     		          <th></th>
     		      </thead>
     		      <tbody id="rules_container">

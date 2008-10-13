@@ -10,7 +10,7 @@
     <tr>
     	<td colspan="2" style="font-style:italic;font-size:12px;">
     		<br />
-    		<img src="/images/icon_warn.gif"> Your RSS reader must support basic HTTP authentication. The login and password for RSS feeds can be found in <a href="system_settings.php">Settings -> System settings</a>
+    		<img src="/images/warn.png"> Your RSS reader must support basic HTTP authentication. The login and password for RSS feeds can be found in <a href="system_settings.php">Settings -> System settings</a>
     	</td>
     </tr>
     {include file="inc/intable_footer.tpl" color="Gray"}

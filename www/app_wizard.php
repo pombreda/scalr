@@ -5,12 +5,16 @@
     $Validator = new Validator();
     
     if ($_SESSION['uid'] == 0)
+    {
+    	$errmsg = "Requested page cannot be viewed from admin account";
     	UI::Redirect("index.php");
+    }
     
     if ($req_step == 4)
     {
-        if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", array($_SESSION['wizard']["domainname"], ZONE_STATUS::DELETED)))
-        {
+        if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", 
+        	array($_SESSION['wizard']["domainname"], ZONE_STATUS::DELETED))
+        ){
         	$errmsg = "'{$_SESSION['wizard']["domainname"]}' domain already exists in database.";
         	UI::Redirect("app_wizard.php");
         }
@@ -25,10 +29,16 @@
         // Add farm information to database
         //
         $farmname = preg_replace("/[^A-Za-z0-9]+/", "", $_SESSION['wizard']["domainname"]);
-        
+                
         $farmhash = $Crypto->Sault(14);
         $db->Execute("INSERT INTO farms SET status='0', name=?, clientid=?, hash=?, dtadded=NOW()", array($farmname, $_SESSION['uid'], $farmhash));
         $farmid = $db->Insert_ID();
+        
+        $bucket_name = "farm-{$farmid}-{$_SESSION['aws_accountid']}";
+        
+        $db->Execute("UPDATE farms SET bucket_name=? WHERE id=?",
+			array($bucket_name, $farmid)
+		);
         
         //
         // Create FARM KeyPair
@@ -69,7 +79,8 @@
 	                                       max_count=?, 
 	                                       min_LA=?, 
 	                                       max_LA=?,
-	                                       instance_type = ?
+	                                       instance_type = ?,
+	                                       avail_zone = ''
 	                         ", array( $farmid, 
 	                                   $ami_id, 
 	                                   1, 
@@ -79,6 +90,9 @@
 	                                   $itype
 	                                 )
 	                         );
+	                         
+				if ($roleinfo['alias'] == ROLE_ALIAS::MYSQL)
+					$db->Execute("UPDATE farms SET mysql_rebundle_every='48', mysql_bcp_every='180', mysql_bcp='0' WHERE id=?", array($farmid));
 	        }
         }
         catch(Exception $e)
@@ -92,7 +106,6 @@
         //
         try
         {
-            $bucket_name = "FARM-{$farmid}-{$_SESSION['aws_accountid']}";
             $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
             $buckets = $AmazonS3->ListBuckets();
             $create_bucket = true;
@@ -113,7 +126,7 @@
             $db->RollbackTrans();
         	throw new ApplicationException($e->getMessage(), E_ERROR);
         }
-
+        
         try
         {
 	        //
@@ -134,17 +147,70 @@
             	$records[] = $record;
             }
 	            
-			$db->Execute("replace into zones (`zone`, `soa_owner`, `soa_ttl`, `soa_parent`, `soa_serial`, `soa_refresh`, `soa_retry`, `soa_expire`, `min_ttl`, `dtupdated`, `farmid`, `ami_id`, `clientid`, `role_name`, `status`)
-			values (?,'".CONFIG::$DEF_SOA_OWNER."','14400','".CONFIG::$DEF_SOA_PARENT."',?,'14400','7200','3600000','86400',NOW(), ?, ?, ?, ?, ?)", 
-			array($_SESSION['wizard']["domainname"], date("Ymd")."01", $farmid, $_SESSION['wizard']["dnsami"], $_SESSION["uid"], $roleinfo["name"], ZONE_STATUS::PENDING));
+			$db->Execute("REPLACE INTO zones (
+				`zone`, 
+				`soa_owner`, 
+				`soa_ttl`, 
+				`soa_parent`, 
+				`soa_serial`, 
+				`soa_refresh`, 
+				`soa_retry`, 
+				`soa_expire`, 
+				`min_ttl`, 
+				`dtupdated`, 
+				`farmid`, 
+				`ami_id`, 
+				`clientid`, 
+				`role_name`, 
+				`status`
+			)
+			VALUES (
+				?,?,?,?,?,?,?,?,?,NOW(), ?, ?, ?, ?, ?
+			)", 
+				array(
+					$_SESSION['wizard']["domainname"],
+					CONFIG::$DEF_SOA_OWNER,
+					CONFIG::$DEF_SOA_TTL,
+					CONFIG::$DEF_SOA_PARENT,
+					date("Ymd")."01",
+					CONFIG::$DEF_SOA_REFRESH,
+					CONFIG::$DEF_SOA_RETRY,
+					CONFIG::$DEF_SOA_EXPIRE,
+					CONFIG::$DEF_SOA_MINTTL,
+					$farmid, 
+					$_SESSION['wizard']["dnsami"], 
+					$_SESSION["uid"], 
+					$roleinfo["name"], 
+					ZONE_STATUS::PENDING)
+			);
 			$zoneid = $db->Insert_ID();
 			
 			$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$zoneid}'");
 			
+			TaskQueue::Attach(QUEUE_NAME::CREATE_DNS_ZONE)->Put(new CreateDNSZoneTask($zoneid));
+			
 			foreach ($records as $k=>$v)
 			{
 				if ($v["rkey"] != '' || $v["rvalue"] != '')
-					$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
+				{
+					$db->Execute("REPLACE INTO records SET 
+						zoneid=?, 
+						`rtype`=?, 
+						`ttl`=?, 
+						`rpriority`=?, 
+						`rvalue`=?, 
+						`rkey`=?, 
+						`issystem`=?", 
+					array(
+						$zoneinfo["id"], 
+						$v["rtype"], 
+						$v["ttl"], 
+						$v["rpriority"], 
+						$v["rvalue"], 
+						$v["rkey"], 
+						$v["issystem"] ? 1 : 0)
+					);
+				}
 			}
         }
         catch(Exception $e)
@@ -169,7 +235,7 @@
         }
 		
 		$okmsg = "Application successfully created.";
-		UI::Redirect("farms_control.php?farmid={$farmid}&new=1");
+		UI::Redirect("farms_control.php?farmid={$farmid}&new=1&iswiz=1");
     }
     
 	if ($req_step == 3)
@@ -183,7 +249,9 @@
 	        $total_max_count = count($post_amis)*2; 	    
             $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
             
-            $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $_SESSION['uid']));
+            $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", 
+            	array('client_max_instances', $_SESSION['uid'])
+            );
             $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
             
             if ($used_slots+$total_max_count > $i_limit)
@@ -241,8 +309,9 @@
 		        
 	            if (count($err) == 0 || $skip_error_check)
 	            {
-	    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", array($post_domainname, ZONE_STATUS::DELETED)))
-	    	        {
+	    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", 
+	    	        	array($post_domainname, ZONE_STATUS::DELETED))
+	    	        ){
 	    	           $err[] = "Selected domain name already exists in database.";
 	    	           $req_step = 1;
 	    	        }
@@ -250,6 +319,11 @@
 	    	        {
 	        	        $display["amis"] = $post_amis;
 	        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
+	        	        
+	        	        $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM ami_roles WHERE roletype=? OR (roletype=? and clientid=?)", 
+					    	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['clientid'])
+					    );
+	        	        
 	        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
 	    	        }
 	            }

@@ -1,5 +1,5 @@
 <?php
-	class MailEventObserver
+	class MailEventObserver implements IDeferredEventObserver
 	{
 		private $Mailer;
 		private $Config;
@@ -10,8 +10,6 @@
 			$this->Mailer = Core::GetPHPMailerInstance();
 			$this->Mailer->From 		= CONFIG::$EMAIL_ADDRESS;
 			$this->Mailer->FromName 	= CONFIG::$EMAIL_NAME;
-			
-			$this->DB = Core::GetDBInstance(null, true);
 		}
 
 		public function SetConfig($config)
@@ -59,12 +57,18 @@
 		{
 			// If observer enabled
 			if (!$this->Config || $this->Config->GetFieldByName("IsEnabled")->Value == 0)
+			{
+				Logger::getLogger(__CLASS__)->info("F1");
 				return;
+			}
 				
 			$enabled = $this->Config->GetFieldByName("{$method}Notify");
 				
 			if (!$enabled || $enabled->Value == 0)
+			{
+				Logger::getLogger(__CLASS__)->info("F2");
 				return;
+			}
 				
 			// Event name
 			$name = substr($method, 2);
@@ -79,7 +83,8 @@
 			$this->Mailer->Body = $message;
 			
 			// Send mail
-			$this->Mailer->Send();
+			$res = $this->Mailer->Send();
+			Logger::getLogger(__CLASS__)->info("Mail sent to '{$this->Config->GetFieldByName("EventMailTo")->Value}'. Result: {$res}");
 		}
 	}
 ?>

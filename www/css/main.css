@@ -66,7 +66,9 @@ div.TableFooterLeft, div.TableFooterCenter, div.TableFooterRight,
 div.TableHeaderLeft_Blue, div.TableHeaderCenter_Blue, div.TableHeaderRight_Blue, 
 div.TableFooterLeft_Blue, div.TableFooterCenter_Blue, div.TableFooterRight_Blue,
 div.TableHeaderLeft_Gray, div.TableHeaderCenter_Gray, div.TableHeaderRight_Gray, 
-div.TableFooterLeft_Gray, div.TableFooterCenter_Gray, div.TableFooterRight_Gray
+div.TableFooterLeft_Gray, div.TableFooterCenter_Gray, div.TableFooterRight_Gray,
+div.TableHeaderLeft_LGray, div.TableHeaderCenter_LGray, div.TableHeaderRight_LGray, 
+div.TableFooterLeft_LGray, div.TableFooterCenter_LGray, div.TableFooterRight_LGray
 		{ float: none; height: 7px; font-size: 1px; }
 		
 div.TableHeaderCenter, div.TableFooterCenter,
@@ -74,16 +76,23 @@ div.TableHeaderCenter_Blue, div.TableFooterCenter_Blue
 		{ background-color: #C3D9FF; float: none; width: 100%; }
 div.TableHeaderCenter_Gray, div.TableFooterCenter_Gray
 		{ background-color: #EEEEEE; float: none; width: 100%; }
+div.TableHeaderCenter_LGray, div.TableFooterCenter_LGray
+		{ background-color: #F4F4F4; float: none; width: 100%; }
 
 div.TableHeaderLeft_Gray	{ width: 7px; height: 25px; background-image: url(../images/tl_gray.gif); clear: left; }
 div.TableHeaderRight_Gray 	{ width: 7px; height: 25px; background-image: url(../images/tr_gray.gif);}
 div.TableFooterLeft_Gray	{ width: 7px; background-image: url(../images/bl_gray.gif); clear: left; }
 div.TableFooterRight_Gray 	{ width: 7px; background-image: url(../images/br_gray.gif);}
 
+div.TableHeaderLeft_LGray	{ width: 7px; background-image: url(../images/tl_lgray.gif); clear: left; }
+div.TableHeaderRight_LGray 	{ width: 7px; background-image: url(../images/tr_lgray.gif);}
+div.TableFooterLeft_LGray	{ width: 7px; background-image: url(../images/bl_lgray.gif); clear: left; }
+div.TableFooterRight_LGray 	{ width: 7px; background-image: url(../images/br_lgray.gif);}
 
 td.TableHeaderCenter, td.TableFooterCenter, td.TableHeaderCenter_Blue, td.TableFooterCenter_Blue
 		{ background-color: #C3D9FF; }
-td.TableHeaderCenter_Gray, td.TableFooterCenter_Gray
+td.TableHeaderCenter_Gray, td.TableFooterCenter_Gray,
+td.TableHeaderCenter_LGray, td.TableFooterCenter_LGray
 		{ background-color: #F4F4F4; }
 
 
@@ -91,7 +100,6 @@ div.TableHeaderLeft, div.TableHeaderLeft_Blue	{ width: 7px; background-image: ur
 div.TableHeaderRight, div.TableHeaderRight_Blue { width: 7px; background-image: url(../images/tr.gif);}
 div.TableFooterLeft, div.TableFooterLeft_Blue	{ width: 7px; background-image: url(../images/bl.gif); clear: left; }
 div.TableFooterRight, div.TableFooterRight_Blue { width: 7px; background-image: url(../images/br.gif);}
-
 
 .placeholder
 {
@@ -103,3 +111,31 @@ div.TableFooterRight, div.TableFooterRight_Blue { width: 7px; background-image: 
 	padding-left: 35px;
 }
 
+div.table_tab
+{
+	float:left;
+	margin-right:10px;
+	cursor:pointer;
+}
+
+.selected_tab
+{
+	width: 7px; background-image: url(../images/tl.gif); clear: left;	
+}
+
+.unselected_tab
+{
+	width: 7px; background-image: url(../images/tl_gray.gif); clear: left;
+}
+
+span.ui_enum
+{
+	color:#cccccc;
+	border-bottom:1px solid #cccccc;
+}
+
+span.ui_enum_selected
+{
+	color:#000000;
+	border-bottom:2px solid #000000;
+}

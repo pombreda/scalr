@@ -37,25 +37,15 @@
 			<th>Severity</th>
 			<th>Caller</th>
 			<th>Message</th>
-			<!--
-			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
-			-->
 		</tr>
 	</thead>
 	<tbody>
 	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
+	<tr id='tr_{$smarty.section.id.iteration}' {if $rows[id].severity == 'FATAL' || $rows[id].severity == 'ERROR'}style="background-color:pink;"{/if}>
 		<td class="Item" valign="top" nowrap>{$rows[id].time}</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
 		<td class="Item" valign="top" nowrap>{if $rows[id].servername}<a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a>/{$rows[id].source}{else}{$rows[id].source}{/if}</td>
 		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
-		<!--
-		<td class="ItemDelete" valign="top">
-			<span>
-				<input type="checkbox" id="actid[]" name="actid[]" value="{$rows[id].id}">
-			</span>
-		</td>
-		-->
 	</tr>
 	{sectionelse}
 	<tr>

@@ -8,9 +8,9 @@
 		    <th>Role</th>
 			<th>ID</th>
 			<th>Architecture</th>
-			<th>State</th>
 			<th>Owner</th>
 			<th>Farms</th>
+			<th>Stable</th>
 			<th width="1%">Options</th>
 		</tr>
 	</thead>
@@ -20,9 +20,9 @@
 	    <td class="Item" valign="top">{$rows[id].name}</td>
 		<td class="Item" valign="top">{$rows[id].ami_id}</td>
 		<td class="Item" valign="top">{$rows[id].architecture}</td>
-		<td class="Item" valign="top">{$rows[id].imageState}</td>
 		<td class="Item" valign="top">{$rows[id].imageOwnerId}</td>
         <td class="Item" valign="top">{$rows[id].farmsCount}</td>
+        <td class="Item" valign="top">{if $rows[id].isstable}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
         <td class="ItemEdit" valign="top"><a id="control_{$rows[id].ami_id}" href="javascript:void(0)">Options</a></td>
 	</tr>
 	<script language="Javascript" type="text/javascript">

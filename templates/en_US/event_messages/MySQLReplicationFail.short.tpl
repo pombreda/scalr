@@ -1,0 +1,1 @@
+Mysql replication fail on {$instanceinfo.instance_id} 

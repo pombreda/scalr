@@ -35,6 +35,7 @@ SelectControl.prototype = {
 	opened:		false,
 	active:		null,
 	id:			0,
+	pimp:		null,
 	
 	initialize: function() {
 		var options = Object.extend({
@@ -43,16 +44,27 @@ SelectControl.prototype = {
 			menuClass:	'select-control-menu',
 			separatorClass:	'select-control-separator',
 			mainClass:	'select-control-main',
+			mainClassHover:	'select-control-main-hover',
 			pimpClass:	'select-control-pimp',
 			pimpHover:	'select-control-pimp-hover',
-			pimpid:		'pimp-' + Math.floor(Math.random()*1000000)
+			pimpid:		'pimp-' + Math.floor(Math.random()*1000000),
+			popupPosition: 'new',
+			stylePrefix:''
 		}, arguments[0] || {});
+		
+		/** Prepare Style **/
+		options.menuClass = options.stylePrefix+options.menuClass;
+		options.separatorClass = options.stylePrefix+options.separatorClass;
+		options.mainClass = options.stylePrefix+options.mainClass;
+		options.mainClassHover = options.stylePrefix+options.mainClassHover;
+		options.pimpClass = options.stylePrefix+options.pimpClass;
+		options.pimpHover = options.stylePrefix+options.pimpHover;
 		
 		this.options = options;
 		this.parseMenu();
 		this.id = options.pimpid;
 		
-		Event.observe(document.body, 'click', this.onDocumentClick.bindAsEventListener(this));
+		Event.observe(document, 'click', this.onDocumentClick.bindAsEventListener(this));
 		Event.observe(window, 'resize', this.close.bindAsEventListener(this));
 	},
 	
@@ -89,11 +101,26 @@ SelectControl.prototype = {
 			return;
 		}
 		
+		container = element.parentNode;
+		
+		if (container.tagName != 'DIV')
+		{
+			dv = document.createElement('DIV');
+			dv.style.width = '120px';
+			element.parentNode.appendChild(dv);
+			dv.appendChild(element);
+			container = dv;
+		}
+		
 		element.id = 'control_'+this.id.replace(/[^0-9]/g, '')
 		element.className = this.options.mainClass;
+				
 		this.controls.push(element);
+		this.options.elementid = element.id;
+			
 			
 		var pimp = document.createElement('DIV');
+		
 			pimp.className = this.options.pimpClass;
 			pimp.id = this.options.pimpid;
 			
@@ -101,25 +128,51 @@ SelectControl.prototype = {
 			
 			element.onmouseover = (function(event) {
 				var pimpObj = $(this.options.pimpid);
-				pimpObj.className = this.options.pimpHover;
+				var elemObj = $(this.options.elementid);
+				
+				if (!this.opened)
+				{
+					pimpObj.className = this.options.pimpHover;
+					elemObj.addClassName(this.options.mainClassHover);
+				}
 			}).bindAsEventListener(this);
 			
 			element.onmouseout = (function(event) {
 				var pimpObj = $(this.options.pimpid);
-				pimpObj.className = this.options.pimpClass;
+				var elemObj = $(this.options.elementid);
+				
+				if (!this.opened)
+				{
+					pimpObj.className = this.options.pimpClass;
+					elemObj.removeClassName(this.options.mainClassHover);
+				}
+					
 			}).bindAsEventListener(this);
 			
 			pimp.onmouseover = (function(event) {
 				var pimpObj = $(this.options.pimpid);
-				pimpObj.className = this.options.pimpHover;
+				var elemObj = $(this.options.elementid); 
+				
+				if (!this.opened)
+				{
+					pimpObj.className = this.options.pimpHover;
+					elemObj.addClassName(this.options.mainClassHover);
+				}
+					
 			}).bindAsEventListener(this);
 			
 			pimp.onmouseout = (function(event) {
 				var pimpObj = $(this.options.pimpid);
-				pimpObj.className = this.options.pimpClass;
+				var elemObj = $(this.options.elementid);
+				
+				if (!this.opened)
+				{
+					pimpObj.className = this.options.pimpClass;
+					elemObj.removeClassName(this.options.mainClassHover);
+				}
 			}).bindAsEventListener(this);
 			
-			element.appendChild(pimp);
+			container.appendChild(pimp);
 			
 			pimp.onclick = function() {
 				return false;
@@ -127,8 +180,10 @@ SelectControl.prototype = {
 	},
 	
 	close: function(event) {
-		this.menu.style.display = 'none';
+		this.menu.style.display = 'none';		
 		this.opened = false;
+		
+		$(this.options.pimpid).onmouseout();
 	},
 	
 	onDocumentClick: function(event) {
@@ -158,16 +213,23 @@ SelectControl.prototype = {
 		var element = Event.element(event);
 		var id = element.id.replace(/[^0-9]/g, '');
 		var name = element.id.replace(/[0-9\-]/g, '');
-				
+			
 		if (name == 'pimp')
-			var element = element.parentNode;
+			var element = $('control_'+id);
 			
 		if (!$(this.menu.id))
 			document.body.appendChild(this.menu);
 
-		var position = Position.cumulativeOffset(element);
-
-		var left = position[0]+parseInt(element.offsetWidth)-parseInt($(this.menu.id).getDimensions().width);
+		if (this.options.popupPosition == 'new')
+		{
+			var position = Position.cumulativeOffset(element);
+			var left = position[0]+parseInt(element.offsetWidth)-parseInt($(this.menu.id).getDimensions().width);
+		}
+		else
+		{
+			var position = Position.cumulativeOffset(element);
+			var left = position[0]+2;
+		}
 
 		Element.setStyle(this.menu, {
 			display: 'block',

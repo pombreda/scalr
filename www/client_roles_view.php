@@ -7,7 +7,17 @@
 		if ($roleinfo['clientid'] != $_SESSION["uid"] && $_SESSION["uid"] != 0)
 			UI::Redirect("client_roles_view.php");
 			
-		if ($roleinfo["replace"] != '' && $roleinfo["iscompleted"] == 1 && $roleinfo["ami_id"])
+		if (isset($post_cbtn_3))
+			UI::Redirect("client_roles_view.php");
+			
+		if ($roleinfo["iscompleted"] == 0 && !$post_confirmed)
+		{
+			$Smarty->assign(array("id" => $req_id, "instance_id" => $roleinfo['prototype_iid']));
+			$Smarty->display("sync_cancel.tpl");
+			exit();
+		}
+			
+		if ($roleinfo["replace"] != '' && $roleinfo["iscompleted"] != 2)
 		{
 			$db->BeginTrans();
 			
@@ -17,16 +27,20 @@
 					array($roleinfo['ami_id'])
 				);
 				
-				$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=? 
-					WHERE id=?",
-					array("Rebundle complete, but the rebundled AMI is not operable by Scalr.", $roleinfo["id"])
-				);
-				
-				// Terminate unoperable instances
-				$instances = $db->GetAll("SELECT * FROM farm_instances 
-					WHERE ami_id=? AND replace_iid IS NOT NULL", 
-					array($roleinfo['ami_id'])
-				);
+				if ($roleinfo['ami_id'])
+				{
+					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=? 
+						WHERE id=?",
+						array("Rebundle complete, but the rebundled AMI is not operable by Scalr.", $roleinfo["id"])
+					);
+				}
+				else
+				{
+					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=?, prototype_iid='' 
+						WHERE id=?",
+						array("Canceled by user", $roleinfo["id"])
+					);
+				}
 			}
 			catch(Exception $e)
 			{
@@ -170,10 +184,10 @@
 		else
 			$infrole = $row;
 			
-		if ($infrole["replace"] != '' && $infrole["iscompleted"] == 1 && $infrole["ami_id"])
+		if ($infrole["replace"] != '' && $infrole["iscompleted"] != 2)
 			$row["abort_id"] = $infrole['id'];
 			
-		if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == 'SHARED')
+		if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == ROLE_TYPE::SHARED)
     	   $display["rows"][] = $row;
 	}
 	

@@ -3,27 +3,30 @@
 	
 	$display["title"] = "Custom roles&nbsp;&raquo;&nbsp;Add";
 		
-	if ($_SESSION['uid'] == 0)
+	if ($_SESSION["uid"] == 0)
+	{
+		$errmsg = "Requested page cannot be viewed from admin account";
 		UI::Redirect("index.php");
-	
-	$display["experimental"] = true;
+	}
 	
 	$AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
 
+	$SNMP = new SNMP();
+	
     if ($_POST) 
 	{
         $Validator = new Validator();
 		
-		if (!$Validator->IsAlphaNumeric($post_name))
-		  $err[] = "Role name must be an alphanumeric string";
+		if (!preg_match("/^[A-Za-z0-9-]+$/", $post_name))
+			$err[] = "Allowed chars for role name is [A-Za-z0-9-]";
 		elseif ($db->GetOne("SELECT * FROM ami_roles WHERE name=? AND (clientid='0' OR clientid='{$_SESSION['uid']}') AND id != ? AND iscompleted!=2", array($post_name, $post_id)))
-		  $err[] = "Role with name {$post_name} already exists";
+			$err[] = "Role with name {$post_name} already exists";
 		
 	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA < 0)
-	       $err[] = "Invalid value for minimum LA";
+			$err[] = "Invalid value for minimum LA";
 	    
 	    if (!$Validator->IsNumeric($post_default_maxLA) || $post_default_maxLA > 99)
-	       $err[] = "Invalid value for maximum LA";
+			$err[] = "Invalid value for maximum LA";
 	       
 		if (!$post_id)
 		{
@@ -56,7 +59,12 @@
 		                // Update last synchronization date
                 		$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instance_info['id']));
 		                
-		                $db->Execute("INSERT INTO ami_roles SET name=?, roletype='CUSTOM', clientid=?, prototype_iid=?, iscompleted='0', default_minLA=?, default_maxLA=?, alias=?, architecture=?, instance_type=?, dtbuildstarted=NOW()", array($post_name, $_SESSION['uid'], $instance_info['instance_id'], $post_default_minLA, $post_default_maxLA, $alias, $architecture, $instance_type));
+		                $db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
+		                	iscompleted='0', default_minLA=?, default_maxLA=?, alias=?, architecture=?, 
+		                	instance_type=?, dtbuildstarted=NOW()", 
+		                	array($post_name, ROLE_TYPE::CUSTOM, $_SESSION['uid'], $instance_info['instance_id'], 
+		                		$post_default_minLA, $post_default_maxLA, $alias, $architecture, $instance_type)
+		                );
 	                    $roleid = $db->Insert_ID();
 		                
 		                if ($addSecGroup)
@@ -79,10 +87,10 @@
 	                        $AmazonEC2Client->AuthorizeSecurityGroupIngress($_SESSION['aws_accountid'], $security_group_name, $IpPermissionSet);
 		                }
 		                
-		                $Shell = ShellFactory::GetShellInstance();
-		                $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$instance_info['external_ip'].' "" SNMPv2-MIB::snmpTrap.12.0 SNMPv2-MIB::sysName.0 s "'.$post_name.'" SNMPv2-MIB::sysLocation.0 s "0" 2>&1', true);
-		                
-		                $Logger->debug("Sending SNMP Trap 12.0 (Start rebundle) complete ({$res})");
+		                $SNMP->Connect($instance_info['external_ip'], null, $farminfo['hash']);
+		                $trap = vsprintf(SNMP_TRAP::START_REBUNDLE, array($post_name));
+		                $res = $SNMP->SendTrap($trap);
+		                $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startRebundle ({$trap}) to '{$instance_info['instance_id']}' ('{$instance_info['external_ip']}') complete ({$res})");
 	                }
 	                catch(Exception $e)
 	                {
@@ -95,7 +103,7 @@
                 if (!$errmsg)
                 {
                 	$db->CommitTrans();
-                	$okmsg = "An image for new role {$post_name} is being bundled. It may take up to 10 minutes.";
+                	$okmsg = "An image for new role {$post_name} is being bundled. It can take up to 10 minutes.";
 	            	UI::Redirect("client_roles_view.php");
                 }
             }
@@ -118,6 +126,17 @@
 	{
 	    if ($pv->instancesSet->item->instanceState->name == 'running')
 	    {
+	       $instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($rowz[$pk]->instancesSet->item->instanceId));
+	       if ($instance_info)
+	       {
+				$farm_role_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+					array($rowz[$pk]->instancesSet->item->imageId, $instance_info['farmid'])
+				);
+				
+				if ($farm_role_info)
+					$rowz[$pk]->LA = array('min' => $farm_role_info['min_LA'], 'max' => $farm_role_info['max_LA']);
+	       }
+	    	
 	       $rowz[$pk]->Role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($rowz[$pk]->instancesSet->item->imageId));
 	       
 	       if ($rowz[$pk]->Role && !$db->GetOne("SELECT id FROM ami_roles WHERE iscompleted='0' AND prototype_iid='{$rowz[$pk]->instancesSet->item->instanceId}'"))

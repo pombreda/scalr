@@ -94,6 +94,9 @@
 .timeline-event-icon, .timeline-event-label,.timeline-event-tape{
 	position:absolute;
 	cursor:pointer;
+	font-size:7pt;
+	font-family: Monaco, Verdana;
+	white-space: nowrap;
 }
 
 .timeline-event-tape,

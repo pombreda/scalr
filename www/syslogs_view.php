@@ -5,14 +5,14 @@
 	   UI::Redirect("index.php");
 	
 	Core::Load("Data/Formater");
-	
+		
 	$display["title"] = _("Logs");
 	$display["help"] = _("Almost all Scalr activity being logged. You should check logs in case of any issues.");
 	
     $display["load_calendar"] = 1;
 
     $paging = new SQLPaging();
-	$sql = "SELECT *, min(id) FROM syslog WHERE 1=1";
+	$sql = "SELECT DISTINCT(transactionid) as transactionid FROM syslog WHERE 1=1";
 
 	if ($req_search)
 	{
@@ -58,13 +58,12 @@
 	
 	//Paging
 	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "GROUP BY transactionid ORDER BY dtadded_time DESC";
+	$paging->AdditionalSQL = "ORDER BY id DESC";
 	$paging->ApplySQLPaging();
 	$paging->ParseHTML();
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
 
-	// Rows
 	$rows = $db->Execute($paging->SQL);
 	
     $added = array();  	

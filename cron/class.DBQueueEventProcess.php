@@ -5,17 +5,20 @@
         public $ProcessDescription = "Process events queue";
         public $Logger;
         public $IsDaemon = true;
+        private $DaemonMtime;
         private $DaemonMemoryLimit = 20; // in megabytes 
                 
     	public function __construct()
         {
         	// Get Logger instance
         	$this->Logger = LoggerManager::getLogger(__CLASS__);
+        	
+        	$this->DaemonMtime = @filemtime(__FILE__);
         }
         
         public function OnStartForking()
         {
-            $db = Core::GetDBInstance(null, true);
+            $db = Core::GetDBInstance();
             
             // Get pid of running daemon
             $pid = @file_get_contents(CACHEPATH."/".__CLASS__.".Daemon.pid");
@@ -51,12 +54,9 @@
         }
         
         public function StartThread($data)
-        {
-            //
-            // Attach observers
-            //
-        	Scalr::AttachObserver(new MailEventObserver());
-        	Scalr::AttachObserver(new RESTEventObserver());
+        {        	
+        	// Reconfigure observers;
+        	Scalr::ReconfigureObservers();
         	
         	//
             // Create pid file
@@ -68,40 +68,62 @@
             $this->Logger->info("DBQueueEventProcess daemon started. Memory usage: {$memory_usage}M");
             
             // Get DB instance
-            $db = Core::GetDBInstance(null, true);
+            $db = Core::GetDBInstance();
             
             $FarmObservers = array();
             
             while(true)
             {
-	            // Get events list
-            	$events = $db->Execute("SELECT * FROM events WHERE ishandled='0'");
-	            while ($event = $events->FetchRow())
+	            // Get event task from task queue
+	            while ($Task = TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS)->Poll())
 	            {
-	            	$this->Logger->info("Fire event {$event['type']} for farm: {$event['farmid']}");
+	            	$event = $db->GetRow("SELECT * FROM events WHERE id=?", array($Task->EventID));
 	            	
-	            	// Fire event
-	            	Scalr::FireEvent($event['farmid'], $event['type'], $event['message']);
-	            	
-	            	$db->Execute("UPDATE events SET ishandled='1' WHERE id=?", array($event['id']));
+	            	if ($event)
+	            	{
+		            	try
+		            	{
+		            		// Log
+		            		$this->Logger->info("Fire event {$event['type']} for farm: {$event['farmid']}");
+				            	
+				            // Fire event
+							Scalr::FireDeferredEvent($event['farmid'], $event['type'], $event['message']);
+				            	
+				            $db->Execute("UPDATE events SET ishandled='1' WHERE id=?", array($event['id']));
+		            	}
+		            	catch(Exception $e)
+		            	{
+		            		$this->Logger->fatal("Cannot fire deferred event: {$e->getMessage()}");
+		            	}
+	            	}
+		            
+		            
+		            // Cleaning
+		            unset($current_memory_usage);
+		            unset($event);
+		            
+		            // Check memory usage
+		            $current_memory_usage = $this->GetMemoryUsage()-$memory_usage;
+		            if ($current_memory_usage > $this->DaemonMemoryLimit)
+		            {
+		            	$this->Logger->warn("DBQueueEventProcess daemon reached memory limit {$this->DaemonMemoryLimit}M, Used:{$current_memory_usage}M");
+		            	$this->Logger->warn("Restart daemon.");
+		            	exit();
+		            }
 	            }
 	            
-	            // Cleaning
-	            unset($current_memory_usage);
-	            unset($event);
-	            unset($events);
-	            
-	            // Check memory usage
-	            $current_memory_usage = $this->GetMemoryUsage()-$memory_usage;
-	            if ($current_memory_usage > $this->DaemonMemoryLimit)
-	            {
-	            	$this->Logger->warn("DBQueueEventProcess daemon reached memory limit {$this->DaemonMemoryLimit}M, Used:{$current_memory_usage}M");
-	            	$this->Logger->warn("Restart daemon.");
-	            	exit();
-	            }
-	            
-	            // Sleep for 5 seconds
-	            sleep(5);
+	            // Sleep for 15 seconds
+		        sleep(15);
+		        
+		        // Clear stat file cache
+		        clearstatcache();
+		       
+		        // Check daemon file for modifications.
+		        if ($this->DaemonMtime && $this->DaemonMtime < @filemtime(__FILE__))
+		        {
+		        	$this->Logger->warn(__FILE__." - updated. Exiting for daemon reload.");
+		        	exit();
+		        }
             }
         }
         

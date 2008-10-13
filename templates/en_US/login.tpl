@@ -1,6 +1,5 @@
 {include file="inc/login_header.tpl"}
-	<center>
-	<div class="middle">	
+	<div class="middle" align="center" style="width:100%;">	
 	
 		<table border="0" cellpadding="0" cellspacing="0" class="Webta_Table">
 		<tr>
@@ -10,11 +9,11 @@
 		</tr>
 		<tr>
 			<td width="7" class="TableHeaderCenter"></td>
-			<td align="center"><div id="loginform">
+			<td align="center"><div id="loginform" style="width:450px;">
 				{if $err != ''}
 				<span class="error">Incorrect login or password</span>
 				{/if}
-				<div id="loginform_inner">
+				<div id="loginform_inner" style="margin-left:40px;">
 				  <table align="center" cellpadding="5" cellspacing="0">
 				    <tr>	
 				    	<td colspan="2">&nbsp;</td>
@@ -29,7 +28,9 @@
 				    </tr>
 				    <tr>
 				    	<td><input name="s2" type="hidden" id="s2" value="{$s}" /></td>
-				    	<td align="left"><input name="Submit2" type="submit" class="btn" value="Login" /></td>
+				    	<td align="left"><input name="Submit2" type="submit" class="btn" value="Login" />&nbsp;&nbsp;
+				    	<input name="Submit3" type="button" class="btn" onclick="document.location='login.php?action=pwdrecovery';" value="Forgot password?" />
+				    	</td>
 				    </tr>
 				  </table>
 				  </div>
@@ -43,8 +44,5 @@
 			<td width="7"><div class="TableFooterRight"></div></td>
 		</tr>
 		</table>
-		<br>
-		<a href="login.php?action=pwdrecovery">Forgot password?</a>
 	</div>
-	</center>
 {include file="inc/login_footer.tpl"}

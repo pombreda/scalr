@@ -7,6 +7,8 @@ NewPopup.prototype = {
 	options: {},
 	tap: null,
 	content:null,
+	showTap:false,
+	tap_class_name:'pop_tap',
 	
 	initialize: function(popup) {
 		var popup = this.byID(popup);
@@ -25,36 +27,52 @@ NewPopup.prototype = {
 	positioningPopup: function(off) {
 		var scrOffset = this.scrollOffset();
 		var popup = this.options.popup;
-		
-		var PDims	= [this.options.width + 40, this.options.height + 130];
+		var TAP_HEIGHT = 100;
+		var Y_OFFSET = 23;
 		
 		if (this.options.target)
 			var targetOffset = this.cumulativeOffset(this.options.target);
 		else
-		{
 			var targetOffset = off;
+			
+		this.tap_class_name = "pop_tap";
+		
+		/* Calculate LEFT position */
+		off[0] = off[0]-this.options.width/2+30;
+		if (off[0] < 0)
+		{
+			off[0] = 5;
+		}
+		else if (off[0] > document.body.offsetWidth)
+		{
+			off[0] = document.body.offsetWidth-this.options.width-5;
 		}
 			
-		// Calculate Y offset
-		if (targetOffset[1] <= (this.options.height + 130)) 
+		/* Calculate TOP position */
+		off[1] = off[1]-this.options.height;
+		if (off[1] < 0)
 		{
-			this.hide(this.tap);
-			off[1] = off[1]+60;
+			off[1] = 5;
+		}
+						
+		/* Calculate TAP position & TAP type */
+		if (off[1]-this.options.height < 0)
+		{
+			this.tap_class_name = "pop_bat";
+			off[1] = off[1]+this.options.height+TAP_HEIGHT-Y_OFFSET-10;
+			var tapMarginTop = -1*(this.options.height+TAP_HEIGHT+Y_OFFSET); 
 		}
 		else
-			this.show(this.tap);	
-
-		if (targetOffset[1] <= 0 || targetOffset[1] <= (this.options.height + 130))
-			off[1] = off[1]+this.options.height+85;
-		
-		if ((document.body.offsetWidth-targetOffset[0]) <= (this.options.width + 40))
 		{
-			targetOffset[0] = document.body.offsetWidth - this.options.width + 40;
-			this.hide(this.tap);
+			off[1] = off[1]-TAP_HEIGHT-Y_OFFSET;
+			var tapMarginTop = -27;
 		}
+			
+		$(this.tapid).className = this.tap_class_name;
+		$(this.tapid).style.marginTop = tapMarginTop + 'px'; 
 	
-		popup.style.left = off[0] + scrOffset[0] - 100 + 'px';
-		popup.style.top = off[1] + scrOffset[1] - PDims[1] + 'px';
+		popup.style.left = off[0] + 'px';
+		popup.style.top = off[1] + 'px';
 	},
 	
 	ieTweak: function(command)
@@ -111,8 +129,11 @@ NewPopup.prototype = {
 		popup.style.zIndex 		= 99999;
 		
 		var div1 = this.div("pop_popup pop_header");
-		var div2 = this.div("pop_sizex", 1);
-		
+		div1.style.left = options.width - 15 + "px";
+		div1.style.width = "15px";
+		var div2 = this.div("pop_sizex");
+		div2.style.width = "15px";
+				
 		if (!NoCloseButton)
 		{
 			var img  = new Image();
@@ -121,7 +142,7 @@ NewPopup.prototype = {
 				img.callerObj = this;
 				img.onclick = function() {
 					this.callerObj.hide(this.callerObj.options.popup);
-					this.callerObj.hide(this.callerObj.tap);
+					//this.callerObj.hide(this.callerObj.tap);
 					this.callerObj.selecters('visible');
 					this.callerObj.ieTweak('visible');
 				};
@@ -132,7 +153,7 @@ NewPopup.prototype = {
 		div1.appendChild(div2);
 		
 		var div3 = this.div("pop_popup pop_content");
-		var div4 = this.div("pop_sizex pop_sizey", 1, 1);
+		var div4 = this.div("pop_sizex pop_sizey pop_content_container", 1, 1, 1, 10, 15);
 			div4.innerHTML = content;
 		div3.appendChild(div4);
 		
@@ -151,9 +172,10 @@ NewPopup.prototype = {
 		var div16 = this.div("pop_s pop_left pop_sizex", 1);
 		var div17 = this.div("pop_se pop_left");
 		var div18 = this.div("pop_clear");
-		var div19 = this.div("pop_tap");
+		var div19 = this.div(this.tap_class_name);
+				
 		this.tap  = div19;
-		
+				
 		div5.appendChild(div7);
 		div5.appendChild(div8);
 		div5.appendChild(div9);
@@ -172,15 +194,30 @@ NewPopup.prototype = {
 		popup.appendChild(div3);
 		popup.appendChild(div5);
 		
+		this.tapid  = div19.id;
+		
 		this.hide(popup);
 	},
 	
-	div: function(className, setSizeX, setSizeY) {
+	div: function(className, setSizeX, setSizeY, disable_overflow, w_offset, h_offset) {
 		var div = document.createElement("DIV");
+		
+		if (disable_overflow)
+		{
+			//div.style.overflow = 'hidden';
+		}
+			
+		div.id = "popup_"+Math.random();
 		if (className) div.className = className;
 
-		if (setSizeX)	div.style.width = this.options.width + 'px';
-		if (setSizeY)	div.style.height = this.options.height + 'px';
+		if (!w_offset)
+			w_offset = 0;
+
+		if (!h_offset)
+			h_offset = 0;
+
+		if (setSizeX)	div.style.width = this.options.width + w_offset + 'px';
+		if (setSizeY)	div.style.height = this.options.height + h_offset + 'px';
 		
 		return div;
 	},
@@ -196,11 +233,6 @@ NewPopup.prototype = {
 		var element = this.byID(element);
 
 		try {
-			switch (element.tagName) 
-			{
-				case "DIV" : element.style.display = 'block'; break;
-				default: element.style.display = '';
-			}
 			element.style.display = '';
 		} catch (err) {}
 	},
@@ -240,7 +272,7 @@ NewPopup.prototype = {
 	},
 	
 	byID: function(el) {
-		if (typeof el == 'string') el = document.getElementById(el);
+		if (typeof(el) == 'string') el = document.getElementById(el);
 		return el;
 	},
 	

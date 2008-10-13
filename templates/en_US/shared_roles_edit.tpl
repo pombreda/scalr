@@ -92,10 +92,9 @@
     		<td width="20%">Prototype role:</td>
     		<td>
     			<select name="alias" class="text">
-    				<option {if $alias == 'base'}selected{/if} value="base">base</option>
-    				<option {if $alias == 'www'}selected{/if} value="www">www</option>
-    				<option {if $alias == 'app'}selected{/if} value="app">app</option>
-    				<option {if $alias == 'mysql'}selected{/if} value="mysql">mysql</option>
+    				{section name=id loop=$aliases}
+    					<option {if $alias == $aliases[id]}selected{/if} value="{$aliases[id]}">{$aliases[id]}</option>
+    				{/section}
     			</select>
     		</td>
     	</tr>
@@ -106,6 +105,16 @@
     	<tr>
     		<td width="20%">Default maximum LA for this role:</td>
     		<td><input type="text" class="text" name="default_maxLA" value="{$default_maxLA}" /></td>
+    	</tr>
+    	<tr>
+    		<td width="20%">Stable:</td>
+    		<td><input type="checkbox" {if $isstable || !$arch}checked="checked"{/if} name="isstable" value="1" /></td>
+    	</tr>
+    	<tr valign="top">
+    		<td width="20%">Description:</td>
+    		<td>
+    			<textarea rows="5" cols="50" name="description" class="text">{$description}</textarea>
+    		</td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
         

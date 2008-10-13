@@ -1,0 +1,1 @@
+{$instanceinfo.external_ip}({$instanceinfo.role_name}) Initialized

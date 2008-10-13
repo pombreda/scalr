@@ -1,5 +1,5 @@
 
-<div {if $intableid}id="{$intableid}"{/if} style="display:{$visible};padding: {if $intablepadding}{$intablepadding}{else}7{/if}px;">
+<div {if $intableid}id="{$intableid}"{/if} {if $intable_classname}class="{$intable_classname}"{/if} style="display:{$visible};padding: {if $intablepadding}{$intablepadding}{else}7{/if}px;">
 	<table border="0" cellpadding="0" cellspacing="0" width="100%">
 	{if !$noheaderline}
 	<tr>
@@ -18,7 +18,7 @@
 		<td class="Inner_{$color}">
 			<table width="100%" cellspacing="0" cellpadding="2" id="Webta_InnerTable_{$header}" {if $section_closed}style="display: none;"{/if}>
 			<tr>
-				<td width="{if $intable_first_column_width}{$intable_first_column_width}{else}200{/if}"></td>
-				<td style="height:15px;"></td>
+				<td width="{if $intable_first_column_width}{$intable_first_column_width}{else}20%{/if}"></td>
+				<td colspan="{if $intable_colspan}{$intable_colspan}{else}1{/if}" width="80%" style="height:15px;"></td>
 			</tr>
 			
