@@ -2,11 +2,14 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] == 0)
-        UI::Redirect("index.php");
+	{
+		$errmsg = "Requested page cannot be viewed from admin account";
+		UI::Redirect("index.php");
+	}
         
     $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
                         
-	$display["title"] = "Misc&nbsp;&raquo;&nbsp;Manage security groups";
+	$display["title"] = "Roles&nbsp;&raquo;&nbsp;Security groups";
 		
 	//Paging
 	$paging = new Paging();

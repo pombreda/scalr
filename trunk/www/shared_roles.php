@@ -11,7 +11,7 @@
 	}
 	elseif ($req_task == "delete")
 	{
-	    $info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype='SHARED'", $req_ami_id);
+	    $info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
 	    if ($info)
 	    {
 	        $db->Execute("DELETE FROM ami_roles WHERE id='{$info['id']}'");
@@ -33,7 +33,7 @@
 	$paging = new SQLPaging();
 	$paging->ItemsOnPage = 20;
 	
-	$sql = "SELECT * FROM ami_roles WHERE roletype='SHARED'";
+	$sql = "SELECT * FROM ami_roles WHERE roletype='".ROLE_TYPE::SHARED."'";
 	
 	
 	$paging->SetSQLQuery($sql);

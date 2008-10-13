@@ -1,6 +1,5 @@
 {include file="inc/login_header.tpl"}
-	<center>
-	<div class="middle">	
+	<div class="middle" align="center" style="width:100%;">	
 	
 		<table border="0" cellpadding="0" cellspacing="0" class="Webta_Table">
 		<tr>
@@ -10,23 +9,28 @@
 		</tr>
 		<tr>
 			<td width="7" class="TableHeaderCenter"></td>
-			<td align="center"><div id="loginform">
-      
-      <div id="login_box">
-        <h3>Password recovery</h3>
-        {if $err.0 != ''}
-			<span style="color:red;font-weight:bold;">{$err.0}</span>
-			<br>
-			<br>
-		{/if}
-          <label>E-mail</label>
-          <input name="email" type="text" class="text" id="email" value="" size="15" />
-          <input type="hidden" name="action" value="pwdrecovery" />
-          <button style="vertical-align:middle;"  type="submit" class="btn" name="Submit2">
-            Submit
-          </button>
-      </div>
-    </td>
+			<td align="center"><div id="loginform" style="width:450px;">
+				{if $err != ''}
+				<span class="error">Incorrect login or password</span>
+				{/if}
+				<div id="loginform_inner" style="margin-left:40px;">
+				  <table align="center" cellpadding="5" cellspacing="0">
+				    <tr>	
+				    	<td colspan="2">&nbsp;</td>
+				    </tr>
+				    <tr>
+					    <td align="right">Email:</td>
+				    	<td align="left"><input name="email" type="text" class="text" id="login" value="" size="15" /></td>
+				    </tr>
+				    <tr>
+				    	<td><input name="s2" type="hidden" id="action" value="pwdrecovery" /></td>
+				    	<td align="left"><input name="Submit2" type="submit" class="btn" value="Submit" />
+				    	</td>
+				    </tr>
+				  </table>
+				  </div>
+				  </div>
+				  </td>
 			<td width="7" class="TableHeaderCenter"></td>
 		</tr>
 		<tr>
@@ -36,5 +40,4 @@
 		</tr>
 		</table>
 	</div>
-	</center>
 {include file="inc/login_footer.tpl"}

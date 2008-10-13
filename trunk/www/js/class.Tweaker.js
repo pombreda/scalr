@@ -8,9 +8,11 @@ FitoTab.prototype = {
 	bgcolors:	[],
 	choosed_colors: [],
 	allchecked:	false,
+	expandHeight: true,
 	
 	initialize: function(element) 
 	{
+		
 		var element = $(element);
 		
 		try
@@ -25,7 +27,7 @@ FitoTab.prototype = {
 			if (arguments[1])
 				Object.extend(options, arguments[1] || {});
 		
-		this.options = options;
+			this.options = options;
 		}
 		catch(err){ };
 		
@@ -160,7 +162,7 @@ FitoTab.prototype = {
 			
 			try 
 			{
-			    if (!tab.no_resize)
+			    if (!tab.hasClassName("No_Resize"))
 				    tab.rows[tab.rows.length - 1].style.height = tabHeight - cmlt + "px";
 			} catch (err2) {
 				
@@ -168,10 +170,11 @@ FitoTab.prototype = {
 
 				var wHead = (!settings) ? Head.offsetHeight : tab.rows[0].offsetHeight;
 				var lastRow = tab.rows[tab.rows.length - 2];
+							
 				var firstRow = tab.rows[1];
 				var w = 0; 
 				var lastNum = lastRow.cells.length - 1;
-				
+			
 				for (var i = 0; i < firstRow.cells.length; i++) {
 					firstRow.cells[i].style.borderTop = '1px solid #A2BBDD';
 				}
@@ -192,10 +195,10 @@ FitoTab.prototype = {
 					if ((lastNum > i && lastRow.cells[i+1].className == "Item") || (settings && !i))	
 					{
 						try {
-							$("separator_" + i).parentNode.removeChild($("separator_" + i));
+							$("separator_"+ tab.id + i).parentNode.removeChild($("separator_"+ tab.id + i));
 						} catch (err) {} 
 						var div = document.createElement("div");
-						div.id	=	"separator_" + i;
+						div.id	=	"separator_"+ tab.id + i;
 						div.className 		= "vrule gutter";
 						div.style.left 		= tabOffsetLeft + w - 3 + 'px';
 						div.style.top 		= tabOffsetTop + wHead + 'px';

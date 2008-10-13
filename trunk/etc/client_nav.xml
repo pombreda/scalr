@@ -9,7 +9,10 @@
 
 	<node title="Farms">
 		<item href="farms_add.php">Build new</item>
-		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>		
+		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="elastic_ips.php">Elastic IPs</item>
+		<item href="ebs_manage.php">Elastic Block Storage</item>
 	</node>
 
 	<node title="Roles">

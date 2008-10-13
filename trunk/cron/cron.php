@@ -33,5 +33,5 @@
     }
 
 	$Logger->info(sprintf("Starting %s cronjob...", $JobLauncher->GetProcessName()));	
-	$JobLauncher->Launch(5);
+	$JobLauncher->Launch(CONFIG::$CRON_PROCESSES_NUMBER);
 ?>

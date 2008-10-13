@@ -24,8 +24,8 @@
 		<td class="Item" valign="top">{$rows[id].instances}</td>
 		<td class="Item" valign="top">{$rows[id].amis} [<a href="client_roles_view.php?clientid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top">{if $rows[id].farms_limit == 0}Unlimited{else}{$rows[id].farms_limit}{/if}</td>
-		<td class="Item" valign="top">{if $rows[id].isactive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
-		<td class="ItemEdit" valign="top"><a href="login.php?id={$rows[id].id}&isadmin=1">Login</a></td>
+		<td class="Item" valign="top" align="center">{if $rows[id].isactive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
+		<td class="ItemEdit" valign="top"><img style="vertical-align:middle;" src="/images/key.png"> <a href="login.php?id={$rows[id].id}&isadmin=1">Login</a></td>
 		<td class="ItemEdit" valign="top"><a href="clients_add.php?id={$rows[id].id}">Edit</a></td>
 		<td class="ItemDelete" valign="top">
 			<span>

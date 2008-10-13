@@ -20,10 +20,7 @@
             
         if (!$Validator->AreEqual($post_password, $post_password2))
             $err[] = "Two passwords are not equal";
-	    
-        if (!@is_writeable(APPPATH."/etc/clients_keys"))
-            $err[] = "'".APPPATH."/etc/clients_keys"."' - not writable";
-            
+	                
         if (!$Validator->IsNumeric($post_farms_limit) || $post_farms_limit < 0)
             $err[] = "Farms limit must be a number";
           
@@ -177,9 +174,6 @@
                         throw new ApplicationException($e->getMessage(), E_ERROR);
                     }
     			    
-                    if (!file_exists(APPPATH."/etc/clients_keys/{$post_id}"))
-                        @mkdir(APPPATH."/etc/clients_keys/{$post_id}");
-                    
 	    			if ($_FILES['cert_file']['tmp_name'])
 		            {
 						$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);

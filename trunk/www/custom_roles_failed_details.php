@@ -1,8 +1,6 @@
 <? 
 	require("src/prepend.inc.php");
 	
-	$display["experimental"] = true;
-	
 	$display["title"] = "Custom role&nbsp;&raquo;&nbsp;Create failure details";
 	
     if (!$get_id)

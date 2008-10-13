@@ -23,6 +23,8 @@
 }
 
 .timeline-event-bubble-body {
+	font-size:9pt;
+	font-family:Verdana;
 }
 
 .timeline-event-bubble-wiki {

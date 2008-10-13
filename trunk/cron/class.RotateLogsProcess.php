@@ -13,7 +13,7 @@
         
         public function OnStartForking()
         {
-            $db = Core::GetDBInstance(null, true);
+            $db = Core::GetDBInstance();
             
             // Clear old instances log
             $oldlogtime = mktime(date("H"), date("i"), date("s"), date("m"), date("d")-CONFIG::$LOG_DAYS, date("Y"));

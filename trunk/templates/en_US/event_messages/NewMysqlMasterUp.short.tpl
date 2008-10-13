@@ -1,0 +1,1 @@
+New MySQL master: {$instanceinfo.external_ip} Up

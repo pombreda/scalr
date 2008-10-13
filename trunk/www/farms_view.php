@@ -24,6 +24,12 @@
         exit();
 	}
 	
+	if (!$_POST && !$get_task && $get_code)
+	{
+		if ($get_code == 1)
+			$okmsg = "Farm successfully updated";
+	}
+	
 	$paging = new SQLPaging();
 
 	$sql = "SELECT * from farms WHERE 1=1";
@@ -70,6 +76,10 @@
 		
 		if ($_SESSION['uid'] == 0)
 			$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
+			
+		$row["havemysqlrole"] = (bool)$db->GetOne("SELECT id FROM farm_amis WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql') AND farmid='{$row['id']}'");
+		
+		$row['status_txt'] = FARM_STATUS::GetStatusName($row['status']); 
 	}
 	
 	$display["title"] = "Farms > View";

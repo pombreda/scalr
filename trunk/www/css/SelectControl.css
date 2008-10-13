@@ -15,7 +15,7 @@ a.select-control-main {
 	position: relative;
 	text-decoration: none;
 	background: url(../images/bg-control.gif) no-repeat left;
-	width: 86px;
+	width: 66px;
 	height: 19px;
 	overflow: hidden;
 	font-size: 11px;
@@ -25,6 +25,7 @@ a.select-control-main {
 	color: #666;
 	z-index: 19;
 	white-space: nowrap;
+	float:left;
 }
 
 div.select-control-menu {
@@ -67,19 +68,18 @@ div.select-control-menu a.select-control-separator {
 	padding: 1px 0 0 0;
 }
 
-.select-control-main div.select-control-pimp,
-.select-control-main div.select-control-pimp-hover {
+div.select-control-pimp,
+div.select-control-pimp-hover {
 	width: 20px;
 	height: 19px;
-	background: url(../images/control-pimp.gif) no-repeat #fafafa;
+	background: url(../images/control-pimp.gif) no-repeat #fafafa left;
 	overflow: hidden;
 	font-size: 1px;
-	position: absolute;
-	top: 0;
-	right: 0;
+	float:left;
 	z-index: 19;
+	cursor:pointer;
 }
 
-.select-control-main div.select-control-pimp-hover {
-	background: url(../images/control-pimp-hover.gif) no-repeat #fafafa;
+div.select-control-pimp-hover {
+	background: url(../images/control-pimp.gif) no-repeat #fafafa right;
 }

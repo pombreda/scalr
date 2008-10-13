@@ -13,12 +13,15 @@
 		$display["title"] = "Shared roles&nbsp;&raquo;&nbsp;Add new";
 	}
 	
+	$reflect = new ReflectionClass("ROLE_ALIAS");
+	$display["aliases"] = array_values($reflect->getConstants());
+	
 	if ($_POST)
 	{	    
 	    $Validator = new Validator();
 	    
-	    if (!$Validator->IsAlphaNumeric($post_name))
-	       $err[] = "Role name required";
+	    if (!preg_match("/[A-Za-z0-9-]+/", $post_name))
+            $err[] = "Allowed chars for role name is [A-Za-z0-9-]";
 	       
 	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA < 1)
 	       $err[] = "Invalid value for minimum LA";
@@ -28,7 +31,7 @@
 
 	    if ($post_ami_id)
 	    {
-	    	$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype='SHARED'", $post_ami_id);
+	    	$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($post_ami_id, ROLE_TYPE::SHARED));
 	    	if (!$info)
 	    	{
 	    		$AmazonEC2 = new AmazonEC2(
@@ -43,12 +46,17 @@
 				// get information about shared AMIs
 				try
 				{
-					$response = $AmazonEC2->describeImages($DescribeImagesType);
+					$response = $AmazonEC2->DescribeImages($DescribeImagesType);
 					
 					if ($response && $response->imagesSet && $response->imagesSet->item)
 						$post_arch = $response->imagesSet->item->architecture;
 					else
+					{
+						$post_ami_id = false;
+						$req_ami_id = false;
 						$err[] = "Cannot get information about AMI from amazon";
+						$display = array_merge($display, $_POST);
+					}
 				}
 				catch(Exception $e)
 				{
@@ -56,7 +64,12 @@
 				}
 	    	}
 	    }
+	    else
+	    {
+	    	UI::Redirect("shared_roles.php");
+	    }
 	       
+	    $isstable = ($post_isstable == 1) ? '1' : '0';
 	    if (count($err) == 0)
 	    {    		
 		    if (!$info)
@@ -67,20 +80,25 @@
 		           // Add ne role to database
 		           $db->Execute("INSERT INTO ami_roles SET 
 		           		ami_id=?, 
-		           		roletype='SHARED', 
+		           		roletype=?, 
 		           		clientid='0', 
 		           		name=?, 
 		           		default_minLA=?,
 		           		default_maxLA=?, 
 		           		alias=?, 
-		           		architecture=?", 
+		           		architecture=?,
+		           		isstable=?,
+		           		description=?", 
 		           array(
-		           		$post_ami_id, 
+		           		$post_ami_id,
+		           		ROLE_TYPE::SHARED, 
 		           		$post_name, 
 		           		$post_default_minLA, 
 		           		$post_default_maxLA, 
 		           		$post_alias, 
-		           		$post_arch)
+		           		$post_arch,
+		           		$isstable,
+		           		$post_description)
 		           	);
 		        
 	    	       $roleid = $db->Insert_ID();
@@ -107,7 +125,9 @@
 		    	try
 		        {
 		           // Add ne role to database
-		           $db->Execute("UPDATE ami_roles SET name=?, default_minLA=?, default_maxLA=?, alias=? WHERE ami_id=?", array($post_name, $post_default_minLA, $post_default_maxLA, $post_alias, $post_ami_id));
+		           $db->Execute("UPDATE ami_roles SET isstable=?, description=?, name=?, default_minLA=?, default_maxLA=?, alias=? WHERE ami_id=?", 
+		           		array($isstable, $post_description, $post_name, $post_default_minLA, $post_default_maxLA, $post_alias, $post_ami_id)
+		           );
 		        
 	    	       $roleid = $db->Insert_ID();
 	    	       
@@ -116,7 +136,22 @@
 	    	       $db->Execute("DELETE FROM security_rules WHERE roleid=?", $roleid);
 	    	       foreach ($post_rules as $rule)
 	                    $db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($roleid, $rule));
-		            
+
+	                    
+	                if ($info['name'] != $post_name)
+	                {
+	                	$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=?",
+	                		array($post_name, $info['name'])
+	                	);
+	                	
+	                	$db->Execute("UPDATE zones SET role_name=? WHERE role_name=?",
+	                		array($post_name, $info['name'])
+	                	);
+	                	
+	                	$db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=?",
+	                		array($post_name, $info['name'])
+	                	);
+	                }
 		        }
 		        catch (Exception $e)
 		        {
@@ -136,14 +171,11 @@
 	{
 		$display["ami_id"] = $req_ami_id;
 		
-		$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype='SHARED'", $req_ami_id);
+		$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
 		if ($info)
 		{
-		    $display["name"] = $info["name"];
-		    $display["default_minLA"] = $info["default_minLA"];
-		    $display["default_maxLA"] = $info["default_maxLA"];
+		    $display = array_merge($display, $info);
 		    $display["arch"] = $info["architecture"];
-		    $display["alias"] = $info["alias"];
 		    
 		    $rules = $db->GetAll("SELECT * FROM security_rules WHERE roleid='{$info['id']}'");
 		    $display["rules"] = array();

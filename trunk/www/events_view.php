@@ -1,7 +1,5 @@
 <?
     require("src/prepend.inc.php"); 
-
-    $display["experimental"] = true;
     
     if ($_SESSION['uid'] == 0)
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
@@ -18,7 +16,9 @@
 	$sql = "SELECT * from events WHERE farmid='{$farminfo['id']}'";
 
 	$paging = new SQLPaging();
-			
+
+	$paging->AddURLFilter("farmid", $farminfo['id']);
+	
 	//
 	//Paging
 	//
@@ -35,11 +35,6 @@
 	// Rows
 	//
 	$display["rows"] = $db->GetAll($paging->SQL);
-	/*
-	foreach ($display["rows"] as &$row)
-	{
-		//
-	}
-	*/
+
 	require_once("src/append.inc.php");
 ?>

@@ -1,6 +1,8 @@
 <? 
 	require("src/prepend.inc.php"); 
-
+	
+	CONTEXTS::$APPCONTEXT = APPCONTEXT::ORDER_WIZARD;
+	
 	if ($get_logout)
 	{
 		@session_destroy();
@@ -28,12 +30,12 @@
 					// Send welcome E-mail
 					$Mailer->ClearAddresses();
 					$res = $Mailer->Send("emails/welcome.eml", 
-						array("client" => $clientinfo, "site_url" => "https://{$_SERVER['HTTP_HOST']}"), 
+						array("client" => $clientinfo, "site_url" => "http://{$_SERVER['HTTP_HOST']}"), 
 						$clientinfo['email'], 
 						$clientinfo['fullname']
 					);
 					
-					$display["okmsg"] = "Your password has been reset and emailed to you";
+					$display["okmsg"] = "Your password has been reset and emailed<br> to you";
 					$_POST = false;
 					$template_name = "login.tpl";
 				}
@@ -103,8 +105,11 @@
 	        			$_SESSION["aws_accesskeyid"] = $Crypto->Decrypt($user["aws_accesskeyid"], $_SESSION["cpwd"]);
 	        			$_SESSION["aws_accountid"] = $user["aws_accountid"];
 	        			
-	        			$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
-	        			$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
+	        			if ($user["aws_private_key_enc"])
+	        				$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
+	        				
+	        			if ($user["aws_certificate_enc"])
+	        				$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
 	        			
 	        			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
 	        			unset($_SESSION["REQUEST_URI"]);

@@ -53,7 +53,7 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
 .Webta_Message		{ background-color: #FFC; border:1px dashed #DDD; color: #446688; padding: 1px; padding-left: 5px; margin: 8px 0 5px 0; }
 .Webta_OkMsg		
 { 
-    background: url(../images/icon_ok.gif) no-repeat 5px 3px; 
+    background: url(../images/ok.png) no-repeat 5px 4px; 
     background-color: #E2F9E3; 
     border:1px solid #99CC99; 
     color: #3F7D00; 
@@ -67,7 +67,7 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
 
 .Webta_ExperimentalMsg
 {
-	background: url(../images/icon_warn.gif) no-repeat 7px 7px; 
+	background: url(../images/warn.png) no-repeat 7px 5px; 
     background-color: #fffaaa; 
     border:1px solid #e07112; 
     color: #cf650e;

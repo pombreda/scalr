@@ -82,7 +82,15 @@
 	require_once(SRCPATH."/types/enum.EVENT_TYPE.php");
 	require_once(SRCPATH."/types/enum.RRD_STORAGE_TYPE.php");
 	require_once(SRCPATH."/types/enum.GRAPH_TYPE.php");
-			
+	require_once(SRCPATH."/types/enum.SNMP_TRAP.php");
+	require_once(SRCPATH."/types/enum.MYSQL_BACKUP_TYPE.php");
+	require_once(SRCPATH."/types/enum.FARM_STATUS.php");
+	require_once(SRCPATH."/types/enum.INSTANCE_COST.php");
+	require_once(SRCPATH."/types/enum.INSTANCE_STATE.php");	
+	require_once(SRCPATH."/types/enum.QUEUE_NAME.php");
+	require_once(SRCPATH."/types/enum.ROLE_ALIAS.php");
+	require_once(SRCPATH."/types/enum.ROLE_TYPE.php");
+	
 	//Load structs
 	require_once(SRCPATH."/structs/struct.CONTEXTS.php");
 	require_once(SRCPATH."/structs/struct.CONFIG.php");
@@ -90,6 +98,7 @@
 	require_once(SRCPATH."/exceptions/class.ApplicationException.php");
 	require_once(SRCPATH."/class.UI.php");
 	require_once(SRCPATH."/class.Debug.php");
+	require_once(SRCPATH."/class.TaskQueue.php");
 	
 	require_once(SRCPATH."/class.DataForm.php");
 	require_once(SRCPATH."/class.DataFormField.php");
@@ -109,6 +118,7 @@
 	Core::Load("Data/DB/ADODB/adodb-exceptions.inc.php", LIBPATH);
 	Core::Load("Data/DB/ADODB/adodb.inc.php", LIBPATH);
 	Core::Load("UI/Smarty/Smarty.class.php", LIBPATH);
+	Core::Load("UI/Smarty/Smarty_Compiler.class.php", LIBPATH);
 	Core::Load("NET/Mail/PHPMailer");
 	Core::Load("NET/Mail/PHPSmartyMailer");
 	Core::Load("Data/Formater/Formater");
@@ -121,6 +131,8 @@
 	Core::Load("NET/SSH");
 	Core::Load("NET/API/AWS/AmazonEC2");
 	Core::Load("NET/API/AWS/AmazonS3");
+	Core::Load("NET/SNMP");
+	
 	Core::Load("DNSZoneController", SRCPATH);
 			
 	$cfg = parse_ini_file(APPPATH."/etc/config.ini", true);
@@ -137,6 +149,8 @@
 	foreach ($db->GetAll("select * from config") as $rsk)
 		$cfg[$rsk["key"]] = $rsk["value"];
 		
+	$ConfigReflection = new ReflectionClass("CONFIG");
+		
 	// Define Constants and paste config into CONFIG struct
 	foreach ($cfg as $k=>$v) 
 	{ 	
@@ -144,9 +158,11 @@
 			foreach ($v as $kk=>$vv)
 			{
 				$key = strtoupper("{$k}_{$kk}");
-				CONFIG::$$key = $vv;
-				define("CF_{$key}", $vv);
 				
+				if ($ConfigReflection->hasProperty($key))
+					CONFIG::$$key = $vv;
+					
+				define("CF_{$key}", $vv);
 			}
 		else
 		{
@@ -155,7 +171,9 @@
 			else
 				$nk = strtoupper("{$k}");
 
-			CONFIG::$$nk = $v;
+			if ($ConfigReflection->hasProperty($nk))
+				CONFIG::$$nk = $v;
+				
 			define("CF_{$nk}", $v);
 		}
 	}
@@ -165,7 +183,8 @@
 	// Define log4php contants
 	define("LOG4PHP_DIR", LIBPATH.'/IO/Logging/log4php/src/main/php');
 	define("LOG4PHP_CONFIGURATION", APPPATH.'/etc/log4php.xml');
-	
+	define("LOG4PHP_CONFIGURATOR_CLASS", 'LoggerDOMConfiguratorScalr');
+		
 	// Require log4php stuff
 	require_once (SRCPATH.'/class.FarmLogMessage.php');
 	require_once (SRCPATH.'/class.LoggerPatternLayoutScalr.php');
@@ -174,10 +193,10 @@
 			
 	require_once (SRCPATH.'/class.LoggerAppenderScalr.php');
 	require_once (SRCPATH.'/class.LoggerAppenderEmergMail.php');
-		
-	
-	require_once (LOG4PHP_DIR.'/LoggerManager.php');
+	require_once (SRCPATH.'/class.LoggerDOMConfiguratorScalr.php');
 
+	require_once(LOG4PHP_DIR . '/LoggerManager.php');
+		
 	// Get Global Logger intance
 	$Logger = LoggerManager::getLogger('Application');
 
@@ -192,7 +211,7 @@
 			return $json->encode($text);
 		}
 		
-		function json_decode($text)
+		function json_decode($text, $assoc = true)
 		{
 			global $json;
 			return $json->decode($text);
@@ -220,8 +239,6 @@
 	
 	// Crtypto init
 	$Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
-	
-	require_once("{$base}/appfunctions.inc.php");
 	    
     // Set zone lock timeouts
     CONFIG::$ZONE_LOCK_WAIT_TIMEOUT = 5000000; // in miliseconds (1000000 = 1 second)
@@ -231,14 +248,47 @@
     
     // cache lifetime
     CONFIG::$EVENTS_RSS_CACHE_LIFETIME = 300; // in seconds
+    CONFIG::$EVENTS_TIMELINE_CACHE_LIFETIME = 300; // in seconds
+    CONFIG::$AJAX_PROCESSLIST_CACHE_LIFETIME = 60; // in seconds
 
     // Get control password
     $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
        
-    // Require observers
-    require_once (APPPATH.'/observers/class.MailEventObserver.php');
-    require_once (APPPATH.'/observers/class.RESTEventObserver.php');
+    // Set path to SNMP Trap binary
+    SNMP::SetSNMPTrapPath(CONFIG::$SNMPTRAP_PATH);
+    
+    // Require observer interfaces
+    require_once (APPPATH.'/observers/interface.IDeferredEventObserver.php');
     require_once (APPPATH.'/observers/interface.IEventObserver.php');
     
+    // Require deferred event observers
+    require_once (APPPATH.'/observers/class.MailEventObserver.php');
+    require_once (APPPATH.'/observers/class.RESTEventObserver.php');
+    
+    // Require event observers
+    require_once (APPPATH.'/observers/abstract.EventObserver.php');
+    require_once (APPPATH.'/observers/class.DNSEventObserver.php');
+    require_once (APPPATH.'/observers/class.DBEventObserver.php');
+    require_once (APPPATH.'/observers/class.SNMPInformer.php');
+    require_once (APPPATH.'/observers/class.EC2EventObserver.php');
+    require_once (APPPATH.'/observers/class.SSHWorker.php');
+    require_once (APPPATH.'/observers/class.ElasticIPsEventObserver.php');
+        
     require_once (SRCPATH.'/class.Scalr.php');
+        
+    //
+    // Attach event observers
+    //
+    Scalr::AttachObserver(new SSHWorker());
+	Scalr::AttachObserver(new DBEventObserver());
+	Scalr::AttachObserver(new EC2EventObserver());
+	Scalr::AttachObserver(new SNMPInformer());
+	Scalr::AttachObserver(new ElasticIPsEventObserver());
+	Scalr::AttachObserver(new DNSEventObserver());
+	    
+    //
+    // Attach deferred event observers
+    //
+	Scalr::AttachObserver(new MailEventObserver(), true);
+	Scalr::AttachObserver(new RESTEventObserver(), true);
 ?>

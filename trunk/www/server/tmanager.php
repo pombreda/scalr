@@ -1,6 +1,9 @@
 <?
     require("../src/prepend.inc.php");
-
+	
+    if ($_SESSION['uid'] != 0)
+    	exit();
+    
     switch($req__cmd)
     {
         case "get_template_content":

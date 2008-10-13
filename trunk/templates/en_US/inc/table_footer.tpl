@@ -4,8 +4,8 @@
 </td>
 		</tr>
 		{if !$disable_footer_line}
-		<tr class="th">
-			<td colspan="{if $colspan}{$colspan}{else}14{/if}"><table border="0" width="100%" class="WebtaTable_Footer">
+		<tr class="th" height="0">
+			<td colspan="{if $colspan}{$colspan}{else}14{/if}"><table id="footer_button_table" border="0" width="100%" class="WebtaTable_Footer">
 					<tr>
 						<td  colspan="4" align="left">
 												
@@ -19,25 +19,28 @@
 						{elseif $search_page}
 							<input type="submit" class="btn" value="Search">
 						{elseif $page_data_options_add}
-							<a href="{$smarty.server.PHP_SELF|replace:"view":"add"}{$page_data_options_add_querystring}">Add new</a>
+							<a href="{$smarty.server.PHP_SELF|replace:"view":"add"}{$page_data_options_add_querystring}">{if $page_data_options_add_text}{$page_data_options_add_text}{else}Add new{/if}</a>
 						{/if}
 						{if $next_page}
-								&nbsp;<input type="submit" class="btn" name="next" value="Next" />	
+								<input type="submit" style="margin-left:6px;" class="btn" name="next" value="Next" />	
 						{/if}
 						{if $button_js}
-								&nbsp;<input id="button_js" style="display:none;vertical-align:middle;" type="button" onclick="{$button_js_action}" class="btn" name="cbtn_2" value="{$button_js_name}" />	
+								<input id="button_js" style="margin-left:6px;display:none;vertical-align:middle;margin-top:2px;" type="button" onclick="{$button_js_action}" class="btn" name="cbtn_2" value="{$button_js_name}" />
 						{/if}
 						{if $button2}
-								&nbsp;<input type="submit" class="btn" name="cbtn_2" value="{$button2_name}" />	
+								<input type="submit" style="margin-left:6px;" class="btn" name="cbtn_2" value="{$button2_name}" />	
+						{/if}
+						{if $button3}
+								<input type="submit" style="margin-left:6px;" class="btn" name="cbtn_3" value="{$button3_name}" />	
 						{/if}
 						{if $cancel_btn}
 							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;
 						{/if}
 						{if $retry_btn}
-								&nbsp;<input type="button" class="btn" name="retrybtn" value="Retry" onclick="window.location=get_url;return false;" />	
+								<input type="button" style="margin-left:6px;" class="btn" name="retrybtn" value="Retry" onclick="window.location=get_url;return false;" />	
 						{/if}
                         {if $backbtn}
-								&nbsp;<input type="submit" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />	
+								<input type="submit" style="margin-left:6px;" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />	
 						{/if}
 						{if $loader}
 						    <span style="display:none;" id="btn_loader">
@@ -71,6 +74,33 @@
 					{/if}
 			</table></td>
 		</tr>
+		<input type="hidden" id="btn_hidden_field" name="" value="">
+		{literal}
+		<script language="Javascript">
+			var footer_button_table = $('footer_button_table');
+			var elems = footer_button_table.select('[class="btn"]');
+			elems.each(function(item){
+				if (item.id != 'button_js')
+				{    
+					item.onclick = function()
+					{
+						var footer_button_table = $('footer_button_table');
+						var elems = footer_button_table.select('[class="btn"]');
+						elems.each(function(item){
+							item.disabled = true;
+						});
+						
+						$('btn_hidden_field').name = this.name;
+						$('btn_hidden_field').value = this.value;
+						
+						document.forms[1].submit();
+						
+						return false;
+					}
+				}
+			});
+		</script>
+		{/literal}
 		{/if}
 		</table></td>
 	<td width="7" class="TableHeaderCenter"></td>

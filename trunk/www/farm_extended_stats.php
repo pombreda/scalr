@@ -1,8 +1,6 @@
 <?
     require("src/prepend.inc.php"); 
     
-    $display["experimental"] = true;
-    
     if ($_SESSION['uid'] == 0)
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
     else 

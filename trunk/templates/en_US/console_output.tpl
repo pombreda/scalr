@@ -2,9 +2,9 @@
 	{include file="inc/table_header.tpl"}
 	<div style="margin:10px;">
 		{if $console_output}
-			<pre>
+			<!-- <pre>  -->
 			{$console_output}
-			</pre>
+			<!-- </pre>  -->
 		{else}
 			Console output not available yet
 		{/if}

@@ -3,11 +3,19 @@
 {literal}
 	function CheckPrAdd(tp, id, val)
 	{
+		$("spf_link_"+id).style.display = 'none';
+		
 		if (val == 'MX')
 		{
 			$(tp+"_"+id).style.display = '';
 			$(tp+"_"+id).value = '10';
 		}
+		else if (val == 'TXT')
+		{
+			$(tp+"_"+id).style.display = 'none';
+			$(tp+"_"+id).value = '';
+			$("spf_link_"+id).style.display = '';
+		} 
 		else
 		{
 			$(tp+"_"+id).style.display = 'none';
@@ -16,6 +24,10 @@
 	}
 {/literal}
 </script>
+<script type="text/javascript" src="js/class.NewPopup.js"></script>
+<link href="css/popup.css" rel="stylesheet" type="text/css" />
+<br>
+{assign var=button2_name value="Save"}
 {include file="inc/table_header.tpl" nofilter=1}
 {if !$domainname && !$ezone}
     {include file="inc/intable_header.tpl" header="Application information" color="Gray"}
@@ -38,6 +50,7 @@
 		<td colspan="6"><input type="text" class="text" name="domainname" /></td>
 	</tr>
     {include file="inc/intable_footer.tpl" color="Gray"}
+    {assign var=button2_name value="Next"}
 {else}
 <table cellpadding="4" cellspacing="0" width="100%">
 	<tr>
@@ -46,7 +59,7 @@
 		<td>IN</td>
 		<td>SOA</td>
 		<td><input type="text" class="text" disabled name="zone[soa_parent]" size="30" value="{if $zone.soa_parent}{$zone.soa_parent}{else}{$def_soa_parent}{/if}"></td>
-		<td><input type="text" class="text" disabled name="zone[soa_owner]" size="30" value="{if $zone.soa_owner}{$zone.soa_owner}{else}{$def_soa_owner}{/if}"></td>
+		<td><input type="text" class="text" name="zone[soa_owner]" size="30" value="{if $zone.soa_owner}{$zone.soa_owner}{else}{$def_soa_owner}{/if}"></td>
 		<td></td>
 	</tr>
 	<tr>
@@ -67,12 +80,21 @@
 	<tr>
 		<td colspan=4></td>
 		<td>Expire:</td>
-		<td><input type="text" class="text" disabled name="zone[soa_expire]" size=12  value="{if $zone.soa_expire}{$zone.soa_expire}{else}3600000{/if}"></td>
+		<td>
+		<select name="zone[soa_expire]" class="text">
+			<option {if $zone.soa_expire == 86400}selected{/if} value="86400">1 day</option>
+			<option {if $zone.soa_expire == 259200}selected{/if} value="259200">3 days</option>
+			<option {if $zone.soa_expire == 432000}selected{/if} value="432000">5 days</option>
+			<option {if $zone.soa_expire == 604800}selected{/if} value="604800">1 week</option>
+			<option {if $zone.soa_expire == 3024000 || $zone.soa_expire == 3600000}selected{/if} value="3024000">5 weeks</option>
+			<option {if $zone.soa_expire == 6048000}selected{/if} value="6048000">10 weeks</option>
+		</select>
+		</td>
 	</tr>
 	<tr>
 		<td colspan=4></td>
 		<td>Minimum TTL:</td>
-		<td><input type="text" class="text" disabled name="zone[min_ttl]" size=12 value="{if $zone.soa_minttl}{$zone.min_ttl}{else}86400{/if}"></td>
+		<td><input type="text" class="text" disabled name="zone[min_ttl]" size=12 value="{if $zone.min_ttl}{$zone.min_ttl}{else}86400{/if}"></td>
 		<td></td>
 	</tr>
 	<tr>
@@ -91,10 +113,17 @@
 				<option {if $zone.records[id].rtype == "A"}selected{/if} value="A">A</option>
 				<option {if $zone.records[id].rtype == "CNAME"}selected{/if} value="CNAME">CNAME</option>
 				<option {if $zone.records[id].rtype == "MX"}selected{/if} value="MX">MX</option>
-				<option {if $zone.records[id].rtype == "NS"}selected{/if} value="NS">NS</option>
+				{if $zone.records[id].issystem == 1 && $zone.records[id].rtype == "NS"}
+					<option selected value="NS">NS</option>
+				{/if}
+				<option {if $zone.records[id].rtype == "TXT"}selected{/if} value="TXT">TXT</option>
 			</select>
 		</td>
-		<td colspan="2"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" id="ed_{$zone.records[id].id}" style="display:{if $zone.records[id].rtype != "MX"}none{/if};" type=text name="zone[records][{$zone.records[id].id}][rpriority]" size=5 value="{$zone.records[id].rpriority}"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}"></td>
+		<td colspan="2"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" id="ed_{$zone.records[id].id}" style="display:{if $zone.records[id].rtype != "MX"}none{/if};" type=text name="zone[records][{$zone.records[id].id}][rpriority]" size=5 value="{$zone.records[id].rpriority}"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text id="zone[records][{$zone.records[id].id}][rvalue]" name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}">
+			<span style="display:{if $zone.records[id].rtype != "TXT"}none{/if};vertical-align:middle;" id="spf_link_{$zone.records[id].id}">
+				&nbsp;&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" onclick="AddSPFRecord('{$zone.records[id].id}', this);" name="spf" value="SPF constructor" class="btn">
+			</span>
+		</td>
 	</tr>
 	{/section}
 	<tr>
@@ -112,10 +141,15 @@
 				<option selected value="A">A</option>
 				<option value="CNAME">CNAME</option>
 				<option value="MX">MX</option>
-				<!--<option value="NS">NS</option>-->
+				<option value="TXT">TXT</option>
 			</select>
 		</td>
-		<td colspan="2"> <input id="ad_{$add[id]}" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rpriority]" value="10" size=30> <input type="text" class="text" name="add[{$add[id]}][rvalue]" size=30></td>
+		<td colspan="2">
+			<input id="ad_{$add[id]}" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rpriority]" value="10" size=30> <input type="text" class="text" id="add[{$add[id]}][rvalue]" name="add[{$add[id]}][rvalue]" size=30>
+			<span style="display:none;vertical-align:middle;" id="spf_link_{$add[id]}">
+				&nbsp;&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" onclick="AddSPFRecord('{$add[id]}', this);" name="spf" value="SPF constructor" class="btn">	
+			</span>
+		</td>
 	</tr>
 	{/section}
 </table>
@@ -124,6 +158,7 @@
 <input type="hidden" name="formadded" value="true" />
 <input type='hidden' name='farmid' value="{$farm.id}" />
 <input type='hidden' name='ami_id' value="{$ami_id}" />
+{include file="inc/spf_constructor.tpl"}
 {/if}
-{include file="inc/table_footer.tpl" edit_page=1}
+{include file="inc/table_footer.tpl" button2=1}
 {include file="inc/footer.tpl"}
