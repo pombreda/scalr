@@ -619,7 +619,7 @@ function arrayCopy(input)
 // Everything you always wanted to know about your JavaScript client
 // but were afraid to ask. Creates "is_" variables indicating:
 // (1) browser vendor:
-//     is_nav, is_ie, is_opera, is_hotjava, is_webtav, is_TVNavigator, is_AOLTV
+//     is_nav, is_ie, is_opera, is_hotjava, is_webtv, is_TVNavigator, is_AOLTV
 // (2) browser version number:
 //     is_major (integer indicating major version number: 2, 3, 4 ...)
 //     is_minor (float   indicating full  version number: 2.02, 3.01, 4.04 ...)
@@ -670,10 +670,10 @@ function arrayCopy(input)
     var is_minor = parseFloat(navigator.appVersion);
 
     // Note: Opera and WebTV spoof Navigator.  We do strict client detection.
-    // If you want to allow spoofing, take out the tests for opera and webtav.
+    // If you want to allow spoofing, take out the tests for opera and webtv.
     var is_nav  = ((agt.indexOf('mozilla')!=-1) && (agt.indexOf('spoofer')==-1)
                 && (agt.indexOf('compatible') == -1) && (agt.indexOf('opera')==-1)
-                && (agt.indexOf('webtav')==-1) && (agt.indexOf('hotjava')==-1));
+                && (agt.indexOf('webtv')==-1) && (agt.indexOf('hotjava')==-1));
     var is_nav6up = (is_nav && (is_major >= 5));
     var is_gecko = (agt.indexOf('gecko') != -1);
 

@@ -64,34 +64,26 @@
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
 
-	
 	// Rows
 	$rows = $db->Execute($paging->SQL);
 	
     $added = array();  	
 	while ($row = $rows->FetchRow())
 	{
-	    if (!$added[$row['transactionid']])
-	    {
-    	    $row = $db->GetRow("SELECT * FROM syslog WHERE transactionid='{$row['transactionid']}' ORDER BY dtadded_time ASC");
-    	    
-    	    $row["ipaddr"] = long2ip($row["ipaddr"]);
-    	    
-    	    $row["warns"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
-    	    								AND severity='WARN'
-    	    							 ");
-    	    
-    	    $row["errors"] = $db->GetOne("SELECT COUNT(*) FROM syslog WHERE transactionid='{$row['transactionid']}' 
-    	    								AND (severity='FATAL' OR severity='ERROR')
-    	    							 ");
-    	    
-    	    $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
-    	    $row["action"] = stripslashes($row["message"]);
-    	    $row["action"] = htmlentities($row["action"], ENT_QUOTES, "UTF-8");
-    	    
-    	    $display["rows"][] = $row;
-    	    $added[$row['transactionid']] = 1;
-	    }
+        $row = $db->GetRow("SELECT * FROM syslog WHERE transactionid='{$row['transactionid']}' ORDER BY dtadded_time ASC");
+        
+        $row["ipaddr"] = long2ip($row["ipaddr"]);
+        
+        $meta = $db->GetRow("SELECT * FROM syslog_metadata WHERE transactionid=?", array($row['transactionid']));
+        
+        $row["warns"] = $meta["warnings"] ? $meta["warnings"] : 0;
+        $row["errors"] = $meta["errors"] ? $meta["errors"] : 0;
+        
+        $row["dtadded"] = Formater::FuzzyTimeString(strtotime($row["dtadded"]));
+        $row["action"] = stripslashes($row["message"]);
+        $row["action"] = htmlentities($row["action"], ENT_QUOTES, "UTF-8");
+        
+        $display["rows"][] = $row;
 	}
 	
 	$display["page_data_options"] = array();

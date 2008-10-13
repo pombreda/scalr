@@ -84,11 +84,17 @@
             
             $farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
             $this->Logger->info("[FarmID: {$farminfo['id']}] Found ".count($farm_instances)." farm instances in database");
-                            
+
+            // Get Crypto object
+            $Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
+            $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
+            
+            // Decrypt client prvate key and certificate
+            $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+            $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+            
             // Get AmazonEC2 Object
-            $AmazonEC2Client = new AmazonEC2(
-                        APPPATH . "/etc/clients_keys/{$clientinfo['id']}/pk.pem", 
-                        APPPATH . "/etc/clients_keys/{$clientinfo['id']}/cert.pem");
+            $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
                         
             // Get instances from EC2
             $this->Logger->info("[FarmID: {$farminfo['id']}] Receiving instances info from EC2...");
@@ -132,8 +138,14 @@
                 
                 if (!isset($ec2_items_by_instanceid[$farm_instance["instance_id"]]))
                 {
-                    $this->Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$farm_instance["instance_id"]}' found in database but not found on EC2!");
                     $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
+                    
+                    $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
+                    
+                    Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::HOST_CRASH, $farm_instance);
+                    
+                    // Add entry to farm log
+                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$farm_instance["instance_id"]}' found in database but not found on EC2. Crashed."));
                     
                     $instance_terminated = true;
                 }
@@ -146,6 +158,8 @@
                             $this->Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$farm_instance["instance_id"]}' not running (Terminated).");
                             $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
                             
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
+                            
                             $instance_terminated = true;
                             
                             break;
@@ -154,6 +168,8 @@
                             
                             $this->Logger->warn("[FarmID: {$farminfo['id']}] Instance '{$farm_instance["instance_id"]}' not running (Shutting Down).");
                             $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND instance_id=?", array($farminfo['id'], $farm_instance["instance_id"]));
+                            
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($farm_instance["instance_id"]));
                             
                             $instance_terminated = true;
                             
@@ -185,7 +201,7 @@
                             $isfirstinrole = '1';
                         }
                         
-                        $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$farm_instance['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+                        $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance_snmp['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$farm_instance['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$farm_instance['role_name'].'" 2>&1', true);
                         $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance_snmp['instance_id']}' ('{$farm_instance_snmp['external_ip']}') complete ({$res})");
                     }
     
@@ -298,7 +314,7 @@
             			        $res = RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$ami_info["name"], $farminfo['id'], $ami_info["name"], $farminfo['hash'], $ami_info["ami_id"], $dbmaster, true);
                                 if ($res)
                                 {
-                                    $this->Logger->warn("The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' ill be terminated after instance '{$res}' will boot up.");
+                                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' ill be terminated after instance '{$res}' will boot up."));
                                     $db->Execute("UPDATE farm_instances SET replace_iid='{$old_instance['instance_id']}' WHERE instance_id='{$res}'");
                                 }
                                 else 
@@ -307,7 +323,7 @@
             			}
             			catch (Exception $e)
             			{
-            				$this->Logger->fatal("Cannot run new instances for replaceing old ones: ".$e->getMessage());
+            				$this->Logger->fatal(new FarmLogMessage($farminfo['id'], "Cannot run new instances for replaceing old ones: ".$e->getMessage()));
             			}
                     }
                     
@@ -370,7 +386,8 @@
                                 
                                 if ($dtrebootstart+$reboot_timeout < time())
                                 {                                        
-                                    $this->Logger->error("Instance '{$db_item_info["instance_id"]}' did not send 'rebootFinish' event in {$reboot_timeout} seconds after reboot start. Considering it broken. Terminating instance.");
+                                    // Add entry to farm log
+                    				$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$db_item_info["instance_id"]}' did not send 'rebootFinish' event in {$reboot_timeout} seconds after reboot start. Considering it broken. Terminating instance."));
                                     
                                     try
                                     {
@@ -402,6 +419,8 @@
                             // Update DB
                             $db->Execute("DELETE FROM farm_instances WHERE instance_id='{$item->instanceId}'");
                             
+                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($item->instanceId));
+                            
                             //
                             // SNMP Traps
                             //
@@ -425,7 +444,7 @@
                                 
                                 $alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$db_item_info['ami_id']}'");
                                 
-                                $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$db_item_info['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+                                $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$db_item_info['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$db_item_info['role_name'].'" 2>&1', true);
                                 $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance['instance_id']}' ('{$farm_instance['external_ip']}') complete ({$res})");
                             }
                             //
@@ -452,7 +471,8 @@
                                 else 
                                     $event = "hostUp";
                                     
-                                $this->Logger->error("Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch. Considering it broken. Terminating instance.");
+                                // Add entry to farm log
+                    			$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch. Considering it broken. Terminating instance."));
                                 
                                 try
                                 {
@@ -489,8 +509,10 @@
                 
                 if ($AvgLA <= $db_ami_info["min_LA"])
                 {
-                    $this->Logger->info("[FarmID: {$farminfo['id']}] Average LA for '{$role}' ({$AvgLA}) &lt;= min_LA ({$db_ami_info["min_LA"]})");
                     $need_terminate_instance = true;
+                    
+                    // Add entry to farm log
+                    $this->Logger->debug("[FarmID: {$farminfo['id']}] Average LA for '{$role}' ({$AvgLA}) <= min_LA ({$db_ami_info["min_LA"]})");
                 }
                 
                 /* No need to terminate instance if number of instances more than min_count
@@ -505,7 +527,13 @@
                 {
                     if (count($role_instances_by_time) > $db_ami_info["min_count"])
                     {
-                        $instances = $role_instances_by_time;
+                        $db_ami_info['name'] = $role;
+                    	Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::LA_UNDER_MINIMUM, $db_ami_info, $AvgLA, $db_ami_info["min_LA"]);
+                    	
+                    	$this->Logger->info(new FarmLogMessage($farminfo['id'], "Average LA for '{$role}' ({$AvgLA}) <= min_LA ({$db_ami_info["min_LA"]})"));
+                    	
+                    	
+                    	$instances = $role_instances_by_time;
                     	// Select instance that will be terminated
                         //
                         // * Instances ordered by uptime (oldest wil be choosen)
@@ -539,7 +567,7 @@
 	                        }
                         }
                         
-                        if ($instanceinfo)
+                        if ($instanceinfo && $got_valid_instance)
                         {
 	                        $this->Logger->info("[FarmID: {$farminfo['id']}] Terminate '{$instanceinfo['instance_id']}'");
 	                        
@@ -550,7 +578,12 @@
 	                            	WHERE instance_id=? AND farmid=?", 
 	                            array($instanceinfo["instance_id"], $farminfo['id']));
 	                            
-	                            $this->Logger->debug("[FarmID: {$farminfo['id']}] '{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) Terminated!");
+	                            $db->Execute("UPDATE farms SET isbcprunning='0' WHERE bcp_instance_id=?", array($instanceinfo["instance_id"]));
+	                            
+	                            // Add entry to farm log
+                    			$this->Logger->info(new FarmLogMessage($farminfo['id'], "'{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) Terminated!"));
+	                            
+	                            Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $instanceinfo);
 	                        }
 	                        catch (Exception $e)
 	                        {
@@ -580,7 +613,7 @@
 	                            
 	                            $alias = $db->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo['role_name']}' AND iscompleted='1'");
 	                            
-	                            $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" 2>&1', true);
+	                            $res = $Shell->QueryRaw(CONFIG::$SNMPTRAP_PATH.' -v 2c -c '.$farminfo['hash'].' '.$farm_instance['external_ip'].' "" SNMPv2-MIB::snmpTrap.11.0 SNMPv2-MIB::sysName.0 s "'.$alias.'" SNMPv2-MIB::sysLocation.0 s "'.$instanceinfo['internal_ip'].'" SNMPv2-MIB::sysDescr.0 s "'.$isfirstinrole.'" SNMPv2-MIB::sysContact.0 s "'.$instanceinfo['role_name'].'" 2>&1', true);
 	                            $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap 11.0 (hostDown) to '{$farm_instance['instance_id']}' ('{$farm_instance['external_ip']}') complete ({$res})");
 	                        }
 	                        
@@ -605,7 +638,8 @@
                     }
                     else 
                     {
-                        $this->Logger->debug("[FarmID: {$farminfo['id']}] Group {$role} is idle, but needs at least {$db_ami_info["min_count"]} nodes, currently running: ".count($role_instances_by_time).".");
+                        // Add entry to farm log
+                    	$this->Logger->debug(new FarmLogMessage($farminfo['id'], "Group {$role} is idle, but needs at least {$db_ami_info["min_count"]} nodes, currently running: ".count($role_instances_by_time)."."));
                     }
                 }
 
@@ -615,13 +649,20 @@
                 $need_new_instance = false;
                 if ($AvgLA >= $db_ami_info["max_LA"])
                 {
-                    $this->Logger->warn("[FarmID: {$farminfo['id']}] Average LA for '{$role}' ({$AvgLA}) &rt;= max_LA ({$db_ami_info["max_LA"]})");
                     $need_new_instance = true;
+                    
+                    $db_ami_info['name'] = $role;
+                    Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::LA_OVER_MAXIMUM, $db_ami_info, $AvgLA, $db_ami_info["max_LA"]);
+                    
+                    // Add entry to farm log
+                    $this->Logger->info(new FarmLogMessage($farminfo['id'], "Average LA for '{$role}' ({$AvgLA}) >= max_LA ({$db_ami_info["max_LA"]})"));
                 }
                 elseif (count($role_instances_by_time) == 0)
                 {
-                    $this->Logger->warn("[FarmID: {$farminfo['id']}] Disaster: No instances running in group {$role}!");
                     $need_new_instance = true;
+                    
+                    // Add entry to farm log
+                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "Disaster: No instances running in group {$role}!"));
                 }
                 elseif (count($role_instances_by_time) < $db_ami_info["min_count"])
                 {
@@ -636,21 +677,25 @@
                     {
                         if ($role_pending_instances > 0)
                         {
-                            $this->Logger->debug("[FarmID: {$farminfo['id']}] {$role_pending_instances} instances in pending state. We didn't need more instances at this time.");
+                            // Add entry to farm log
+                    		$this->Logger->debug(new FarmLogMessage($farminfo['id'], "{$role_pending_instances} instances in pending state. We don't need more instances at this time."));
                         }
                         else 
                         {
                             $instance_id = RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo["id"], $role, $farminfo["hash"], $ami, false, true);
                             
                             if ($instance_id)
-                                $this->Logger->debug("[FarmID: {$farminfo['id']}] Starting new instance. InstanceID = {$instance_id}.");
+                            {
+                                $this->Logger->info(new FarmLogMessage($farminfo['id'], "Starting new instance. InstanceID = {$instance_id}."));
+                            }
                             else 
                                 $this->Logger->error("[FarmID: {$farminfo['id']}] Cannot run new instance! See system log for details.");
                         }
                     }
                     else 
                     {
-                        $this->Logger->debug("[FarmID: {$farminfo['id']}] Group {$role} is full. Max count {$db_ami_info["max_count"]} of nodes exceed, currently running: ".count($role_instances_by_time).", pending: {$role_pending_instances} instances.");
+                        // Add entry to farm log
+                    	$this->Logger->info(new FarmLogMessage($farminfo['id'], "Group {$role} is full. Max count {$db_ami_info["max_count"]} of nodes exceed, currently running: ".count($role_instances_by_time).", pending: {$role_pending_instances} instances."));
                     }
                 }
                 

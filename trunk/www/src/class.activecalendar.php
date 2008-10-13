@@ -145,6 +145,7 @@ $GMTDiff: GMT Zone for current day calculation, do not set to use local server t
 function activeCalendar($year=false,$month=false,$day=false,$GMTDiff="none", $mysql, $serverid){
 
 
+// WEBTA ADDON
 if ($serverid)
 	$where = " AND (serverid='".$serverid."' OR serverid='0')";
 
@@ -157,6 +158,7 @@ foreach ($anno as $ann)
 	$y = date("y", $tm);
 	$this->announcements[mktime(0,0,0,$m,$d,$y)] = $ann;
 }
+// WEBTA ADDON
 
 $this->timetoday=time();
 $this->selectedday=-2;

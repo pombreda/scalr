@@ -15,7 +15,7 @@
 			<td class="Item" nowrap="nowrap" valign="top">{$rows[id].id}</td>
 			<td class="Item" nowrap="nowrap" valign="top">{$rows[id].severity} {if $rows[id].severity == 'FATAL' || $rows[id].severity == 'ERROR'}(<a href="syslog_view_backtrace.php?logeventid={$rows[id].id}">View backtrace</a>){/if}</td>
 			<td class="Item" nowrap="nowrap" valign="top">{$rows[id].dtadded}</td>
-			<td class="Item" valign="top">{if $rows[id].transactionid != $rows[id].sub_transactionid}<a href="syslog_transaction_details.php?strnid={$rows[id].sub_transactionid}">{$rows[id].message}</a>{else}{$rows[id].message}{/if}</td>
+			<td class="Item" valign="top">{if $rows[id].transactionid != $rows[id].sub_transactionid}<a href="syslog_transaction_details.php?strnid={$rows[id].sub_transactionid}&trnid={$rows[id].transactionid}">{$rows[id].message}</a>{else}{$rows[id].message}{/if}</td>
 		</tr>
 		{sectionelse}
 		<tr>

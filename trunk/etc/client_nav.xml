@@ -14,7 +14,9 @@
 
 	<node title="Roles">
 		<item href="client_roles_add.php">Add new</item>
-		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>		
+		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="sec_groups_view.php">Security groups</item>
 	</node>
 		
 	<item href="logs_view.php">Log</item>
@@ -25,5 +27,9 @@
 		<item href="system_settings.php">System settings</item>
 		<separator />
 		<item href="default_records.php">Default DNS records</item>
+	</node>
+	
+	<node title="Tools">
+		<item href="garbage.php">Delete unused objects</item>
 	</node>
 </menu>

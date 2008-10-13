@@ -27,10 +27,6 @@ CREATE TABLE `ami_roles` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-/*Data for the table `ami_roles` */
-
-insert  into `ami_roles`(`id`,`ami_id`,`name`,`roletype`,`clientid`,`prototype_iid`,`iscompleted`,`comments`,`dtbuilt`,`description`,`replace`,`default_minLA`,`default_maxLA`,`alias`,`instance_type`,`architecture`) values (1,'ami-e2aa4e8b','base','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.small','i386'),(2,'ami-bd8763d4','mysql','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.small','i386'),(3,'ami-e6ad498f','www','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.small','i386'),(7,'ami-bfbd59d6','app','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.small','i386'),(16,'ami-0aad4963','base64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'base','m1.large','x86_64'),(17,'ami-a68266cf','mysql64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'mysql','m1.large','x86_64'),(18,'ami-e3a2468a','www64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'www','m1.large','x86_64'),(19,'ami-e5a2468c','app64','SHARED',0,NULL,1,NULL,NULL,NULL,NULL,5,10,'app','m1.large','x86_64');
-
 /*Table structure for table `client_settings` */
 
 DROP TABLE IF EXISTS `client_settings`;
@@ -274,8 +270,37 @@ CREATE TABLE `security_rules` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 /*Data for the table `security_rules` */
-
-insert  into `security_rules`(`id`,`roleid`,`rule`) values (1,1,'tcp:22:22:0.0.0.0/0'),(2,1,'udp:161:162:0.0.0.0/0'),(3,2,'tcp:22:22:0.0.0.0/0'),(4,2,'tcp:3306:3306:0.0.0.0/0'),(5,2,'udp:161:162:0.0.0.0/0'),(35,3,'tcp:80:80:0.0.0.0/0'),(34,3,'tcp:22:22:0.0.0.0/0'),(33,3,'udp:161:162:0.0.0.0/0'),(32,7,'udp:161:162:0.0.0.0/0'),(31,7,'tcp:22:22:0.0.0.0/0'),(30,7,'tcp:80:80:0.0.0.0/0'),(15,9,'tcp:80:80:0.0.0.0/0'),(16,9,'tcp:22:22:0.0.0.0/0'),(17,9,'udp:161:162:0.0.0.0/0'),(27,10,'tcp:80:80:0.0.0.0/0'),(28,10,'tcp:22:22:0.0.0.0/0'),(29,10,'udp:161:162:0.0.0.0/0'),(36,15,'udp:161:162:0.0.0.0/0'),(37,15,'tcp:22:22:0.0.0.0/0'),(38,15,'tcp:80:80:0.0.0.0/0'),(39,16,'tcp:22:22:0.0.0.0/0'),(40,16,'udp:161:162:0.0.0.0/0'),(41,17,'tcp:22:22:0.0.0.0/0'),(42,17,'tcp:3306:3306:0.0.0.0/0'),(43,17,'udp:161:162:0.0.0.0/0'),(44,18,'tcp:80:80:0.0.0.0/0'),(45,18,'tcp:22:22:0.0.0.0/0'),(46,18,'udp:161:162:0.0.0.0/0'),(47,19,'udp:161:162:0.0.0.0/0'),(48,19,'tcp:22:22:0.0.0.0/0'),(49,19,'tcp:80:80:0.0.0.0/0');
+INSERT INTO `security_rules` (`id`, `roleid`, `rule`) VALUES
+(1, 1, 'tcp:22:22:0.0.0.0/0'),
+(2, 1, 'udp:161:162:0.0.0.0/0'),
+(45, 18, 'tcp:22:22:0.0.0.0/0'),
+(46, 18, 'tcp:80:80:0.0.0.0/0'),
+(47, 18, 'udp:161:162:0.0.0.0/0'),
+(54, 2, 'udp:161:162:0.0.0.0/0'),
+(55, 2, 'tcp:3306:3306:0.0.0.0/0'),
+(56, 2, 'tcp:22:22:0.0.0.0/0'),
+(57, 20, 'tcp:22:22:0.0.0.0/0'),
+(58, 20, 'tcp:80:80:0.0.0.0/0'),
+(59, 20, 'udp:161:162:0.0.0.0/0'),
+(135, 47, 'tcp:22:22:0.0.0.0/0'),
+(136, 47, 'tcp:80:80:0.0.0.0/0'),
+(137, 47, 'udp:161:162:0.0.0.0/0'),
+(138, 48, 'tcp:22:22:0.0.0.0/0'),
+(139, 48, 'udp:161:162:0.0.0.0/0'),
+(140, 49, 'tcp:3306:3306:0.0.0.0/0'),
+(141, 49, 'tcp:22:22:0.0.0.0/0'),
+(142, 49, 'udp:161:162:0.0.0.0/0'),
+(143, 50, 'tcp:22:22:0.0.0.0/0'),
+(144, 50, 'tcp:80:80:0.0.0.0/0'),
+(145, 50, 'udp:161:162:0.0.0.0/0'),
+(301, 1, 'icmp:-1:-1:0.0.0.0/0'),
+(302, 2, 'icmp:-1:-1:0.0.0.0/0'),
+(303, 18, 'icmp:-1:-1:0.0.0.0/0'),
+(304, 20, 'icmp:-1:-1:0.0.0.0/0'),
+(306, 47, 'icmp:-1:-1:0.0.0.0/0'),
+(307, 48, 'icmp:-1:-1:0.0.0.0/0'),
+(308, 49, 'icmp:-1:-1:0.0.0.0/0'),
+(309, 50, 'icmp:-1:-1:0.0.0.0/0');
 
 /*Table structure for table `syslog` */
 
@@ -345,3 +370,73 @@ update ami_roles SET rebundle_trap_received='1';
 update farms SET mysql_bcp_every = mysql_bcp_every*60;
 
 create table `rebundle_log`( `id` int(11) NOT NULL AUTO_INCREMENT , `roleid` int(11) , `dtadded` datetime , `message` text , PRIMARY KEY (`id`))  ;
+
+CREATE TABLE `ipaccess` (
+  `id` int(11) NOT NULL auto_increment,
+  `ipaddress` varchar(255) default NULL,
+  `comment` varchar(255) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `events` (
+  `id` int(11) NOT NULL auto_increment,
+  `farmid` int(11) default NULL,
+  `type` varchar(25) default NULL,
+  `dtadded` datetime default NULL,
+  `message` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `farmid` (`farmid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `farm_event_observers` (
+  `id` int(11) NOT NULL auto_increment,
+  `farmid` int(11) default NULL,
+  `event_observer_name` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `NewIndex1` (`farmid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `farm_event_observers_config` (
+  `id` int(11) NOT NULL auto_increment,
+  `observerid` int(11) default NULL,
+  `key` varchar(255) default NULL,
+  `value` varchar(255) default NULL,
+  PRIMARY KEY  (`id`),
+  KEY `NewIndex1` (`observerid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+alter table `events` add column `ishandled` tinyint(1) DEFAULT '0' NULL after `message`;
+
+alter table `logentries` add index `farmidindex` (`farmid`);
+alter table `logentries` add index `severityindex` (`severity`);
+
+alter table `clients` add column `aws_private_key_enc` text NULL after `fax`, add column `aws_certificate_enc` text NULL after `aws_private_key_enc`;
+
+alter table `zones` add column `axfr_allowed_hosts` text NULL after `lockedby`;
+alter table `zones` add column `hosts_list_updated` tinyint(1) DEFAULT '0' NULL after `axfr_allowed_hosts`;
+
+create table `garbage_queue`( `id` int(11) NOT NULL AUTO_INCREMENT , `clientid` int(11) , `data` text , PRIMARY KEY (`id`))  Engine=InnoDB;
+
+alter table `garbage_queue` add unique `clientindex` (`clientid`);
+
+insert into `ipaccess`(`id`,`ipaddress`,`comment`) values ( NULL,'*.*.*.*','Allow access from all IPs');
+
+/*Data for the table `ami_roles` */
+INSERT INTO `ami_roles` (`id`, `ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, `comments`, `dtbuilt`, `description`, `replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, `architecture`, `dtbuildstarted`, `rebundle_trap_received`, `fail_details`) VALUES
+(1, 'ami-b39276da', 'base', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 5, 10, 'base', 'm1.small', 'i386', NULL, 1, NULL),
+(2, 'ami-dc9377b5', 'mysql', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.small', 'i386', NULL, 1, NULL),
+(18, 'ami-b19e7ad8', 'www', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.small', 'i386', NULL, 1, NULL),
+(20, 'ami-dd9377b4', 'app', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.small', 'i386', NULL, 1, NULL),
+(47, 'ami-b59e7adc', 'app64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'app', 'm1.large', 'x86_64', NULL, 1, NULL),
+(48, 'ami-bc987cd5', 'base64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'base', 'm1.large', 'x86_64', NULL, 1, NULL),
+(49, 'ami-bb987cd2', 'mysql64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'mysql', 'm1.large', 'x86_64', NULL, 1, NULL),
+(50, 'ami-bf9e7ad6', 'www64', 'SHARED', 0, NULL, 1, NULL, NULL, NULL, '', 1, 5, 'www', 'm1.large', 'x86_64', NULL, 1, NULL);
+
+alter table `events` add column `short_message` varchar(255) NULL after `ishandled`;
+
+alter table `farms` add column `bcp_instance_id` varchar(20) NULL after `isbcprunning`;
+
+alter table `nameservers` add column `isproxy` tinyint(1) DEFAULT '0' NULL after `namedconf_path`;
+
+create table `syslog_metadata`( `id` int(11) NOT NULL AUTO_INCREMENT , `transactionid` varchar(50) , `errors` int(5) , `warnings` int(5) , PRIMARY KEY (`id`))  ;
+alter table `syslog_metadata` add unique `transid` (`transactionid`);

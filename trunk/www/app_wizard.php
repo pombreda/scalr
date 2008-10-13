@@ -4,6 +4,9 @@
 	$display["title"] = "Application creation wizard";
     $Validator = new Validator();
     
+    if ($_SESSION['uid'] == 0)
+    	UI::Redirect("index.php");
+    
     if ($req_step == 4)
     {
         if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", array($_SESSION['wizard']["domainname"], ZONE_STATUS::DELETED)))
@@ -13,14 +16,8 @@
         }
     	
     	$_SESSION["wizard"]["dnsami"] = $post_dnsami;
-        
-        $AmazonEC2Root = new AmazonEC2(
-            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
         	                            
-        $AmazonEC2Client = new AmazonEC2(
-            APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/pk.pem", 
-            APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/cert.pem");
+        $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
                 
         $db->BeginTrans();
         
@@ -122,6 +119,8 @@
 	        //
 	        // Add DNS Zone
 	        //
+	        $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$_SESSION['wizard']["dnsami"]}'");
+        	
 	        $records = array();
 			$nss = $db->GetAll("SELECT * FROM nameservers");
 			foreach ($nss as $ns)
@@ -183,9 +182,13 @@
 	    {
 	        $total_max_count = count($post_amis)*2; 	    
             $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
-            if ($used_slots+$total_max_count > CONFIG::$CLIENT_MAX_INSTANCES)
+            
+            $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $_SESSION['uid']));
+            $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
+            
+            if ($used_slots+$total_max_count > $i_limit)
             {
-                $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
+                $err[] = "You cannot launch more than {$i_limit} instances on your account. Please adjust Max Instances setting.";
             }
 	        else 
 	        {
@@ -219,29 +222,38 @@
 	    }
 	    else 
 	    {
-	        $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
-            $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
-            	       
-           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
-           {
-               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
-               $req_step = 1;
-           }
-	        
-            if (count($err) == 0 || $skip_error_check)
-            {
-    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", array($post_domainname, ZONE_STATUS::DELETED)))
-    	        {
-    	           $err[] = "Selected domain name already exists in database.";
-    	           $req_step = 1;
-    	        }
-    	        else
-    	        {
-        	        $display["amis"] = $post_amis;
-        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
-        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
-    	        }
-            }
+	        if (stristr($post_domainname, "scalr.net"))
+	        {
+				$err[] = "You cannot use *.scalr.net as your application";
+				$req_step = 1;
+	        }
+			else
+			{
+	    	
+		    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
+	            $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
+	            	       
+	           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
+	           {
+	               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
+	               $req_step = 1;
+	           }
+		        
+	            if (count($err) == 0 || $skip_error_check)
+	            {
+	    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", array($post_domainname, ZONE_STATUS::DELETED)))
+	    	        {
+	    	           $err[] = "Selected domain name already exists in database.";
+	    	           $req_step = 1;
+	    	        }
+	    	        else
+	    	        {
+	        	        $display["amis"] = $post_amis;
+	        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
+	        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
+	    	        }
+	            }
+			}
 	    }
 	    
 	    $template_name = "app_wizard_step2.tpl";

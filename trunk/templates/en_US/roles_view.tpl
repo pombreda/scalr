@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-    <p class="placeholder">Placeholder to show more info about functionality on this page.</p>
     {include file="inc/table_header.tpl"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
@@ -13,6 +12,7 @@
 			<th>Running instances</th>
 			<th>Pending instances</th>
 			<th>Applications</th>
+			<th>Statistics</th>
 			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
 		</tr>
 	</thead>
@@ -28,6 +28,7 @@
 		<td class="Item" valign="top">{$rows[id].r_instances} [<a href="instances_view.php?state=running&farmid={$rows[id].farmid}">View</a>]</td>
 		<td class="Item" valign="top">{$rows[id].p_instances} [<a href="instances_view.php?state=pending&farmid={$rows[id].farmid}">View</a>]</td>
 		<td class="Item" valign="top">{$rows[id].sites} [<a href="sites_view.php?ami_id={$rows[id].ami_id}">View</a>]</td>
+		<td class="Item" valign="top"><a href="farm_stats.php?role={$rows[id].name}&farmid={$farmid}">View</a></td>
 		<td class="ItemDelete" valign="top">
 			<span>
 				<input type="checkbox" id="delete[]" name="delete[]" value="{$rows[id].ami_id}">
@@ -36,11 +37,11 @@
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="11" align="center">No roles found!</td>
+		<td colspan="12" align="center">No roles found!</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="9" align="center">&nbsp;</td>
+		<td colspan="10" align="center">&nbsp;</td>
 		<td class="ItemDelete" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>

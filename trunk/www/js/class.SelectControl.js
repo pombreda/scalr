@@ -39,13 +39,13 @@ SelectControl.prototype = {
 	initialize: function() {
 		var options = Object.extend({
 			menu: 		[{href: '#', title: 'No items defined', innerHTML: 'No items defined'}],
-			menuid:		'menu-' + Math.floor(Math.random()*1000),
+			menuid:		'menu-' + Math.floor(Math.random()*1000000),
 			menuClass:	'select-control-menu',
 			separatorClass:	'select-control-separator',
 			mainClass:	'select-control-main',
 			pimpClass:	'select-control-pimp',
 			pimpHover:	'select-control-pimp-hover',
-			pimpid:		'pimp-' + Math.floor(Math.random()*1000)
+			pimpid:		'pimp-' + Math.floor(Math.random()*1000000)
 		}, arguments[0] || {});
 		
 		this.options = options;
@@ -65,11 +65,17 @@ SelectControl.prototype = {
 		for(var i = 0; i < menu.length; i++) {
 			var item = menu[i];
 			var menuItem = document.createElement('A');
-			
+						
 			Object.extend(menuItem, item || {});
 			
 			if (!item.href)
 				menuItem.className = this.options.separatorClass;
+			else
+			{
+				menuItem.style.padding = "3px";
+				menuItem.style.paddingLeft = "12px";
+				menuItem.style.paddingRight = "12px";
+			}
 			
 			this.menu.appendChild(menuItem);
 		}
@@ -83,6 +89,7 @@ SelectControl.prototype = {
 			return;
 		}
 		
+		element.id = 'control_'+this.id.replace(/[^0-9]/g, '')
 		element.className = this.options.mainClass;
 		this.controls.push(element);
 			
@@ -90,13 +97,25 @@ SelectControl.prototype = {
 			pimp.className = this.options.pimpClass;
 			pimp.id = this.options.pimpid;
 			
+			element.pimpid = pimp.id; 
+			
+			element.onmouseover = (function(event) {
+				var pimpObj = $(this.options.pimpid);
+				pimpObj.className = this.options.pimpHover;
+			}).bindAsEventListener(this);
+			
+			element.onmouseout = (function(event) {
+				var pimpObj = $(this.options.pimpid);
+				pimpObj.className = this.options.pimpClass;
+			}).bindAsEventListener(this);
+			
 			pimp.onmouseover = (function(event) {
-				var pimpObj = Event.element(event);
+				var pimpObj = $(this.options.pimpid);
 				pimpObj.className = this.options.pimpHover;
 			}).bindAsEventListener(this);
 			
 			pimp.onmouseout = (function(event) {
-				var pimpObj = Event.element(event);
+				var pimpObj = $(this.options.pimpid);
 				pimpObj.className = this.options.pimpClass;
 			}).bindAsEventListener(this);
 			
@@ -116,16 +135,18 @@ SelectControl.prototype = {
 		var element = Event.element(event);
 		var id = element.id.replace(/[^0-9]/g, '');
 		var name = element.id.replace(/[0-9\-]/g, '');
-
-		if ((name == 'pimp') && (this.active != element) && (element.id == this.id)) {
+		
+		if ((name == 'pimp' || name == 'control_') && (this.active != id) && (id == this.id.replace(/[^0-9]/g, ''))) 
+		{			
 			this.open(event);
 			for(var i =0; i < this.controls.length; i++) {
 				try {
 					this.controls[i].blur();
+					
 				} catch (err) {}
 			}
 			
-			this.active = element;
+			this.active = id;
 		} else {
 			this.close(event);
 			this.active = null;
@@ -133,17 +154,24 @@ SelectControl.prototype = {
 	},
 	
 	open: function(event) {
-		var pimp = Event.element(event);
-		var element = pimp.parentNode;
-			//element.parentNode.appendChild(this.menu);
+		
+		var element = Event.element(event);
+		var id = element.id.replace(/[^0-9]/g, '');
+		var name = element.id.replace(/[0-9\-]/g, '');
+				
+		if (name == 'pimp')
+			var element = element.parentNode;
+			
 		if (!$(this.menu.id))
 			document.body.appendChild(this.menu);
 
 		var position = Position.cumulativeOffset(element);
-		
+
+		var left = position[0]+parseInt(element.offsetWidth)-parseInt($(this.menu.id).getDimensions().width);
+
 		Element.setStyle(this.menu, {
 			display: 'block',
-			left: position[0] + 1 + 'px',
+			left: left-2 + 'px',
 			top: position[1] + element.offsetHeight + 'px'
 		});
 		

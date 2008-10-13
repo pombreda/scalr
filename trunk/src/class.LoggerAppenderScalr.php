@@ -105,13 +105,34 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
     }
     
     function append($event)
-    {
-        if ($this->canAppend) 
+    {    	
+    	if ($this->canAppend) 
         {
         	try
             {
 	        	// Reopen new mysql connection (need for php threads)
 	        	$this->activateOptions();
+	        	
+	        	if ($event->message instanceOf FarmLogMessage)
+	        	{
+	        		$severity = $this->SeverityToInt($event->getLevel()->toString());
+	        		$message = $this->db->qstr($event->message->Message);
+	        		
+	        		$query = "INSERT INTO logentries SET 
+	        			serverid	= '', 
+	        			message		= {$message},
+	        			severity	= '{$severity}',
+	        			time		= '".time()."',
+	        			source 		= '".$event->getLoggerName()."',
+	        			farmid 		= '{$event->message->FarmID}' 
+	        		";
+	        			
+	        		$this->db->Execute($query);
+	        		
+	        		$event->message = $this->db->qstr("[Farm: {$event->message->FarmID}] {$event->message->Message}");
+	        	}
+	        	else
+	        		$event->message = $this->db->qstr($event->message);
 	        	
 	        	// Redeclare threadName
 	            $event->threadName = TRANSACTION_ID; 
@@ -120,29 +141,53 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	            
 	            $event->farmID = defined("LOGGER_FARMID") ? LOGGER_FARMID : "";
 	            
-	        	$event->message = $this->db->qstr($event->message);
-	            
 	        	$level = $event->getLevel()->toString();
 	        	if ($level == "FATAL" || $level == "ERROR")
+	        	{
 	        		$event->backtrace = $this->db->qstr(Debug::Backtrace());
+	        		
+	        		// Set meta information
+	        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='1', warnings='0'
+	        			ON DUPLICATE KEY UPDATE errors=errors+1
+	        		",
+	        			array(TRANSACTION_ID)
+	        		);
+	        	}
 	        	else
+	        	{
+	        		if ($level == "WARN")
+	        		{
+	        			// Set meta information
+		        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='0', warnings='1'
+		        			ON DUPLICATE KEY UPDATE warnings=warnings+1
+		        		",
+		        			array(TRANSACTION_ID)
+		        		);	
+	        		}
+	        		
 	        		$event->backtrace = "''";
+	        	}
 	        		
 	            $query = $this->layout->format($event);
-	            
-	            //LoggerLog::debug("LoggerAppenderAdodb::append() query='$query'");
             
             	$this->db->Execute($query);
             }
             catch(Exception $e)
             {
-            	var_dump($e);
+            	
             }
             
             // close connection
             if ($this->db !== null)
             	$this->db->Close();
         }
+    }
+    
+    function SeverityToInt($severity)
+    {
+    	$severities = array("DEBUG" => 0, "INFO" => 2, "WARN" => 3, "ERROR" => 4, "FATAL" => 5);
+    	
+    	return $severities[$severity];
     }
     
     function close()

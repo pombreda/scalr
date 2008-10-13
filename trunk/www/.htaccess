@@ -8,12 +8,20 @@ RewriteRule ^farm_amis\.xml$ farm_amis_xml.php?%{QUERY_STRING}    [NE,L]
 
 RewriteRule ^storage/keys/([0-9]+)/(.*)\.pem$ farms_view.php?id=$1&task=download_private_key [NE,L]
 
+RewriteRule ^storage/graphics/([0-9]+)/(.*)/(.*)\.gif$ farm_graphs.php?id=$1&img=$2&type=$3 [NE,L]
+
+#Timeline events XML
+RewriteRule ^storage/events/([0-9]+)/timeline\.xml$ timeline.xml.php?farmid=$1 [NE,L]
+
+#Farm events RSS
+RewriteRule ^storage/events/([0-9]+)/rss\.xml$ rss.xml.php?farmid=$1 [NE,L]
+
 
 #errors
-ErrorDocument 404 /404.php?error=404
-ErrorDocument 401 /404.php?error=
-ErrorDocument 400 /404.php?error=
-ErrorDocument 500 /404.php?error=
+#ErrorDocument 404 /404.php?error=404
+#ErrorDocument 401 /404.php?error=
+#ErrorDocument 400 /404.php?error=
+#ErrorDocument 500 /404.php?error=
 
 ########################################
 # Error handling and debugging         #

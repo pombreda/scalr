@@ -16,7 +16,7 @@
 	}
 {/literal}
 </script>
-{include file="inc/table_header.tpl"}
+{include file="inc/table_header.tpl" nofilter=1}
 {if !$domainname && !$ezone}
     {include file="inc/intable_header.tpl" header="Application information" color="Gray"}
     <tr>

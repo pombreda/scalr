@@ -75,7 +75,11 @@
             {
 				$this->Zone = new DNSZone($zoneinfo["zone"]);
 				
-	            $SOA = new SOADNSRecord($zoneinfo["zone"], CONFIG::$DEF_SOA_PARENT, CONFIG::$DEF_SOA_OWNER, false, $zoneinfo["soa_serial"]);
+				$serial = AbstractDNSZone::RaiseSerial($zoneinfo["soa_serial"]);
+				
+				$this->DB->Execute("UPDATE zones SET soa_serial='{$serial}' WHERE id='{$zoneinfo['id']}'");
+				
+	            $SOA = new SOADNSRecord($zoneinfo["zone"], CONFIG::$DEF_SOA_PARENT, CONFIG::$DEF_SOA_OWNER, false, $serial);
 				if (!$SOA->__toString())				        
 				    $error = true;
 				else 
@@ -128,7 +132,7 @@
 				{
 					$retval = true;
 					
-		            foreach((array)$this->DB->GetAll("SELECT * FROM nameservers") as $ns)
+		            foreach((array)$this->DB->GetAll("SELECT * FROM nameservers WHERE isproxy='0'") as $ns)
 					{
 						if ($ns["host"]!='')
 						{

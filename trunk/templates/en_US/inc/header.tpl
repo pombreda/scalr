@@ -37,6 +37,7 @@
      }
  {/literal}
 	</script>
+	{$add_to_head}
 </head>
 
 <body onload="webtacp.afterload()" onresize="webtacp.setupTweaker()">
@@ -93,7 +94,7 @@
         <td>
         	{if $experimental}
 				<div class="Webta_ExperimentalMsg" style="margin-top:10px;margin-bottom:10px;">
-					This page contains features that are experimental and were not tested enough yet
+					This page contains new features that should be considered "experimental". Drop us a line if you will notice any issues.
 				</div>        
 			{/if}
 			{if $mess != ''}
@@ -152,3 +153,6 @@
 				<form name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
 			{/if}
 		<a name="top"></a>
+		{if $help}
+			<p class="placeholder">{$help}</p>
+		{/if}
