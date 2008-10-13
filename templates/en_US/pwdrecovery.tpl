@@ -1,26 +1,43 @@
 {include file="inc/login_header.tpl"}
-{include file="inc/splash.tpl"}
-<div id="content">
-	{include file="inc/main_contents.tpl"}
-	<div id="forms-col">
-		<div>
-			<div style="background: url(/images/rc-gray-middle.png) repeat-y;" id="login-form">
-				<div style="background: url(/images/rc-gray-top.png) no-repeat; height:13px;"></div>
-				<div>
-				<form action="" method="POST">
-					<h2>Password recovery</h2>
-					{if $err.0 != ''}
-					<span style="color:red;font-weight:bold;">{$err.0}</span>
-					{/if}
-					<p><label>E-mail:</label><input type="text" name="email" class="textfield" value="" /></p>
-					<input type="hidden" name="action" value="pwdrecovery" />
-					<p><button type="submit" style="cursor:pointer;">Reset password</button></p>
-					<p class="links"><a href="/faq.html">FAQ</a> | <a href="/login.php">Log in</a></p>
-				</form>
-				</div>
-				<div style="background: url(/images/rc-gray-bottom.png) no-repeat; height:13px;"></div>
-			</div>
-		</div>
+	<div class="middle" align="center" style="width:100%;">	
+	
+		<table border="0" cellpadding="0" cellspacing="0" class="Webta_Table">
+		<tr>
+			<td width="7"><div class="TableHeaderLeft"></div></td>
+			<td><div class="TableHeaderCenter"></div></td>
+			<td width="7"><div class="TableHeaderRight"></div></td>
+		</tr>
+		<tr>
+			<td width="7" class="TableHeaderCenter"></td>
+			<td align="center"><div id="loginform" style="width:450px;">
+				{if $err != ''}
+				<span class="error">Incorrect login or password</span>
+				{/if}
+				<div id="loginform_inner" style="margin-left:40px;">
+				  <table align="center" cellpadding="5" cellspacing="0">
+				    <tr>	
+				    	<td colspan="2">&nbsp;</td>
+				    </tr>
+				    <tr>
+					    <td align="right">Email:</td>
+				    	<td align="left"><input name="email" type="text" class="text" id="login" value="" size="15" /></td>
+				    </tr>
+				    <tr>
+				    	<td><input name="s2" type="hidden" id="action" value="pwdrecovery" /></td>
+				    	<td align="left"><input name="Submit2" type="submit" class="btn" value="Submit" />
+				    	</td>
+				    </tr>
+				  </table>
+				  </div>
+				  </div>
+				  </td>
+			<td width="7" class="TableHeaderCenter"></td>
+		</tr>
+		<tr>
+			<td width="7"><div class="TableFooterLeft"></div></td>
+			<td><div class="TableFooterCenter"></div></td>
+			<td width="7"><div class="TableFooterRight"></div></td>
+		</tr>
+		</table>
 	</div>
-</div>
 {include file="inc/login_footer.tpl"}
