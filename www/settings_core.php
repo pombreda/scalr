@@ -33,11 +33,38 @@
 				{
 					$pass = $Crypto->Decrypt($row["password"], $current_pass);
 					$encrypted = $Crypto->Encrypt($pass, $post_pass);
-					$result &= $db->Execute("update nameservers set `password` =? where id=?",
-					array($encrypted,
-					$row["id"]));
+					$db->Execute("update nameservers set `password` =? where id=?",
+						array($encrypted, $row["id"])
+					);
 				}
 			    
+				$clients = $db->GetAll("SELECT * FROM clients");
+				foreach ($clients as $client)
+				{
+					if ($client["aws_accountid"])
+					{
+						$key = $Crypto->Decrypt($client["aws_accesskey"], $current_pass);
+						$keyid = $Crypto->Decrypt($client["aws_accesskeyid"], $current_pass);
+						$pkey = $Crypto->Decrypt($client["aws_private_key_enc"], $current_pass);
+						$cert = $Crypto->Decrypt($client["aws_certificate_enc"], $current_pass);
+						
+						$db->Execute("UPDATE clients SET
+							aws_accesskey = ?,
+							aws_accesskeyid = ?,
+							aws_private_key_enc = ?,
+							aws_certificate_enc = ?
+							WHERE id=?",
+							array(
+								$Crypto->Encrypt($key, $post_pass),
+								$Crypto->Encrypt($keyid, $post_pass),
+								$Crypto->Encrypt($pkey, $post_pass),
+								$Crypto->Encrypt($cert, $post_pass),
+								$client["id"]
+							)
+						);
+					}
+				}
+				
 			    // Save new password into DB
 				$result = $db->Execute("REPLACE INTO config SET `value`=?, `key`=?", array($Crypto->Hash($post_pass), "admin_password"));
 				

@@ -21,12 +21,28 @@
     }
 	
     $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$uid}')");
-    $avail_slots = CONFIG::$CLIENT_MAX_INSTANCES - $used_slots;
+    
+    $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $uid));
+    $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
+    
+    $avail_slots = $i_limit - $used_slots;
     $errmsg = "You have {$avail_slots} spare instances available on your account.";
     
-    $AmazonEC2Client = new AmazonEC2(
-                    APPPATH . "/etc/clients_keys/{$uid}/pk.pem", 
-                    APPPATH . "/etc/clients_keys/{$uid}/cert.pem");
+    if ($_SESSION['uid'] == 0)
+    {
+	    $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($uid));
+		
+		// Decrypt client prvate key and certificate
+	    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+	    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+    }
+    else
+    {
+    	$private_key = $_SESSION["aws_private_key"];
+    	$certificate = $_SESSION["aws_certificate"];
+    }
+	
+	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
                     
     // Get Avail zones
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
@@ -107,11 +123,7 @@
                 $err[] = "You cannot launch more than ".CONFIG::$CLIENT_MAX_INSTANCES." instances on your account. Please adjust Max Instances setting.";
             
 	        if (count($err) == 0)
-	        {
-    	        $AmazonEC2Root = new AmazonEC2(
-                    APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-                    APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
-                	    
+	        {                	    
                 if ($post_farmid)
                 {
                     $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
@@ -151,7 +163,7 @@
 	                                           mysql_bcp = ?,
 	                                           mysql_bcp_every = ?,
 	                                           mysql_rebundle_every = ?
-	                             ", array( $post_name, 
+	                             ", array( trim($post_name), 
 	                                       $_SESSION['uid'], 
 	                                       $farmhash, 
 	                                       ($post_mysql_bcp == 1 ? '1' : '0'), 
@@ -241,6 +253,7 @@
 	                $db->CommitTrans();
 	                
 	                $okmsg = "Farm succesfully built.";
+	                $errmsg = false;
 	                UI::Redirect("farms_control.php?farmid={$farmid}&new=1");
     	        }
     	        else 
@@ -266,7 +279,7 @@
 		                                       mysql_bcp_every = ?,
 		                                       mysql_rebundle_every = ? 
 		                                 WHERE id=?", 
-	    	                               array(  $post_name, 
+	    	                               array(  trim($post_name), 
 	    	                                       ($post_mysql_bcp == 1 ? '1' : '0'), 
 		                                           $post_mysql_bcp_every, 
 		                                           $post_mysql_rebundle_every, $post_farmid)
@@ -378,6 +391,7 @@
     	            {
     	               $db->CommitTrans();
     	            	
+    	               $errmsg = false;
     	               $okmsg = "Farm successfully updated";
     	               UI::Redirect("farms_view.php");
     	            }
@@ -407,6 +421,9 @@
         foreach ($display["servers"] as &$row)
         {
             $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($row['ami_id']));
+            if (!$ami_info)
+            	continue;
+            
         	$row["role"] = $ami_info["name"]; 
             if ($ami_info["alias"] == "mysql")
             {

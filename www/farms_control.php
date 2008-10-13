@@ -9,12 +9,24 @@
     if (!$farminfo)
         UI::Redirect("farms_view.php");
         
+    if ($_SESSION['uid'] == 0)
+    {
+    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo['clientid']));
+	
+		// Decrypt client prvate key and certificate
+    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+    }
+    else
+    {
+    	$private_key = $_SESSION["aws_private_key"];
+    	$certificate = $_SESSION["aws_certificate"];
+    }
+	
+	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+        
     if ($req_action == "Launch")
     {
-        $AmazonEC2Client = new AmazonEC2(
-                    APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/pk.pem", 
-                    APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/cert.pem");
-                    
         $amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}'");
         
         foreach ($amis as $ami)
@@ -37,7 +49,7 @@
             }
         }
         
-        $db->Execute("UPDATE farms SET status='1' WHERE id='{$farminfo['id']}'");
+        $db->Execute("UPDATE farms SET status='1', isbcprunning='0' WHERE id='{$farminfo['id']}'");
         
         //
         // Reanimate DNS zones
@@ -53,7 +65,9 @@
         
         if (!$err)
         {
-            $okmsg = "Farm {$farminfo['name']} is now launching. It will take few minutes to start all instances.";
+            Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::FARM_LAUNCHED);
+        	
+        	$okmsg = "Farm {$farminfo['name']} is now launching. It will take few minutes to start all instances.";
             UI::Redirect("farms_view.php");
         }
         else 
@@ -67,9 +81,6 @@
 		$db->Execute("UPDATE farms SET status='0' WHERE id='{$farminfo['id']}'");
 		       
         $instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
-        $AmazonEC2Client = new AmazonEC2(
-                    APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/pk.pem", 
-                    APPPATH . "/etc/clients_keys/{$farminfo['clientid']}/cert.pem");
                     
 	    if (count($instances) > 0)
 	    {
@@ -104,10 +115,14 @@
 	        
 	        $db->Execute("UPDATE zones SET status=? WHERE farmid='{$farminfo['id']}'", array(ZONE_STATUS::INACTIVE));
 	    }
-	    	    
+
+	    $db->Execute("DELETE FROM farm_instances WHERE farmid=? AND state='Pending'", array($farminfo['id']));
+	    
 		if (!$errmsg)
 		{
-		    $okmsg = "Farm successfully terminated";
+		    Scalr::StoreEvent($farminfo['id'], EVENT_TYPE::FARM_TERMINATED);
+			
+			$okmsg = "Farm successfully terminated";
 		    UI::Redirect("farms_view.php");
 	    } 
     }

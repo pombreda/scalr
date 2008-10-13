@@ -10,13 +10,16 @@
 	{
 		$Validator = new Validator();
 		
-		// Check FTP login
-		if (!$Validator->IsAlpha($post_username))
-			$err[] = "Username is invalid";
-		
-		// Check FTP Upload Bandwidth
-		if (!$Validator->IsNumeric($post_port))
-			$err[] = "Invalid Server port";
+		if (!$post_isproxy)
+		{
+			// Check FTP login
+			if (!$Validator->IsAlpha($post_username))
+				$err[] = "Username is invalid";
+			
+			// Check FTP Upload Bandwidth
+			if (!$Validator->IsNumeric($post_port))
+				$err[] = "Invalid Server port";
+		}
 		
 		// Check hostname
 		if (!$post_id)
@@ -29,16 +32,19 @@
 	    {
     		if (!$post_id)
     		{
-    			$db->Execute("INSERT INTO nameservers (host, port, username, password, rndc_path, named_path, namedconf_path) values (?,?,?,?,?,?,?)",
-                    			array(   $post_host, 
-                    			         $post_port, 
-                    			         $post_username, 
-                    			         $Crypto->Encrypt($post_password, $_SESSION['cpwd']), 
-                    			         $post_rndc_path, 
-                    			         $post_named_path, 
-                    			         $post_namedconf_path
-                    			     )
-    			     );
+    			$db->Execute("INSERT INTO nameservers 
+    				(host, port, username, password, rndc_path, named_path, namedconf_path, isproxy) 
+    				values (?,?,?,?,?,?,?,?)",
+                    array(   $post_host, 
+                             $post_port, 
+                             $post_username, 
+                             $Crypto->Encrypt($post_password, $_SESSION['cpwd']), 
+                             $post_rndc_path, 
+                             $post_named_path, 
+                             $post_namedconf_path,
+                             $post_isproxy ? 1 : 0
+                         )
+    			);
     			     
     			$zones = $db->GetAll("SELECT * FROM zones");
                 if (count($zones) > 0)
@@ -49,8 +55,10 @@
                     {
                         if ($zone['id'])
                         {
-                            $db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='NS', ttl=?, rvalue=?, rkey='@', issystem='1'", 
-                            array(14400, "{$post_host}."));
+                            $db->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', 
+                            	rtype='NS', ttl=?, rvalue=?, rkey='@', issystem='1'", 
+                            	array(14400, "{$post_host}.")
+                            );
                             
                             if ($zone["status"] != ZONE_STATUS::DELETED && $zone["status"] != ZONE_STATUS::INACTIVE)
                             {
@@ -72,9 +80,12 @@
     		{
     			$password = ($post_password != '******') ? "password='".$Crypto->Encrypt($post_password, $_SESSION['cpwd'])."'," : "";
     			
-    			$db->Execute("UPDATE nameservers SET port=?, username=?, $password rndc_path=?, named_path=?, namedconf_path=?
-    							WHERE id=?",
-    							array($post_port, $post_username, $post_rndc_path, $post_named_path, $post_namedconf_path, $post_id));
+    			$db->Execute("UPDATE nameservers SET port=?, username=?, $password rndc_path=?, 
+    				named_path=?, namedconf_path=?, isproxy=?
+    				WHERE id=?",
+    				array($post_port, $post_username, $post_rndc_path, $post_named_path, 
+    				$post_namedconf_path, ($post_isproxy ? 1 : 0), $post_id)
+    			);
     
     							
     			$mess = "Nameserver succesfully updated";

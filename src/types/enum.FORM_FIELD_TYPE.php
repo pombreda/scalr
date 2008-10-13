@@ -5,6 +5,6 @@
 		const CHECKBOX 	= "checkbox";
 		const SELECT 	= "select";
 		const DATE 		= "date";
-		const PHONE		= "phone";
+		const SEPARATOR = "separator";
 	}
 ?>

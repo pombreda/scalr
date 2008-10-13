@@ -19,7 +19,7 @@
 		$db->Execute("UPDATE farm_amis SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 		$db->Execute("UPDATE zones SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 		
-		$mess = "Role successfully switched to new AMI";
+		$okmsg = "Role successfully switched to new AMI";
 		UI::Redirect("shared_roles.php");
 	}
 	   
@@ -30,7 +30,7 @@
 
 	$AmazonEC2 = new AmazonEC2(
             APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem");
+            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", true);
 	// Rows
 	$response = $AmazonEC2->describeImages($DescribeImagesType);
 	$rowz = $response->imagesSet->item;

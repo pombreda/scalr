@@ -3,11 +3,12 @@
 	
 	$display["title"] = "Custom roles&nbsp;&raquo;&nbsp;Add";
 		
+	if ($_SESSION['uid'] == 0)
+		UI::Redirect("index.php");
+	
 	$display["experimental"] = true;
 	
-	$AmazonEC2Client = new AmazonEC2(
-                        APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/pk.pem", 
-                        APPPATH . "/etc/clients_keys/{$_SESSION['uid']}/cert.pem");
+	$AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
 
     if ($_POST) 
 	{

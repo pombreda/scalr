@@ -49,7 +49,7 @@
 						<td width="10%" align="right" nowrap>
 							<input name="page" type="hidden" id="page" value="{$page}">
 							<input name="f" type="hidden" id="f" value="{$f}">
-							{if $page_data_options|@count > 0}
+							{if $page_data_options && $page_data_options|@count > 0}
 								Selected:
 								<select name="action" class="text" style="vertical-align:middle;">
 									{section name=id loop=$page_data_options}

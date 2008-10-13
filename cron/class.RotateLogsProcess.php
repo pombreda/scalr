@@ -27,6 +27,9 @@
                               PRIMARY KEY (id))
                               ENGINE=MyISAM SELECT dtadded, message, severity, dtadded_time FROM syslog;");
                 $db->Execute("TRUNCATE TABLE syslog");
+                $db->Execute("OPTIMIZE TABLE syslog");
+                $db->Execute("TRUNCATE TABLE syslog_metadata");
+                $db->Execute("OPTIMIZE TABLE syslog_metadata");
                 
                 $this->Logger->debug("Log rotated. New table 'syslog_{$dtstamp}' created.");
             }

@@ -28,7 +28,7 @@
     	{
     		$_SESSION["REQUEST_URI"] = $_SERVER['REQUEST_URI'];
     		$mess = "Please login";
-    		UI::Redirect("login.php");
+    		UI::Redirect("/login.php");
     	}
 
     	//
@@ -51,8 +51,8 @@
     	if ($_SESSION['uid'] != 0)
     	{
     		if (!$_SESSION["aws_accesskey"] || 
-    			!file_exists(APPPATH."/etc/clients_keys/{$_SESSION['uid']}/pk.pem") || 
-    			!file_exists(APPPATH."/etc/clients_keys/{$_SESSION['uid']}/cert.pem")
+    			!$_SESSION["aws_private_key"] || 
+    			!$_SESSION["aws_certificate"]
     		) {
     			if (!stristr($_SERVER['PHP_SELF'], 'aws_settings.php') && !stristr($_SERVER['PHP_SELF'], 'login.php'))
     				UI::Redirect("aws_settings.php");

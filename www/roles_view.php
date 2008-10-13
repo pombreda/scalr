@@ -20,13 +20,24 @@
 			if (count($post_delete) > 0)
 			{
     		    if ($_SESSION['uid'] == 0)
+    		    {
     		        $uid = $farminfo["clientid"];
-    		    else 
+    		        
+    		        $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($uid));
+	
+					// Decrypt client prvate key and certificate
+				    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+				    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+    		    }
+    		    else
+    		    { 
                     $uid = $_SESSION["uid"];
+                    
+                    $private_key = $_SESSION["aws_private_key"];
+    				$certificate = $_SESSION["aws_certificate"];
+    		    }
 			    
-			    $AmazonEC2Client = new AmazonEC2(
-                        APPPATH . "/etc/clients_keys/{$uid}/pk.pem", 
-                        APPPATH . "/etc/clients_keys/{$uid}/cert.pem");
+				$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
 			   
 			    // Delete users
     			$i = 0;			
@@ -60,6 +71,12 @@
 
 	$sql = "SELECT * from farm_amis WHERE farmid='{$farminfo['id']}'";
 		
+	if ($get_ami_id)
+	{
+		$ami_id = $db->qstr($get_ami_id);
+		$sql .= " AND ami_id={$ami_id}";
+	}
+	
 	//
 	//Paging
 	//
@@ -80,12 +97,14 @@
 	foreach ($display["rows"] as &$row)
 	{
 		$row["name"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$row['ami_id']}'");
-		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE role_name='{$row["name"]}' AND farmid='{$row['farmid']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
+		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id='{$row["ami_id"]}' AND status != ? AND farmid=?", array(ZONE_STATUS::DELETED, $farminfo['id']));
 		$row["r_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Running' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
 		$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Pending' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
 	}
 
 	$display["title"] = "Farms > View roles";
+	
+	$display["farmid"] = $req_farmid;
 	
 	$display["page_data_options"] = array(
 		array("name" => "Launch new instance", "action" => "launch")

@@ -76,5 +76,7 @@
 		
 	$display["add"] = array(1, 2, 3, 4, 5);
 		
+	$display["help"] = "You can use a %hostname% tag, which will be replaced with full zone hostname.";
+	
 	require("src/append.inc.php"); 
 ?>

@@ -39,10 +39,9 @@ LibWebta.prototype = {
 			menucss:		'../js/dmenu/dmenu.css',
 			menujs:			'dmenu/dmenu.js',
 			
-			calendar_css:	'css/calendar/calendar-win2k-cold-1.css',
-			calendar_js:	'js/calendar/calendar.js',
-			calendar_en:	'js/calendar/lang/calendar-en.js',
-			calendar_inc:	'js/calendar/calendar-setup.js',
+			calendar_js:	'calendar/calendar.js',
+			calendar_en:	'calendar/lang/calendar-en.js',
+			calendar_inc:	'calendar/calendar-setup.js',
 			
 			treemenu_js:	'treemenu/treemenu.js',
 			treemenu_css:	'js/treemenu/tree.css'
@@ -74,13 +73,16 @@ LibWebta.prototype = {
 	},
 	
 	
-	checkall: function()
+	checkall: function(chk_name)
 	{
+		if (!chk_name)
+			chk_name = "delete[]";
+		
 		var frm = $("frm");
 		for (var i=0; i<frm.elements.length; i++) 
 		{
 			var e = frm.elements[i];
-			if (((e.name == "delete[]" || e.name == "actid[]") && e.type=='checkbox') && !e.disabled) {
+			if (((e.name == chk_name || e.name == "actid[]") && e.type=='checkbox') && !e.disabled) {
 				e.checked = !this.allchecked;
 			}
 		}

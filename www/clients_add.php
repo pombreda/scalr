@@ -55,8 +55,8 @@
         			 ", array(
         		    	$post_email, 
         		    	$Crypto->Hash($post_password), 
-        		    	$post_aws_accesskeyid, 
-        		    	$post_aws_accesskey, 
+        		    	$Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), 
+        		    	$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"]), 
         		    	$post_aws_accountid, 
         		    	$post_farms_limit,
         		    	$post_name, 
@@ -77,18 +77,43 @@
                 }
                     	
     			$clientid = $db->Insert_ID();
-    				
-    			// Create client's keys folder
-    			@mkdir(APPPATH."/etc/clients_keys/{$clientid}");
-    			
+    				    			
     			// Write cert.pem and pk.pem to clients keys folder
-    			if ($_FILES['cert_file']['tmp_name'])
-	    			if (!@move_uploaded_file($_FILES['cert_file']['tmp_name'], APPPATH."/etc/clients_keys/{$clientid}/cert.pem"))
-	                    $err[] = "Cannot write cert file";
-                    
-                if ($_FILES['pk_file']['tmp_name'])
-	                if (!@move_uploaded_file($_FILES['pk_file']['tmp_name'], APPPATH."/etc/clients_keys/{$clientid}/pk.pem"))
-	                    $err[] = "Cannot write pk file";
+	    		if ($_FILES['cert_file']['tmp_name'])
+	            {
+					$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);
+					if ($contents)
+					{
+						$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+						$db->Execute("UPDATE clients SET
+							aws_certificate_enc = ?
+							WHERE id = ?
+						", array($enc_contents, $clientid));
+					}
+					else
+					{
+						$Logger->fatal("Internal error: cannot read uploaded file");
+						$err[] = "Internal error: cannot read uploaded file";
+					}
+	            }
+	                    
+	            if ($_FILES['pk_file']['tmp_name'])
+	            {
+	            	$contents = @file_get_contents($_FILES['pk_file']['tmp_name']);
+					if ($contents)
+					{
+						$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+						$db->Execute("UPDATE clients SET
+							aws_private_key_enc = ?
+							WHERE id = ?
+						", array($enc_contents, $clientid));
+					}
+					else
+					{
+						$Logger->fatal("Internal error: cannot read uploaded file");
+						$err[] = "Internal error: cannot read uploaded file";
+					}
+	            }
                 
                 if (count($err) == 0)
                 {
@@ -130,8 +155,8 @@
             			    ", 
 							array(
 								$post_email, 
-								$post_aws_accesskeyid, 
-								$post_aws_accesskey, 
+								$Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), 
+								$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"]), 
 								$post_aws_accountid,
 								$post_farms_limit,
 								$post_name, 
@@ -155,17 +180,41 @@
                     if (!file_exists(APPPATH."/etc/clients_keys/{$post_id}"))
                         @mkdir(APPPATH."/etc/clients_keys/{$post_id}");
                     
-        		    if ($_FILES['cert_file']['tmp_name'])
-        		    {
-                        if (!@move_uploaded_file($_FILES['cert_file']['tmp_name'], APPPATH."/etc/clients_keys/{$post_id}/cert.pem"))
-                            $err[] = "Cannot write cert file";
-        		    }
-                    
-        		    if ($_FILES['pk_file']['tmp_name'])
-        		    {
-                        if (!@move_uploaded_file($_FILES['pk_file']['tmp_name'], APPPATH."/etc/clients_keys/{$post_id}/pk.pem"))
-                            $err[] = "Cannot write pk file";
-        		    }
+	    			if ($_FILES['cert_file']['tmp_name'])
+		            {
+						$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);
+						if ($contents)
+						{
+							$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+							$db->Execute("UPDATE clients SET
+								aws_certificate_enc = ?
+								WHERE id = ?
+							", array($enc_contents, $post_id));
+						}
+						else
+						{
+							$Logger->fatal("Internal error: cannot read uploaded file");
+							$err[] = "Internal error: cannot read uploaded file";
+						}
+		            }
+		                    
+		            if ($_FILES['pk_file']['tmp_name'])
+		            {
+		            	$contents = @file_get_contents($_FILES['pk_file']['tmp_name']);
+						if ($contents)
+						{
+							$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
+							$db->Execute("UPDATE clients SET
+								aws_private_key_enc = ?
+								WHERE id = ?
+							", array($enc_contents, $post_id));
+						}
+						else
+						{
+							$Logger->fatal("Internal error: cannot read uploaded file");
+							$err[] = "Internal error: cannot read uploaded file";
+						}
+		            }
         		    
         		    if (count($err) == 0)
         		    {
@@ -187,6 +236,8 @@
 	if ($get_id)
 	{
 		$info = $db->GetRow("SELECT * FROM `clients` WHERE id=?", array($get_id));
+		$info["aws_accesskeyid"] = $Crypto->Decrypt($info["aws_accesskeyid"], $_SESSION["cpwd"]);
+		$info["aws_accesskey"] = $Crypto->Decrypt($info["aws_accesskey"], $_SESSION["cpwd"]);
 		
 		$display = array_merge($info, $display);
 	}

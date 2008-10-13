@@ -69,7 +69,7 @@ function isDisabled(date) {
 			</td>
 		</tr>
 		<tr valign="top">
-			<td nowrap="nowrap">Severity:</td>
+			<td nowrap="nowrap">Severity (in transaction):</td>
 			<td>
 				<div style="width:600px;">
 				{foreach item=item key=key from=$severities}

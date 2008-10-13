@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-    <p class="placeholder">Placeholder to show more info about functionality on this page.</p>
 	{include file="inc/table_header.tpl"}
 	<table class="Webta_Items" rules="groups" frame="box" width="100%" cellpadding="2" id="Webta_Items">
 	<thead>
@@ -22,7 +21,7 @@
 		<td class="ItemEdit" valign="top" nowrap>{if $rows[id].status == 0}<a href="sites_add.php?ezone={$rows[id].zone}">Edit DNS Zone</a>{/if}</td>
 		<td class="ItemDelete">
 			<span>
-				<input type="checkbox" id="delete[]" {if $rows[id].status != 0}disabled{/if} name="delete[]" value="{$rows[id].id}">
+				<input type="checkbox" id="delete[]" {if $rows[id].status > 1}disabled{/if} name="delete[]" value="{$rows[id].id}">
 			</span>
 		</td>
 	</tr>
