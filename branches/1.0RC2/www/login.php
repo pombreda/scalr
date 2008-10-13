@@ -30,7 +30,7 @@
 					// Send welcome E-mail
 					$Mailer->ClearAddresses();
 					$res = $Mailer->Send("emails/welcome.eml", 
-						array("client" => $clientinfo, "site_url" => "https://{$_SERVER['HTTP_HOST']}"), 
+						array("client" => $clientinfo, "site_url" => "http://{$_SERVER['HTTP_HOST']}"), 
 						$clientinfo['email'], 
 						$clientinfo['fullname']
 					);
