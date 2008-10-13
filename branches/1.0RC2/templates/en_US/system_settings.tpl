@@ -47,14 +47,17 @@
 	{include file="inc/table_header.tpl"}		
 		{include file="inc/intable_header.tpl" header="System settings" color="Gray"}
 		<tr>
-			<td colspan="2">Terminate instance if it will not send 'rebootFinish' event after reboot in <input name="reboot_timeout" type="text" class="text" id="reboot_timeout" value="{$reboot_timeout}" size="3"> seconds.</td>
-		</tr>
-		<tr>
-			<td colspan="2">Terminate instance if it will not send 'hostUp' or 'hostInit' event after launch in <input name="launch_timeout" type="text" class="text" id="launch_timeout" value="{$launch_timeout}" size="3"> seconds.</td>
+			<td colspan="2">Automatically abort instance synchronization if it does not complete in <input name="sync_timeout" type="text" class="text" id="sync_timeout" value="{$sync_timeout}" size="2"> minutes.</td>
 		</tr>
 		<tr>
 			<td width="18%">Instances limit:</td>
 			<td width="82%"><input name="client_max_instances" type="text" class="text" id="client_max_instances" value="{$client_max_instances}" size="10"></td>
+		</tr>
+		<tr>
+			<td width="18%">Elastic IPs limit:</td>
+			<td width="82%">
+				<input name="client_max_eips" type="text" class="text" id="client_max_eips" value="{$client_max_eips}" size="2">
+			</td>
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		

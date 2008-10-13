@@ -32,7 +32,7 @@
 		</node>
 		<item href="default_records.php">Default DNS records</item>
 		<separator />
-		<item href="shared_roles.php">Manage shared roles</item>
+		<item href="shared_roles.php">Shared roles</item>
 		<separator />
 		<item href="settings_core.php">Core settings</item>
 		<separator />

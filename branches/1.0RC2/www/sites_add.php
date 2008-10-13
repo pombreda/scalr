@@ -3,11 +3,55 @@
 	
 	$display["title"] = "Applications&nbsp;&raquo;&nbsp;Add / Edit";
 	
+	if ($_SESSION["_POST"] && $post_vhost_page)
+	{
+		$Validator = new Validator();
+		
+		if (!$Validator->IsNotEmpty($post_document_root_dir))
+			$err[] = "Document root required";
+			
+		if (!$Validator->IsNotEmpty($post_logs_dir))
+			$err[] = "Logs directory required";
+			
+		if (!$Validator->IsNotEmpty($post_server_admin))
+			$err[] = "Server admin required";
+		
+		if ($post_issslenabled == 1)
+		{
+			if (!$_FILES['ssl_cert']['size'])
+				$err[] = "Certificate file required for SSL";
+				
+			if (!$_FILES['ssl_pk']['size'])
+				$err[] = "Private key file required for SSL";
+		}
+			
+		if (count($err) == 0)
+		{
+			$_SESSION["vhost_settings"] = $_POST;
+			$_SESSION["vhost_settings"]["ssl_cert"] = "";
+			$_SESSION["vhost_settings"]["ssl_pkey"] = "";
+			$_SESSION["vhost_settings"]["issslenabled"] = 0;
+			
+			$_SESSION["vhost_settings"]["issslenabled"] = ($post_issslenabled) ? 1 : 0;
+			if ($_SESSION["vhost_settings"]["issslenabled"])
+			{
+				$_SESSION["vhost_settings"]["ssl_cert"] = @file_get_contents($_FILES['ssl_cert']['tmp_name']);
+				$_SESSION["vhost_settings"]["ssl_pkey"] = @file_get_contents($_FILES['ssl_pk']['tmp_name']);
+			}
+		}
+		
+		$_POST = $_SESSION["_POST"];
+		$_SESSION["_POST"] = false;
+		
+		@extract($_POST, EXTR_PREFIX_ALL, "post");
+		@extract($_POST, EXTR_PREFIX_ALL, "req");
+	}
+	
 	if ($_POST) 
 	{
 		$ZoneControler = new DNSZoneControler();
-	    
-	    if ($post_ezone && $post_formadded)	
+	    		
+		if ($post_ezone && $post_formadded)	
 		{
 		    if ($_SESSION["uid"] != 0)
     		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid='{$_SESSION['uid']}'", array($post_ezone));
@@ -21,9 +65,19 @@
 		    
 		    $db->BeginTrans();
 		    
+		    $post_zone['soa_owner'] = trim(str_replace("@", ".", $post_zone['soa_owner']), ".");
+		    if ($post_zone['soa_owner'] == "")
+		    	$post_zone['soa_owner'] = CONFIG::$DEF_SOA_OWNER;
+		    
+		    $post_zone['soa_expire'] = ((int)$post_zone['soa_expire'] == 0) ? 3600000 : (int)$post_zone['soa_expire'];
+		     
 		    try
 			{
-			    foreach ((array)$post_zone["records"] as $k=>$v)
+			    $db->Execute("UPDATE zones SET soa_expire = ?, soa_owner = ? WHERE id=?",
+			    	array($post_zone['soa_expire'], $post_zone['soa_owner'], $zoneinfo['id'])
+			    );
+				
+				foreach ((array)$post_zone["records"] as $k=>$v)
 				{
 					if ($v["rkey"] != '' || $v["rvalue"] != '')
 					{
@@ -112,14 +166,57 @@
 				UI::Redirect("index.php");
 		    
 			if (stristr($post_domainname, "scalr.net"))
-			{
 				$err[] = "You cannot use *.scalr.net as your application";
-			}
 				
 		    $status = false;
 			$post_hostname = $post_domainname;
 			
 			$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
+			
+			/* TODO: virtual hosts
+			if ($roleinfo['alias'] == 'app')
+			{
+				try
+				{					
+					$db->Execute("REPLACE INTO vhosts SET
+							name				= ?,
+							document_root_dir	= ?,
+							server_admin		= ?,
+							issslenabled		= ?,
+							farmid				= ?,
+							logs_dir			= ?,
+							ssl_cert			= ?,
+							ssl_pkey			= ?,
+							aliases				= ?
+						", 
+						array($post_domainname, $_SESSION["vhost_settings"]["document_root_dir"], 
+							$_SESSION["vhost_settings"]["server_admin"], $_SESSION["vhost_settings"]["issslenabled"], $post_farmid, 
+							$_SESSION["vhost_settings"]["logs_dir"], 
+							$_SESSION["vhost_settings"]["ssl_cert"], $_SESSION["vhost_settings"]["ssl_pkey"], 
+							$_SESSION["vhost_settings"]["aliases"]
+						)
+					);
+					
+					$SNMP = new SNMP();
+					$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
+					$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($post_farmid));
+					foreach ((array)$instances as $instance)
+					{
+						$SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
+		                $trap = vsprintf(SNMP_TRAP::VHOST_RECONFIGURE, array($post_domainname, $_SESSION["vhost_settings"]["issslenabled"]));
+		                $res = $SNMP->SendTrap($trap);
+		                $Logger->info("[FarmID: {$post_farmid}] Sending SNMP Trap vhostReconfigure ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+					}
+					
+					$_SESSION['_POST'] = null;
+					$_SESSION["vhost_settings"] = null;
+				}
+				catch(Exception $e)
+				{
+					$Logger->fatal($e->getMessage());
+				}
+			}
+			*/
 			
 		    $records = array();
 			$nss = $db->GetAll("SELECT * FROM nameservers");
@@ -134,22 +231,35 @@
             	$records[] = $record;
             }
                 
-			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running' AND isactive='1'", array($post_farmid));
+			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($post_farmid, INSTANCE_STATE::RUNNING));
     		foreach ($instances as $instance)
     		{
-    		    if ($instance["role_name"] == $roleinfo["name"])
+    		    $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+    			
+    			if ($instance["role_name"] == $roleinfo["name"])
     		    {
     				$records[] = array("rtype" => "A", "ttl" => CONFIG::$DYNAMIC_A_REC_TTL, "rvalue" => $instance["external_ip"], "rkey" => "@", "issystem" => 1);
     		    }
     		    
     		    if ($instance["isdbmaster"] == 1)
 				{
-					$records[] = array("rtype" => "A", "rkey" => "int-{$instance['role_name']}-master", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
-					$records[] = array("rtype" => "A", "rkey" => "ext-{$instance['role_name']}-master", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+					$records[] = array("rtype" => "A", "rkey" => "int-{$instance["role_name"]}-master", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+					$records[] = array("rtype" => "A", "rkey" => "ext-{$instance["role_name"]}-master", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
 				}
 					
-				$records[] = array("rtype" => "A", "rkey" => "int-{$instance['role_name']}", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
-				$records[] = array("rtype" => "A", "rkey" => "ext-{$instance['role_name']}", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+    			if ($ami_info['alias'] == 'mysql' && $instance['role_name'] != 'mysql')
+				{
+					$records[] = array("rtype" => "A", "rkey" => "int-mysql", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+					$records[] = array("rtype" => "A", "rkey" => "ext-mysql", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+					if ($instance["isdbmaster"] == 1)
+					{
+						$records[] = array("rtype" => "A", "rkey" => "int-mysql-master", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+						$records[] = array("rtype" => "A", "rkey" => "ext-mysql-master", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+					}
+				}
+				
+				$records[] = array("rtype" => "A", "rkey" => "int-{$instance["role_name"]}", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+				$records[] = array("rtype" => "A", "rkey" => "ext-{$instance["role_name"]}", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
     		    
     		}
     		    
@@ -177,9 +287,32 @@
     		    		
     		if (count($err) == 0)
     		{	    		
-	    		$db->Execute("replace into zones (`zone`, `soa_owner`, `soa_ttl`, `soa_parent`, `soa_serial`, `soa_refresh`, `soa_retry`, `soa_expire`, `min_ttl`, `dtupdated`, `farmid`, `ami_id`, `clientid`, `role_name`, `status`)
-				values (?,'".CONFIG::$DEF_SOA_OWNER."','14400','".CONFIG::$DEF_SOA_PARENT."',?,'14400','7200','3600000','86400',NOW(), ?, ?, ?, ?, ?)", 
-				array($post_domainname, date("Ymd")."01", $post_farmid, $post_ami_id, $_SESSION["uid"], $roleinfo['name'], ZONE_STATUS::PENDING));
+	    		$post_zone['soa_owner'] = trim(str_replace("@", ".", $post_zone['soa_owner']), ".");
+			    if ($post_zone['soa_owner'] == "")
+			    	$post_zone['soa_owner'] = CONFIG::$DEF_SOA_OWNER;
+    			
+			    $post_zone['soa_expire'] = ((int)$post_zone['soa_expire'] == 0) ? CONFIG::$DEF_SOA_EXPIRE : (int)$post_zone['soa_expire'];
+			    	
+    			$db->Execute("replace into zones (`zone`, `soa_owner`, `soa_ttl`, `soa_parent`, 
+    			`soa_serial`, `soa_refresh`, `soa_retry`, `soa_expire`, `min_ttl`, `dtupdated`, 
+    			`farmid`, `ami_id`, `clientid`, `role_name`, `status`)
+				values (?,?,?,?,?,?,?,?,?,NOW(), ?, ?, ?, ?, ?)", 
+				array(
+					$post_domainname, 
+					$post_zone['soa_owner'], 
+					CONFIG::$DEF_SOA_TTL, 
+					CONFIG::$DEF_SOA_PARENT, 
+					date("Ymd")."01",
+					CONFIG::$DEF_SOA_REFRESH,
+					CONFIG::$DEF_SOA_RETRY, 
+					$post_zone['soa_expire'],
+					CONFIG::$DEF_SOA_MINTTL, 
+					$post_farmid, 
+					$post_ami_id, 
+					$_SESSION["uid"], 
+					$roleinfo['name'], 
+					ZONE_STATUS::PENDING)
+				);
 				$zoneid = $db->Insert_ID();
 				
 				$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$zoneid}'");
@@ -209,7 +342,9 @@
 				}
 				else 
 				{
-				    $okmsg = "Application succesfuly created. DNS zone for {$post_domainname} will be created in a few minutes. Until then, {$post_domainname} will not be resolving.";
+					TaskQueue::Attach(QUEUE_NAME::CREATE_DNS_ZONE)->Put(new CreateDNSZoneTask($zoneid));
+					
+					$okmsg = "Application succesfuly created. DNS zone for {$post_domainname} will be created in a few minutes. Until then, {$post_domainname} will not be resolving.";
 				    UI::Redirect("sites_view.php");
 				}
     		}
@@ -228,7 +363,7 @@
 		if (!$zoneinfo)
 			UI::Redirect("sites_view.php");
 		
-		$records = $db->GetAll("SELECT * FROM records WHERE zoneid='{$zoneinfo["id"]}'");
+		$records = $db->GetAll("SELECT * FROM records WHERE zoneid='{$zoneinfo["id"]}' ORDER BY rtype ASC, issystem DESC");
 		
 		$display["zone"] = $zoneinfo;
 		$display["zone"]["records"] = $records;
@@ -261,12 +396,34 @@
 		
 		$display["ami_id"] = $post_ami_id;
 		
+		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
+		
+		/* TODO: virtual hosts
+		if ($roleinfo['alias'] == 'app' && !$_SESSION["vhost_settings"])
+		{
+			$template_name = "vhost.tpl";
+			$display["vhost"]["name"] = $post_domainname;
+			
+			$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($_SESSION['uid']));
+			
+			$display["vhost"]["server_admin"] = $clientinfo['email'];
+		
+			$display["vhost"]["document_root_dir"] = CONFIG::$APACHE_DOCROOT_DIR;
+			$display["vhost"]["logs_dir"] = CONFIG::$APACHE_LOGS_DIR;
+			$display["button2_name"] = "Next";
+			
+			$display["can_use_ssl"] = !(bool)$db->GetOne("SELECT id FROM vhosts WHERE issslenabled='1' AND farmid=? AND name!=?",
+				array($zoneinfo['farmid'], $post_domainname)
+			);
+			
+			$_SESSION['_POST'] = $_POST;
+		}
+		*/
+		
 		if ($req_farmid)
 		{
     		if ($_POST['createtype'] == 2)
-    		{
     			UI::Redirect("app_wizard.php");
-    		}
 			
 			if ($_SESSION['uid'] != 0)
                 $display["farm"] = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
@@ -293,22 +450,33 @@
 		{
     		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
     		
-			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running' AND isactive='1'", array($display["farm"]["id"]));
+			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($display["farm"]["id"], INSTANCE_STATE::RUNNING));
     		foreach ($instances as $instance)
     		{
     			if ($instance["role_name"] == $roleinfo["name"])
-    		    {
     				$records[] = array("rtype" => "A", "ttl" => CONFIG::$DYNAMIC_A_REC_TTL, "rvalue" => $instance["external_ip"], "rkey" => "@", "issystem" => 1);
-    		    }
-    		    
+    		        				
     		    if ($instance["isdbmaster"] == 1)
 				{
 					$records[] = array("rtype" => "A", "rkey" => "int-{$instance['role_name']}-master", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
 					$records[] = array("rtype" => "A", "rkey" => "ext-{$instance['role_name']}-master", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
 				}
-					
-				$records[] = array("rtype" => "A", "rkey" => "int-{$instance['role_name']}", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
-				$records[] = array("rtype" => "A", "rkey" => "ext-{$instance['role_name']}", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+
+				$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+				
+    			if ($ami_info['alias'] == 'mysql' && $instance['role_name'] != 'mysql')
+				{
+					$records[] = array("rtype" => "A", "rkey" => "int-mysql", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+					$records[] = array("rtype" => "A", "rkey" => "ext-mysql", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+					if ($instance["isdbmaster"] == 1)
+					{
+						$records[] = array("rtype" => "A", "rkey" => "int-mysql-master", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+						$records[] = array("rtype" => "A", "rkey" => "ext-mysql-master", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
+					}
+				}
+				
+				$records[] = array("rtype" => "A", "rkey" => "int-{$instance["role_name"]}", "rvalue" => $instance["internal_ip"], "ttl" => 20, "issystem" => 1);
+				$records[] = array("rtype" => "A", "rkey" => "ext-{$instance["role_name"]}", "rvalue" => $instance["external_ip"], "ttl" => 20, "issystem" => 1);
     		}
     		    
             $nss = $db->GetAll("SELECT * FROM nameservers");
@@ -337,9 +505,7 @@
 	$display["def_soa_parent"] = CONFIG::$DEF_SOA_PARENT;
 
 	if ($display["ezone"])
-	{
 		$display["help"] = "Scalr nameservers support <a href=\"http://en.wikipedia.org/wiki/DNS_zone_transfer\" target=\"_blank\">DNS zone transfers</a>. If you want to deploy your own backup DNS, click <a href=\"dns_zone_config.php?zone={$display["ezone"]}\">here</a> to configure IP adresses of your DNS servers.";
-	}
 		
 	require("src/append.inc.php"); 
 ?>

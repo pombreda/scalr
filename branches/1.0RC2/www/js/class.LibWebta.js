@@ -25,6 +25,7 @@ var LibWebta = Class.create();
 LibWebta.prototype = {
 	allchecked:		false,
 	tweaker:		null,
+	tweakers:		new Array(),
 	options:		{},
 	
 	initialize: function() {
@@ -108,6 +109,10 @@ LibWebta.prototype = {
 	setupTweaker: function() {
 		if (this.tweaker)
 			this.tweaker.setup();
+			
+		this.tweakers.each(function(item){
+			item.setup();
+		}); 
 	},
 	
 	createTweaker: function() {
@@ -115,6 +120,11 @@ LibWebta.prototype = {
 			this.tweaker.setup();
 			this.tweaker.create();
 		}
+		
+		this.tweakers.each(function(item){
+			item.setup();
+			item.create();
+		}); 
 	},
 	
 	showTopMenu: function() {
@@ -125,6 +135,14 @@ LibWebta.prototype = {
 		}
 		
 		this.tweaker = new FitoTab(this.options.tabitems);
+
+		items = $$('table.Webta_Items_Multiple_Tables');
+		
+		var mainOnb = this;
+		
+		items.each(function(item){
+			mainOnb.tweakers[mainOnb.tweakers.length] = new FitoTab(item);
+		}); 
 	},
 	
 	afterload: function() {
@@ -135,6 +153,11 @@ LibWebta.prototype = {
 		{
 		    window.customOnloadFunction();
 		}
+	},
+	
+	reloadTables: function()
+	{
+		this.createTweaker();
 	},
 	
 	openurl: function(url) {

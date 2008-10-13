@@ -1,40 +1,26 @@
 {include file="inc/login_header.tpl"}
-	<center>
-	<div class="middle">	
-	
-		<table border="0" cellpadding="0" cellspacing="0" class="Webta_Table">
-		<tr>
-			<td width="7"><div class="TableHeaderLeft"></div></td>
-			<td><div class="TableHeaderCenter"></div></td>
-			<td width="7"><div class="TableHeaderRight"></div></td>
-		</tr>
-		<tr>
-			<td width="7" class="TableHeaderCenter"></td>
-			<td align="center"><div id="loginform">
-      
-      <div id="login_box">
-        <h3>Password recovery</h3>
-        {if $err.0 != ''}
-			<span style="color:red;font-weight:bold;">{$err.0}</span>
-			<br>
-			<br>
-		{/if}
-          <label>E-mail</label>
-          <input name="email" type="text" class="text" id="email" value="" size="15" />
-          <input type="hidden" name="action" value="pwdrecovery" />
-          <button style="vertical-align:middle;"  type="submit" class="btn" name="Submit2">
-            Submit
-          </button>
-      </div>
-    </td>
-			<td width="7" class="TableHeaderCenter"></td>
-		</tr>
-		<tr>
-			<td width="7"><div class="TableFooterLeft"></div></td>
-			<td><div class="TableFooterCenter"></div></td>
-			<td width="7"><div class="TableFooterRight"></div></td>
-		</tr>
-		</table>
+{include file="inc/splash.tpl"}
+<div id="content">
+	{include file="inc/main_contents.tpl"}
+	<div id="forms-col">
+		<div>
+			<div style="background: url(/images/rc-gray-middle.png) repeat-y;" id="login-form">
+				<div style="background: url(/images/rc-gray-top.png) no-repeat; height:13px;"></div>
+				<div>
+				<form action="" method="POST">
+					<h2>Password recovery</h2>
+					{if $err.0 != ''}
+					<span style="color:red;font-weight:bold;">{$err.0}</span>
+					{/if}
+					<p><label>E-mail:</label><input type="text" name="email" class="textfield" value="" /></p>
+					<input type="hidden" name="action" value="pwdrecovery" />
+					<p><button type="submit" style="cursor:pointer;">Reset password</button></p>
+					<p class="links"><a href="/faq.html">FAQ</a> | <a href="/login.php">Log in</a></p>
+				</form>
+				</div>
+				<div style="background: url(/images/rc-gray-bottom.png) no-repeat; height:13px;"></div>
+			</div>
+		</div>
 	</div>
-	</center>
+</div>
 {include file="inc/login_footer.tpl"}

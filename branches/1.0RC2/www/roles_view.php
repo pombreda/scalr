@@ -12,6 +12,8 @@
 	    UI::Redirect("farms_view.php");
 	}
 	
+	$display["farm_status"] = $farminfo["status"];
+	
 	// Post actions
 	if ($_POST && $post_actionsubmit)
 	{
@@ -44,16 +46,19 @@
     			foreach ((array)$post_delete as $k=>$v)
     			{
                     $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $v);
-    			    
                     if ($roleinfo)
                     {
         			    $role = $roleinfo["name"];    
         				$ami = $v;
         				
-        				// increase min_count for farm ami
-        				$db->Execute("UPDATE farm_amis SET min_count=min_count+1 WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
+        				$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
+        				if ($farm_ami_info["max_count"] < $farm_ami_info["min_count"]+1)
+        					$increase_max_count = ", max_count=max_count+1";
         				
-                        $res = RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $v, false, true);                        
+        				// increase min_count for farm ami
+        				$db->Execute("UPDATE farm_amis SET min_count=min_count+1{$increase_max_count} WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
+        				
+                        $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $v, false, true);                        
                         if (!$res)
                             $err[] = "Cannot run instance. See system log for details!";
                         else
@@ -98,8 +103,8 @@
 	{
 		$row["name"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$row['ami_id']}'");
 		$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id='{$row["ami_id"]}' AND status != ? AND farmid=?", array(ZONE_STATUS::DELETED, $farminfo['id']));
-		$row["r_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Running' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
-		$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state='Pending' AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'");
+		$row["r_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state=? AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'", array(INSTANCE_STATE::RUNNING));
+		$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state IN (?,?) AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'", array(INSTANCE_STATE::PENDING, INSTANCE_STATE::INIT));
 	}
 
 	$display["title"] = "Farms > View roles";

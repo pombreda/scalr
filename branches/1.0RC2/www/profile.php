@@ -2,7 +2,10 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
+	{
+		$errmsg = "Requested page cannot be viewed from admin account";
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;Profile";
 	

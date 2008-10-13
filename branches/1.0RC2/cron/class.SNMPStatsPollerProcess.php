@@ -1,5 +1,4 @@
 <?
-	Core::Load("NET/SNMP");
 	Core::Load("Data/RRD");
 	
 	require_once(dirname(__FILE__)."/watchers/class.SNMPWatcher.php");
@@ -27,7 +26,7 @@
         
         public function OnStartForking()
         {
-            $db = Core::GetDBInstance(null, true);
+            $db = Core::GetDBInstance();
             
             $this->Logger->info("Fetching completed farms...");
             
@@ -45,7 +44,10 @@
         
         public function StartThread($farminfo)
         {
-            $db = Core::GetDBInstance(null, true);
+            // Reconfigure observers;
+        	Scalr::ReconfigureObservers();
+        	
+        	$db = Core::GetDBInstance();
             $SNMP = new SNMP();
             
             define("SUB_TRANSACTIONID", posix_getpid());

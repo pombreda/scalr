@@ -1,8 +1,8 @@
 {include file="inc/header.tpl"}
 {include file="inc/table_header.tpl"}
-    {include file="inc/intable_header.tpl" header="Step 3 - Round-robin settings" color="Gray"}
+    {include file="inc/intable_header.tpl" header="Step 3 - DNS Round-robin settings" color="Gray"}
 	<tr valign="top">
-		<td width="400">Instance of this role will create A records in DNS zone:</td>
+		<td width="400" nowrap>Instances of this role will create domain A records in DNS zone:</td>
 		<td colspan="6">
 		  <select name="dnsami" class="text">
 		  {section name=id loop=$roles}

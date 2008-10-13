@@ -23,7 +23,7 @@
 	
 	if (is_array($err))
 	{
-		$display["errmsg"] = $errmsg ? $errmsg : "The following errors occured";
+		$display["errmsg"] = $errmsg ? $errmsg : "The following errors occured:";
 		$display["err"] = $err;
 	}
 

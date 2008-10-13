@@ -13,11 +13,13 @@
         
         public function OnStartForking()
         {
-            $db = Core::GetDBInstance(null, true);
+            $db = Core::GetDBInstance();
             
             $this->Logger->info("Fetching completed farms...");
             
-            $this->ThreadArgs = $db->GetAll("SELECT farms.*, clients.isactive FROM farms INNER JOIN clients ON clients.id = farms.clientid WHERE farms.status='1' AND clients.isactive='1'");
+            $this->ThreadArgs = $db->GetAll("SELECT farms.*, clients.isactive FROM farms INNER JOIN clients ON clients.id = farms.clientid WHERE farms.status=? AND clients.isactive='1'",
+            	array(FARM_STATUS::RUNNING)
+            );
                         
             $this->Logger->info("Found ".count($this->ThreadArgs)." farms.");
         }
@@ -29,7 +31,10 @@
         
         public function StartThread($farminfo)
         {
-            $db = Core::GetDBInstance(null, true);
+            // Reconfigure observers;
+        	Scalr::ReconfigureObservers();
+        	
+        	$db = Core::GetDBInstance();
             $SNMP = new SNMP();
             
             //
@@ -88,7 +93,7 @@
 		            }
 	            }
 	            
-	            $nss = $db->GetAll("SELECT * FROM nameservers WHERE isproxy='0'");
+	            $nss = $db->GetAll("SELECT * FROM nameservers");
 				
 	            // Check malformed zones
 	            $zones = $db->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}'");
@@ -110,9 +115,11 @@
 	            	
 	            	// Check for A records
 	            	$this->Logger->info("[FarmID: {$farminfo['id']}] Checking for malformed A records");
-	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}' AND state='Running' AND isactive='1'");
+	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($farminfo['id'], INSTANCE_STATE::RUNNING));
 	            	foreach ($instances as $instance)
 	            	{
+	            		$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instance['ami_id']}'");
+	            		
 	            		if ($instance["role_name"] == $zone["role_name"])
 	            		{
 	            			// Check A records for external IP
@@ -129,25 +136,82 @@
 	            			}
 	            		}
 	            		
+	            		// Check int-mysql records
+	            		if ($ami_info['alias'] == ROLE_ALIAS::MYSQL)
+	            		{
+	            			if ($instance['isdbmaster'] == 1)
+	            			{
+	            				if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+	            					array($zone['id'], "A", "int-{$instance['role_name']}-master", $instance["internal_ip"])))
+	            				{
+	            					$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+		            					$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-{$instance['role_name']}-master", 1
+		            				));
+		            				$malformed_zones[$zone['id']] = 1;
+	            				}
+								
+	            				if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+	            					array($zone['id'], "A", "ext-{$instance['role_name']}-master", $instance["external_ip"])))
+	            				{
+			            			$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+			            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-{$instance['role_name']}-master", 1
+			            			));
+			            			$malformed_zones[$zone['id']] = 1;
+	            				}
+	            			}
+	            			
+	            			if ($ami_info['name'] != ROLE_ALIAS::MYSQL)
+	            			{
+	            				
+		            			
+	            				if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+	            					array($zone['id'], "A", "int-mysql-master", $instance["internal_ip"])))
+	            				{
+			            			$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+			            				$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-mysql-master", 1
+			            			));
+			            			$malformed_zones[$zone['id']] = 1;
+	            				}
+	            				
+	            				if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+	            					array($zone['id'], "A", "ext-mysql-master", $instance["external_ip"])))
+	            				{
+			            			$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+			            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-mysql-master", 1
+			            			));
+			            			$malformed_zones[$zone['id']] = 1;
+	            				}
+	            			}
+	            			
+	            			if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+            					array($zone['id'], "A", "int-mysql", $instance["internal_ip"])))
+            				{
+	            				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+		            				$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-mysql", 1
+		            			));
+		            			$malformed_zones[$zone['id']] = 1;
+            				}
+            				
+            				if (!$db->GetOne("SELECT id FROM records WHERE zoneid=? AND rtype=? AND rkey=? AND rvalue=?",
+            					array($zone['id'], "A", "ext-mysql", $instance["external_ip"])))
+            				{
+		            			$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
+		            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-mysql", 1
+		            			));
+		            			$malformed_zones[$zone['id']] = 1;
+            				}
+	            		}
+	            		
 	            		// Check A records for internal IP
 	            		if (!$db->GetOne("SELECT id FROM records WHERE rtype='A' AND issystem='1' AND rvalue='{$instance["internal_ip"]}' AND zoneid='{$zone['id']}'"))
             			{
             				$this->Logger->warn("[FarmID: {$farminfo['id']}] Outdated A records for internal IP: {$instance["internal_ip"]} ({$zone['zone']})");
             				
-            				$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instance['ami_id']}'");
-            				
+            				            				
             				// Missed A record, add it
             				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
-	            				$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-{$ami_info['name']}", 1
+	            				$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-{$instance['role_name']}", 1
 	            			));
-	            			
-	            			
-	            			if ($ami_info['alias'] == 'mysql' && $instance['isdbmaster'] == 1)
-	            			{
-	            				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
-		            				$zone['id'], "A", 20, null, "{$instance["internal_ip"]}", "int-{$ami_info['name']}-master", 1
-		            			));	
-	            			}
 	            			
 	            			$malformed_zones[$zone['id']] = 1;
             			}
@@ -157,24 +221,28 @@
             			{
             				$this->Logger->warn("[FarmID: {$farminfo['id']}] Outdated A records for external IP: {$instance["external_ip"]} ({$zone['zone']})");
             				
-            				$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instance['ami_id']}'");
-            				
             				// Missed A record, add it
             				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
-	            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-{$ami_info['name']}", 1
+	            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-{$instance['role_name']}", 1
 	            			));
-	            			
-	            			
-	            			if ($ami_info['alias'] == 'mysql' && $instance['isdbmaster'] == 1)
-	            			{
-	            				$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array(
-		            				$zone['id'], "A", 20, null, "{$instance["external_ip"]}", "ext-{$ami_info['name']}-master", 1
-		            			));	
-	            			}
 	            			
 	            			$malformed_zones[$zone['id']] = 1;
             			}
 	            	}
+	            }
+	            
+	            try
+	            {
+		            $obsoleted_zones = $db->GetAll("SELECT * FROM zones WHERE isobsoleted='1' AND status='1' AND farmid='{$farminfo['id']}'");
+		            foreach ($obsoleted_zones as $obsoleted_zone)
+		            {
+		            	$malformed_zones[$obsoleted_zone['id']] = 1;
+		            	$db->Execute("UPDATE zones SET isobsoleted='0' WHERE id=?", array($obsoleted_zone['id']));
+		            }
+	            }
+	            catch(Exception $e)
+	            {
+	            	$this->Logger->fatal($e->getMessage());
 	            }
 	            
 	            // Set more retries for locked zone for maintenance process

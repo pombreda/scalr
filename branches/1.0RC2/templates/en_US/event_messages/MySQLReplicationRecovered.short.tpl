@@ -1,0 +1,1 @@
+Mysql replication recovered on {$instanceinfo.instance_id} 
