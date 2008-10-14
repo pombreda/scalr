@@ -54,7 +54,16 @@
 		                $ami_info = $instance_ami_info;
 	                	
 	                	$old_roleid = $db->GetOne("SELECT id FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));
-		                $i_type = $db->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));
+		                
+		                $farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+							array($instance_info["ami_id"], $instance_info['farmid'])
+						);
+						
+						if ($farm_ami_info)
+							$instance_type = $farm_ami_info["instance_type"];
+						
+						if (!$instance_type)
+							$instance_type = $db->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));
 		                
 		                // Update last synchronization date
                 		$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instance_info['id']));

@@ -113,7 +113,20 @@
 				
             $alias = $instance_ami_info["alias"];
 			$architecture = $instance_ami_info["architecture"];
-			$i_type = $instance_ami_info["instance_type"];
+			
+			$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+				array($instanceinfo["ami_id"], $instanceinfo['farmid'])
+			);
+			
+			if ($farm_ami_info)
+				$i_type = $farm_ami_info["instance_type"];
+			
+			if (!$i_type)
+				$i_type = $instance_ami_info["instance_type"];
+			
+				
+			
+			
 			$ami_info = $instance_ami_info;
                                 
 			$db->BeginTrans();
