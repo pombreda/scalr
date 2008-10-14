@@ -51,17 +51,23 @@ If you ordered a certificate from authority, in most cases you have .crt, .ca an
 
 Create the private key, it will require a passphrase (it will be removed later on):
 {{{
-      openssl genrsa -des3 -out domain.key 1024  
+openssl genrsa -des3 -out domain.key 1024  
 }}}
 
 Remove the passphrase entered earlier when we create the key, if not, the box will ask us to enter the passphrase on every reboot.
 
 {{{
-      cp domain.key domain.key.1
-      openssl rsa -in pma.key.1 -out domain.key  
+mv domain.key domain.key.1
+openssl rsa -in domain.key.1 -out domain.key  
+}}}
+
+Create a CSR (Certificate Signing Request).
+
+{{{
+openssl req -new -key domain.key -out domain.csr
 }}}
 
 Create the certificate itself:
 {{{
- openssl x509 -req -days 365 -in domain.csr -signkey domain.key -out domain.crt  
+openssl x509 -req -days 365 -in domain.csr -signkey domain.key -out domain.crt  
 }}}
