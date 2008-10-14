@@ -19,6 +19,11 @@ Download the list of packages in repository:
 apt-get update
 }}}
 
+Install scalr-ami-scripts package
+{{{
+apt-get install scalr-ami-scripts
+}}}
+
 Install scalr-ami-configs package 
 {{{ 
 apt-get install scalr-ami-configs
