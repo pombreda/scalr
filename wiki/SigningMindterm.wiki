@@ -1,0 +1,19 @@
+#summary Signing Mindterm SSH Java applet
+
+
+  * Create keypare in keystore:
+`keytool -genkey -keyalg rsa -alias MyCert`
+
+  * Create CSR:
+`keytool -certreq -alias MyCert`
+
+  * Send the output certificate signing request to Authority of your choice. Let's assume you received back a SignedCert.cer file with as signed certificate inside. 
+  * Import it in the previously created keystore entry:
+`keytool -import -alias MyCert -file SignedCert.cer `
+
+  * Sign the mindterm applet:
+`jarsigner mindterm.jar MyCert`
+
+  * Verify:
+`jarsigner -verify -verbose -certs mindterm.jar`
+If you see "jar verified", then applet was signed ok.
