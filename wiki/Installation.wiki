@@ -31,6 +31,7 @@ Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.)
   * [http://php.net/ssh2 ssh2]
   * [http://php.net/dom DOM]
   * [http://php.net/Soap SOAP]
+  * [http://php.net/SNMP SNMP]
 
 
 == Installation ==
@@ -44,7 +45,6 @@ Set permissions on the following folders (and subfolders) and files to 777 (worl
   * cache
   * cron/cron.pid
   * etc/.passwd
-  * etc/clients_keys
 
 
 === Create and configure database ===
@@ -52,10 +52,6 @@ Set permissions on the following folders (and subfolders) and files to 777 (worl
   # Create new MySQL database 
   # Import database dump from sql/database.sql file.
   # Edit database connection details in etc/config.ini file.
-
-
-=== Configure logging ===
-Edit [http://logging.apache.org/log4php/ log4php] config in _etc/log4php.xml_
 
 
 === Set Cron jobs ===
@@ -70,6 +66,8 @@ The following tasks must be sheduled:
 */15 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --MySQLMaintenance
 */6 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSMaintenance
 */3 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSZoneListUpdate
+*/2 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DBQueueEvent
+*/11 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --Cleaner
 }}}
 
 === Configure primary AWS account ===
