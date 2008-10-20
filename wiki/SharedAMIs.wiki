@@ -12,3 +12,4 @@
 || app-rails || app-rails64 || ami-c2d034ab || ami-69d23600 || Application server (Apache2 + mod_rails + Rails 2.1.1) ||
 || memcached || || ami-cfd034a6 || || Memcached server ||
 || app-tomcat || || ami-5a2fcb33 || || Application server (Apache Tomcat 5.5) ||
+|| || app-tomcat6 || || ami-6436d20d || Application server (Apache Tomcat 6.0) ||
