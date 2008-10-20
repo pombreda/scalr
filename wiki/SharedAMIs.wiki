@@ -3,7 +3,7 @@
 
 == Shared AMIs ==
 
-|| *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || Purpose ||
+|| *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
 || mysql || mysql64 || ami-2cf21645 || ami-e8c62281 || MySQL server ||
 || app || app64 || ami-bac420d3 || ami-0ac62263 || Application server (Apache2 + mod_php + PHP 5.2.4) ||
 || www || www64 || ami-72f2161b || ami-01ca2e68 || Frontend load balancer and HTTP server ||
