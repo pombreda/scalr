@@ -1,0 +1,63 @@
+#summary Using custom role options
+#labels Deprecated
+
+= Introduction =
+
+An ability to provide custom options to your instances allows you to heavily customize your farm and to decrease impact of changing important values on-the-fly.
+
+
+= Details =
+
+Custom role options management page is available at 'Custom roles view'->Role->Options->Edit, 'Options' tab.
+
+Options are available through REST interface 'config_opts.php'. 
+Custom options are named in the following manner: 'options.%OPTION_NAME%'. All non-alphanumeric symbols are replaced by an underscore.
+
+
+For example if you created an option 'Admin Password', you should request 'options.admin_password' from the instance.
+
+
+= How to get an option value =
+
+*HTTP request.*
+
+Content-Type: multipart/form-data
+
+REST interface URL: https://www.scalr.net/config_opts.php (for Scalr.net).
+
+Form data:
+{{{
+option - option_name
+FarmID - Farm ID
+Hash - access hash (SNMP community)
+InstanceID - Instance ID
+}}}
+
+Example URL for using with GET request:
+`https://www.scalr.net/config_opts.php?option=options.admin_password&FarmID=115&Hash=0123456789abcde&InstanceID=i-123456`
+
+
+
+*Using curl.*
+
+The most useful way to do it - using curl utility. For example:
+
+{{{
+curl -L -f -s "https://www.scalr.net/config_opts.php" \
+-F "option=options.admin_password" \
+-F "FarmID=115" \
+-F "Hash=0123456789abcde" \
+-F "InstanceID=i-123456"
+}}}
+
+
+
+*Using /usr/local/aws/lib/lib.sh routine*
+
+From within your scripts you can use predefined procedure.
+
+First, you have to include a library with procedure definition and then call the corresponding routine:
+{{{
+. /usr/local/aws/lib/lib.sh
+ec2_get_option_val options.admin_password
+}}}
