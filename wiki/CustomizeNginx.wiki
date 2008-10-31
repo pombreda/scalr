@@ -2,11 +2,12 @@
 
 = Introduction =
 
-www is running nginx instaeed from a .deb package.
-You will need to use a source APT package.
+www is running stock nginx .deb package.
+You will need to use a source .deb package if you wish to add any extra nginx modules.
 
 = Details =
 
+Here's how to add an extra module into a .deb package:
 
 {{{
 apt-get source nginx
@@ -23,3 +24,4 @@ find './configure' rules and add --add-module=<path to module sources> at the en
 {{{
 dpkg-buildpackage
 }}}
+This will create a .deb file in upper-level directory, which you can install with `dpkg -i`
