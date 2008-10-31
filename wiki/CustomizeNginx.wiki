@@ -1,0 +1,25 @@
+#summary How to rebuild nginx and/or add new modules on www instance
+
+= Introduction =
+
+www is running nginx instaeed from a .deb package.
+You will need to use a source APT package.
+
+= Details =
+
+
+{{{
+apt-get source nginx
+
+apt-get install build-essential autotools-dev
+
+cd nginx-0.5.33/
+
+vim debian/rules
+}}}
+
+find './configure' rules and add --add-module=<path to module sources> at the end.
+
+{{{
+dpkg-buildpackage
+}}}
