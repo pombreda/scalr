@@ -1,6 +1,5 @@
 #summary Scaling memcached
 
-=  Scaling memcached =
 
 == Does memcached support scaling at all? ==
 
