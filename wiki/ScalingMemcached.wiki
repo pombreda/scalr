@@ -1,4 +1,4 @@
-#summary Scaling memcached
+#How to use memcached role from your application on Scalr
 
 
 == Does memcached support scaling at all? ==
