@@ -40,6 +40,7 @@ create database newdb;
   *  Grant access to it
 
 {{{
+
 GRANT ALL ON newdb.* TO 'someuser'@'localhost';
 }}}
 
@@ -49,6 +50,6 @@ GRANT ALL ON newdb.* TO 'someuser'@'localhost';
 
   *  Roll in your database dump.
 
-{{
+{{{
 mysql -u someuser -p < ./path/to/dbdump.sql
-}}
+}}}
