@@ -1,0 +1,54 @@
+#summary How to install a simple application on Scalr farm.
+
+= Introduction =
+
+This is a fairly basic guide on installing a mysql-enabled application on Scalr farm.
+  * Assuming that you do not use version control and using Scalr's scripting engine is over your head.
+  * You need to have a running farm with at least app and mysql roles.
+
+== Uploading the script ==
+The easiest way to upload files is FTP.
+
+Scalr does not create any FTP logins for you, so yo need to create one.
+The easiest way (still not the safest) would be to 
+  * Open SSH console (click on the icon in Intances->View page).
+  * Create a system user
+{{{ 
+useradd -d /var/www wwwuser
+}}}
+  * Set a password for it 
+{{{
+ passwd wwwuser
+}}}
+  * Now use "Synchronize to all" for that instance so your changes propagate across all your app instances.
+
+The same for database:
+  *  Open console
+{{{
+ mysql
+}}}
+
+This will log you in as root user
+
+2. while in mysql interactive console, 
+
+  *  Create db
+{{{
+create database newdb;
+}}}
+
+  *  Grant access to it
+
+{{{
+GRANT ALL ON newdb.* TO 'someuser'@'localhost';
+}}}
+
+[http://dev.mysql.com/doc/refman/5.0/en/grant.html More info on GRANT syntax]
+
+  *  Configure your application to use someuser.
+
+  *  Roll in your database dump.
+
+{{
+mysql -u someuser -p < ./path/to/dbdump.sql
+}}
