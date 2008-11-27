@@ -21,6 +21,46 @@
 				
 			$SNMP = new SNMP();
 		
+			$chunks = explode(";", $req_Data);
+			foreach ($chunks as $chunk)
+			{
+				$dt = explode(":", $chunk);
+				$data[$dt[0]] = trim($dt[1]);
+			}
+			
+			// For scalr instalations //
+			if (!$instanceinfo['internal_ip'])
+				$instanceinfo['internal_ip'] = $data["localip"];
+			
+			if ($instanceinfo['internal_ip'] == $_SERVER['REMOTE_ADDR'])
+			{
+				if (!$instanceinfo['external_ip'])
+				{
+					try
+					{
+						// Decrypt client prvate key and certificate
+				    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
+				    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+				    	
+				    	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+				    	$response = $AmazonEC2Client->DescribeInstances($req_InstanceID);
+				    	$ip = gethostbyname($response->reservationSet->item->instancesSet->item->dnsName);
+				    	
+				    	$_SERVER['REMOTE_ADDR'] = $ip;
+					}
+					catch(Exception $e)
+					{
+						$Logger->fatal(sprintf(_("Cannot determine external IP for instance %s: %s"),
+							$req_InstanceID, $e->getMessage()
+						));
+						exit();
+					}
+				}
+				else
+					$_SERVER['REMOTE_ADDR'] = $instanceinfo['external_ip'];
+			}
+			//************************//
+			
 			if ($farminfo && $instanceinfo)
 			{
 				// Check instance external IP
@@ -38,13 +78,6 @@
 					{
 						$Logger->fatal("Cannot update instance IP: {$e->getMessage()}");
 					}
-				}
-				
-				$chunks = explode(";", $req_Data);
-				foreach ($chunks as $chunk)
-				{
-					$dt = explode(":", $chunk);
-					$data[$dt[0]] = trim($dt[1]);
 				}
 		
 				switch ($req_EventType)
