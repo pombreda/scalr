@@ -2,17 +2,19 @@
 
 = Introduction =
 
-Scalr shared `www` role is running lightweight [http://nginx.net/ nginx] HTTP server. By default, it is configured to proxy all requests to all instances of `app` role (which are running Apache web server).
-However, if you are giving out a lot of static content (images, html files or downloads), serving them by Apache adds unnecessary overhead. 
+Scalr shared `www` role employs lightweight [http://nginx.net/ nginx] HTTP server. 
+Nginx serves static files with exceptional speed.
+By default, it is configured to proxy all requests to all instances of  Application Servers role, if you included one in your farm.
+However, if you are giving out a lot of static content (images, html files or downloads), serving them with application server (Apache or any other, depending on the Application server role you selected) is not optimal. 
 
-Nginx can serve static files of specified file extensions, while proxying the rest of requests to app instances.
+Let's tweak nginx config so it will serve files of specified extensions, while proxying the rest of traffic to app instances.
 
 
 = HOW-TO  =
 
- # Launch your farm and click on SSH icon to log in to one of instances of `www` role.
- # Type `vi /etc/nginx/nginx.conf`. Press `i` to enter insert mode. Go to the end on `server {}`
- section and paste a following section of code:
+ # Launch your farm and click on SSH icon to log in to one of `www` role instances.
+ # Type `vi /etc/nginx/nginx.conf`. Press `i` to enter insert mode. Go to the end of the `server {}`
+ section and paste a following piece of code:
 
 {{{
 location ~* ^.+\.(jpg|jpeg|gif|png|ico|css|zip|tgz|gz|rar|bz2|pdf|txt|tar|wav|bmp|rtf|js|flv|swf|html|htm)$
@@ -23,5 +25,5 @@ location ~* ^.+\.(jpg|jpeg|gif|png|ico|css|zip|tgz|gz|rar|bz2|pdf|txt|tar|wav|bm
 
 where `/var/www/static-content` is your place for static files. 
 
- # Issue `killall -HUP nginx` command to reload nginx.
+ # do `killall -HUP nginx` to reload nginx.
  # Go to Scalr and click "Synchronize to all" to propagate changes across all instances of `www` role.
