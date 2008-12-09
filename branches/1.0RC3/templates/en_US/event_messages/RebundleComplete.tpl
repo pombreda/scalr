@@ -1,0 +1,1 @@
+Rebundle started on instance {$instanceinfo.external_ip} ({$instanceinfo.instance_id}) successfully complete. New AMI ID: {$ami_id}.

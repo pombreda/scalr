@@ -1,0 +1,1 @@
+Rebundle started on {$instanceinfo.external_ip}. AMI_ID: {$ami_id}
