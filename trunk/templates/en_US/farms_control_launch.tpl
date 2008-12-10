@@ -5,7 +5,7 @@
 		</td>
 	</tr>
 {include file="inc/intable_footer.tpl" color="Gray"}
-{if $show_dns}
+{if $show_dns && 1 == 2}
 {include file="inc/intable_header.tpl" header="DNS Zones" color="Gray"}
 	<tr>
 		<td colspan="2">

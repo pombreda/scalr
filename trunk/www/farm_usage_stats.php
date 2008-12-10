@@ -9,7 +9,7 @@
     if (!$farminfo)
         UI::Redirect("farms_view.php");
                 
-	$display["title"] = "Farm&nbsp;&raquo;&nbsp;Statistics";
+	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Statistics");
 	
 	$display["rows"] = $db->GetAll("SELECT *, bw_out/1024 as bw_out, bw_in/1024 as bw_in FROM farm_stats WHERE farmid=? ORDER BY id DESC", array($req_farmid));
 	foreach ($display["rows"] as &$row)

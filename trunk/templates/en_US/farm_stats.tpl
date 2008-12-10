@@ -1,5 +1,21 @@
 {include file="inc/header.tpl"}
 	<br />
+	<script language="Javascript" src="/js/stat_img_loader.js"></script>
+	<script language="Javascript">
+	{literal}
+		Event.observe(window, 'load', function(){
+		{/literal}
+			
+		{section name=id loop=$roles}
+			{foreach key=watchername item=image from=$roles[id].images}
+				LoadStatsImage('{$image.params.farmid}', '{$image.params.watcher}', '{$image.params.type}', '{$image.params.role_name}', '{$image.hash}');
+			{/foreach}
+		{/section}
+			
+		{literal}
+		}); 
+	{/literal}
+	</script>
 	{include file="inc/table_header.tpl" nofilter=1 tabs=1}
 		{section name=id loop=$roles}
 			{assign var=name value=$roles[id].name}
@@ -16,10 +32,17 @@
 	        {/if}
 			<tr>
 	    		<td colspan="2" align="center">
-	    			<div style="width:1100px;">
+	    			<div style="width:1120px;" align="left">
 	    				{foreach key=watchername item=image from=$roles[id].images}
-	    					<div style="float:left;margin-right:10px;height:360px;">
-	    						<a href="farm_extended_stats.php?farmid={$farminfo.id}&role={$name}&watcher={$watchername}"><img src="{$image.url}"></a>
+	    					<div style="float:left;margin-right:15px;height:340px;width:535px;margin-bottom:10px;" align="center">
+	    						<div id="loader_{$image.hash}" style="background-color:#dddddd;width:535px;height:340px;position:relative;top:0px;left:0px;">
+	    							<div id="loader_content_{$image.hash}" style="position:relative;top:48%;">
+	    								<img src="/images/snake-loader.gif"> Loading graphic. Please wait...
+	    							</div>
+	    						</div>
+	    						<div id="image_div_{$image.hash}" style="display:none;">
+	    							<a href="farm_extended_stats.php?farmid={$farminfo.id}&role={$name}&watcher={$watchername}"><img id="image_{$image.hash}" src=""></a>
+	    						</div>
 	    					</div>
 	    				{/foreach}
 	    			</div>

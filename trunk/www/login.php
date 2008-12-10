@@ -3,6 +3,10 @@
 	
 	CONTEXTS::$APPCONTEXT = APPCONTEXT::ORDER_WIZARD;
 	
+	$display['title'] = _("Self-Scaling Hosting Environment utilizing Amazon's EC2.  Built by Intridea.");
+	$display['meta_descr'] = _("Scalr is fully redundant, self-curing and self-scaling hosting environment utilizing Amazon's EC2.  It is open source, allowing you to create server farms through a web-based interface using pre-built AMI's.");
+	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, Intridea, self-scaling, hosting environment, cloud computing, open source, web-based interface");
+	
 	if ($get_logout)
 	{
 		@session_destroy();

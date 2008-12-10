@@ -3,11 +3,11 @@
 	
 	if ($_SESSION["uid"] == 0)
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
 	}
 	
-	$display["title"] = "Settings&nbsp;&raquo;&nbsp;AWS settings";
+	$display["title"] = _("Settings&nbsp;&raquo;&nbsp;AWS settings");
 	
 	$Validator = new Validator();
 		
@@ -19,19 +19,19 @@
 		
 		// Validate input data            
         if (!$Validator->IsNotEmpty($post_aws_accesskeyid))
-            $err[] = "AWS key ID required";
+            $err[] = _("AWS key ID required");
         
         if (!$Validator->IsNotEmpty($post_aws_accesskey))
-            $err[] = "AWS key required";
+            $err[] = _("AWS key required");
                 
         if (!$Validator->IsNumeric($post_aws_accountid) || strlen($post_aws_accountid) != 12)
-            $err[] = "AWS numeric account ID required (See <a href='/faq'>FAQ</a> for info on where to get it). ";
+            $err[] = _("AWS numeric account ID required (See <a href='/faq'>FAQ</a> for info on where to get it). ");
 
         if (!$clientinfo['aws_certificate_enc'] && !$_FILES['cert_file']["tmp_name"])
-        	$err[] = "Certificate file must be specified";
+        	$err[] = _("Certificate file must be specified");
         	
         if (!$clientinfo['aws_private_key_enc'] && !$_FILES['pk_file']["tmp_name"])
-            $err[] = "Private key file must be specified";
+            $err[] = _("Private key file must be specified");
 	              
         // Try to validate certificates and keys //
         if ($_FILES['cert_file']['tmp_name'] || $_FILES['pk_file']['tmp_name'])
@@ -65,13 +65,13 @@
 	                        
 	            $result = $AmazonEC2Client->RunInstances($RunInstancesType);
 				if ($result->ownerId != $post_aws_accountid)
-					$err[] = "The certificate and private key you specified do not match Account ID {$post_aws_accountid}";          
+					$err[] = sprintf(_("The certificate and private key you specified do not match Account ID %s"), $post_aws_accountid);          
 	    
 	            $AmazonEC2Client->TerminateInstances(array($result->instancesSet->item->instanceId));
         	}
         	catch(Exception $e)
         	{
-        		$err[] = "Failed to verify your certificate and private key. ".$e->getMessage();
+        		$err[] = sprintf(_("Failed to verify your certificate and private key. %s"), $e->getMessage());
         	}
         }
         
@@ -79,12 +79,12 @@
         {
         	try
         	{
-        		$AmazonS3 = new AmazonS3($post_aws_accesskeyid, $post_aws_accesskey);
+        		$AmazonS3 = new AmazonS3(trim($post_aws_accesskeyid), trim($post_aws_accesskey));
     	    	$buckets = $AmazonS3->ListBuckets();
         	}
         	catch(Exception $e)
         	{
-        		$err[] = "Failed to verify your access key and access key id. ".$e->getMessage();
+        		$err[] = sprintf(_("Failed to verify your access key and access key id. %s"), $e->getMessage());
         	}
         }
         
@@ -93,7 +93,7 @@
         if (count($err) == 0)
         {                      
 			$aws_accesskey = $post_aws_accesskey;
-        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = '{$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"])}'," : "";
+        	$akey = ($post_aws_accesskey != '******') ? "aws_accesskey = '{$Crypto->Encrypt(trim($post_aws_accesskey), $_SESSION["cpwd"])}'," : "";
         	
         	try
 			{
@@ -103,7 +103,7 @@
 					{$akey}
 					aws_accountid   = ?
 					WHERE id = ?
-				", array($Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), $post_aws_accountid, $_SESSION['uid']
+				", array($Crypto->Encrypt(trim($post_aws_accesskeyid), $_SESSION["cpwd"]), $post_aws_accountid, $_SESSION['uid']
 				));
 			}
 			catch (Exception $e)
@@ -127,8 +127,8 @@
 				}
 				else
 				{
-					$Logger->fatal("Internal error: cannot read uploaded file");
-					$err[] = "Internal error: cannot read uploaded file";
+					$Logger->fatal(_("Internal error: cannot read uploaded file"));
+					$err[] = _("Internal error: cannot read uploaded file");
 				}
             }
             else
@@ -150,8 +150,8 @@
 				}
 				else
 				{
-					$Logger->fatal("Internal error: cannot read uploaded file");
-					$err[] = "Internal error: cannot read uploaded file";
+					$Logger->fatal(_("Internal error: cannot read uploaded file"));
+					$err[] = _("Internal error: cannot read uploaded file");
 				}
             }
             else
@@ -167,7 +167,7 @@
         		$_SESSION["aws_certificate"] = $aws_certificate;
         		
         		$errmsg = false;
-            	$okmsg = "AWS settings successfully saved";
+            	$okmsg = _("AWS settings successfully saved");
                 UI::Redirect("index.php");
             }
         }

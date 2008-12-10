@@ -3,10 +3,10 @@
 		<table class="Webta_Items" rules="groups" frame="box" width="100%" cellpadding="2" id="Webta_Items">
 		<thead>
 			<tr>
-				<th>ID</th>
-				<th>Severity</th>
-				<th>Date</th>
-				<th>Action</th>
+				<th>{t}ID{/t}</th>
+				<th>{t}Severity{/t}</th>
+				<th>{t}Date{/t}</th>
+				<th>{t}Action{/t}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -19,7 +19,7 @@
 		</tr>
 		{sectionelse}
 		<tr>
-			<td colspan="4" align="center">No log entries found</td>
+			<td colspan="4" align="center">{t}No log entries found{/t}</td>
 		</tr>
 		{/section}
 		<tr>

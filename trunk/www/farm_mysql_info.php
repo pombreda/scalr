@@ -18,8 +18,8 @@
 	if ($display["farminfo"]["dtlastrebundle"])
 		$display["mysql_last_bundle"] = date("d M Y \a\\t H:i:s", $display["farminfo"]["dtlastrebundle"]);
 	
-   	$mysql_instances = $db->GetAll("SELECT * FROM farm_instances WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql') AND farmid=? ORDER BY isdbmaster DESC",
-   		array($farminfo['id'])
+   	$mysql_instances = $db->GetAll("SELECT * FROM farm_instances WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql') AND farmid=? AND state=? ORDER BY isdbmaster DESC",
+   		array($farminfo['id'], INSTANCE_STATE::RUNNING)
    	);
    			
    	$slave_num = 0;
@@ -56,7 +56,8 @@
    		catch(Exception $e)
    		{
    			$display["replication_status"][$mysql_instance['instance_id']] = array(
-   				"error" => $e->getMessage()
+   				"error" => ($e->msg) ? $e->msg : $e->getMessage(),
+   				"IsMaster"		=> $mysql_instance['isdbmaster']
    			);
    		}
    	}
@@ -65,35 +66,48 @@
 	{
 		$SNMP = new SNMP();
 		
-		if ($master_ip)
+		if ($post_run_bcp)
 		{
-			if ($post_run_bcp)
+			$mysql_slave = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isdbmaster='0' AND ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql')",
+				array($req_farmid, INSTANCE_STATE::RUNNING)
+			);
+			
+			if (!$mysql_slave)
+				$errmsg = _("There is no running mysql slave instance.");
+			else
 			{
-				$SNMP->Connect($master_ip, null, $farminfo['hash']);
+				$SNMP->Connect($mysql_slave['external_ip'], null, $farminfo['hash']);
 				$trap = vsprintf(SNMP_TRAP::MYSQL_START_BACKUP, array());
 				$res = $SNMP->SendTrap($trap);
-	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$master_iid}' ('{$master_ip}') complete ({$res})");
+	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$mysql_slave['instance_id']}' ('{$mysql_slave['external_ip']}') complete ({$res})");
 	                            
-	            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$master_iid}' WHERE id='{$farminfo['id']}'");
+	            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$mysql_slave['instance_id']}' WHERE id='{$farminfo['id']}'");
 	            
-	            $okmsg = "Backup request successfully sent to instance";
-	            UI::Redirect("farm_mysql_info.php?farmid={$farminfo['id']}");
-			}
-			elseif ($post_run_bundle)
-			{
-				$SNMP->Connect($master_ip, null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
-				$res = $SNMP->SendTrap($trap);
-	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$trap}) to '{$master_iid}' ('{$master_ip}') complete ({$res})");
-	                            
-	            $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$master_iid}' WHERE id='{$farminfo['id']}'");
-	            
-	            $okmsg = "Mysql data bundle request successfully sent to instance";
+	            $okmsg = _("Backup request successfully sent to instance");
 	            UI::Redirect("farm_mysql_info.php?farmid={$farminfo['id']}");
 			}
 		}
-		else
-			$errmsg = "There is no running mysql master instance.";
+		elseif ($post_run_bundle)
+		{
+			$mysql_master = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isdbmaster='1' AND ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql')",
+				array($req_farmid, INSTANCE_STATE::RUNNING)
+			);
+			
+			if (!$mysql_master)
+				$errmsg = _("There is no running mysql master instance.");
+			else
+			{
+				$SNMP->Connect($mysql_master['external_ip'], null, $farminfo['hash']);
+				$trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
+				$res = $SNMP->SendTrap($trap);
+	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$trap}) to '{$mysql_master['instance_id']}' ('{$mysql_master['external_ip']}') complete ({$res})");
+	                            
+	            $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$mysql_master['instance_id']}' WHERE id='{$farminfo['id']}'");
+	            
+	            $okmsg = _("Mysql data bundle request successfully sent to instance");
+	            UI::Redirect("farm_mysql_info.php?farmid={$farminfo['id']}");
+			}
+		}
 	}
    	
 	require_once("src/append.inc.php");

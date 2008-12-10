@@ -1,6 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = "Event log&nbsp;&raquo;&nbsp;View";
+	$display["title"] = _("Event log&nbsp;&raquo;&nbsp;View");
     
 	if ($_SESSION["uid"] != 0)
 		$auth_sql = " AND (SELECT clientid FROM farms WHERE id = logentries.farmid) = '{$_SESSION["uid"]}'";
@@ -53,6 +53,8 @@
 		$sql  .= " AND severity IN (2,3,4,5)";
 	}
 	
+	$display["table_title_text"] = sprintf(_("Current time: %s"), date("d-m-Y H:i:s"));
+	
 	//
 	//Paging
 	//
@@ -60,7 +62,7 @@
 	$paging->AdditionalSQL = "ORDER BY time DESC";
 	$paging->ApplySQLPaging();
 	$paging->ParseHTML();
-	$display["filter"] = "";
+	$display["filter"] = $paging->GetFilterHTML("inc/table_title.tpl", $display);
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
 
 	$severities = array(0 => "DEBUG", 2 => "INFO", 3 => "WARN", 4 => "ERROR", 5 => "FATAL");

@@ -25,6 +25,10 @@
 			<td width="18%">SMTP connection:</td>
 			<td width="82%"><input name="email_dsn" type="text" class="text" id="email_dsn" value="{$email_dsn}" size="30"> (user:password@host:port. Leave empty to use MTA)</td>
 		</tr>
+		<tr valign="top">
+			<td width="18%">Scalr team emails (one per line):</td>
+			<td width="82%"><textarea name="team_emails" class="text" id="team_emails" cols="60" rows="5">{$team_emails}</textarea></td>
+		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
 		{include file="inc/intable_header.tpl" header="Log rotation settings" color="Gray"}
@@ -127,8 +131,8 @@
 			<td width="18%">Store graphics in:</td>
 			<td width="82%">
 				<select name="rrd_graph_storage_type">
-					<option value="S3">Amazon S3</option>
-					<option value="LOCAL">Local filesystem</option>
+					<option {if $rrd_graph_storage_type == 'S3'}selected{/if} value="S3">Amazon S3</option>
+					<option {if $rrd_graph_storage_type == 'LOCAL'}selected{/if} value="LOCAL">Local filesystem</option>
 				</select>
 			</td>
 		</tr>
@@ -168,16 +172,7 @@
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
-		<!--
 		{include file="inc/intable_header.tpl" header="Apache settings" color="Gray"}
-		<tr valign="top">
-			<td width="18%">HTTP virtual host template:</td>
-			<td width="82%"><textarea name="http_vhost_template" class="text" id="http_vhost_template" cols="75" rows="12">{$http_vhost_template}</textarea></td>
-		</tr>
-		<tr valign="top">
-			<td width="18%">HTTPS virtual host template:</td>
-			<td width="82%"><textarea name="https_vhost_template" class="text" id="https_vhost_template" cols="75" rows="12">{$https_vhost_template}</textarea></td>
-		</tr>
 		<tr>
 			<td width="18%">Default document root:</td>
 			<td width="82%"><input name="apache_docroot_dir" type="text" class="text" id="apache_docroot_dir" value="{$apache_docroot_dir}" size="30"></td>
@@ -187,13 +182,5 @@
 			<td width="82%"><input name="apache_logs_dir" type="text" class="text" id="apache_logs_dir" value="{$apache_logs_dir}" size="30"></td>
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
-		
-		{include file="inc/intable_header.tpl" header="Nginx settings" color="Gray"}
-		<tr valign="top">
-			<td width="18%">HTTPS virtual host template:</td>
-			<td width="82%"><textarea name="nginx_https_vhost_template" class="text" id="nginx_https_vhost_template" cols="75" rows="12">{$nginx_https_vhost_template}</textarea></td>
-		</tr>
-		{include file="inc/intable_footer.tpl" color="Gray"}
-		 -->
 	{include file="inc/table_footer.tpl" edit_page=1}
 {include file="inc/footer.tpl"}

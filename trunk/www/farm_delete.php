@@ -11,7 +11,7 @@
         
     if ($farminfo["status"] == 1)
     {
-    	$errmsg = "Cannot delete a running farm. Please terminate a farm before deleting it.";
+    	$errmsg = _("Cannot delete a running farm. Please terminate a farm before deleting it.");
     	UI::Redirect("farms_view.php");
     }
         
@@ -35,6 +35,9 @@
 	    		$db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM events WHERE farmid=?", array($farminfo['id']));
 	    		
+	    		$db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farminfo['id']));
+	    		
 	    		// Clean observers
 	    		$observers = $db->Execute("SELECT * FROM farm_event_observers WHERE farmid=?", array($farminfo['id']));
 	    		while ($observer = $observers->FetchRow())
@@ -55,7 +58,7 @@
 	    	{
 	    		$db->RollbackTrans();
 	    		$Logger->fatal("Exception thrown during farm deletion: {$e->getMessage()}");
-	    		$errmsg = "Cannot delete farm at the moment. Please try again later.";
+	    		$errmsg = _("Cannot delete farm at the moment. Please try again later.");
 	    		UI::Redirect("farms_view.php");
 	    	}
     		
@@ -64,12 +67,12 @@
     		$Logger->info("Farm #{$farminfo['id']} removed from database!");
 	    }
 	    
-	    $okmess = "Farm successfully deleted";
+	    $okmess = _("Farm successfully deleted");
 		UI::Redirect("farms_view.php");
     }
 
     
-	$display["title"] = "Farms&nbsp;&raquo;&nbsp;Delete";
+	$display["title"] = _("Farms&nbsp;&raquo;&nbsp;Delete");
 	$display["farminfo"] = $farminfo;
 	$display["app_count"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$farminfo['id']}'");
 

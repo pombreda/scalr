@@ -12,7 +12,7 @@
             
             if ($farminfo["clientid"] != $_SESSION["uid"] && $_SESSION["uid"] != 0)
             {
-            	$errmsg = "Instance not found";
+            	$errmsg = _("Instance not found");
             	CoreUtils::Redirect("farms.view.php");
             }
             
@@ -22,20 +22,21 @@
             		$display["show_dbmaster_warning"] = true;
             }
             
-            $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$farminfo['clientid']}'");
-            
             if ($farminfo["clientid"] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
                 UI::Redirect("index.php");
                 
             $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instanceinfo['ami_id']}'");
             $rolename = $ami_info['name'];
             
+            if ($ami_info['alias'] == ROLE_ALIAS::MYSQL)
+            	$display["warnmsg"] = _("You are about to synchronize MySQL instance. The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$instanceinfo['farmid']}'>Click here if you wish to bundle and save MySQL data</a>.");
+            
             if (!$ami_info)
             	$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=?", array($instanceinfo['role_name'], ROLE_TYPE::SHARED));
             
             if ($db->GetOne("SELECT id FROM ami_roles WHERE `replace` = '{$ami_info["ami_id"]}' and clientid='{$farminfo['clientid']}'"))
             {
-                $errmsg = "This role already bsynchonizing&#x2026;";
+                $errmsg = _("This role already synchonizing&#x2026;");
                 UI::Redirect("client_roles_view.php");
             }
             
@@ -83,16 +84,16 @@
 		$SNMP = new SNMP();
         
 		if (!preg_match("/^[A-Za-z0-9-]+$/", $post_name))
-            $err[] = "Allowed chars for role name is [A-Za-z0-9-]";
+            $err[] = _("Allowed chars for role name is [A-Za-z0-9-]");
 		else 
 		{
 		    if ($post_name != $new_rolename)
 		    {
 		        if ($db->GetOne("SELECT * FROM ami_roles WHERE name=? AND clientid=? AND iscompleted='1'", array($post_name, $farminfo["clientid"])))
-		          	$err[] = "Role {$post_name} already exists. Please use a different name for new role.";
+		          	$err[] = sprintf(_("Role %s already exists. Please use a different name for new role."), $post_name);
 		          
 		        if ($db->GetOne("SELECT * FROM ami_roles WHERE name=? AND roletype=?", array($post_name, ROLE_TYPE::SHARED)))
-		        	$err[] = "There is already a shared role {$post_name}. Please use a different name for new role.";
+		        	$err[] = sprintf(_("There is already a shared role %s. Please use a different name for new role."), $post_name);
 		    }
 		}
 		
@@ -107,7 +108,7 @@
                 
 			if (!$instance_ami_info)
 			{
-				$errmsg = "Cannot synchronize role. Role with AMI {$instance_ami_info['ami_id']} not found in database.";
+				$errmsg = sprintf(_("Cannot synchronize role. Role with AMI %s not found in database."), $instance_ami_info['ami_id']);
 	    		UI::Redirect("farms_view.php");	
 			}
 				
@@ -136,7 +137,9 @@
 				// Update last synchronization date
 				$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instanceinfo['id']));
                 
-				$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW()", array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type));
+				$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW()", 
+					array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type)
+				);
                 
 				$SNMP->Connect($instanceinfo['external_ip'], null, $farminfo['hash']);
 				$trap = vsprintf(SNMP_TRAP::START_REBUNDLE, array($post_name));
@@ -147,13 +150,13 @@
 			{
 				$db->RollbackTrans();
 				$Logger->fatal("Exception thrown during role synchronization: {$e->getMessage()}");
-				$errmsg = "Cannot synchronize role. Please try again later.";
+				$errmsg = _("Cannot synchronize role. Please try again later.");
 				UI::Redirect("farms_view.php");
 			}
 			
 			$db->CommitTrans();
 			
-			$okmsg = "An image for new role {$post_name} is being bundled. It can take up to 10 minutes.";
+			$okmsg = sprintf(_("An image for new role %s is being bundled. It can take up to 10 minutes."), $post_name);
 			UI::Redirect("client_roles_view.php");
 		}
 	}
@@ -161,7 +164,7 @@
     $display["instance_id"] = $instance_id;
     $display["new_rolename"] = $new_rolename;
     $display["rolename"] = $rolename;
-
+    
 	$display["form_action"] = $_SERVER['PHP_SELF'];
 	
 	require("src/append.inc.php"); 

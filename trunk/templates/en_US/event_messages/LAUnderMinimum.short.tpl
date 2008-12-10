@@ -1,1 +1,1 @@
-LA for {$roleinfo.name} is under minimum
+LA for {$event->RoleInfo.name} is under minimum

@@ -9,7 +9,7 @@
     if (!$farminfo)
         UI::Redirect("farms_view.php");
                 
-	$display["title"] = "Farm&nbsp;&raquo;&nbsp;Statistics";
+	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Statistics");
 	
 	$info = $db->GetRow("SELECT *, bw_out/1024 as bw_out, bw_in/1024 as bw_in FROM farm_stats WHERE farmid=? AND month=? AND year=?",
 		array($req_farmid, $req_month, $req_year)
@@ -41,7 +41,7 @@
 	else
 		$info["end_date"] = date("d F Y", mktime(0,0,0,$info["month"],date("t"),$info["year"]));
 		
-	$display["title"] = "'{$farminfo['name']}'' farm statistics";
+	$display["title"] = sprintf(_("'%s' farm statistics"), $farminfo['name']);
 	$display["stats"] = $info;
 	$display["farminfo"] = 	$farminfo;
 	

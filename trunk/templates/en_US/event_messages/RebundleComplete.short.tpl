@@ -1,1 +1,1 @@
-Rebundle started on {$instanceinfo.external_ip}. AMI_ID: {$ami_id}
+Rebundle started on {$event->InstanceInfo.external_ip}. AMI_ID: {$event->AMIID}

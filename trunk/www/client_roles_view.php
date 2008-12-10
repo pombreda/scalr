@@ -31,14 +31,14 @@
 				{
 					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=? 
 						WHERE id=?",
-						array("Rebundle complete, but the rebundled AMI is not operable by Scalr.", $roleinfo["id"])
+						array(_("Rebundle complete, but the rebundled AMI is not operable by Scalr."), $roleinfo["id"])
 					);
 				}
 				else
 				{
 					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=?, prototype_iid='' 
 						WHERE id=?",
-						array("Canceled by user", $roleinfo["id"])
+						array(_("Canceled by user"), $roleinfo["id"])
 					);
 				}
 			}
@@ -51,22 +51,10 @@
 			$db->CommitTrans();
 
 			if (count($instances) > 0)
-			{
-				if ($_SESSION['uid'] == 0)
-			    {
-			    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($roleinfo['clientid']));
-				
-					// Decrypt client prvate key and certificate
-			    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-			    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-			    }
-			    else
-			    {
-			    	$private_key = $_SESSION["aws_private_key"];
-			    	$certificate = $_SESSION["aws_certificate"];
-			    }
-				
-			    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+			{			
+			    $Client = Client::Load($roleinfo['clientid']);
+			    
+			    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 			    
 				foreach ($instances as $instance)
 				{
@@ -88,12 +76,12 @@
 			
 			if (count($err) > 0)
 			{
-				$errmsg = "Role synchronization aborted with the following errors:";
+				$errmsg = _("Role synchronization aborted with the following errors:");
 				UI::Redirect("client_roles_view.php");
 			}
 			else
 			{
-				$okmsg = "Role synchronization aborted";
+				$okmsg = _("Role synchronization aborted");
 				UI::Redirect("client_roles_view.php");
 			}
 		}
@@ -127,14 +115,14 @@
     			    else
     			    {
                         $farm = $db->GetRow("SELECT * FROM farms WHERE id='{$info['farmid']}'");
-    			        $err[] = "Cannot delete role {$roleinfo['name']}. It's being used on farm '{$farm['name']}'.";
+    			        $err[] = sprintf(_("Cannot delete role %s. It's being used on farm '%s'."), $roleinfo['name'], $farm['name']);
     			    }
 			    }
 			}
 			
 			if (count($err) == 0)
 			{
-			     $okmsg = "{$i} client roles deleted";
+			     $okmsg = sprintf(_("%s client roles deleted"), $i);
 			     UI::Redirect("client_roles_view.php");
 			}
 		}
@@ -143,9 +131,9 @@
 	$paging = new SQLPaging();
 
 	if ($_SESSION['uid'] == 0)
-	   $sql = "SELECT * from ami_roles WHERE clientid != 0";
+	   $sql = "SELECT * from ami_roles WHERE 1=1";
 	else
-	   $sql = "SELECT * from ami_roles WHERE clientid='{$_SESSION['uid']}'";
+	   $sql = "SELECT * from ami_roles WHERE clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."')";
 		
 	if ($req_clientid)
 	{
@@ -154,7 +142,23 @@
 	    $sql .= " AND clientid='{$id}'";
 	}
 	   
+	if ($req_type)
+	{
+		$type = preg_replace("/[^A-Za-z]+/", "", $req_type);
+		$paging->AddURLFilter("type", $type);
+	    $sql .= " AND roletype='{$type}'";
+	}
 		
+	if (isset($req_approval_state))
+	{
+		$state = preg_replace("/[^A-Za-z]+/", "", $req_approval_state);
+		$paging->AddURLFilter("approval_state", $state);
+		$sql .= " AND approval_state = '{$state}'";
+		$sql .= " AND clientid != '0'";
+	}
+	elseif ($req_type == ROLE_TYPE::SHARED)
+		$sql .= " AND clientid = '0'";
+	
 	//
 	//Paging
 	//
@@ -174,28 +178,36 @@
 	//
 	foreach ($rows as &$row)
 	{
-		if ($row['ami_id'])
+		if ($row['ami_id'] && $row['roletype'] != ROLE_TYPE::SHARED)
 			$row["isreplaced"] = $db->GetOne("SELECT id FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
 		
-		$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
+		if ($row['clientid'] == 0)
+			$row["client"] = array("fullname" => "Scalr");
+		else
+			$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id='{$row['clientid']}'");
 		
 		if ($row["isreplaced"])
 			$infrole = $db->GetRow("SELECT * FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
 		else
 			$infrole = $row;
 			
+		$time = strtotime($row['dtbuilt']);
+		$row['dtbuilt'] = ($time) ? date("M d, Y H:i", $time) : "";
+			
 		if ($infrole["replace"] != '' && $infrole["iscompleted"] != 2)
 			$row["abort_id"] = $infrole['id'];
+			
+		$row['type'] = ROLE_ALIAS::GetTypeByAlias($row['alias']);
 			
 		if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == ROLE_TYPE::SHARED)
     	   $display["rows"][] = $row;
 	}
 	
-	$display["title"] = "Custom roles > View";
+	$display["title"] = _("Roles > View");
 	
 	$display["page_data_options_add"] = true;
 	$display["page_data_options"] = array(
-		array("name" => "Delete", "action" => "delete")
+		array("name" => _("Delete"), "action" => "delete")
 	);
 	require_once ("src/append.inc.php");
 ?>

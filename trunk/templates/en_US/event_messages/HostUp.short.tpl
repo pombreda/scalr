@@ -1,1 +1,1 @@
-{$instanceinfo.external_ip}({$instanceinfo.role_name}) Up
+{$event->InstanceInfo.external_ip}({$event->InstanceInfo.role_name}) Up

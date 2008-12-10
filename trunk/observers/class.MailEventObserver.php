@@ -57,18 +57,12 @@
 		{
 			// If observer enabled
 			if (!$this->Config || $this->Config->GetFieldByName("IsEnabled")->Value == 0)
-			{
-				Logger::getLogger(__CLASS__)->info("F1");
 				return;
-			}
 				
 			$enabled = $this->Config->GetFieldByName("{$method}Notify");
 				
 			if (!$enabled || $enabled->Value == 0)
-			{
-				Logger::getLogger(__CLASS__)->info("F2");
 				return;
-			}
 				
 			// Event name
 			$name = substr($method, 2);

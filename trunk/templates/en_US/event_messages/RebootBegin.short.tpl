@@ -1,1 +1,1 @@
-{$instanceinfo.external_ip} reboot start 
+{$event->InstanceInfo.external_ip} reboot start 

@@ -17,42 +17,37 @@
 		 */
 		private function GetAmazonEC2ClientObject()
 		{
-	    	// Get clientinfo from database;
+	    	// Get ClientID from database;
 			$clientid = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
-			$clientinfo = $this->DB->GetRow("SELECT * FROM clients WHERE id=?", array($clientid));
 			
-			// Decrypt admin master password
-	    	$cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-	    	
-			// Decrypt client prvate key and certificate
-	    	$private_key = $this->Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-	    	$certificate = $this->Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+			// Get Client Object
+			$Client = Client::Load($clientid);
 	
 	    	// Return new instance of AmazonEC2 object
-			return new AmazonEC2($private_key, $certificate);
+			return new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 		}
 				
-		public function OnHostUp($instanceinfo)
+		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 						
 			try
 			{
 				// If we need replace old instance to new one
-				if ($instanceinfo["replace_iid"])
+				if ($event->InstanceInfo["replace_iid"])
 				{
 					$this->Logger->debug("Going to termination old instance...");
 					
 					$EC2Client = $this->GetAmazonEC2ClientObject();
 					
-					$this->DB->Execute("UPDATE farm_instances SET replace_iid='' WHERE id='{$instanceinfo['id']}'");
+					$this->DB->Execute("UPDATE farm_instances SET replace_iid='' WHERE id='{$event->InstanceInfo['id']}'");
 
 					// Get information about replacement instance from database
-					$old_instance = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id='{$instanceinfo["replace_iid"]}'");
+					$old_instance = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id='{$event->InstanceInfo["replace_iid"]}'");
 
 					// Update elastic IP
-					$this->DB->Execute("UPDATE elastic_ips SET state='1', instance_id='{$instanceinfo['instance_id']}' WHERE instance_id=? AND farmid=?",
-						array($old_instance['instance_id'], $this->FarmID)
+					$this->DB->Execute("UPDATE elastic_ips SET state='1', instance_id=? WHERE instance_id=? AND farmid=?",
+						array($event->InstanceInfo['instance_id'], $old_instance['instance_id'], $this->FarmID)
 					);
 					
 					$this->Logger->debug("Old instance: {$old_instance['id']}.");
@@ -64,7 +59,7 @@
 						if ($res instanceof SoapFault)
 							$this->Logger->fatal("Cannot terminate instance '{$old_instance["instance_id"]}' ({$res->faultString}). Please do it manualy.");
 						else
-							$this->Logger->warn("Instance '{$old_instance["instance_id"]}' has been swapped with the instance {$instanceinfo['instance_id']}");
+							$this->Logger->warn("Instance '{$old_instance["instance_id"]}' has been swapped with the instance {$event->InstanceInfo['instance_id']}");
 					}
 				}
 			}
@@ -77,23 +72,22 @@
 		/**
 		 * Update database when 'rebundleFail' event recieved from instance
 		 *
-		 * @param string $ami_id
-		 * @param array $instanceinfo
+		 * @param RebundleFailedEvent $event
 		 * 
 		 */
-		public function OnRebundleFailed($instanceinfo)
+		public function OnRebundleFailed(RebundleFailedEvent $event)
 		{
 			$EC2Client = $this->GetAmazonEC2ClientObject();
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 
-			if ($instanceinfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
     			{    				
-    				$this->Logger->info("Terminating '{$instanceinfo["instance_id"]}' instance.");
+    				$this->Logger->info("Terminating '{$event->InstanceInfo["instance_id"]}' instance.");
     				
-    				$response = $EC2Client->TerminateInstances(array($instanceinfo["instance_id"]));
+    				$response = $EC2Client->TerminateInstances(array($event->InstanceInfo["instance_id"]));
     					
     				if ($response instanceof SoapFault)
     					$this->Logger->warn($response->faultstring);
@@ -108,23 +102,22 @@
 		/**
 		 * Update database when 'newAMI' event recieved from instance
 		 *
-		 * @param string $ami_id
-		 * @param array $instanceinfo
+		 * @param RebundleCompleteEvent $event
 		 * 
 		 */
-		public function OnRebundleComplete($ami_id, $instanceinfo)
+		public function OnRebundleComplete(RebundleCompleteEvent $event)
 		{
 			$EC2Client = $this->GetAmazonEC2ClientObject();
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 
-			if ($instanceinfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
     			{    				
-    				$this->Logger->info("Terminating '{$instanceinfo["instance_id"]}' instance.");
+    				$this->Logger->info("Terminating '{$event->InstanceInfo["instance_id"]}' instance.");
     				
-    				$response = $EC2Client->TerminateInstances(array($instanceinfo["instance_id"]));
+    				$response = $EC2Client->TerminateInstances(array($event->InstanceInfo["instance_id"]));
     					
     				if ($response instanceof SoapFault)
     					$this->Logger->warn($response->faultstring);
@@ -135,43 +128,13 @@
     			}
 			}
 		}
-		
-		/**
-		 * Launch instances on farm
-		 *
-		 * @param boolean $mark_instances_as_active
-		 */
-		public function OnFarmLaunched($mark_instances_as_active)
-		{
-			/* Poller will run instances. */
-			/*
-			$EC2Client = $this->GetAmazonEC2ClientObject();
-			
-			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			
-			$amis = $this->DB->GetAll("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}'");
-	        foreach ($amis as $ami)
-	        {
-	            $roleinfo = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($ami["ami_id"]));
-	            if (!$roleinfo)
-	            	continue;
-
-    		    $role = $roleinfo["name"];  
-    		    $isactive = ($mark_instances_as_active) ? true : false;
-    		      
-				$res = Scalr::RunInstance($EC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $ami["ami_id"], false, $isactive);                        
-				if (!$res)
-					$this->Logger->warn("Cannot run new instance");
-	        }
-			*/
-		}
-		
+				
 		/**
 		 * Terminate all running instance on farm
 		 *
-		 * @param boolean $remove_zone_from_DNS
+		 * @param FarmTerminatedEvent $event
 		 */
-		public function OnFarmTerminated($remove_zone_from_DNS, $keep_elastic_ips, $term_on_sync_fail)
+		public function OnFarmTerminated(FarmTerminatedEvent $event)
 		{
 			$EC2Client = $this->GetAmazonEC2ClientObject();
 			

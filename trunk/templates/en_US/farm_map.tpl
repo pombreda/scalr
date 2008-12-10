@@ -150,17 +150,14 @@
 				<div class="map_instance_container">
 					<div style="padding-top:10px;">
 						<div id="body_{$item.instances[id].instance_id}" onClick="ShowInstanceInfo(event, '{$item.instances[id].instance_id}', $('body_{$item.instances[id].instance_id}'));" align="center" class="map_instance_dashboard">
-							<div style="font-size:11px;padding-top:8px;">{$item.instances[id].instance_id}</div>
-							<div style="margin-top:0px; background:url('/images/map_icons/icons/{$item.icon}.png') no-repeat;height:75px;width:75px;">&nbsp;</div>
+							<div style="font-size:10px;padding-top:5px;">{$item.instances[id].instance_id}</div>
+							<div style="margin-top:4px; background:url('/images/map_icons/icons/{$item.icon}.png') no-repeat;height:75px;width:95px;">&nbsp;</div>
 							<div style="display:{if $item.instances[id].issync}{else}none{/if};background: url('/images/map_icons/instance_sync.gif') no-repeat;margin-left:6px;margin-bottom:4px;float:left;width:15px;" title="Synchronizing. New role name: {$item.instances[id].issync}">
 								&nbsp;
 							</div>
-							<div style="background: url('/images/map_icons/instance_state_{$item.instances[id].state_image}.png') no-repeat;float:right;margin-bottom:4px;width:15px;margin-right:6px;" title="{$item.instances[id].state}">
+							<div style="background: url('/images/map_icons/instance_state_{$item.instances[id].state_image}.png') no-repeat;float:right;margin-bottom:4px;width:17px;margin-right:6px;" title="{$item.instances[id].state}">
 								&nbsp;
 							</div>
-							{if $item.instances[id].mysql_type}
-								<div style="float:right;font-size:10px;margin-right:15px;line-height:10px;margin-top:2px;">{$item.instances[id].mysql_type}</div>
-							{/if}
 						</div>
 						<div style="margin-left:2px;">
 							<a id="control_{$item.instances[id].instance_id}" href="javascript:void(0)">Options</a>
@@ -187,6 +184,16 @@
 				            	{/if}
 				            {/if}
 				        {/if}
+				        {if $item.alias == 'mysql'}
+			        		{literal}{type: 'separator'},{/literal}
+			        		{literal}{href: 'farm_mysql_info.php?farmid='+farmid, innerHTML: 'Backup\/bundle MySQL data'}{/literal},
+			        	{/if}
+				        {literal}{type: 'separator'}{/literal},
+				        {if $item.instances[id].isrebootlaunched == 0 && $item.instances[id].state == 'Running'}
+				        	{literal}{href: 'instances_view.php?task=reboot&iid='+iid+'&farmid='+farmid, innerHTML: 'Reboot'}{/literal},
+				        {/if}
+				        {literal}{href: 'instances_view.php?task=terminate&iid='+iid+'&farmid='+farmid, innerHTML: 'Terminate'},{/literal}
+				        {literal}{type: 'separator'}{/literal},
 			            {literal}{href: 'logs_view.php?iid='+iid, innerHTML: 'View logs'}{/literal}
 			        ];
 			        
@@ -201,8 +208,8 @@
 				<div style="margin-right:20px;float:left;height:160px;">
 					<div style="padding-top:10px;">
 						<div id="body_empty_{$smarty.section.id.iteration}" align="center" class="map_instance_dashboard">
-							<div style="font-size:11px;padding-top:8px;color:#cccccc">Spare instance</div>
-							<div style="margin-top:0px;width:75px;height:75px;background: url('/images/map_icons/icons/{$item.icon}_disabled.png') no-repeat;">&nbsp;</div>
+							<div style="font-size:10px;padding-top:5px;color:#cccccc">Spare instance</div>
+							<div style="margin-top:4px;width:100px;height:75px;background: url('/images/map_icons/icons/{$item.icon}_disabled.png') no-repeat;">&nbsp;</div>
 						</div>
 						<div style="margin-left:2px;">
 							&nbsp;

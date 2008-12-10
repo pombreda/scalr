@@ -1,1 +1,1 @@
-LA for {$roleinfo.name} is over maximum
+LA for {$event->RoleInfo.name} is over maximum

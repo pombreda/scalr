@@ -1,1 +1,1 @@
-Farm {$farm.name} (ID: {$farm.id}) terminated
+Farm {$event->Farm.name} (ID: {$event->Farm.id}) terminated

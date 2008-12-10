@@ -1,12 +1,12 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "DNS zone config";
+	$display["title"] = _("DNS zone config");
 	
 	$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($req_zone));
 	if (!$zoneinfo || ($zoneinfo["clientid"] != $_SESSION["uid"] && $_SESSION["uid"] != 0))
 	{
-		$errmsg = "DNS zone not found";
+		$errmsg = _("DNS zone not found");
 		UI::Redirect("sites_view.php");
 	}
 	
@@ -17,8 +17,9 @@
 		foreach ($post_hosts as $host)
 		{
 			$chunks = explode("/", $host);
-			if (!$Validator->IsIPAddress($chunks[0]) || ($chunks[1] && !$Validator->IsNumeric($chunks[1])) || count($chunks) > 2)
-				$err[] = "'{$host}' is not valid IP address or CIDR";
+			$ip_chunks = explode(".", $chunks[0]);
+			if (!$Validator->IsIPAddress($chunks[0]) || ($chunks[1] && !$Validator->IsNumeric($chunks[1])) || count($chunks) > 2 || count($ip_chunks) != 4)
+				$err[] = sprintf(_("'%s' is not valid IP address or CIDR"), $host);
 		}
 		
 		if (count($err) == 0)
@@ -27,7 +28,7 @@
 				array(implode(";", $post_hosts), $zoneinfo['id'])
 			);
 			
-			$okmsg = "Changes have been saved. They will become active in few minutes.";
+			$okmsg = _("Changes have been saved. They will become active in few minutes.");
 			UI::Redirect("dns_zone_config.php?zone={$zoneinfo['zone']}");
 		}
 	}

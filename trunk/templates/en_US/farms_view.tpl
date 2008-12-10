@@ -5,6 +5,7 @@
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
 		<tr>
+			<th>Farm ID</th>
 			{if $smarty.session.uid == 0}<th>Client</th>{/if}
 			<th>Farm Name</th>
 			<th>Added</th>
@@ -18,11 +19,12 @@
 	<tbody>
 	{section name=id loop=$rows}
 	<tr id='tr_{$smarty.section.id.iteration}'>
+		<td class="Item" valign="top">{$rows[id].id}</td>
 		{if $smarty.session.uid == 0}<td class="Item" valign="top"><a href="clients_view.php?clientid={$rows[id].client.id}">{$rows[id].client.email}</a></td>{/if}
 		<td class="Item" valign="top">{$rows[id].name}</td>
 		<td class="Item" valign="top">{$rows[id].dtadded}</td>
 		<td class="Item" valign="top">{$rows[id].roles} [<a href="roles_view.php?farmid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].instanses} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
+		<td class="Item" valign="top" nowrap>{$rows[id].instances} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].sites} [<a href="sites_view.php?farmid={$rows[id].id}">View</a>] {if $smarty.session.uid != 0}[<a href="sites_add.php?farmid={$rows[id].id}">Add</a>]{/if}</td>
 		<td class="Item" valign="top" nowrap>
 			<span style="color:{if $rows[id].status == 1}green{else}red{/if};">
@@ -56,11 +58,27 @@
             {literal}{href: 'ebs_manage.php?farmid='+id, innerHTML: 'EBS usage'}{/literal},
             {literal}{href: 'elastic_ips.php?farmid='+id, innerHTML: 'Elastic IPs usage'}{/literal},
             {literal}{href: 'events_view.php?farmid='+id, innerHTML: 'Events & Notifications'}{/literal},
-                                    
-            {if $rows[id].havemysqlrole}
-            {literal}{type: 'separator'}{/literal},
-            {literal}{href: 'farm_mysql_info.php?farmid='+id, innerHTML: 'MySQL status'}{/literal},
+                                               	
+           	{if $rows[id].status == 1}
+           		{literal}{type: 'separator'}{/literal},
+
+           		{if $rows[id].havemysqlrole}
+	            	{literal}{href: 'farm_mysql_info.php?farmid='+id, innerHTML: 'MySQL status'}{/literal},
+	            {/if}
+           	
+            	{literal}{href: 'execute_script.php?farmid='+id, innerHTML: 'Execute script'}{/literal},
             {/if}
+           	
+           	{if $rows[id].shortcuts|@count}
+           		{literal}{type: 'separator'}{/literal},
+           		{assign var=shortcuts value=$rows[id].shortcuts}
+           		{section name=id loop=$shortcuts}
+           			{literal}{href: 'execute_script.php?farmid='+id+'&task=execute&script={/literal}{$shortcuts[id].event_name}{literal}', innerHTML: "Execute {/literal}&laquo;{$shortcuts[id].name}&raquo;{literal}"}{/literal},	
+           		{/section}
+           	{/if}
+           	
+           	{literal}{type: 'separator'}{/literal},
+           	{literal}{href: 'logs_view.php?farmid='+id, innerHTML: 'View log'}{/literal},
            	
             {literal}{type: 'separator'}{/literal},
             {literal}{href: 'farms_add.php?id='+id, innerHTML: 'Edit'}{/literal},
@@ -76,11 +94,11 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="{if $smarty.session.uid == 0}8{else}7{/if}" align="center">No farms found</td>
+		<td colspan="{if $smarty.session.uid == 0}9{else}8{/if}" align="center">No farms found</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="{if $smarty.session.uid == 0}7{else}6{/if}" align="center">&nbsp;</td>
+		<td colspan="{if $smarty.session.uid == 0}8{else}7{/if}" align="center">&nbsp;</td>
 		<td class="ItemEdit" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>

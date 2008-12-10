@@ -37,7 +37,7 @@
 			    }
 			}
 			
-			$mess = "{$i} Nameservers deleted";
+			$okmsg = "{$i} Nameservers deleted";
 			UI::Redirect("ns_view.php");
 		}
 	};

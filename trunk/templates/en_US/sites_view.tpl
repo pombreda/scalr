@@ -5,11 +5,11 @@
 	<table class="Webta_Items" rules="groups" frame="box" width="100%" cellpadding="2" id="Webta_Items">
 	<thead>
 	<tr>
-		<th>Application</th>
-		<th>Farm</th>
-		<th>Role</th>
-		<th width="180">DNS Zone status</th>
-		<th width="1">Options</th>
+		<th>{t}Application{/t}</th>
+		<th>{t}Farm{/t}</th>
+		<th>{t}Role{/t}</th>
+		<th width="180">{t}DNS Zone status{/t}</th>
+		<th width="1">{t}Options{/t}</th>
 		<th nowrap width="1%"><input type="checkbox" name="checkbox" value="checkbox" onClick="checkall()"></th>
 	</tr>
 	</thead>
@@ -20,7 +20,7 @@
 		<td class="Item" valign="top"><a href="farms_view.php?farmid={$rows[id].farm.id}">{$rows[id].farm.name}</a></td>
 		<td class="Item" valign="top"><a href="roles_view.php?farmid={$rows[id].farm.id}&ami_id={$rows[id].role.ami_id}">{$rows[id].role.name}</a></td>
 		<td class="Item" valign="top">{$rows[id].string_status}</td>
-		<td class="ItemEdit" valign="top" width="1">{if $rows[id].status == 0}<a id="control_{$rows[id].zone}" href="javascript:void(0)">Options</a>{/if}</td>
+		<td class="ItemEdit" valign="top" width="1">{if $rows[id].status == 0}<a id="control_{$rows[id].zone}" href="javascript:void(0)">{t}Options{/t}</a>{/if}</td>
 		<td class="ItemDelete">
 			<span>
 				<input type="checkbox" id="delete[]" {if $rows[id].status > 1}disabled{/if} name="delete[]" value="{$rows[id].id}">
@@ -31,14 +31,11 @@
 	<script language="Javascript" type="text/javascript">
     	var zone = '{$rows[id].zone}';
     	
-    	/* TODO */
-    	
     	var menu = [
-            {literal}{href: 'sites_add.php?ezone='+zone, innerHTML: 'Edit DNS zone'}{/literal}
+            {literal}{href: 'sites_add.php?ezone='+zone, innerHTML: '{/literal}{t}Edit DNS zone{/t}{literal}'}{/literal}
             
-            {if $rows[id].role_alias == 'app' && $vhost_enabled},{literal}{href: 'vhost.php?name='+zone, innerHTML: 'Configure apache virtual host'}{/literal}{/if}
+            {if $rows[id].role_alias == 'app' || $rows[id].role_alias == 'www'},{literal}{href: 'vhost.php?name='+zone, innerHTML: 'Configure apache virtual host'}{/literal}{/if}
         ];
-        
         
         {literal}			
         var control = new SelectControl({menu: menu});
@@ -49,7 +46,7 @@
 	{/if}
 	{sectionelse}
 	<tr>
-		<td colspan="8" align="center">No applications found</td>
+		<td colspan="8" align="center">{t}No applications found{/t}</td>
 	</tr>
 	{/section}
 	<tr>

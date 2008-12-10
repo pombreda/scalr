@@ -1,6 +1,6 @@
 <div id="spf_popup" align="left">
-    <div align="center"><h3>SPF Constructor</h3></div>
-    Add mechanism:<br>
+    <div align="center"><h3>{t}SPF Constructor{/t}</h3></div>
+    {t}Add mechanism:{/t}<br>
     <table align="left" width="" cellpadding="2" cellspacing="2">
         <tr>
             <td>
@@ -30,7 +30,7 @@
     </table>
 	<br>
 	<br><br>
-	Add modifier:<br>
+	{t}Add modifier:{/t}<br>
     <table align="left" width="">
         <tr>
             <td>
@@ -44,7 +44,7 @@
         </tr>
     </table>
 	<br><br><br>
-	SPF Record:<br><input type="text" class="text" name="spfpreview" style="width:350px;margin:4px;" id="spfpreview" value="v=spf1" />
+	{t}SPF Record:{/t}<br><input type="text" class="text" name="spfpreview" style="width:350px;margin:4px;" id="spfpreview" value="v=spf1" />
 	<br>
 	<br>
 	<div align="center">

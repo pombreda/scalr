@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php");
 	
-	$display["title"] = "Custom role&nbsp;&raquo;&nbsp;Create failure details";
+	$display["title"] = _("Custom role&nbsp;&raquo;&nbsp;Create failure details");
 	
     if (!$get_id)
 	   UI::Redirect("client_coles_view.php");
@@ -13,7 +13,7 @@
 		
 	if (!$info["fail_details"])
 	{
-		$errmsg = "There are no details found for selected role";
+		$errmsg = _("There are no details found for selected role");
 		UI::Redirect("client_roles_view.php");
 	}
 

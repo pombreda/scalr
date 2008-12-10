@@ -74,45 +74,28 @@
             
             while(true)
             {
-	            // Get event task from task queue
+            	// Process tasks from Deferred event queue
 	            while ($Task = TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS)->Poll())
 	            {
-	            	$event = $db->GetRow("SELECT * FROM events WHERE id=?", array($Task->EventID));
-	            	
-	            	if ($event)
-	            	{
-		            	try
-		            	{
-		            		// Log
-		            		$this->Logger->info("Fire event {$event['type']} for farm: {$event['farmid']}");
-				            	
-				            // Fire event
-							Scalr::FireDeferredEvent($event['farmid'], $event['type'], $event['message']);
-				            	
-				            $db->Execute("UPDATE events SET ishandled='1' WHERE id=?", array($event['id']));
-		            	}
-		            	catch(Exception $e)
-		            	{
-		            		$this->Logger->fatal("Cannot fire deferred event: {$e->getMessage()}");
-		            	}
-	            	}
-		            
-		            
-		            // Cleaning
-		            unset($current_memory_usage);
-		            unset($event);
-		            
-		            // Check memory usage
-		            $current_memory_usage = $this->GetMemoryUsage()-$memory_usage;
-		            if ($current_memory_usage > $this->DaemonMemoryLimit)
-		            {
-		            	$this->Logger->warn("DBQueueEventProcess daemon reached memory limit {$this->DaemonMemoryLimit}M, Used:{$current_memory_usage}M");
-		            	$this->Logger->warn("Restart daemon.");
-		            	exit();
-		            }
+	            	$Task->Run();
+	            }
+	            // Reset task
+	            TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS)->Reset();
+	            
+            	// Cleaning
+	            unset($current_memory_usage);
+	            unset($event);
+	            
+	            // Check memory usage
+	            $current_memory_usage = $this->GetMemoryUsage()-$memory_usage;
+	            if ($current_memory_usage > $this->DaemonMemoryLimit)
+	            {
+	            	$this->Logger->warn("DBQueueEventProcess daemon reached memory limit {$this->DaemonMemoryLimit}M, Used:{$current_memory_usage}M");
+	            	$this->Logger->warn("Restart daemon.");
+	            	exit();
 	            }
 	            
-	            // Sleep for 15 seconds
+	            // Sleep for 60 seconds
 		        sleep(15);
 		        
 		        // Clear stat file cache

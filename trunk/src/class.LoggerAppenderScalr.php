@@ -118,13 +118,29 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		$severity = $this->SeverityToInt($event->getLevel()->toString());
 	        		$message = $this->db->qstr($event->message->Message);
 	        		
-	        		$query = "INSERT INTO logentries SET 
+	        		$query = "INSERT DELAYED INTO logentries SET 
 	        			serverid	= '', 
 	        			message		= {$message},
 	        			severity	= '{$severity}',
 	        			time		= '".time()."',
 	        			source 		= '".$event->getLoggerName()."',
 	        			farmid 		= '{$event->message->FarmID}' 
+	        		";
+	        			
+	        		$this->db->Execute($query);
+	        		
+	        		$event->message = $this->db->qstr("[Farm: {$event->message->FarmID}] {$event->message->Message}");
+	        	}
+	        	elseif ($event->message instanceof ScriptingLogMessage)
+	        	{
+	        		$message = $this->db->qstr($event->message->Message);
+	        		
+	        		$query = "INSERT DELAYED INTO scripting_log SET 
+	        			farmid 		= '{$event->message->FarmID}',
+	        			event		= '{$event->message->EventName}',
+	        			instance	= '{$event->message->InstanceID}',
+	        			dtadded		= NOW(),
+	        			message		= {$message}
 	        		";
 	        			
 	        		$this->db->Execute($query);
@@ -147,7 +163,7 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		$event->backtrace = $this->db->qstr(Debug::Backtrace());
 	        		
 	        		// Set meta information
-	        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='1', warnings='0'
+	        		$this->db->Execute("INSERT DELAYED INTO syslog_metadata SET transactionid=?, errors='1', warnings='0'
 	        			ON DUPLICATE KEY UPDATE errors=errors+1
 	        		",
 	        			array(TRANSACTION_ID)
@@ -158,7 +174,7 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		if ($level == "WARN")
 	        		{
 	        			// Set meta information
-		        		$this->db->Execute("INSERT INTO syslog_metadata SET transactionid=?, errors='0', warnings='1'
+		        		$this->db->Execute("INSERT DELAYED INTO syslog_metadata SET transactionid=?, errors='0', warnings='1'
 		        			ON DUPLICATE KEY UPDATE warnings=warnings+1
 		        		",
 		        			array(TRANSACTION_ID)

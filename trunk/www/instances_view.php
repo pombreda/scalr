@@ -8,31 +8,23 @@
         
 	if (!$farminfo)
 	{
-	    $errmsg = "Farm not found";
+	    $errmsg = _("Farm not found");
 	    UI::Redirect("farms_view.php");
 	}
 	
-	if ($_SESSION['uid'] == 0)
-    {
-    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo['clientid']));
-	
-		// Decrypt client prvate key and certificate
-    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-    }
-    else
-    {
-    	$private_key = $_SESSION["aws_private_key"];
-    	$certificate = $_SESSION["aws_certificate"];
-    }
-	
-    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
-                        
-	$display["title"] = "Instances&nbsp;&raquo;&nbsp;View";
+	// Load Client Object
+    $Client = Client::Load($farminfo['clientid']);
+    
+    if ($post_cancel)
+		UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
+    
+    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+    
+	$display["title"] = _("Instances&nbsp;&raquo;&nbsp;View");
 	
 	Core::Load("NET/SNMP");
 	$SNMP = new SNMP();
-	
+		
 	if ($req_action == "sshClient")
 	{
 		$ssh_host = $db->GetOne("SELECT external_ip FROM farm_instances WHERE instance_id=? AND farmid=?", array($req_instanceid, $farminfo["id"]));
@@ -43,169 +35,198 @@
 			exit();
 		}
 	}
-	
-	if ($_POST && $post_actionsubmit)
+
+	if ($req_task || $req_action)
 	{
-		$i = 0;
-		if (is_array($post_actid))
+		if ($req_task == 'setactive')
 		{
-				
-			if ($post_action == 'setactive')
+			
+			$instanceinfo = $db->GetRow("SELECT * FROM farm_instances
+				WHERE instance_id=? AND farmid=?",
+				array($req_iid, $farminfo["id"])
+			);
+			
+			if ($instanceinfo)
 			{
-				foreach ($post_actid as $v)
-				{
-					$instanceinfo = $db->GetRow("SELECT * FROM farm_instances
-						WHERE instance_id=? AND farmid=?",
-						array($v, $farminfo["id"])
-					);
-					
-					if ($instanceinfo)
-					{
-						$db->Execute("UPDATE farm_instances SET isactive='1' 
-							WHERE id=?", 
-							array($instanceinfo['id'])
-						);
-						
-						$zones = $db->GetAll("SELECT * FROM zones WHERE farmid=?", array($instanceinfo['farmid']));
-						
-						$DNSZoneController = new DNSZoneControler();
-						
-						$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
-						
-						try
-						{
-							foreach ($zones as $zoneinfo)
-							{
-								$records = array();
-								
-								if ($instanceinfo["role_name"] == $zoneinfo["role_name"])
-				    		    {
-				    				$records[] = array("rtype" => "A", "ttl" => CONFIG::$DYNAMIC_A_REC_TTL, "rvalue" => $instanceinfo["external_ip"], "rkey" => "@", "issystem" => 1);
-				    		    }
-				    		    
-				    		    if ($instanceinfo["isdbmaster"] == 1)
-								{
-									$records[] = array("rtype" => "A", "rkey" => "int-{$instanceinfo['role_name']}-master", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
-									$records[] = array("rtype" => "A", "rkey" => "ext-{$instanceinfo['role_name']}-master", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
-								}
-
-								if ($ami_info['alias'] == 'mysql' && $instanceinfo['role_name'] != 'mysql')
-								{
-									$records[] = array("rtype" => "A", "rkey" => "int-mysql", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
-									$records[] = array("rtype" => "A", "rkey" => "ext-mysql", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
-									if ($instanceinfo["isdbmaster"] == 1)
-									{
-										$records[] = array("rtype" => "A", "rkey" => "int-mysql-master", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
-										$records[] = array("rtype" => "A", "rkey" => "ext-mysql-master", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
-									}
-								}
-								
-								$records[] = array("rtype" => "A", "rkey" => "int-{$instanceinfo['role_name']}", "rvalue" => $instanceinfo["internal_ip"], "ttl" => 20, "issystem" => 1);
-								$records[] = array("rtype" => "A", "rkey" => "ext-{$instanceinfo['role_name']}", "rvalue" => $instanceinfo["external_ip"], "ttl" => 20, "issystem" => 1);
-								
-								foreach ($records as $k=>$v)
-								{
-									if ($v["rkey"] != '' && $v["rvalue"] != '')
-										$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
-								}
-								
-								$DNSZoneController->Update($zoneinfo["id"]);
-							}
-							
-							$i++;
-						}
-						catch(Exception $e)
-						{
-							$err[] = $e->getMessage();
-						}
-					}
-				}
+				$db->Execute("UPDATE farm_instances SET isactive='1' 
+					WHERE id=?", 
+					array($instanceinfo['id'])
+				);
 				
-				if (count($err) == 0)
-					$okmsg = "{$i} instances succesfully marked as active";
+				$zones = $db->GetAll("SELECT * FROM zones WHERE farmid=?", array($instanceinfo['farmid']));
+				
+				$DNSZoneController = new DNSZoneControler();
+				
+				$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+				
+				try
+				{
+					foreach ($zones as $zoneinfo)
+					{
+						$records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $zoneinfo["role_name"], $ami_info['alias']);
+														
+						foreach ($records as $k=>$v)
+						{
+							if ($v["rkey"] != '' && $v["rvalue"] != '')
+								$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
+						}
+						
+						$DNSZoneController->Update($zoneinfo["id"]);
+					}
+					
+					$i++;
+				}
+				catch(Exception $e)
+				{
+					$err[] = $e->getMessage();
+				}
 			}
-			elseif ($post_action == 'setinactive')
+			
+			if (count($err) == 0)
+				$okmsg = _("Instance succesfully marked as active");
+		}
+		elseif ($req_task == 'setinactive')
+		{
+			$instanceinfo = $db->GetRow("SELECT * FROM farm_instances
+				WHERE instance_id=? AND farmid=?",
+				array($req_iid, $farminfo["id"])
+			);
+				
+			if ($instanceinfo)
 			{
-				foreach ($post_actid as $v)
+				$db->Execute("UPDATE farm_instances SET isactive='0' 
+					WHERE id=?", 
+					array($instanceinfo['id'])
+				);
+				
+				$zones = $db->GetAll("SELECT zoneid FROM records 
+					WHERE (rvalue='{$instanceinfo['internal_ip']}' OR 
+						rvalue='{$instanceinfo['external_ip']}') AND issystem='1' GROUP BY zoneid"
+				);
+				
+				$DNSZoneController = new DNSZoneControler();
+				
+				try
 				{
-					$instanceinfo = $db->GetRow("SELECT * FROM farm_instances
-						WHERE instance_id=? AND farmid=?",
-						array($v, $farminfo["id"])
-					);
-					
-					if ($instanceinfo)
+					foreach ($zones as $zoneid)
 					{
-						$db->Execute("UPDATE farm_instances SET isactive='0' 
-							WHERE id=?", 
-							array($instanceinfo['id'])
+						$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));
+						
+						// Add A records pointed to new active instance
+						$db->Execute("DELETE FROM records WHERE 
+							zoneid='{$zoneinfo['id']}' AND 
+							(rvalue='{$instanceinfo['internal_ip']}' OR 
+								rvalue='{$instanceinfo['external_ip']}'
+							) AND issystem='1'"
 						);
 						
-						$zones = $db->GetAll("SELECT zoneid FROM records 
-							WHERE (rvalue='{$instanceinfo['internal_ip']}' OR 
-								rvalue='{$instanceinfo['external_ip']}') AND issystem='1' GROUP BY zoneid"
-						);
-						
-						$DNSZoneController = new DNSZoneControler();
-						
-						try
-						{
-							foreach ($zones as $zoneid)
-							{
-								$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id=?", array($zoneid));
-								
-								// Add A records pointed to new active instance
-								$db->Execute("DELETE FROM records WHERE 
-									zoneid='{$zoneinfo['id']}' AND 
-									(rvalue='{$instanceinfo['internal_ip']}' OR 
-										rvalue='{$instanceinfo['external_ip']}'
-									) AND issystem='1'"
-								);
-								
-								$DNSZoneController->Update($zoneinfo["id"]);
-							}
-							
-							$i++;
-						}
-						catch(Exception $e)
-						{
-							$err[] = $e->getMessage();
-						}
+						$DNSZoneController->Update($zoneinfo["id"]);
 					}
+					
+					$i++;
 				}
+				catch(Exception $e)
+				{
+					$err[] = $e->getMessage();
+				}
+			}
 
-				if (count($err) == 0)
-					$okmsg = "{$i} instances succesfully marked as active";
+			if (count($err) == 0)
+				$okmsg = _("Instance succesfully marked as active");
+		}
+		else
+		{			
+			if (isset($req_action) && $_POST)
+			{
+				$req_instances = $post_delete;
+				$req_task = $req_action;
 			}
 			else
 			{
-				try 
-				{
-					$instances = array();
-					foreach ($post_actid as $v)
-					{
-						array_push($instances, $v);
-						$i++;
-					}
-	
-					// Do something
-					if ($post_action == "terminate")
-						$response = $AmazonEC2Client->TerminateInstances($instances);
-					elseif ($post_action == "reboot")
-						$response = $AmazonEC2Client->RebootInstances($instances);
-						
-					if ($response instanceof SoapFault)
-					{
-						$err[] = $response->faultstring;
-					}
-				}
-				catch (Exception $e)
-				{
-					$err[] = $e->getMessage(); 
-				}
-					
-				$okmsg = "{$i} instances succesfully " . ($post_action == "reboot" ? "going to reboot" : "terminated");
+				$req_instances = array($req_iid);
 			}
-		}	
+
+			foreach ($req_instances as $instanceid)
+			{
+				$instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND farmid=?", array($instanceid, $farminfo["id"]));
+				
+				if ($instance_info)
+				{
+					try 
+					{
+						$instances = array($instanceid);
+						
+						// Do something
+						if ($req_task == "terminate")
+						{
+							$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+								array($instance_info['ami_id'], $farminfo["id"])
+							);
+							$running_instances = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE ami_id=? AND farmid=?", 
+								array($instance_info['ami_id'], $farminfo["id"])
+							);
+							
+							$db->BeginTrans();
+							
+							if (count($req_instances) == 1)
+							{
+								if ($post_cbtn_2)
+								{
+									$db->Execute("UPDATE farm_amis SET min_count=min_count-1 WHERE id=?", array($farm_ami_info['id']));
+								}
+								elseif ($post_cbtn_3)
+								{
+									//
+								}
+								else
+								{
+									if ($running_instances == $farm_ami_info["min_count"] && $farm_ami_info["min_count"] > 1)
+									{
+										$display["instance_id"] = $instance_info['instance_id'];
+										$display["min_count"] = $farm_ami_info["min_count"];
+										$display["role_name"] = $instance_info["role_name"];
+										$display["min_count_new"] = $farm_ami_info["min_count"]-1;
+										$display["action"] = $post_action;
+										
+										$Smarty->assign($display);
+										$Smarty->display("instance_terminate_confirm.tpl");
+										exit();
+									}
+								}
+							}
+							
+							try
+							{
+								$response = $AmazonEC2Client->TerminateInstances($instances);
+							}
+							catch(Exception $e)
+							{
+								$db->RollbackTrans();
+								$err[] = $e->getMessage();
+							}
+							
+							$db->CommitTrans();
+						}
+						elseif ($req_task == "reboot")
+						{
+							$response = $AmazonEC2Client->RebootInstances($instances);
+						}
+							
+						if ($response instanceof SoapFault)
+							$err[] = $response->faultstring;
+					}
+					catch (Exception $e)
+					{
+						$err[] = $e->getMessage(); 
+					}
+				}
+			}
+
+			if (count($err) == 0)
+				$okmsg = sprintf(_("%d instance(s) %s"),
+				 count($req_instances),
+				($req_task == "reboot" ? _("going to reboot") : _("terminated")));
+		}
 		
 		if ($okmsg)
 			UI::Redirect("?farmid={$req_farmid}");
@@ -217,14 +238,11 @@
 
 	// Rows
 	$response = $AmazonEC2Client->DescribeInstances();
-	
 		
 	$rowz = $response->reservationSet->item;
 		
 	if ($rowz instanceof stdClass)
 		$rowz = array($rowz);
-	
-	//var_dump($rowz[0]->instancesSet->item->dnsName);
 		
 	// Custom properties
 	foreach ($rowz as $pk=>$pv)
@@ -249,11 +267,12 @@
 		$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$iinfo['ami_id']}'");
 		
 		if ($alias == ROLE_ALIAS::MYSQL && $iinfo['state'] == INSTANCE_STATE::RUNNING)
-			$prefix = $iinfo['isdbmaster'] ? " (master)" : " (slave)";
+			$prefix = $iinfo['isdbmaster'] ? _(" (master)") : _(" (slave)");
 		else
 			$prefix = "";
 		
 	    $rowz[$pk]->Role = $iinfo["role_name"].$prefix;
+	    $rowz[$pk]->Alias = $alias;
 		
 	    if ($rowz[$pk]->instancesSet->item->launchTime)
 	    {
@@ -302,12 +321,12 @@
             $SNMP->Connect($rowz[$pk]->IP, null, $community, null, null, true);
             $res = $SNMP->Get(".1.3.6.1.4.1.2021.10.1.3.3");
             if (!$res)
-                $rowz[$pk]->LA = "Unknown";
+                $rowz[$pk]->LA = _("Unknown");
             else 
                 $rowz[$pk]->LA = number_format((float)$res, 2);
 	    }
 	    else 
-	       $rowz[$pk]->LA = "Unknown";
+	       $rowz[$pk]->LA = _("Unknown");
 	    ///
 	    
 		$doadd = true;
@@ -329,7 +348,7 @@
 				if ($iinfo["state"])
 					$rowz[$pk]->State = $iinfo["state"];
 				else
-					$rowz[$pk]->State = "Unknown";
+					$rowz[$pk]->State = _("Unknown");
 			}
 			else
 				$rowz[$pk]->State = ucfirst($rowz[$pk]->instancesSet->item->instanceState->name);
@@ -348,6 +367,12 @@
 	
 	$paging->Total = count($rowz); 
 	
+	if (isset($get_farmid))
+		$paging->AddURLFilter("farmid", (int)$get_farmid);
+		
+	if (isset($get_state))
+		$paging->AddURLFilter("state", $get_state);
+	
 	$paging->ParseHTML();
 	
 	$display["rows"] = (count($rowz) > CONFIG::$PAGING_ITEMS) ? array_slice($rowz, ($paging->PageNo-1) * CONFIG::$PAGING_ITEMS, CONFIG::$PAGING_ITEMS) : $rowz;
@@ -357,12 +382,9 @@
 	$display["farmid"] = $farminfo["id"];
 	
 	$display["page_data_options"] = array(
-		array("name" => "Terminate", "action" => "terminate"),
-		array("name" => "Reboot", "action" => "reboot"),
-		array("name" => "Create DNS records", "action" => "setactive"),
-		array("name" => "Delete DNS records", "action" => "setinactive")
+		array("name" => _("Reboot"), "action" => "reboot"),
+		array("name" => _("Terminate"), "action" => "terminate"),
 	);
-	$display["page_data_options_add"] = false;
 	
 	require("src/append.inc.php"); 
 	

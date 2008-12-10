@@ -20,41 +20,34 @@
             
             /** Clear zomby database instances **/
             $farms = $db->Execute("SELECT * FROM farms WHERE status=?", array(FARM_STATUS::TERMINATED));
-            
             while($farm = $farms->FetchRow())
             {
-            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state = ?", array($farm['id'], INSTANCE_STATE::RUNNING));
+            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state = ?", 
+            		array($farm['id'], INSTANCE_STATE::RUNNING)
+            	);
+            	
             	if (count($instances) != 0)
             	{
             		$this->Logger->warn("Found ".count($instances)." zomby instances in database for farm ID {$farm['id']}.");
             		foreach ($instances as $instance)
             		{
             			$this->Logger->warn("Removing zomby record '{$instance['instance_id']}' ('{$instance['external_ip']}') from database");
-            			$db->Execute("DELETE FROM farm_instances WHERE id=?", array($instance['id']));
+            			Scalr::FireEvent($instance['farmid'], new HostDownEvent($instance));
             		}
             	}
             }
-            
+                        
             /** Process garbage queue **/
             $queue = $db->Execute("SELECT * FROM garbage_queue");
             while ($queue_item = $queue->FetchRow())
             {
-            	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", 
-            		array($queue_item['clientid'])
-            	);
-            	
-            	// Decrypt keys
-            	$private_key = $this->Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-    			$certificate = $this->Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-    			
-    			$aws_accesskey = $this->Crypto->Decrypt($clientinfo["aws_accesskey"], $cpwd);
-	        	$aws_accesskeyid = $this->Crypto->Decrypt($clientinfo["aws_accesskeyid"], $cpwd);
+            	$Client = Client::Load($queue_item['clientid']);
 	        	
 	        	// Create AmazonEC2 cleint object
-			    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+			    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 			    
 			    // Create Amazon s3 client object
-			    $AmazonS3 = new AmazonS3($aws_accesskeyid, $aws_accesskey);
+			    $AmazonS3 = new AmazonS3($Client->AWSAccessKeyID, $Client->AWSAccessKey);
 			    
 			    $data = unserialize($queue_item['data']);
 			    
