@@ -17,7 +17,8 @@
     				$i++;
 				}
 			}
-			$mess = "{$i} IP addresses deleted";
+			
+			$okmsg = "{$i} IP addresses deleted";
 			UI::Redirect("ipaccess_view.php");
 		}
 	};

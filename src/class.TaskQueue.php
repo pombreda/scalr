@@ -47,6 +47,7 @@
 			$this->QueueName = $queue_name;
 			$this->DB = Core::GetDBInstance(null, true);
 			$this->ReflectionTask = new ReflectionClass("Task");
+			$this->LastTaskID = 0;
 		}
 		
 		/**
@@ -62,11 +63,19 @@
 		}
 		
 		/**
+		 * Increments failure attempts counter for task
+		 */
+		public function IncrementFailureAttemptsCounter(Task $Task)
+		{
+			$this->DB->Execute("UPDATE task_queue SET failed_attempts=failed_attempts+1 WHERE id=?", array($Task->ID));
+		}
+		
+		/**
 		 * Inserts the specified element into this queue, if possible.
 		 *
 		 * @return bool
 		 */
-		public function Put(Task $Task)
+		public function AppendTask(Task $Task)
 		{
 			return $this->DB->Execute("INSERT INTO task_queue SET
 				queue_name	= ?,
@@ -80,9 +89,11 @@
 		 *
 		 * @return Task
 		 */
-		public function Poll()
+		public function Poll($Task = null)
 		{
-			$Task = $this->Peek();
+			if ($Task === NULL)
+				$Task = $this->Peek();
+				
 			if ($Task === NULL)
 				return NULL;
 			
@@ -97,11 +108,11 @@
 		 *
 		 * @return Task
 		 */
-		public function Remove()
+		public function Remove($Task = null)
 		{
-			$Task = $this->Poll();
+			$Task = $this->Poll($Task);
 			if ($Task === NULL)
-				throw new Exception("Queue '{$this->QueueName}' is empty");
+				throw new Exception(sprintf(_("Queue '%s' is empty"), $this->QueueName));
 			
 			return $Task;
 		}
@@ -113,14 +124,16 @@
 		 */
 		public function Peek()
 		{
-			$dbtask = $this->DB->GetRow("SELECT * FROM task_queue WHERE queue_name=? ORDER BY id ASC",
-				array($this->QueueName)
+			$dbtask = $this->DB->GetRow("SELECT * FROM task_queue WHERE queue_name=? AND id > ? ORDER BY id ASC",
+				array($this->QueueName, $this->LastTaskID)
 			);
 			if (!$dbtask)
 				return NULL;
 				
+			$this->LastTaskID = $dbtask['id'];
 			$Task = unserialize($dbtask['data']);
 			$Task->ID = $dbtask["id"];
+			$Task->FailedAttempts = $dbtask["failed_attempts"]; 
 			
 			return $Task;
 		}
@@ -136,65 +149,18 @@
 		{
 			$Task = $this->Peek();
 			if ($Task === NULL)
-				throw new Exception("Queue '{$this->QueueName}' is empty");
+				throw new Exception(sprintf(_("Queue '%s' is empty"), $this->QueueName));
 			
 			return $Task;
 		}
-	}
-	
-	/**
-	 * Task for fire deffered event
-	 *
-	 */
-	class FireDeferredEventTask extends Task
-	{
-		public $EventID;
 		
-		function __construct($eventid)
-		{
-			$this->EventID = $eventid;
-		}
-	}
-	
-	/**
-	 * Task for DNS zone creation
-	 *
-	 */
-	class CreateDNSZoneTask extends Task
-	{
-		public $ZoneID;
-		
-		function __construct($zoneid)
-		{
-			$this->ZoneID = $zoneid;
-		}
-	}
-	
-	/**
-	 * Task for DNS zone deletion
-	 *
-	 */
-	class DeleteDNSZoneTask extends Task
-	{
-		public $ZoneID;
-		
-		function __construct($zoneid)
-		{
-			$this->ZoneID = $zoneid;
-		}
-	}
-	
-	/**
-	 * Abstract task
-	 *
-	 */
-	abstract class Task
-	{		
 		/**
-		 * Task ID
+		 * Reset Queue pointer
 		 *
-		 * @var integer
 		 */
-		public $ID;		
+		public function Reset()
+		{
+			$this->LastTaskID = 0;
+		}
 	}
 ?>

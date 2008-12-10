@@ -1,1 +1,1 @@
-Instance {$instanceinfo.instance_id} has new IP: {$new_ip_address} 
+Instance {$event->InstanceInfo.instance_id} has new IP: {$event->NewIPAddress} 

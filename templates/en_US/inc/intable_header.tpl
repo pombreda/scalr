@@ -17,8 +17,10 @@
 		<td width="7" class="TableHeaderCenter_{$color}"></td>
 		<td class="Inner_{$color}">
 			<table width="100%" cellspacing="0" cellpadding="2" id="Webta_InnerTable_{$header}" {if $section_closed}style="display: none;"{/if}>
+			{if !$no_first_row}
 			<tr>
 				<td width="{if $intable_first_column_width}{$intable_first_column_width}{else}20%{/if}"></td>
 				<td colspan="{if $intable_colspan}{$intable_colspan}{else}1{/if}" width="80%" style="height:15px;"></td>
 			</tr>
+			{/if}
 			

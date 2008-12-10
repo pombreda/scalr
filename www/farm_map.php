@@ -10,7 +10,7 @@
     if (!$farminfo || $post_cancel)
         UI::Redirect("farms_view.php");
     
-	$display["title"] = "Farm&nbsp;&raquo;&nbsp;Map";
+	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Map");
 	$display["farminfo"] = $farminfo;
 	
 	Core::Load("NET/SNMP");
@@ -59,6 +59,8 @@
 		    if ($role['alias'] == ROLE_ALIAS::MYSQL)
 		    	$instance['mysql_type'] = $instance['isdbmaster'] ? 'Master' : 'Slave';
 		    
+		    $instance['alias'] = $role['alias'];
+		    	
 		    foreach ($ReflectState->getConstants() as $name => $value)
 		    {
 		    	if ($value == $instance['state'])

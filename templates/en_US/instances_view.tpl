@@ -16,7 +16,7 @@
 			<th>SSH</th>
 			<th>Include in DNS zone</th>
 			<th width="1">Options</th>
-			<td width="1" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
+			<td class="th" width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="checkall()"></th>
 		</tr>
 	</thead>
 	<tbody>
@@ -30,12 +30,12 @@
 		<td class="Item" valign="top">{$rows[id]->Uptime}</td>
 		<td class="Item" valign="top">{$rows[id]->LA}</td>
 		<td class="Item" valign="top" nowrap>{if $rows[id]->IsElastic}<span style="color:green;vertical-align:middle;">{/if}{$rows[id]->IP}{if $rows[id]->IsElastic}</span>&nbsp;<img src="/images/icon_shelp.gif" style="vertical-align:middle;" title="Elastic IP">{/if}</td>
-		<td class="Item" align="center" valign="middle">{if $rows[id]->State == 'Running' || $rows[id]->State == 'Initializing'}<a href="instances_view.php?action=sshClient&farmid={$farmid}&instanceid={$rows[id]->instancesSet->item->instanceId}" target="_blank" ><img style="margin-right:3px;" src="images/terminal.png"></a>{/if}</td>
+		<td class="Item" align="center" valign="middle">{if $rows[id]->State == 'Running'}<a href="instances_view.php?action=sshClient&farmid={$farmid}&instanceid={$rows[id]->instancesSet->item->instanceId}" target="_blank" ><img style="margin-right:3px;" src="images/terminal.png"></a>{/if}</td>
 		<td class="Item" align="center" valign="middle" nowrap>{if $rows[id]->IsActive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
         <td class="ItemEdit" valign="top" width="1"><a id="control_{$rows[id]->instancesSet->item->instanceId}" href="javascript:void(0)">Options</a></td>
-		<td class="ItemDelete" valign="top">
+        <td class="ItemDelete">
 			<span>
-				<input type="checkbox" id="actid[]" {if $rows[id]->instancesSet->item->instanceState->name != 'running'}disabled{/if} name="actid[]" value="{$rows[id]->instancesSet->item->instanceId}">
+				<input type="checkbox" id="delete[]" name="delete[]" value="{$rows[id]->instancesSet->item->instanceId}">
 			</span>
 		</td>
 	</tr>
@@ -46,8 +46,15 @@
     	var menu = [
             {if $rows[id]->instancesSet->item->instanceState->name == 'running' && $rows[id]->State != 'Pending terminate'}
             	{if $rows[id]->LA != 'Unknown' && $rows[id]->IsRebootLaunched == 0}{literal}{href: 'syncronize_role.php?iid='+iid, innerHTML: 'Synchronize to all'}{/literal},{/if}
+            	{literal}{type: 'separator'},{/literal}
             	{if $rows[id]->IsRebootLaunched == 0}{literal}{href: 'console_output.php?iid='+iid, innerHTML: 'View console output'}{/literal},{/if}
-            	{if $rows[id]->IsRebootLaunched == 0}{literal}{href: 'process_list.php?iid='+iid+"&farmid="+farmid, innerHTML: 'Process list'}{/literal},{/if}
+            	{if $rows[id]->IsRebootLaunched == 0}{literal}{href: 'process_list.php?iid='+iid+"&farmid="+farmid, innerHTML: 'View process list'}{/literal},{/if}
+            	{literal}{type: 'separator'},{/literal}
+            	{if $rows[id]->IsActive == 1}
+            		{literal}{href: 'instances_view.php?iid='+iid+'&task=setinactive&farmid='+farmid, innerHTML: 'Exclude from DNS zone'}{/literal},
+            	{else}
+            		{literal}{href: 'instances_view.php?iid='+iid+'&task=setactive&farmid='+farmid, innerHTML: 'Include in DNS zone'}{/literal},
+            	{/if}
 	            {if $rows[id]->canUseCustomEIPs}
 	            	{if $rows[id]->customEIP}
 	            		{literal}{href: 'instance_eip.php?iid='+iid+'&task=unassign', innerHTML: 'Disassociate Elastic IP'}{/literal},
@@ -55,6 +62,20 @@
 	            		{literal}{href: 'instance_eip.php?iid='+iid+'&task=assign', innerHTML: 'Associate Elastic IP'}{/literal},
 	            	{/if}
 	            {/if}
+	        {/if}
+	        {if $rows[id]->instancesSet->item->instanceState->name == 'running'}
+	        	{if $rows[id]->Alias == 'mysql'}
+	        		{literal}{type: 'separator'},{/literal}
+	        		{literal}{href: 'farm_mysql_info.php?farmid='+farmid, innerHTML: 'Backup\/bundle MySQL data'}{/literal},
+	        	{/if}
+	        	{literal}{type: 'separator'},{/literal}
+	        	
+	        	{literal}{href: 'execute_script.php?farmid='+farmid+"&iid="+iid, innerHTML: 'Execute script'},{/literal}
+	        	
+	        	{literal}{type: 'separator'},{/literal}
+	        	{literal}{href: 'instances_view.php?iid='+iid+'&task=reboot&farmid='+farmid, innerHTML: 'Reboot'}{/literal},
+	        	{literal}{href: 'instances_view.php?iid='+iid+'&task=terminate&farmid='+farmid, innerHTML: 'Terminate'}{/literal},
+	        	{literal}{type: 'separator'},{/literal}
 	        {/if}
             {literal}{href: 'logs_view.php?iid='+iid, innerHTML: 'View logs'}{/literal}
         ];
@@ -68,7 +89,7 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="13" align="center">No instances found</td>
+		<td colspan="14" align="center">No instances found</td>
 	</tr>
 	{/section}
 	<tr>
@@ -79,5 +100,5 @@
 	</tbody>
 	</table>
 	<input type="hidden" name="farmid" value="{$farmid}" />
-	{include file="inc/table_footer.tpl" colspan=9 allow_delete=1 add_new=1}
+	{include file="inc/table_footer.tpl" colspan=9}
 {include file="inc/footer.tpl"}

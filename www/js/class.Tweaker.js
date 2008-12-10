@@ -12,9 +12,8 @@ FitoTab.prototype = {
 	
 	initialize: function(element) 
 	{
-		
 		var element = $(element);
-		
+				
 		try
 		{
 			var options = {
@@ -30,7 +29,7 @@ FitoTab.prototype = {
 			this.options = options;
 		}
 		catch(err){ };
-		
+				
 		if (element && element.tagName == "TABLE") {
 			this.trs = element.getElementsByTagName("tr");
 		}
@@ -55,7 +54,7 @@ FitoTab.prototype = {
 				{
 					var id = parseInt(this.id.replace(callerObj.options.trIDPrefix + '_', ''));
 					if (!callerObj.choosed_colors[id])
-					{
+					{						
 						this.style.backgroundColor = callerObj.options.hoverColor;
 					}
 				};
@@ -121,7 +120,7 @@ FitoTab.prototype = {
 		this.options.prototype = {
 			alternative:	'_Webta_Settings'
 		};
-		
+				
 		if (arguments[0])
 			Object.extend(this.options, arguments[0] || {});	
 		
@@ -135,6 +134,7 @@ FitoTab.prototype = {
 		try {
 			
 			var tab = this.options.element;
+			
 			var rowHeight = 20;
 			var Head = tab.getElementsByTagName("thead")[0];
 			var Body = tab.getElementsByTagName("tbody")[0];
@@ -187,7 +187,8 @@ FitoTab.prototype = {
 					tab.rows[i].cells[0].style.borderLeft = '1px solid #A2BBDD';
 				}
 				
-				if (settings) return false;
+				if (settings) 
+					return false;
 				
 				for (var i = 0; i < lastRow.cells.length; i++) {
 					w += lastRow.cells[i].offsetWidth;

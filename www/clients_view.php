@@ -21,7 +21,7 @@
 					$i++;
 				}
 				
-				$mess = "{$i} clients updated";
+				$okmsg = "{$i} clients updated";
 				UI::Redirect("clients_view.php");
 				
 				break;
@@ -38,15 +38,20 @@
 					$farms = $db->GetAll("SELECT * FROM farms WHERE clientid='{$clientid}'");
 				    foreach ($farms as $farm)
 				    {
-					    $db->Execute("DELETE FROM farms WHERE id='{$farm["id"]}'");
-					    $db->Execute("DELETE FROM farm_amis WHERE farmid='{$farm["id"]}'");
-					    $db->Execute("DELETE FROM farm_instances WHERE farmid='{$farm["id"]}'");
+					    $db->Execute("DELETE FROM farms WHERE id=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_amis WHERE farmid=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_instances WHERE farmid=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM farm_event_observers WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM farm_ebs WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farm["id"]));
 				    }
 				    
 				    $db->Execute("DELETE FROM ami_roles WHERE clientid='{$clientid}'");
 				}
 				
-				$mess = "{$i} clients deleted";
+				$okmsg = sprintf(_("%s clients deleted"), $i);
 				UI::Redirect("clients_view.php");
 				
 				break;
@@ -56,6 +61,7 @@
 
 	$sql = "SELECT * from clients WHERE id > 0";
 	
+	$paging = new SQLPaging();
 	//
 	// If specified user id
 	//
@@ -65,11 +71,17 @@
 		$sql .= " AND id='{$clientid}'";
 	}
 
+	if (isset($req_isactive))
+	{
+		$isactive = (int)$req_isactive;
+		$sql .= " AND isactive='{$isactive}'";
+		$paging->AddURLFilter('isactive', $isactive);
+	}
 	
 	//
 	//Paging
 	//
-	$paging = new SQLPaging($sql);
+	$paging->SetSQLQuery($sql);
 	$paging->AdditionalSQL = "ORDER BY email ASC";
 	$paging->ApplyFilter($_POST["filter_q"], array("aws_accountid", "email", "fullname"));
 	$paging->ApplySQLPaging();
@@ -89,7 +101,7 @@
 		$row["amis"] = $db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE clientid='{$row['id']}'");
 	}
 
-	$display["title"] = "Clients > Manage";
+	$display["title"] = _("Clients > Manage");
 	
 	$display["page_data_options_add"] = true;
 	$display["page_data_options"] = array(

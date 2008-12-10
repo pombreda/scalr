@@ -71,10 +71,10 @@
         }
                
         /**
-         * Retreive data from node
+         * Retrieve data from node
          *
          */
-        public function RetreiveData($name)
+        public function RetrieveData($name)
         {                              
             //
             // Add data to rrd

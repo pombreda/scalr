@@ -10,7 +10,7 @@
 	    $req_templateName = str_replace("..", "", $req_templateName);
 	    
 	    @unlink("{$Smarty->template_dir}/{$req_dirName}/{$req_templateName}");
-	    $mess = "Template successfully deleted";
+	    $okmsg = "Template successfully deleted";
 	    $req_dir = $req_dirName;
 	}
 	
@@ -31,7 +31,7 @@
 		
 		if (!$err)
 		{
-            $mess = "Template file saved";
+            $okmsg = "Template file saved";
             redirect("templ_view.php");	
 		}
 	}

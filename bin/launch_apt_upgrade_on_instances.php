@@ -5,7 +5,7 @@
 	
 	$SNMP = new SNMP();
 	
-	$instances = $db->Execute("SELECT * FROM farm_instances WHERE state='Running'");
+	$instances = $db->Execute("SELECT * FROM farm_instances WHERE state IN (?,?)", array(INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT));
 	while ($instance = $instances->FetchRow())
 	{
 		$farminfo = $db->GetRow("SELECT * FROM farms WHERE id='{$instance['farmid']}'");

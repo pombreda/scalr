@@ -24,9 +24,9 @@
 			{include file="farms_control_launch.tpl"}
 			
 			{if $iswiz}
-				{include file="inc/table_footer.tpl" button2=1 button2_name="Yes, launch farm now" button3=1 button3_name="Configure scaling settings" cancel_btn=1}
+				{include file="inc/table_footer.tpl" button2=1 button2_name="Yes, launch the farm now" button3=1 button3_name="Configure scaling settings" cancel_btn=1}
 			{else}
-				{include file="inc/table_footer.tpl" button2=1 button2_name="Yes, launch farm now" cancel_btn=1}
+				{include file="inc/table_footer.tpl" button2=1 button2_name="Yes, launch the farm now" cancel_btn=1}
 			{/if}
     	{elseif $action == 'Terminate'}
     		<input type="hidden" name="term_step" value="{$term_step+1}" />

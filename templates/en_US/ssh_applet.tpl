@@ -2,10 +2,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>SSH console on instance: {$i.instance_id} ({$i.role_name}) &nbsp; IP: {$i.external_ip} &nbsp; Internal IP: {$i.internal_ip}</title>
+<title>{t}SSH console on instance{/t}: {$i.instance_id} ({$i.role_name}) &nbsp; {t}IP{/t}: {$i.external_ip} &nbsp; {t}Internal IP{/t}: {$i.internal_ip}</title>
 </head>
 <body>
-	<div style="margin-top:22px;margin-bottom:38px;font-weight:bold;font-size:10pt;font-family:Verdana;">SSH console on instance: {$i.instance_id} ({$i.role_name}) &nbsp; IP: {$i.external_ip} &nbsp; Internal IP: {$i.internal_ip}</div>
+	<div style="margin-top:22px;margin-bottom:38px;font-weight:bold;font-size:10pt;font-family:Verdana;">{t}SSH console on instance{/t}: {$i.instance_id} ({$i.role_name}) &nbsp; {t}IP{/t}: {$i.external_ip} &nbsp; {t}Internal IP{/t}: {$i.internal_ip}</div>
 
 	<APPLET CODE="com.mindbright.application.MindTerm.class" ARCHIVE="/java/mindterm.jar?r1" WIDTH=800 HEIGHT=600>
 		<PARAM NAME="sepframe" value="false">  

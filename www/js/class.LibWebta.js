@@ -107,7 +107,8 @@ LibWebta.prototype = {
 	},
 	
 	setupTweaker: function() {
-		if (this.tweaker)
+
+		if (this.tweaker && this.tweakers.length == 0)
 			this.tweaker.setup();
 			
 		this.tweakers.each(function(item){
@@ -116,7 +117,10 @@ LibWebta.prototype = {
 	},
 	
 	createTweaker: function() {
-		if (this.tweaker) {
+	
+		if (this.tweaker && this.tweakers.length == 0)
+		{
+		
 			this.tweaker.setup();
 			this.tweaker.create();
 		}

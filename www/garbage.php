@@ -1,11 +1,11 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Delete unused objects";
+	$display["title"] = _("Delete unused objects");
 	
 	if ($_SESSION["uid"] == 0)
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
 	}
 	
@@ -15,7 +15,7 @@
 		
 		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array($_SESSION['uid'], $remove_items));
 		
-		$okmsg = "Items removal has been scheduled. They will be deleted in approximatey 10 minutes.";
+		$okmsg = _("Items removal has been scheduled. They will be deleted in approximatey 10 minutes.");
 		UI::Redirect("index.php");
 	}
 			
@@ -35,7 +35,7 @@
     	{
     		// Check is bucked used by scarl or no
     		$farmname = $db->GetOne("SELECT name FROM farms WHERE id=?", 
-    			array($matches[1], $_SESSION["uid"])
+    			array($matches[1])
     		);
     		
     		if (!$farmname)
@@ -58,7 +58,7 @@
 	    	{
 	    		// Check is bucked used by scarl or no
 	    		$farmname = $db->GetOne("SELECT name FROM farms WHERE id=?", 
-	    			array($matches[1], $_SESSION["uid"])
+	    			array($matches[1])
 	    		);
 	    		
 	    		if (!$farmname)
@@ -70,7 +70,7 @@
    	$display["keypairs"] = $garbage_keypairs;
    	$display["buckets"] = $garbage_backets;
     	
-   	$display["help"] = "This tool allows you to delete objects that are not used by any of your farms.";
+   	$display["help"] = _("This tool allows you to delete objects that are not used by any of your farms.");
    	
 	require("src/append.inc.php");
 ?>

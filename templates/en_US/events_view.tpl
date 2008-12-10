@@ -54,7 +54,7 @@
 	{/literal}
 	</script>
 	<div style="float:right;margin-right:20px;">
-		<a href="configure_event_notifications.php?farmid={$farminfo.id}">Configure event notifications</a>
+		<img src="/images/dhtmlxtree/csh_vista/folderOpen_scripting.gif" style="vertical-align:middle;"><a href="configure_event_notifications.php?farmid={$farminfo.id}">Configure event notifications</a>
 	</div>	
 	{include file="inc/table_header.tpl" nofilter=1 table_header_text="Events timeline"}
     	<div id="my-timeline" style="height: 250px; border: 1px solid #aaa"></div>

@@ -10,25 +10,13 @@
         
 	if (!$farminfo)
 	{
-	    $errmsg = "Farm not found";
+	    $errmsg = _("Farm not found");
 	    UI::Redirect("farms_view.php");
 	}
 	
-	if ($_SESSION['uid'] == 0)
-    {
-    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo['clientid']));
+	$Client = Client::Load($farminfo['clientid']);
 	
-		// Decrypt client prvate key and certificate
-    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-    }
-    else
-    {
-    	$private_key = $_SESSION["aws_private_key"];
-    	$certificate = $_SESSION["aws_certificate"];
-    }
-	
-    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 	
     if ($post_cancel)
     	UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
@@ -47,7 +35,7 @@
     		}
     		catch(Exception $e)
     		{
-    			$errmsg = "Cannot unassign elastic IP: {$e->getMessage()}";
+    			$errmsg = sprintf(_("Cannot unassign elastic IP: %s"), $e->getMessage());
     		}
     		
     		if (!$errmsg)
@@ -56,7 +44,7 @@
 					array("", $instance_info['id'])
 				);
 				
-				$okmsg = "Elastic IP is now unassigned from instance {$instance_info['instance_id']}. New IP will be assigned to it shortly.";
+				$okmsg = sprintf(_("Elastic IP is now unassigned from instance %s. New IP will be assigned to it shortly."), $instance_info['instance_id']);
 				UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
     		}
     	}
@@ -80,7 +68,7 @@
 				}
 				catch (Exception $e)
 				{
-					$errmsg = "Cannot allocate new elastic IP address: {$e->getMessage()}";
+					$errmsg = sprintf(_("Cannot allocate new elastic IP address: %s"), $e->getMessage());
 				}
 				
 				if ($address)
@@ -123,7 +111,7 @@
 				}
 				catch(Exception $e)
 				{
-					$errmsg = "Cannot associate with instance specified Elastic IP: {$e->getMessage()}";
+					$errmsg = sprintf(_("Cannot associate with instance specified Elastic IP: %s"), $e->getMessage());
 				}
 			}
 			
@@ -133,7 +121,7 @@
 					array($assigned_ip, $assigned_ip, $instance_info['id'])
 				);
 				
-				$okmsg = "Elastic IP successfully associated with instance";
+				$okmsg = _("Elastic IP successfully associated with instance");
 				UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
 			}
 		}

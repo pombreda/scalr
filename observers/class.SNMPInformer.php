@@ -11,43 +11,47 @@
 			$this->SNMP = new SNMP();
 		}
 				
-		public function OnNewMysqlMasterUp($instanceinfo, $snapurl)
+		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
-			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($this->FarmID));
+			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
+				array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
+			);
 			foreach ((array)$instances as $instance)
 			{
 				$this->SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-                $trap = vsprintf(SNMP_TRAP::NEW_MYSQL_MASTER, array($instanceinfo['internal_ip'], $snapurl));
+                $trap = vsprintf(SNMP_TRAP::NEW_MYSQL_MASTER, 
+                	array(
+                		$event->InstanceInfo['internal_ip'], 
+                		$event->SnapURL,
+                		$event->InstanceInfo['role_name']
+                	)
+                );
                 $res = $this->SNMP->SendTrap($trap);
                 $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap newMysqlMaster ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
 			}
 		}
 		
-		public function OnHostInit($instanceinfo, $local_ip, $remote_ip, $public_key)
+		public function OnHostInit(HostInitEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$clientinfo = $this->DB->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo["clientid"]));
 			
-			$this->SNMP->Connect($remote_ip, null, $farminfo['hash']);
-			$trap = vsprintf(SNMP_TRAP::HOST_INIT, array($clientinfo['aws_accountid']));
+			$Client = Client::Load($farminfo["clientid"]);
+			
+			$this->SNMP->Connect($event->ExternalIP, null, $farminfo['hash']);
+			$trap = vsprintf(SNMP_TRAP::HOST_INIT, array($Client->AWSAccountID));
             $res = $this->SNMP->SendTrap($trap);
-            $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostInit ({$trap}) to '{$instanceinfo['instance_id']}' ('{$remote_ip}') complete ({$res})");
-		}
-		
-		public function OnHostCrash($instanceinfo)
-		{
-			$this->OnHostDown($instanceinfo);
+            $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostInit ({$trap}) to '{$event->InstanceInfo['instance_id']}' ('{$event->ExternalIP}') complete ({$res})");
 		}
 						
-		public function OnHostUp($instanceinfo)
+		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE name='{$instanceinfo["role_name"]}' AND iscompleted='1'");
+			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE name='{$event->InstanceInfo["role_name"]}' AND iscompleted='1'");
 			
-			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state='Running'", 
-				array($farminfo["id"])
+			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN(?,?)", 
+				array($farminfo["id"], INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT)
 			);
 			
 			foreach ((array)$instances as $instance)
@@ -56,8 +60,8 @@
 				
 				$trap = vsprintf(SNMP_TRAP::HOST_UP, array(
 					$alias, 
-					$instanceinfo['internal_ip'], 
-					$instanceinfo["role_name"])
+					$event->InstanceInfo['internal_ip'], 
+					$event->InstanceInfo["role_name"])
 				);
 				
 				$res = $this->SNMP->SendTrap($trap);
@@ -65,15 +69,20 @@
 			}
 		}
 		
-		public function OnHostDown($instanceinfo)
+		public function OnHostDown(HostDownEvent $event)
 		{
+			if ($event->InstanceInfo['isrebootlaunched'] == 1)
+				return;
+			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
 			// Get list of all instances for farm
-			$farm_instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}' ORDER BY id DESC");
+			$farm_instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
+				array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
+			);
 			
 			// Get alias of role
-			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$instanceinfo['ami_id']}'");
+			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$event->InstanceInfo['ami_id']}'");
 			
 			$first_in_role_handled = false;
 			foreach ($farm_instances as $farm_instance_snmp)
@@ -81,11 +90,11 @@
 				if ($farm_instance_snmp["state"] != INSTANCE_STATE::RUNNING || !$farm_instance_snmp["external_ip"])
 					continue;
 
-				if ($farm_instance_snmp["id"] == $instanceinfo["id"])
+				if ($farm_instance_snmp["id"] == $event->InstanceInfo["id"])
 					continue;
 
 				$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", 
-					array($instanceinfo['ami_id'])
+					array($event->InstanceInfo['ami_id'])
 				);
 					
 				$this->Logger->debug("Processing instance: {$farm_instance_snmp['instance_id']} ({$farm_instance_snmp["ami_id"]})");
@@ -93,24 +102,24 @@
 				
 				$isfirstinrole = '0';
 				
-				if ($instanceinfo['isdbmaster'] == 1 && !$first_in_role_handled)
+				if ($event->InstanceInfo['isdbmaster'] == 1 && !$first_in_role_handled)
 				{
-					$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
-					if ($alias == ROLE_ALIAS::MYSQL)
+					$calias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
+					if ($calias == ROLE_ALIAS::MYSQL)
 					{
 						$first_in_role_handled = true;
 						$isfirstinrole = '1';
 					}	
 				}
 								
-				if ($instanceinfo['internal_ip'])
+				if ($event->InstanceInfo['internal_ip'])
 				{
 					$this->SNMP->Connect($farm_instance_snmp['external_ip'], null, $farminfo['hash']);
 	                $trap = vsprintf(SNMP_TRAP::HOST_DOWN, array(
 	                	$alias, 
-	                	$instanceinfo['internal_ip'], 
+	                	$event->InstanceInfo['internal_ip'], 
 	                	$isfirstinrole,
-	                	$instanceinfo["role_name"])
+	                	$event->InstanceInfo["role_name"])
 	                );
 	                $res = $this->SNMP->SendTrap($trap);
 	                $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostDown ({$trap}) to '{$farm_instance_snmp['instance_id']}' ('{$farm_instance_snmp['external_ip']}') complete ({$res})");

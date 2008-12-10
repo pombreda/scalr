@@ -22,3 +22,20 @@
 </tr>
 {include file="inc/intable_footer.tpl" color="Gray"}
 {/if}
+
+{if $ebs > 0}
+{include file="inc/intable_header.tpl" header="EBS (Elastic Block Storage)" color="Gray"}
+<tr>
+	<td colspan="2">
+		<div style="margin-top:10px;margin-left:-2px;">
+			<input type="radio" style="vertical-align:middle;" checked="checked" name="keep_ebs" value="0">
+			<span style="vertical-align:middle;">Release the EBS volumes created for this farm. When you start the farm again, new EBS volumes will be created.</span>
+		</div>
+		<div style="margin-top:10px;margin-left:-2px;">
+			<input type="radio" style="vertical-align:middle;" name="keep_ebs" value="1">
+			<span style="vertical-align:middle;">Keep the EBS volumes that are created for this farm. Amazon will keep billing you for them even when the farm is stopped.</span>
+		</div>
+	</td>
+</tr>
+{include file="inc/intable_footer.tpl" color="Gray"}
+{/if}

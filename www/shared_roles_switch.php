@@ -1,6 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = "Shared roles&nbsp;&raquo;&nbsp;View";
+	$display["title"] = _("Shared roles&nbsp;&raquo;&nbsp;View");
 	
 	if ($_SESSION["uid"] != 0)
 	   UI::Redirect("index.php");
@@ -11,15 +11,26 @@
 			$db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE ami_id=?", array($post_new_ami_id))
 		)
 		{
-			$errmsg = "There are running instances of this AMI. You cannot assign a new role to this AMI because it will totally mess entity relations.";
+			$errmsg = _("There are running instances of this AMI. You cannot assign a new role to this AMI because it will totally mess entity relations.");
 			UI::Redirect("shared_roles.php");		
 		}
 		
-		$db->Execute("UPDATE ami_roles SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
-		$db->Execute("UPDATE farm_amis SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
-		$db->Execute("UPDATE zones SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+		$db->BeginTrans();
+		try
+		{
+			$db->Execute("UPDATE ami_roles SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE farm_amis SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE zones SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE farm_role_scripts SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+		}
+		catch(Exception $e)
+		{
+			$db->RollbackTrans();
+		    throw new ApplicationException($e->getMessage(), E_ERROR);
+		}
 		
-		$okmsg = "Role successfully switched to new AMI";
+		$db->CommitTrans();
+		$okmsg = _("Role successfully switched to new AMI");
 		UI::Redirect("shared_roles.php");
 	}
 	   

@@ -4,7 +4,7 @@
 	if ($_SESSION["uid"] != 0)
 	   UI::Redirect("index.php");
 	
-	$display["title"] = "Clients&nbsp;&raquo;&nbsp;Add / Edit";
+	$display["title"] = _("Clients&nbsp;&raquo;&nbsp;Add / Edit");
 	
 	$Validator = new Validator();
 		
@@ -13,16 +13,16 @@
 		// Validate input data
 	    
 	    if (!$Validator->IsEmail($post_email))
-            $err[] = "Invalid E-mail address";
+            $err[] = _("Invalid E-mail address");
 		  
         if (!$Validator->IsNotEmpty($post_password))
-            $err[] = "Password required";
+            $err[] = _("Password required");
             
         if (!$Validator->AreEqual($post_password, $post_password2))
-            $err[] = "Two passwords are not equal";
+            $err[] = _("Two passwords are not equal");
 	                
         if (!$Validator->IsNumeric($post_farms_limit) || $post_farms_limit < 0)
-            $err[] = "Farms limit must be a number";
+            $err[] = _("Farms limit must be a number");
           
         if (count($err) == 0)
         {  
@@ -48,7 +48,7 @@
 						address2	= ?,
 						phone		= ?,
 						fax			= ?,
-						isactive    = '1'
+						dtadded		= NOW()
         			 ", array(
         		    	$post_email, 
         		    	$Crypto->Hash($post_password), 
@@ -89,8 +89,8 @@
 					}
 					else
 					{
-						$Logger->fatal("Internal error: cannot read uploaded file");
-						$err[] = "Internal error: cannot read uploaded file";
+						$Logger->fatal(_("Internal error: cannot read uploaded file"));
+						$err[] = _("Internal error: cannot read uploaded file");
 					}
 	            }
 	                    
@@ -107,14 +107,14 @@
 					}
 					else
 					{
-						$Logger->fatal("Internal error: cannot read uploaded file");
-						$err[] = "Internal error: cannot read uploaded file";
+						$Logger->fatal(_("Internal error: cannot read uploaded file"));
+						$err[] = _("Internal error: cannot read uploaded file");
 					}
 	            }
                 
                 if (count($err) == 0)
                 {
-                    $okmsg = "Client successfully added!";
+                    $okmsg = _("Client successfully added!");
                     UI::Redirect("clients_view.php");
                 }
                 else 
@@ -187,8 +187,8 @@
 						}
 						else
 						{
-							$Logger->fatal("Internal error: cannot read uploaded file");
-							$err[] = "Internal error: cannot read uploaded file";
+							$Logger->fatal(_("Internal error: cannot read uploaded file"));
+							$err[] = _("Internal error: cannot read uploaded file");
 						}
 		            }
 		                    
@@ -205,20 +205,20 @@
 						}
 						else
 						{
-							$Logger->fatal("Internal error: cannot read uploaded file");
-							$err[] = "Internal error: cannot read uploaded file";
+							$Logger->fatal(_("Internal error: cannot read uploaded file"));
+							$err[] = _("Internal error: cannot read uploaded file");
 						}
 		            }
         		    
         		    if (count($err) == 0)
         		    {
-        		        $okmsg = "Client successfully updated";
+        		        $okmsg = _("Client successfully updated");
         		        UI::Redirect("clients_view.php");
         		    }
     			}
     			else
     			{
-    			    $errmsg = "Client not found";
+    			    $errmsg = _("Client not found");
     			    UI::Redirect("clients_view.php");
     			}
     		}

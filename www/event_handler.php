@@ -5,22 +5,19 @@
 	{
 		if ($req_FarmID && $req_Hash)
 		{
+			// prepare GET params
 			$farm_id = (int)$req_FarmID;
 			$hash = preg_replace("/[^A-Za-z0-9]+/", "", $req_Hash);
 		
+			// Add log infomation about event received from instance
 			$Logger->info("Event '{$req_EventType}' received from '{$_SERVER['REMOTE_ADDR']}': FarmID={$farm_id}, Hash={$hash}, InstanceID={$req_InstanceID}");
 			$Logger->info("Event data: {$req_Data}");
 			
+			// Get farminfo and instanceinfo from database
 			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND hash=?", array($farm_id, $hash));
 			$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=?
 		                                     AND instance_id=?", array($farm_id, $req_InstanceID));
-		
-			$cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-			
-			$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($farminfo['clientid']));
-				
-			$SNMP = new SNMP();
-		
+
 			$chunks = explode(";", $req_Data);
 			foreach ($chunks as $chunk)
 			{
@@ -28,7 +25,15 @@
 				$data[$dt[0]] = trim($dt[1]);
 			}
 			
-			// For scalr instalations //
+			/**
+			 * Deserialize data from instance
+			 */
+			$chunks = explode(";", $req_Data);
+			foreach ($chunks as $chunk)
+			{
+				$dt = explode(":", $chunk);
+				$data[$dt[0]] = trim($dt[1]);
+			}
 			if (!$instanceinfo['internal_ip'])
 				$instanceinfo['internal_ip'] = $data["localip"];
 			
@@ -38,15 +43,14 @@
 				{
 					try
 					{
-						// Decrypt client prvate key and certificate
-				    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-				    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-				    	
-				    	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+						$Client = Client::Load($farminfo['clientid']);
+						$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 				    	$response = $AmazonEC2Client->DescribeInstances($req_InstanceID);
 				    	$ip = gethostbyname($response->reservationSet->item->instancesSet->item->dnsName);
 				    	
 				    	$_SERVER['REMOTE_ADDR'] = $ip;
+				    	
+				    	$Logger->info(sprintf("Instance external ip = '%s'", $_SERVER['REMOTE_ADDR']));
 					}
 					catch(Exception $e)
 					{
@@ -62,8 +66,11 @@
 			//************************//
 			
 			if ($farminfo && $instanceinfo)
-			{
+			{				
+				//
 				// Check instance external IP
+				// And fire event if it changed
+				//
 				if ($instanceinfo["isipchanged"] == 0 && 
 					$instanceinfo['external_ip'] && 
 					$instanceinfo['external_ip'] != $_SERVER['REMOTE_ADDR'] &&
@@ -72,47 +79,44 @@
 				{
 					try
 					{
-						Scalr::FireEvent($farm_id, EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED, $instanceinfo, $_SERVER['REMOTE_ADDR']);
+						Scalr::FireEvent($farminfo['id'], new IPAddressChangedEvent($instanceinfo, $_SERVER['REMOTE_ADDR']));
 					}
 					catch(Exception $e)
 					{
 						$Logger->fatal("Cannot update instance IP: {$e->getMessage()}");
 					}
 				}
-		
+				
+				$instance_events = array(
+            		"hostInit" 			=> "HostInit",
+            		"hostUp" 			=> "HostUp",
+            		"rebootFinish" 		=> "RebootComplete",
+            		"IPAddressChanged" 	=> "IPAddressChanged",
+            		"newMysqlMaster"	=> "NewMysqlMasterUp"
+            	);
+						
 				switch ($req_EventType)
 				{
-					case "go2Halt":
-							//Scalr::FireEvent($farminfo['id'], EVENT_TYPE::PENDING_TERMINATE, $instanceinfo);
-						break;
+					case "go2Halt": break;
 		
 					case "hostDown":
-							if ($instanceinfo["isrebootlaunched"] == 0)
-							{
-								Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $instanceinfo);
-							}
+							$event = new HostDownEvent($instanceinfo);
 						break;
 						
 					case "rebootFinish":
-							Scalr::FireEvent($farminfo['id'], EVENT_TYPE::REBOOT_COMPLETE, $instanceinfo);
+							$event = new RebootCompleteEvent($instanceinfo);
 						break;
 						
 					case "rebootStart":
-							Scalr::FireEvent($farminfo['id'], EVENT_TYPE::REBOOT_BEGIN, $instanceinfo);
+							$event = new RebootBeginEvent($instanceinfo);
 						break;
 						
 					case "hostUp":
-		
+						
 						switch ($instanceinfo["state"])
 						{
 							case INSTANCE_STATE::INIT:
-									
-									//TODO: Move this code to DBEventObserver
-									$db->Execute("UPDATE farm_instances SET mysql_stat_password = ? WHERE id = ?", 
-										array($data['ReplUserPass'], $instanceinfo['id'])
-									);
-								
-									Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_UP, $instanceinfo);
+									$event = new HostUpEvent($instanceinfo, $data['ReplUserPass']);
 								break;
 		
 							default:
@@ -123,40 +127,85 @@
 						break;
 											 
 					case "newMysqlMaster":
-							Scalr::FireEvent($farm_id, EVENT_TYPE::NEW_MYSQL_MASTER, $instanceinfo, $data['snapurl']);
+							$event = new NewMysqlMasterUpEvent($instanceinfo, $data['snapurl']);
 						break;
 		
 					case "hostInit":
-							Scalr::FireEvent(
-								$farminfo['id'], 
-								EVENT_TYPE::HOST_INIT, 
-								$instanceinfo, 
-								$data["localip"], 
-								$_SERVER['REMOTE_ADDR'], 
-								base64_decode($data["based64_pubkey"])
-							);
+							$event = new HostInitEvent(
+									$instanceinfo, 
+									$data["localip"], 
+									$_SERVER['REMOTE_ADDR'], 
+									base64_decode($data["based64_pubkey"])
+								);
 						break;
 		
 					case "rebundleFail":
-							Scalr::FireEvent($farminfo['id'], EVENT_TYPE::REBUNDLE_FAILED, $instanceinfo);							
+							$event = new RebundleFailedEvent($instanceinfo);							
 						break;
 		
 					case "mysqlBckComplete":
-							Scalr::FireEvent($farminfo['id'], EVENT_TYPE::MYSQL_BACKUP_COMPLETE, $data["operation"]);
+							$event = new MysqlBackupCompleteEvent($instanceinfo, $data["operation"]);
 						break;
 		
 					case "mysqlBckFail":
-							$op = ucfirst($data["operation"]);
-							Scalr::FireEvent($farminfo['id'], EVENT_TYPE::MYSQL_BACKUP_FAIL, $data["operation"]);
+							$event = new MysqlBackupFailEvent($instanceinfo, $data["operation"]);
 						break;
 						
 					case "newAMI":			
-						Scalr::FireEvent($farminfo['id'], EVENT_TYPE::REBUNDLE_COMPLETE, $data["amiid"], $instanceinfo);
+							$event = new RebundleCompleteEvent($instanceinfo, $data["amiid"]);
 						break;
 											
 				    //********************
 				    //* LOG Events
 				    //********************		
+					case "mountResult":
+						
+						$ebsinfo = $db->GetRow("SELECT * FROM farm_ebs WHERE instance_id=? AND state=?", array($req_InstanceID, FARM_EBS_STATE::MOUNTING));
+						if ($ebsinfo)
+						{
+							$db->Execute("UPDATE farm_ebs SET state=? WHERE id=?", array(FARM_EBS_STATE::ATTACHED, $ebsinfo['id']));
+						}
+						
+						break;
+					
+					case "scriptingLog":
+												
+	            		$event_name = ($instance_events[$data['eventName']]) ? $instance_events[$data['eventName']] : $data['eventName'];  
+	            		
+						$Logger->info(new ScriptingLogMessage(
+							$req_FarmID, 
+							$event_name,
+							$req_InstanceID,
+							base64_decode($data['msg'])
+						));
+						
+						break;
+						
+					case "execResult":
+							
+							$event_name = ($instance_events[$data['eventName']]) ? $instance_events[$data['eventName']] : $data['eventName'];
+						
+							$stderr = base64_decode($data['stderr']);
+							if (trim($stderr))
+								$stderr = "\n stderr: {$stderr}";
+								
+							$stdout = base64_decode($data['stdout']);
+							if (trim($stdout))
+								$stdout = "\n stdout: {$stdout}";
+						
+							if (!$stderr && !$stdout)
+								$stdout = _("Script executed without any output.");
+								
+							$Logger->info(new ScriptingLogMessage(
+								$req_FarmID, 
+								$event_name,
+								$req_InstanceID,
+								sprintf(_("Script '%s' execution result (Execution time: %s seconds). %s %s"), 
+									$data['script_path'], $data['time_elapsed'], $stderr, $stdout
+								)
+							));
+						
+						break;
 						
 					case "newInstanceStatus":
 							$db->Execute("UPDATE farm_instances SET status=? WHERE instance_id=?", array($req_Data, $req_InstanceID));
@@ -189,6 +238,12 @@
 				}
 			}
 		}
+		
+		if ($event)
+		{
+			Scalr::FireEvent($farminfo['id'], $event);
+		}
+		
 		exit();
 	}
     catch(Exception $e)

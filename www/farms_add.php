@@ -1,6 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = "Edit farm";
+	$display["title"] = _("Edit farm");
     
 	set_time_limit(360);
 		
@@ -29,23 +29,12 @@
     $eips_limit = $client_max_eips ? $client_max_eips : CONFIG::$CLIENT_MAX_EIPS;
     
     $avail_slots = $i_limit - $used_slots;
-    $display["warnmsg"] = "You have {$avail_slots} spare instances available on your account.";
+    if ($avail_slots <= 5)
+    	$display["warnmsg"] = sprintf(_("You have %s spare instances available on your account."), $avail_slots);
     
-    if ($_SESSION['uid'] == 0)
-    {
-	    $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($uid));
-		
-		// Decrypt client prvate key and certificate
-	    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-	    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-    }
-    else
-    {
-    	$private_key = $_SESSION["aws_private_key"];
-    	$certificate = $_SESSION["aws_certificate"];
-    }
 	
-	$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+    $Client = Client::Load($uid);    
+	$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
                     
     // Get Avail zones
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
@@ -56,10 +45,24 @@
     
     foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
     {
-    	if ($zone->zoneState == 'available')
+    	if (stristr($zone->zoneState,'available')) //TODO:
     		array_push($display["avail_zones"], (string)$zone->zoneName);
     }
 	
+    // Get EBS Snapshots list
+    $response = $AmazonEC2Client->DescribeSnapshots();
+
+	$rowz = $response->snapshotSet->item;
+		
+	if ($rowz instanceof stdClass)
+		$rowz = array($rowz);
+			
+	foreach ($rowz as $pk=>$pv)
+	{		
+		if ($pv->status == 'completed')
+			$display['snapshots'][] = $pv->snapshotId;
+	}
+    
     if ($req_id)
     {
         $display["farminfo"] = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
@@ -69,7 +72,7 @@
         
         if (!$display["farminfo"])
         {
-            $errmsg = "Farm not found";
+            $errmsg = _("Farm not found");
             UI::Redirect("farms_view.php");
         }
         
@@ -82,12 +85,36 @@
             	continue;
             
         	$row["role"] = $ami_info["name"];
-
+        	
+        	$scripts = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND ami_id=?", array($display["farminfo"]["id"], $row['ami_id']));
+			$scripts_object = new stdClass();
+			foreach ($scripts as $script)
+			{
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"} = new stdClass();
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->config = unserialize($script['params']);
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->target = $script['target'];
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->version = $script['version'];
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->issync = $script['issync'];
+				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->timeout = $script['timeout'];
+			}
+        	
+	        if ($ami_info['roletype'] == ROLE_TYPE::SHARED && $ami_info['clientid'] != 0)
+	        {
+	        	$author_info = $db->GetRow("SELECT fullname FROM clients WHERE id=?", array($ami_info['clientid']));
+	        	$author = ($author_info['fullname']) ? $author_info['fullname'] : _('Scalr user');
+	        }
+	        else
+	        	$author = false;
+			
         	$role = array(
         		'name' 		=> $ami_info["name"],
         		'arch' 		=> $ami_info["architecture"],
         		'alias' 	=> $ami_info["alias"],
         		'ami_id'	=> $ami_info["ami_id"],
+        		'type'		=> ROLE_ALIAS::GetTypeByAlias($ami_info["alias"]),
+        		'description' => $ami_info["description"],
+        		'scripts'	=> $scripts_object,
+        		'author'	=> $author,
         		'options'	=> array(
         			'min_instances' 	=> $row['min_count'],
         			'max_instances' 	=> $row['max_count'],
@@ -97,7 +124,12 @@
         			'launch_timeout'	=> $row['launch_timeout'],
         			'placement'			=> ($row['avail_zone']) ? $row['avail_zone'] : "",
         			'i_type'			=> $row['instance_type'],
-        			'use_elastic_ips'	=> ($row['use_elastic_ips'] == 1) ? true : false
+        			'use_elastic_ips'	=> ($row['use_elastic_ips'] == 1) ? true : false,
+        			'use_ebs'			=> ($row['use_ebs'] == 1) ? true : false,
+        			'ebs_size'			=> ($row['ebs_snapid']) ? 0 : $row['ebs_size'],
+        			'ebs_snapid'		=> $row['ebs_snapid'],
+        			'ebs_mount'			=> ($row['ebs_mount'] == 1) ? true : false,
+        			'ebs_mountpoint'	=> $row['ebs_mountpoint']
         	));
         	if ($ami_info["alias"] == ROLE_ALIAS::MYSQL)
         	{
@@ -125,17 +157,32 @@
     	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $uid)
     );
     
+    if ($req_configure == 1)
+    	$display["ami_id"] = $req_ami_id;
+    
     /**
      * Tabs
      */
     $display["tabs_list"] = array(
-    	"general" => "Settings", 
-    	"roles" => "Roles"
+    	"general" => _("Settings"), 
+    	"roles" => _("Roles")
    	);
-   		
-   	$display["help"] = "Tick the checkbox to add the role to your farm<br>
-   	Click on the role name to customize it's behavior
-   	";
+
+   	$display["intable_tabs"] = array(
+   		array("id" => "info", "name" => _("About"), "display" => ""),
+   		array("id" => "scaling", "name" => _("Scaling"), "display" => ""),
+   		array("id" => "mysql", "name" => _("MySQL settings"), "display" => "none"),
+   		array("id" => "placement", "name" => _("Placement and type"), "display" => ""),
+   		array("id" => "eips", "name" => _("Elastic IPs"), "display" => ""),
+   		array("id" => "ebs", "name" => _("EBS"), "display" => ""),
+   		array("id" => "timeouts", "name" => _("Timeouts"), "display" => ""),
+   		array("id" => "scripts", "name" => _("Scripting"), "display" => ""),
+   		array("id" => "params", "name" => _("Parameters"), "display" => "")
+   	);
+   	
+   	$display['intable_selected_tab'] = "info";
+   	
+   	$display["help"] = _("Tick the checkbox to add the role to your farm.<br> Click on the role name to customize it's behavior");
    	
 	require("src/append.inc.php"); 
 ?>

@@ -3,7 +3,7 @@
     	    
 	if ($_SESSION["uid"] == 0)
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
 	}
 	
@@ -74,7 +74,7 @@
 	
 	$display["rows"] = (count($rowz) > CONFIG::$PAGING_ITEMS) ? array_slice($rowz, ($paging->PageNo-1) * CONFIG::$PAGING_ITEMS, CONFIG::$PAGING_ITEMS) : $rowz;
 	$display["paging"] = $paging->GetHTML("inc/paging.tpl");
-	$display["title"] = "Elastic IPs > Manage";
+	$display["title"] = _("Elastic IPs > Manage");
 	$display["farmid"] = $req_farmid;
 	
 	$display["page_data_options"] = array();

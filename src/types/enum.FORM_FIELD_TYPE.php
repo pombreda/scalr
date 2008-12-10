@@ -4,6 +4,7 @@
 		const TEXT 		= "text";
 		const CHECKBOX 	= "checkbox";
 		const SELECT 	= "select";
+		const TEXTAREA 	= "textarea";
 		const DATE 		= "date";
 		const SEPARATOR = "separator";
 	}

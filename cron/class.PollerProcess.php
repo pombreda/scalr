@@ -17,8 +17,8 @@
             
             $this->Logger->info("Fetching completed farms...");
             
-            $this->ThreadArgs = $db->GetAll("SELECT farms.*, clients.isactive FROM farms INNER JOIN clients ON clients.id = farms.clientid WHERE farms.status=? AND clients.isactive='1'",
-            	array(FARM_STATUS::RUNNING)
+            $this->ThreadArgs = $db->GetAll("SELECT farms.*, clients.isactive FROM farms 
+            	INNER JOIN clients ON clients.id = farms.clientid WHERE clients.isactive='1'"
             );
                         
             $this->Logger->info("Found ".count($this->ThreadArgs)." farms.");
@@ -28,7 +28,7 @@
         {
 			$db = Core::GetDBInstance(null, true);
         	
-			$trap_wait_timeout = 120; // 60 seconds
+			$trap_wait_timeout = 120; // 120 seconds
 			
 			try
 			{
@@ -78,17 +78,8 @@
             define("SUB_TRANSACTIONID", posix_getpid());
             define("LOGGER_FARMID", $farminfo["id"]);
             
-            $this->Logger->info("[".SUB_TRANSACTIONID."] Begin polling farm (ID: {$farminfo['id']}, Name: {$farminfo['name']})");
-            
-            //
-            // Check farm status
-            //
-            if ($db->GetOne("SELECT status FROM farms WHERE id=?", array($farminfo["id"])) != 1)
-            {
-            	$this->Logger->error("[FarmID: {$farminfo['id']}] Farm terminated by client.");
-            	return;
-            }
-            
+            $this->Logger->info("[".SUB_TRANSACTIONID."] Begin polling farm (ID: {$farminfo['id']}, Name: {$farminfo['name']}, Status: {$farminfo['status']})");
+                        
             $DNSZoneController = new DNSZoneControler();
             
             
@@ -96,46 +87,39 @@
             // Collect information from database
             //
             $this->Logger->info("[FarmID: {$farminfo['id']}] Begin polling...");
-                
-            $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$farminfo['clientid']}'");
-            $this->Logger->info("[FarmID: {$farminfo['id']}] Farm client ID: {$clientinfo['id']}");
+
+            $Client = Client::Load($farminfo['clientid']);
             
             $farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}'");
-            $this->Logger->info("[FarmID: {$farminfo['id']}] Farm used ".count($farm_amis)." AMIs");
+            $this->Logger->debug("[FarmID: {$farminfo['id']}] Farm used ".count($farm_amis)." AMIs");
             
             $farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
             $this->Logger->info("[FarmID: {$farminfo['id']}] Found ".count($farm_instances)." farm instances in database");
 
-            // Get Crypto object
-            $Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
-            $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-            
-            // Decrypt client prvate key and certificate
-            $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-            $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-            
+            if ($farminfo['status'] == FARM_STATUS::TERMINATED && count($farm_instances) == 0)
+            	exit();
+                        
             // Get AmazonEC2 Object
-            $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+            $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
                         
             // Get instances from EC2
-            $this->Logger->info("[FarmID: {$farminfo['id']}] Receiving instances info from EC2...");
+            $this->Logger->debug("[FarmID: {$farminfo['id']}] Receiving instances info from EC2...");
             $result = $AmazonEC2Client->DescribeInstances();
             $ec2_items = array();
             $ec2_items_by_instanceid = array();
                                    
             if (!is_array($result->reservationSet->item))
-            {
-                $item = $result->reservationSet->item;
-                $result->reservationSet->item = array($item);
-            }
+                $result->reservationSet->item = array($result->reservationSet->item);
             
             if (is_array($result->reservationSet->item))
             {
-                $this->Logger->info("[FarmID: {$farminfo['id']}] Found ".count($result->reservationSet->item)." total instances...");
+                $this->Logger->debug("[FarmID: {$farminfo['id']}] Found ".count($result->reservationSet->item)." total instances...");
                 $num = 0;
                 foreach ($result->reservationSet->item as $item)
                 {
-					$ami_role_name = $db->GetOne("SELECT role_name FROM farm_instances WHERE instance_id=? AND farmid=?", array($item->instancesSet->item->instanceId, $farminfo['id']));
+					$ami_role_name = $db->GetOne("SELECT role_name FROM farm_instances WHERE instance_id=? AND farmid=?", 
+						array($item->instancesSet->item->instanceId, $farminfo['id'])
+					);
 					if ($ami_role_name)
 					{
 	                	if (!is_array($ec2_items[$ami_role_name]))
@@ -147,10 +131,10 @@
 					}
                 }
                 
-                $this->Logger->info("[FarmID: {$farminfo['id']}] Found {$num} instances");
+                $this->Logger->debug("[FarmID: {$farminfo['id']}] Found {$num} instances");
             }
             else 
-                $this->Logger->info("[FarmID: {$farminfo['id']}] No instances found for this client.");
+                $this->Logger->debug("[FarmID: {$farminfo['id']}] No instances found for this client.");
                 
             
             foreach ($farm_instances as $farm_instance)
@@ -159,9 +143,11 @@
                 
                 if (!isset($ec2_items_by_instanceid[$farm_instance["instance_id"]]))
                 {
-                    // Add entry to farm log
+                    $farm_instance['isrebootlaunched'] = 0;
+                	
+                	// Add entry to farm log
                     $this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$farm_instance["instance_id"]}' found in database but not found on EC2. Crashed."));
-                	Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_CRASH, $farm_instance);
+                	Scalr::FireEvent($farminfo['id'], new HostCrashEvent($farm_instance));
                 }
                 else 
                 {
@@ -184,12 +170,24 @@
                 }
                 
                 if ($instance_terminated)
-                    Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $farm_instance);
+                {
+                    $farm_instance['isrebootlaunched'] = 0;
+                	Scalr::FireEvent($farminfo['id'], new HostDownEvent($farm_instance));
+                }
             }
-                
-            $db_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=?", array($farminfo["id"]));
+
+        	//
+            // Check farm status
+            //
+            if ($db->GetOne("SELECT status FROM farms WHERE id=?", array($farminfo["id"])) != FARM_STATUS::RUNNING)
+            {
+            	$this->Logger->warn("[FarmID: {$farminfo['id']}] Farm is not running.");
+            	return;
+            }
             
-            foreach ($db_amis as $db_ami)
+            $db_amis = $db->Execute("SELECT * FROM farm_amis WHERE farmid=?", array($farminfo["id"]));
+                        
+            while ($db_ami = $db_amis->FetchRow())
             {
                 if (!$db_ami)
                     continue;
@@ -226,7 +224,7 @@
                         
                         if ($sync_complete)
                         {
-                        	$this->Logger->debug("[FarmID: {$farminfo['id']}] Role '{$role}' successfully synchronized.");
+                        	$this->Logger->info("[FarmID: {$farminfo['id']}] Role '{$role}' successfully synchronized.");
 
                         	$role_name = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$db_ami["replace_to_ami"]}'");
                         	
@@ -234,15 +232,29 @@
                         		array($role_name, $farminfo['id'], $roleinfo['name'])
                         	);
                         	
+                        	$db->Execute("UPDATE farm_ebs SET role_name=? WHERE farmid=? AND role_name=?",
+                        		array($role_name, $farminfo['id'], $roleinfo['name'])
+                        	);
+                        	
+                        	$db->Execute("UPDATE vhosts SET role_name=? WHERE farmid=? AND role_name=?",
+                        		array($role_name, $farminfo['id'], $roleinfo['name'])
+                        	);
+                        	
                         	if ($roleinfo["roletype"] != ROLE_TYPE::SHARED)
                         	{
                         		$db->Execute("UPDATE farm_amis SET ami_id='{$db_ami["replace_to_ami"]}', replace_to_ami='' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
                         		$db->Execute("UPDATE zones SET ami_id='{$db_ami["replace_to_ami"]}', role_name='{$role_name}' WHERE ami_id='{$ami}' AND clientid='{$farminfo['clientid']}'");
+                        		
+                        		// Update ami in role scripts
+                        		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
                         	}
                         	else
                         	{
                         		$db->Execute("UPDATE farm_amis SET ami_id='{$db_ami["replace_to_ami"]}', replace_to_ami='' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
                         		$db->Execute("UPDATE zones SET ami_id='{$db_ami["replace_to_ami"]}', role_name='{$role_name}' WHERE ami_id='{$ami}' AND clientid='{$farminfo['clientid']}' AND farmid='{$farminfo['id']}'");
+                        		
+                        		// Update ami in role scripts
+                        		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
                         	}
                         	
                         	$db->Execute("UPDATE ami_roles SET `replace`='' WHERE ami_id='{$db_ami["replace_to_ami"]}'");
@@ -277,10 +289,10 @@
             			    foreach ($old_instances as $old_instance)
             			    {            			    	
             			    	// Start new instance with new AMI_ID
-            			        $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$ami_info["name"], $farminfo['id'], $ami_info["name"], $farminfo['hash'], $ami_info["ami_id"]);
+            			        $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$ami_info["name"], $farminfo['id'], $ami_info["name"], $farminfo['hash'], $ami_info["ami_id"], false, true, $old_instance['avail_zone']);
                                 if ($res)
                                 {
-                                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' ill be terminated after instance '{$res}' will boot up."));
+                                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' will be terminated after instance '{$res}' will boot up."));
                                     $db->Execute("UPDATE farm_instances SET replace_iid='{$old_instance['instance_id']}' WHERE instance_id='{$res}'");
                                 }
                                 else 
@@ -313,15 +325,13 @@
                     if ($db_item_info)
                     {
                         $role_instance_ids[$item->instanceId] = $item;
-                        $this->Logger->debug("[FarmID: {$farminfo['id']}] Checking '{$item->instanceId}' instance...");
+                        $this->Logger->info("[FarmID: {$farminfo['id']}] Checking '{$item->instanceId}' instance...");
                         
                         // IF instance on EC2 - running AND db state of instance - running
                         if ($item->instanceState->name == 'running' && ($db_item_info["state"] == INSTANCE_STATE::RUNNING))
                         {
                             if ($db_item_info["isrebootlaunched"] == 0)
                             {
-                                $this->Logger->info("[FarmID: {$farminfo['id']}] Instance '{$item->instanceId}' running. Get LA information over SNMP.");
-                                
                                 $instance_dns = $item->dnsName;
                                 $community = $farminfo["hash"];
                                 
@@ -336,11 +346,11 @@
                                 if (!$res)
                                 {
                                     if ($db_item_info['isipchanged'] == 0)
-                                		$this->Logger->error(new FarmLogMessage($farminfo['id'], "Cannot retreive LA. Instance did not respond on {$db_item_info['external_ip']}:161."));
+                                		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance did not respond on {$db_item_info['external_ip']}:161."));
                                 	else
                                 	{
                                 		$ip = @gethostbyname($instance_dns);
-                                		$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot retreive LA. Instance did not respond on {$ip}.");
+                                		$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot retrieve LA. Instance did not respond on {$ip}.");
                                 	}
                                 }
                                 else 
@@ -351,10 +361,8 @@
                                 		if ($ip && $ip != $instance_dns)
                                 		{
 	                                    	Scalr::FireEvent(
-	                                    		$db_item_info['farmid'], 
-	                                    		EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED,
-	                                    		$db_item_info, 
-	                                    		$ip
+	                                    		$db_item_info['farmid'],
+	                                    		new IPAddressChangedEvent($db_item_info, $ip) 
 	                                    	);
                                 		}
                                     }
@@ -430,7 +438,7 @@
                             
                         	try
 	                        {
-	                            Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $db_item_info);
+	                            Scalr::FireEvent($farminfo['id'], new HostDownEvent($db_item_info));
 	                            // Add entry to farm log
                     			$this->Logger->info(new FarmLogMessage($farminfo['id'], "'{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}) Terminated!"));
 	                        }
@@ -453,13 +461,32 @@
                             $launch_timeout = (int)$db->GetOne("SELECT `launch_timeout` FROM farm_amis WHERE farmid=? AND ami_id=? OR replace_to_ami=?", array($farminfo['id'], $db_item_info['ami_id'], $db_item_info['ami_id']));	
 							$launch_timeout = $launch_timeout > 0 ? $launch_timeout : CONFIG::$LAUNCH_TIMEOUT;
                             
+							if (!$db_item_info["internal_ip"])
+							{
+								$event = "hostInit";
+								$scripting_event = EVENT_TYPE::HOST_INIT;
+							}
+                            else
+                            { 
+								$event = "hostUp";
+								$scripting_event = EVENT_TYPE::HOST_UP;
+                            }
+							
+							$scripting_timeout = (int)$db->GetOne("SELECT sum(timeout) FROM farm_role_scripts INNER JOIN 
+								scripts ON scripts.id = farm_role_scripts.scriptid  
+								WHERE farm_role_scripts.farmid=? AND farm_role_scripts.event_name=? AND 
+								farm_role_scripts.ami_id=? AND scripts.issync='1'",
+								array($db_item_info['farmid'], $scripting_event, $db_item_info['ami_id'])
+							);
+							
+							if ($scripting_timeout)
+								$launch_timeout = $launch_timeout+$scripting_timeout;
+							
+							$this->Logger->info("[FarmID: {$farminfo['id']}] Check event timeout: {$launch_timeout}");
+								
                             if ($dtadded+$launch_timeout < time())
                             {
-                                if (!$db_item_info["internal_ip"])
-                                    $event = "hostInit";
-                                else 
-                                    $event = "hostUp";
-                                    
+                                                                    
                                 // Add entry to farm log
                     			$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch. Considering it broken. Terminating instance."));
                                 
@@ -491,7 +518,7 @@
                 else
                 	$AvgLA = 0;
                 	
-                $this->Logger->debug("[FarmID: {$farminfo['id']}] '{$role}' statistics: Running={$role_running_instances}/{$role_running_instances_with_la}, Terminated={$role_terminated_instances}, Pending={$role_pending_instances}, SumLA={$roleLA}, AvgLA={$AvgLA}");
+                $this->Logger->info("[FarmID: {$farminfo['id']}] '{$role}' statistics: Running={$role_running_instances}/{$role_running_instances_with_la}, Terminated={$role_terminated_instances}, Pending={$role_pending_instances}, SumLA={$roleLA}, AvgLA={$AvgLA}");
                 
                 $db_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND ami_id=?", array($farminfo['id'], $ami));
                 
@@ -503,7 +530,7 @@
                     if (count($role_instances_by_time) > $db_ami_info["min_count"])
                     {
                         $db_ami_info['name'] = $role;
-                    	Scalr::FireEvent($farminfo['id'], EVENT_TYPE::LA_UNDER_MINIMUM, $db_ami_info, $AvgLA, $db_ami_info["min_LA"]);
+                    	Scalr::FireEvent($farminfo['id'], new LAUnderMinimumEvent($db_ami_info, $AvgLA, $db_ami_info["min_LA"]));
                     	
                     	$this->Logger->debug(new FarmLogMessage($farminfo['id'], "Average LA for '{$role}' ({$AvgLA}) <= min_LA ({$db_ami_info["min_LA"]})"));
                     	
@@ -561,7 +588,7 @@
                         		{
                         			$timeout = round(($time - 600) / 60, 1);
                         			//
-                        			$this->Logger->debug(new FarmLogMessage($farminfo['id'], "Farm {$farminfo['name']}, role {$instanceinfo['role_name']} scaling down. {$instanceinfo['instance_id']} will be terminated in {$timeout} minutes"));
+                        			$this->Logger->info(new FarmLogMessage($farminfo['id'], "Farm {$farminfo['name']}, role {$instanceinfo['role_name']} scaling down. {$instanceinfo['instance_id']} will be terminated in {$timeout} minutes"));
                         		}
 	                        }
 	                        //
@@ -570,11 +597,8 @@
                         	{                       
 		                        try
 		                        {
-		                            $AmazonEC2Client->TerminateInstances(array($instanceinfo["instance_id"]));
-		                            
-		                            Scalr::FireEvent($farminfo['id'], EVENT_TYPE::HOST_DOWN, $instanceinfo);
-		                            // Add entry to farm log
-	                    			$this->Logger->info(new FarmLogMessage($farminfo['id'], "'{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) Terminated!"));
+		                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending termination request for instance '{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) "));
+		                        	$AmazonEC2Client->TerminateInstances(array($instanceinfo["instance_id"]));
 		                        }
 		                        catch (Exception $e)
 		                        {
@@ -600,7 +624,7 @@
                     $need_new_instance = true;
                     
                     $db_ami_info['name'] = $role;
-                    Scalr::FireEvent($farminfo['id'], EVENT_TYPE::LA_OVER_MAXIMUM, $db_ami_info, $AvgLA, $db_ami_info["max_LA"]);
+                    Scalr::FireEvent($farminfo['id'], new LAOverMaximumEvent($db_ami_info, $AvgLA, $db_ami_info["max_LA"]));
                     
                     // Add entry to farm log
                     $this->Logger->info(new FarmLogMessage($farminfo['id'], "Average LA for '{$role}' ({$AvgLA}) >= max_LA ({$db_ami_info["max_LA"]})"));
@@ -686,8 +710,8 @@
 			}
 			
 			$data = array(
-                (int)array_sum($bw_in_used),
-                (int)array_sum($bw_out_used),
+                (int)array_sum((array)$bw_in_used),
+                (int)array_sum((array)$bw_out_used),
                 (int)$stat_uptime['m1.small'],
                 (int)$stat_uptime['m1.large'],
                 (int)$stat_uptime['m1.xlarge'],

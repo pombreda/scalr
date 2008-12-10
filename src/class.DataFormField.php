@@ -30,6 +30,13 @@
 		public $DefaultValue;
 		
 		/**
+		 * Allow multiple choice for list element 
+		 *
+		 * @var boolean
+		 */
+		public $AllowMultipleChoice;
+		
+		/**
 		 * Current value. 
 		 *
 		 * @var string
@@ -70,7 +77,7 @@
 		 * @param string $value Filed Value. The same as default_value
 		 * @param string $hint  Inline help that will appear as yellow hint after the field.
 		 */
-		public function __construct($name, $field_type, $title, $isrequired = false, $options = array(), $default_value = null, $value = null, $hint = null)
+		public function __construct($name, $field_type, $title, $isrequired = false, $options = array(), $default_value = null, $value = null, $hint = null, $allow_multiple_choice = false)
 		{
 			$Validator = core::GetValidatorInstance();
 			// Defalts if we blindly pass nullz
@@ -90,10 +97,16 @@
 			$this->FieldType = $field_type;
 			$this->Title = $title;
 			$this->DefaultValue = $default_value;
-			$this->Value = $value;
+			
+			if ($allow_multiple_choice)
+				$this->Value = explode(",", $value);
+			else
+				$this->Value = $value;
+				
 			$this->IsRequired = $isrequired;
 			$this->Hint = $hint;
 			$this->Options = $options;
+			$this->AllowMultipleChoice = $allow_multiple_choice;
 		}
 	}
 

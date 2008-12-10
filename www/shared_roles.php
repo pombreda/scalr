@@ -1,6 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = "Shared roles&nbsp;&raquo;&nbsp;View";
+	$display["title"] = _("Shared roles&nbsp;&raquo;&nbsp;View");
 	
 	if ($_SESSION["uid"] != 0)
 	   UI::Redirect("index.php");
@@ -17,11 +17,11 @@
 	        $db->Execute("DELETE FROM ami_roles WHERE id='{$info['id']}'");
 	        $db->Execute("DELETE FROM security_rules WHERE roleid='{$info['id']}'");
 	        
-	        $okmsg = "Role successfully unassigned from AMI";
+	        $okmsg = _("Role successfully unassigned from AMI");
 	        UI::Redirect("shared_roles.php");
 	    }
 	    else 
-	       $errmsg = "Role not found";
+	       $errmsg = _("Role not found");
 	}
 	
 	$AmazonEC2 = new AmazonEC2(
@@ -34,8 +34,7 @@
 	$paging->ItemsOnPage = 20;
 	
 	$sql = "SELECT * FROM ami_roles WHERE roletype='".ROLE_TYPE::SHARED."'";
-	
-	
+		
 	$paging->SetSQLQuery($sql);
 	$paging->ApplyFilter($_POST["filter_q"], array("zone"));
 	$paging->ApplySQLPaging();
@@ -77,6 +76,7 @@
 			}
 		}
 		
+		$row["type"] = ROLE_ALIAS::GetTypeByAlias($row['alias']);
 		$row['farmsCount'] = $db->GetOne("SELECT COUNT(farmid) FROM farm_amis WHERE ami_id=?", array($row['ami_id']));
 	}
 	

@@ -1,1 +1,1 @@
-IP address for instance {$instanceinfo.instance_id} changed to {$new_ip_address} 
+IP address for instance {$event->InstanceInfo.instance_id} changed to {$event->NewIPAddress} 

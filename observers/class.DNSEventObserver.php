@@ -9,12 +9,19 @@
 			
 			$this->DNSZoneController = new DNSZoneControler();
 		}
-
-		public function OnNewMysqlMasterUp($instanceinfo, $snapurl)
+	
+		public function OnRebootComplete(RebootCompleteEvent $event)
+		{
+			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+						
+			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+		}
+		
+		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
 		{
 			// Reload instance info
 			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
-				array($instanceinfo['id'])
+				array($event->InstanceInfo['id'])
 			);
 			
 			if ($instanceinfo['isactive'] != 1)
@@ -22,7 +29,7 @@
 			
 			try
 			{
-				$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid='{$farminfo['id']}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
+				$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid='{$this->FarmID}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
 				if (count($zones) == 0)
 					return;
 					
@@ -35,7 +42,7 @@
 					
 					$records_attrs = array();
 					
-					// If instance is mysql master we must add: 
+					// We must update: 
 					// 'int-ROLE_NAME-master IN A INTERNAL_IP'
 					// 'ext-ROLE_NAME-master IN A PUBLIC_IP'
 					// records
@@ -58,27 +65,23 @@
 						array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
 					}
 					
+					// Remove old role-slave and mysql-slave records for this instance
+					$this->DB->Execute("DELETE FROM records WHERE zoneid=? AND rtype='A' AND rkey LIKE '%-slave' AND (rvalue=? OR rvalue=?) AND issystem='1'",
+						array($zone['id'], $instanceinfo["internal_ip"], $instanceinfo['external_ip'])
+					);
+					
+					
 					// Update DNS zone on Nameservers
 					if (!$this->DNSZoneController->Update($zone["id"]))
-						$this->Logger->error("Cannot update zone in DNSEventObserver");
+						$this->Logger->error(_("Cannot update zone in DNSEventObserver"));
 					else
-						$this->Logger->debug("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
+						$this->Logger->info("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
 				}
 			}
 			catch(Exception $e)
 			{
 				$this->Logger->fatal("DNS zone update failed: ".$e->getMessage());
 			}
-		}
-		
-		/**
-		 * Host crashed
-		 *
-		 * @param array $instanceinfo
-		 */
-		public function OnHostCrash($instanceinfo)
-		{
-			$this->OnHostDown($instanceinfo);
 		}
 	
 		/**
@@ -87,7 +90,7 @@
 		 * @param array $instanceinfo
 		 * @param string $new_ip_address
 		 */
-		public function OnIPAddressChanged($instanceinfo, $new_ip_address)
+		public function OnIPAddressChanged(IPAddressChangedEvent $event)
 		{
 			// Get farm info
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
@@ -95,7 +98,7 @@
 				return;
 				
 			// Update zones
-			$this->AddInstanceToDNS($farminfo, $instanceinfo);
+			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
 		}
 		
 		/**
@@ -103,7 +106,7 @@
 		 *
 		 * @param bool $mark_instances_as_active
 		 */
-		public function OnFarmLaunched($mark_instances_as_active)
+		public function OnFarmLaunched(FarmLaunchedEvent $event)
 		{
 			// Get list of all zones for current farm
 			$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid='{$this->FarmID}'");
@@ -124,9 +127,9 @@
 		 * @param bool $remove_zone_from_DNS
 		 * @param bool $keep_elastic_ips
 		 */
-		public function OnFarmTerminated($remove_zone_from_DNS, $keep_elastic_ips, $term_on_sync_fail)
+		public function OnFarmTerminated(FarmTerminatedEvent $event)
 		{
-			if (!$remove_zone_from_DNS)
+			if (!$event->RemoveZoneFromDNS)
 				return;
 			
 			// Get list of all zones for current farm
@@ -137,10 +140,7 @@
 	        	$this->DB->Execute("DELETE FROM records WHERE rtype='A' AND 
 	            	issystem='1' AND 
 	            	zoneid='{$zone['id']}'"
-	            );
-	            
-	            // Delete zone from nameservers
-	            $this->DNSZoneController->Delete($zone["id"]);
+	            );	            
 	        }
 	        
 	        // Set status for zones - INACTIVE
@@ -154,11 +154,11 @@
 		 *
 		 * @param array $instanceinfo
 		 */
-		public function OnHostUp($instanceinfo)
+		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 						
-			$this->AddInstanceToDNS($farminfo, $instanceinfo);
+			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
 		}
 		
 		/**
@@ -166,7 +166,7 @@
 		 *
 		 * @param array $instanceinfo
 		 */
-		public function OnHostDown($instanceinfo)
+		public function OnHostDown(HostDownEvent $event)
 		{
 			//
 			// Remove terminated instance from DNS records
@@ -177,7 +177,7 @@
 				
 			try
 			{
-				$zones = $this->DB->GetAll("SELECT DISTINCT(zoneid) FROM records WHERE rvalue='{$instanceinfo['external_ip']}' OR rvalue='{$instanceinfo['internal_ip']}' GROUP BY zoneid");
+				$zones = $this->DB->GetAll("SELECT DISTINCT(zoneid) FROM records WHERE rvalue='{$event->InstanceInfo['external_ip']}' OR rvalue='{$event->InstanceInfo['internal_ip']}' GROUP BY zoneid");
 				foreach ($zones as $zone)
 				{
 					$zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id='{$zone['zoneid']}'");
@@ -189,12 +189,12 @@
 						issystem='1' AND 
 						zoneid=? AND 
 						(rvalue=? OR rvalue=?)",
-						array($zoneinfo['id'], $instanceinfo['external_ip'], $instanceinfo['internal_ip'])
+						array($zoneinfo['id'], $event->InstanceInfo['external_ip'], $event->InstanceInfo['internal_ip'])
 					);
 					if (!$this->DNSZoneController->Update($zoneinfo["id"]))
-						$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot remove terminated instance '{$instanceinfo['instance_id']}' ({$instanceinfo['external_ip']}) from DNS zone '{$zoneinfo['zone']}'");
+						$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot remove terminated instance '{$event->InstanceInfo['instance_id']}' ({$event->InstanceInfo['external_ip']}) from DNS zone '{$zoneinfo['zone']}'");
 					else
-						$this->Logger->debug("[FarmID: {$farminfo['id']}] Terminated instance '{$instanceinfo['instance_id']}' (ExtIP: {$instanceinfo['external_ip']}, IntIP: {$instanceinfo['internal_ip']}) removed from DNS zone '{$zoneinfo['zone']}'");
+						$this->Logger->info("[FarmID: {$farminfo['id']}] Terminated instance '{$event->InstanceInfo['instance_id']}' (ExtIP: {$event->InstanceInfo['external_ip']}, IntIP: {$event->InstanceInfo['internal_ip']}) removed from DNS zone '{$zoneinfo['zone']}'");
 				}
 			}
 			catch(Exception $e)
@@ -235,6 +235,9 @@
 					$ami_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
 					
 					$replace = false;
+					
+					$role_name = $zone["role_name"]; 
+					
 					if ($instanceinfo["replace_iid"])
 					{
 						$old_instance_info = $this->DB->GetRow("SELECT role_name FROM farm_instances 
@@ -243,58 +246,27 @@
 						);
 						
 						if ($old_instance_info['role_name'] == $zone["role_name"])
-							$replace = true;
+							$role_name = $instanceinfo['role_name'];
 					}
 					
-					// Add main '@ IN A PUBLIC_IP' record
-					if ($zone["role_name"] == $instanceinfo['role_name'] || $replace)
-					{
-						$records_attrs[] = array("@", $instanceinfo['external_ip'], CONFIG::$DYNAMIC_A_REC_TTL);
-						$this->Logger->info(new FarmLogMessage($farminfo['id'], "Adding '@ IN A {$instanceinfo['external_ip']}' to zone {$zone['zone']} pointed to role '{$zone["role_name"]}'"));
-					}
+					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Instance {$instanceinfo['instance_id']}. Is DB Master = {$instanceinfo['isdbmaster']}"));
 					
-					// If instance is mysql master we must add: 
-					// 'int-ROLE_NAME-master IN A INTERNAL_IP'
-					// 'ext-ROLE_NAME-master IN A PUBLIC_IP'
-					// records
-					if ($instanceinfo["isdbmaster"] == 1)
-					{
-						$records_attrs[] = array("int-{$instanceinfo['role_name']}-master", $instanceinfo["internal_ip"], 20);
-						$records_attrs[] = array("ext-{$instanceinfo['role_name']}-master", $instanceinfo['external_ip'], 20);
-					}
-						
-					// Add: 
-					// 'int-ROLE_NAME IN A INTERNAL_IP'
-					// 'ext-ROLE_NAME IN A PUBLIC_IP'
-					// records
-					$records_attrs[] = array("int-{$instanceinfo['role_name']}", $instanceinfo["internal_ip"], 20);
-					$records_attrs[] = array("ext-{$instanceinfo['role_name']}", $instanceinfo['external_ip'], 20);
-
-					if ($ami_info && $ami_info['alias'] == ROLE_ALIAS::MYSQL && $instanceinfo['role_name'] != ROLE_ALIAS::MYSQL)
-					{
-						$records_attrs[] = array("int-mysql", $instanceinfo["internal_ip"], 20);
-						$records_attrs[] = array("ext-mysql", $instanceinfo['external_ip'], 20);
-						if ($instanceinfo["isdbmaster"] == 1)
-						{
-							$records_attrs[] = array("int-mysql-master", $instanceinfo["internal_ip"], 20);
-							$records_attrs[] = array("ext-mysql-master", $instanceinfo['external_ip'], 20);
-						}
-					}
-					
-					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Adding ext-* and int-* to zone {$zone['zone']}"));
+					$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $role_name, $ami_info['alias']);
+										
+					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Adding system A records to zone {$zone['zone']}"));
 					
 					// Adding new records to database
-					foreach ($records_attrs as $record_attrs)
+					foreach ($instance_records as $record_attrs)
 					{									
 						$this->DB->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
-						array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
+						array($record_attrs['ttl'], $record_attrs['rvalue'], $record_attrs['rkey']));
 					}
 					
 					// Update DNS zone on Nameservers
 					if (!$this->DNSZoneController->Update($zone["id"]))
 						$this->Logger->error("Cannot update zone in DNSEventObserver");
 					else
-						$this->Logger->debug("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
+						$this->Logger->info("Instance {$instanceinfo['instance_id']} added to DNS zone '{$zone['zone']}'");
 				}
 			}
 			catch(Exception $e)
