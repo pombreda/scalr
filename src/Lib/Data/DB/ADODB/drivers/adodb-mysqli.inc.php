@@ -111,6 +111,9 @@ class ADODB_mysqli extends ADOConnection {
 	 		if ($argDatabasename)  return $this->SelectDB($argDatabasename);
  			return true;
  	   } else {
+ 	   	
+ 	   		$this->_connectionID = null;
+ 	   	
 			if ($this->debug) 
 		  		ADOConnection::outp("Could't connect : "  . $this->ErrorMsg());
 			return false;

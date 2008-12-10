@@ -47,14 +47,14 @@
 	{include file="inc/table_header.tpl"}		
 		{include file="inc/intable_header.tpl" header="System settings" color="Gray"}
 		<tr>
-			<td colspan="2">Automatically abort instance synchronization if it does not complete in <input name="sync_timeout" type="text" class="text" id="sync_timeout" value="{$sync_timeout}" size="2"> minutes.</td>
+			<td colspan="2">{t}Automatically abort instance synchronization if it does not complete in{/t} <input name="sync_timeout" type="text" class="text" id="sync_timeout" value="{$sync_timeout}" size="2"> {t}minutes{/t}.</td>
 		</tr>
 		<tr>
-			<td width="18%">Instances limit:</td>
-			<td width="82%"><input name="client_max_instances" type="text" class="text" id="client_max_instances" value="{$client_max_instances}" size="10"></td>
+			<td width="18%">{t}Instances limit{/t}:</td>
+			<td width="82%"><input name="client_max_instances" type="text" class="text" id="client_max_instances" value="{$client_max_instances}" size="10"> <span class="Webta_Ihelp">{t}You need to ask Amazon (aws@amazon.com) to increase instances limit for you before increasing this value.{/t}</span></td>
 		</tr>
 		<tr>
-			<td width="18%">Elastic IPs limit:</td>
+			<td width="18%">{t}Elastic IPs limit{/t}:</td>
 			<td width="82%">
 				<input name="client_max_eips" type="text" class="text" id="client_max_eips" value="{$client_max_eips}" size="2">
 			</td>
@@ -63,11 +63,11 @@
 		
 		{include file="inc/intable_header.tpl" header="RSS feed settings" color="Gray"}
 		<tr>
-			<td>Login:</td>
+			<td>{t}Login{/t}:</td>
 			<td><input name="rss_login" type="text" class="text" id="rss_login" value="{$rss_login}"></td>
 		</tr>
 		<tr>
-			<td>Password:</td>
+			<td>{t}Password{/t}:</td>
 			<td><input name="rss_password" type="text" class="text" id="rss_password" value="{$rss_password}">
 			&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" value="Generate" class="btn" onClick="GeneratePassword('rss_password');" />
 			</td>

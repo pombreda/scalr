@@ -20,7 +20,7 @@
         	$Queue->Put(new FireDeferredEventTask(1));
         	       	
         	// Put second task to queue
-        	TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS)->Put(new FireDeferredEventTask(2));
+        	TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS)->AppendTask(new FireDeferredEventTask(2));
         	
         	// Check queue size
         	$this->assertTrue($Queue->Size() == 2, "Queue size = 1");

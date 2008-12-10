@@ -1,6 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = "Role rebundle log";
+	$display["title"] = _("Role rebundle log");
     
 	if (!$get_id)
 		UI::Redirect("client_roles_view.php");

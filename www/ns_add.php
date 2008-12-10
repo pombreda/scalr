@@ -71,7 +71,7 @@
                     }
                 }
     			     	
-    			$mess = "Nameserver successfully added";
+    			$okmsg = "Nameserver successfully added";
     		
     			UI::Redirect("ns_view.php");
     			
@@ -88,7 +88,7 @@
     			);
     
     							
-    			$mess = "Nameserver succesfully updated";
+    			$okmsg = "Nameserver succesfully updated";
     			UI::Redirect("ns_view.php");
     		}
 	    }

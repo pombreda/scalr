@@ -27,7 +27,7 @@
 {if $tabs}
 {literal}
 <script language="Javascript">
-	function SetActiveTab(id)
+	function SetActiveTab(id, itable_tabs)
 	{
 		//
 		// Unselect current active tab

@@ -1,8 +1,8 @@
 {if $pages[1]}
 <div class="paging">
-{if $title}{$title}:{/if}&nbsp;
+{if $title}<div style="float:left;">{$title}:&nbsp;</div>{/if}
 	{if $links}
-		{if $prevlink}<div class="tab"><a href="{$prevlink}">Previous</a></div>{/if}
+		{if $prevlink}<div class="tab"><a href="{$prevlink}">{t}Previous{/t}</a></div>{/if}
 	{/if}
 		{if $firstpage}
 		<div class="tabPage"><a href="{$firstpage.link}">{$firstpage.num}</a></div><div style="float: left;">&nbsp;...&nbsp;</div>
@@ -16,7 +16,7 @@
 		<div style="float: left;">&nbsp;...&nbsp;</div><div class="tabPage"><a href="{$lastpage.link}">{$lastpage.num}</a></div>
 		{/if}
 	{if $links}
-		{if $nextlink}<div class="tab"><a href="{$nextlink}">Next</a></div>{/if}
+		{if $nextlink}<div class="tab"><a href="{$nextlink}">{t}Next{/t}</a></div>{/if}
 	{/if}
 </div>
 {/if}

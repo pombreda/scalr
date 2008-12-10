@@ -40,7 +40,7 @@
 			{
 				$db->CommitTrans();
 				
-				$okmsg = "Applications you are trying to delete have been marked for deletion. They will be deleted in few minutes.";
+				$okmsg = "Applications have been marked for deletion. They will be deleted in few minutes.";
 				UI::Redirect("sites_view.php?farmid={$req_farmid}");
 			}
 		}

@@ -31,6 +31,7 @@
 		public static $EMAIL_ADDRESS;
 		
 		public static $EMAIL_NAME;
+		public static $TEAM_EMAILS;
 		
 		public static $AWS_ACCOUNTID;
 		
@@ -102,11 +103,6 @@
 		public static $RRD_GRAPH_STORAGE_TYPE;
 		public static $RRD_GRAPH_STORAGE_PATH;
 		
-		
-		public static $HTTP_VHOST_TEMPLATE;
-		public static $HTTPS_VHOST_TEMPLATE;
-		public static $NGINX_HTTPS_VHOST_TEMPLATE;
-		
 		public static $APACHE_DOCROOT_DIR;
 		public static $APACHE_LOGS_DIR;
 		
@@ -116,8 +112,15 @@
 		public static $MYSQL_STAT_SEC_GROUP = "scalr.mysql-stat";
 		
 		public static $APP_SYS_IPADDRESS;
-		
+				
 		public static $SYNC_TIMEOUT = 300; // Minutes
+		
+		public static $SYNCHRONOUS_SCRIPT_TIMEOUT = 180; // seconds
+		public static $ASYNCHRONOUS_SCRIPT_TIMEOUT = 1200; // seconds
+		
+		public static $SCRIPT_BUILTIN_VARIABLES = array(
+			"external_ip", "internal_ip", "instance_id", "ami_id", "role_name", "isdbmaster"
+		);
 		
 		/**
 		 * List all available properties through reflection

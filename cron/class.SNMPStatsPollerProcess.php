@@ -60,7 +60,7 @@
             //
             if ($db->GetOne("SELECT status FROM farms WHERE id=?", array($farminfo["id"])) != 1)
             {
-            	$this->Logger->error("[FarmID: {$farminfo['id']}] Farm terminated by client.");
+            	$this->Logger->warn("[FarmID: {$farminfo['id']}] Farm terminated by client.");
             	return;
             }
             
@@ -112,7 +112,7 @@
             		foreach (array_keys($this->Watchers) as $watcher_name)
             		{            			
             			// Get data
-            			$data = $Watcher->RetreiveData($watcher_name);
+            			$data = $Watcher->RetrieveData($watcher_name);
             			
             			$this->Logger->info("Retrieved data from {$ami_instance['external_ip']} ($watcher_name): ".implode(", ", $data));
             			

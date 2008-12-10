@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Settings&nbsp;&raquo;&nbsp;Default DNS records";
+	$display["title"] = _("Settings&nbsp;&raquo;&nbsp;Default DNS records");
 	
 	if ($_POST) 
 	{
@@ -64,7 +64,7 @@
 		
 		if (count($err) == 0)
 		{
-			$okmsg = "Default records successfully changed";
+			$okmsg = _("Default records successfully changed");
 			CoreUtils::Redirect("default_records.php");
 		}
 	}
@@ -76,7 +76,7 @@
 		
 	$display["add"] = array(1, 2, 3, 4, 5);
 		
-	$display["help"] = "You can use a %hostname% tag, which will be replaced with full zone hostname.";
+	$display["help"] = _("You can use a %hostname% tag, which will be replaced with full zone hostname.");
 	
 	require("src/append.inc.php"); 
 ?>

@@ -115,6 +115,10 @@
 				}
 			}
 		}
+		
+		// Check path to SNMP Trap
+		if (!file_exists(CONFIG::$SNMPTRAP_PATH) || !is_executable(CONFIG::$SNMPTRAP_PATH))
+			$err[] = CONFIG::$SNMPTRAP_PATH." not exists or not executable. Please check path to snmpinformer on Settings > Core Settings page.";
 	}
 	
 	if (!$CLI)

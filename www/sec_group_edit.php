@@ -38,14 +38,45 @@
 	}
 
 	$group_rules = array();
-	
-	foreach ($rules as &$rule)
-	{
-		$rule->ip = $rule->ipRanges->item->cidrIp;
-		$rule->rule = "{$rule->ipProtocol}:{$rule->fromPort}:{$rule->toPort}:{$rule->ip}";
-		$rule->id = md5($rule->rule);
 		
-		$group_rules[$rule->id] = $rule;
+	foreach ($rules as $rule)
+	{
+		if ($rule->groups->item  && !is_array($rule->groups->item))
+			$rule->groups->item = array($rule->groups->item);
+		
+		if (count($rule->groups->item) > 0)
+		{
+			foreach ($rule->groups->item as &$group)
+			{
+				if ($group)
+				{
+					$r = clone $rule;
+					$r->ip = '0.0.0.0/0';
+					$r->rule = "user:{$group->userId}:{$group->groupName}:0.0.0.0/0";
+					$r->userId = $group->userId;
+					$r->type = 'user';
+					$r->groupname = $group->groupName;
+					$r->id = md5($r->rule);
+					
+					if (!$group_rules[$r->id])
+					{
+						$display['ug_rules'][$r->id] = $r;
+						$group_rules[$r->id] = $r;
+					}
+				}
+			}
+		}
+		else
+		{
+			$rule->ip = $rule->ipRanges->item->cidrIp;
+			$rule->rule = "{$rule->ipProtocol}:{$rule->fromPort}:{$rule->toPort}:{$rule->ip}";
+			$rule->id = md5($rule->rule);
+			
+			$display['rules'][$rule->id] = $rule;
+			$group_rules[$rule->id] = $rule;
+		}
+		
+		
 	}
 	
 	if ($_POST)
@@ -54,13 +85,22 @@
 	    $exists_rules = array();
 		foreach ((array)$post_rules as $rule)
         {
-			if (!$group_rules[md5($rule)])
+			if (!$group_rules[md5($rule)] && $rule)
 			{
         		$group_rule = explode(":", $rule);
-				$IpPermissionSet->AddItem($group_rule[0], $group_rule[1], $group_rule[2], null, array($group_rule[3]));
+        		
+        		if ($group_rule[0] != 'user')
+					$IpPermissionSet->AddItem($group_rule[0], $group_rule[1], $group_rule[2], null, array($group_rule[3]));
+        		else
+        		{
+        			$IpPermissionSet->AddItem("tcp", 1, 65535, array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
+        			$IpPermissionSet->AddItem("udp", 1, 65535, array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
+        			$IpPermissionSet->AddItem("icmp", -1, -1,  array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
+        		}
+
 				$new_rules_added = true;
 			}
-			
+						
 			$exists_rules[md5($rule)] = true;
 		}
 		
@@ -69,7 +109,17 @@
 		{
 			if (!$exists_rules[$rule_hash])
 			{
-				$RevokeIpPermissionSet->AddItem($rule->ipProtocol, $rule->fromPort, $rule->toPort, null, array($rule->ip));
+				if ($rule->type != 'user')
+				{
+					$RevokeIpPermissionSet->AddItem($rule->ipProtocol, $rule->fromPort, $rule->toPort, null, array($rule->ip));
+				}
+				else
+				{
+					$RevokeIpPermissionSet->AddItem("tcp", 1, 65535, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
+					$RevokeIpPermissionSet->AddItem("udp", 1, 65535, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
+					$RevokeIpPermissionSet->AddItem("icmp", -1, -1, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
+				}
+								
 				$remove_rules = true;
 			}
 		}
@@ -96,8 +146,6 @@
 			$errmsg = $e->getMessage();
 		}
 	}
-			
-	$display["rules"] = $rules;
 	
 	require("src/append.inc.php"); 
 ?>

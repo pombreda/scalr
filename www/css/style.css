@@ -36,6 +36,10 @@ tr.Separator td			{ padding: 0; font-size: 1px;}
 .Webta_Items tbody td { padding: 1px 5px 1px 5px; font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; color: #000000; border-bottom: 1px dashed #DDDDDD; font-size:14px; }
 .Webta_Items tbody td.Item	{ }
 
+.Webta_Items_tbody_td {
+	padding: 1px 5px 1px 5px; font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif; color: #000000; border-bottom: 1px dashed #DDDDDD; font-size:14px;
+}
+
 .Webta_Items_farm 		{ border: none; background-color: #FFFFFF; border-collapse:collapse; }
 .Webta_Items_farm thead	{ border: none; background-color: #C3D9FF; }
 .Webta_Items_farm thead th, .Webta_Items_farm thead td
@@ -108,8 +112,9 @@ td.Offset			{ padding: 0px; font-size: 1px; height: 1px; }
 .Inner_Gray			{ background-color: #F4F4F4; }
 
 .Inner table th, .Inner_Gray table th, .Inner_Blue table th		{text-align: left; font-weight: normal; font-size:14px;}
-.SettingsHeader, .SettingsHeader_Blue, .SettingsHeader_Gray		{cursor: pointer; height: 23px; padding-top: 2px;}
+.SettingsHeader, .SettingsHeader_Blue, .SettingsHeader_Gray, .SettingsHeader_LGray		{cursor: pointer; height: 23px; padding-top: 2px;}
 .SettingsHeader_Gray	{background: url(../images/grey-bg.gif) repeat-x bottom; }
+.SettingsHeader_LGray	{background: url(../images/lgrey-bg.gif) repeat-x bottom; }
 
 div.Wizard						{ background-color: #E8EEF7; padding: 10px; }
 
@@ -187,3 +192,26 @@ td.RightBorder {
 	display: block;
 }
 
+.comment_base
+{
+	padding:5px;
+	margin-bottom:10px;
+}
+
+.comment_green
+{
+	background-color:#E8F7EE;
+	border:1px solid #B4E7C8;
+}
+
+.comment_red
+{
+	background-color:#FAEEE4;
+	border:1px solid #F1D2BE;
+}
+
+.comment_purple
+{
+	background-color:#E8EEF7;
+	border:1px solid #BFCFE8;
+}

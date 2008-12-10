@@ -3,9 +3,11 @@
 		{include file="inc/intable_header.tpl" header="Confirm synchronization abort" color="Gray"}
     	<tr>
     		<td colspan="2">
-    		  You are about to cancel synchronization proccess on <b>{$instance_id}</b>.<br>
+    		  {t escape=no instance_id=$instance_id}
+    		  You are about to cancel synchronization proccess on <b>%1</b>.<br>
 			  This will <b>NOT</b> terminate the rebundle proccess on the instance itself.<br>
 			  If the synchronizzation will succeed, the new AMI will not be visible in Scalr.
+			  {/t}
     		</td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}

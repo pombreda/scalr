@@ -11,18 +11,18 @@
         
     if ($farminfo["status"] != 1)
     {
-    	$errmsg = "You cannot view statistics for terminated farm";
+    	$errmsg = _("You cannot view statistics for terminated farm");
     	UI::Redirect("farms_view.php");
     }
         
-	$display["title"] = "Farm&nbsp;&raquo;&nbsp;Statistics";
+	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Statistics");
 	$display["farminfo"] = $farminfo;
 
 	$display["roles"] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis 
 		INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id 
 		WHERE farmid=?", array($farminfo['id'])
 	);
-	
+		
 	array_push($display["roles"], array("name" => "_FARM", "id" => "frm1"));
 
 	$display["roles"] = array_reverse($display["roles"]);
@@ -36,21 +36,19 @@
 		
 		foreach ($watchers as $watcher)
 		{
-			if (CONFIG::$RRD_GRAPH_STORAGE_TYPE == RRD_STORAGE_TYPE::AMAZON_S3)
-			{
-				$expires = time()+720;
-				$s3_path = "/".CONFIG::$RRD_GRAPH_STORAGE_PATH."/{$req_farmid}/{$role['name']}_{$watcher}.daily.gif";
-				
-				$signature = urlencode(base64_encode(hash_hmac("SHA1", "GET\n\n\n{$expires}\n{$s3_path}", CONFIG::$AWS_ACCESSKEY, 1)));
-				$query_string = "?AWSAccessKeyId=".CONFIG::$AWS_ACCESSKEY_ID."&Expires={$expires}&Signature={$signature}";
-			}
+			$role["images"][$watcher]['params'] = array(
+				"farmid"	=> $req_farmid, 
+				"role_name" => $role['name'], 
+				"watcher"	=> $watcher,
+				"type"		=> 'daily',
+				"farmid"	=> $farminfo['id']
+			);
 			
-			$url = str_replace(array("%fid%","%rn%","%wn%"), array($req_farmid, $role['name'], $watcher), CONFIG::$RRD_STATS_URL);
-			$role["images"][$watcher]['url'] = "{$url}daily.gif{$query_string}";
+			$role["images"][$watcher]['hash'] = md5(implode("", $role["images"][$watcher]['params']));
 		}
 		
 		if ($role["id"] == "frm1")
-			$display["tabs_list"][$role["id"]] = "Entire farm";
+			$display["tabs_list"][$role["id"]] = _("Entire farm");
 		else
 			$display["tabs_list"][$role["id"]] = $role["name"];
 	}

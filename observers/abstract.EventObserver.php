@@ -43,94 +43,47 @@
 			$this->FarmID = $farmid;
 		}
 		
-		public function OnHostInit($instanceinfo, $local_ip, $remote_ip, $public_key)
-		{
-			
-		}
+		public function OnHostInit(HostInitEvent $event) {}
 		
-		public function OnHostUp($instanceinfo)
-		{
-			
-		}
+		public function OnHostUp(HostUpEvent $event) {}
 		
-		public function OnHostDown($instanceinfo)
-		{
-			
-		}
+		public function OnHostDown(HostDownEvent $event) {}
 		
-		public function OnHostCrash($instanceinfo)
+		public function OnHostCrash(HostCrashEvent $event)
 		{
+			$event->InstanceInfo['isrebootlaunched'] = 0;
 			
+			$HostDownEvent = new HostDownEvent($event->InstanceInfo);
+			
+			$this->OnHostDown($HostDownEvent);
 		}
 				
-		public function OnLAOverMaximum($roleinfo, $LA, $MAX_LA)
-		{
-			
-		}
+		public function OnLAOverMaximum(LAOverMaximumEvent $event) {}
 		
-		public function OnLAUnderMinimum($roleinfo, $LA, $MIN_LA)
-		{
-			
-		}
+		public function OnLAUnderMinimum(LAUnderMinimumEvent $event) {}
 		
-		public function OnRebundleComplete($ami_id, $instanceinfo)
-		{
-			
-		}
+		public function OnRebundleComplete(RebundleCompleteEvent $event) {}
 		
-		public function OnRebundleFailed($instanceinfo)
-		{
-			
-		}
+		public function OnRebundleFailed(RebundleFailedEvent $event) {}
 		
-		public function OnRebootBegin($instanceinfo)
-		{
-			
-		}
+		public function OnRebootBegin(RebootBeginEvent $event) {}
 		
-		public function OnRebootComplete($instanceinfo)
-		{
-			
-		}
+		public function OnRebootComplete(RebootCompleteEvent $event) {}
 		
-		public function OnFarmLaunched($mark_instances_as_active)
-		{
-			
-		}
+		public function OnFarmLaunched(FarmLaunchedEvent $event) {}
 		
-		public function OnFarmTerminated($remove_zone_from_DNS, $keep_elastic_ips, $term_on_sync_fail)
-		{
-			
-		}
+		public function OnFarmTerminated(FarmTerminatedEvent $event) {}
 		
-		public function OnNewMysqlMasterUp($instanceinfo, $snapurl)
-		{
-			
-		}
+		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event) {}
 		
-		public function OnMysqlBackupComplete($operation)
-		{
-			
-		}
+		public function OnMysqlBackupComplete(MysqlBackupCompleteEvent $event) {}
 		
-		public function OnMysqlBackupFail($operation)
-		{
-			
-		}
+		public function OnMysqlBackupFail(MysqlBackupFailEvent $event) {}
 		
-		public function OnIPAddressChanged($instanceinfo, $new_ip_address)
-		{
-			
-		}
+		public function OnIPAddressChanged(IPAddressChangedEvent $event) {}
 		
-		public function OnMySQLReplicationFail($instanceinfo)
-		{
-			
-		}
+		public function OnMySQLReplicationFail(MySQLReplicationFailEvent $event) {}
 		
-		public function OnMySQLReplicationRecovered($instanceinfo)
-		{
-			
-		}
+		public function OnMySQLReplicationRecovered(MySQLReplicationRecoveredEvent $event) {}
 	}
 ?>

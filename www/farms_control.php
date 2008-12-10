@@ -14,9 +14,9 @@
     	if ($post_cbtn_3)
     		UI::Redirect("farms_add.php?id={$farminfo['id']}");
     	
-    	Scalr::FireEvent($farminfo['id'], EVENT_TYPE::FARM_LAUNCHED, $req_mark_active);
+    	Scalr::FireEvent($farminfo['id'], new FarmLaunchedEvent($req_mark_active));
         
-        $okmsg = "Farm {$farminfo['name']} is now launching. It will take few minutes to start all instances.";
+        $okmsg = sprintf(_("Farm %s is now launching. It will take few minutes to start all instances."), $farminfo['name']);
         UI::Redirect("farms_view.php");
     }
     elseif ($req_action == "Terminate")
@@ -147,9 +147,10 @@
 		
 			    $term_on_sync_fail = ($_SESSION['term_post']["untermonfail"]) ? 0 : 1;
 			    
-			    Scalr::FireEvent($farminfo['id'], EVENT_TYPE::FARM_TERMINATED, $remove_zone_from_DNS, $post_keep_elastic_ips, $term_on_sync_fail);
+			    $event = new FarmTerminatedEvent($remove_zone_from_DNS, $post_keep_elastic_ips, $term_on_sync_fail, $post_keep_ebs);
+			    Scalr::FireEvent($farminfo['id'], $event);
 				
-				$okmsg = "Farm successfully terminated";
+				$okmsg = _("Farm successfully terminated");
 			    UI::Redirect("farms_view.php");
 		    }
     	}
@@ -173,6 +174,7 @@
         
         $display["elastic_ips"] = $db->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farmid=?", array($farminfo['id']));
         
+        $display["ebs"] = $db->GetOne("SELECT COUNT(*) FROM farm_ebs WHERE farmid=?", array($farminfo['id']));
         //
         // Synchronize before termination
         //
@@ -183,6 +185,10 @@
         foreach ($outdated_farm_amis as &$farm_ami)
         {
         	$farm_ami['name'] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?",
+        		array($farm_ami['ami_id'])
+        	);
+        	
+        	$farm_ami['alias'] = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?",
         		array($farm_ami['ami_id'])
         	);
         	
@@ -202,9 +208,12 @@
         }
         
         $display['outdated_farm_amis'] = $outdated_farm_amis;
+        
+        if (count($outdated_farm_amis) == 0)
+        	$display["term_step"] = 2;
     }
     
-	$display["title"] = "Farms&nbsp;&raquo;&nbsp;{$display["action"]}";
+	$display["title"] = sprintf(_("Farms&nbsp;&raquo;&nbsp; %s"), $display["action"]);
 	$display["new"] = ($req_new) ? "1" : "0";
 	$display["iswiz"] = ($req_iswiz) ? "1" : "0";
 	$display["farminfo"] = $farminfo;

@@ -183,7 +183,8 @@ SelectControl.prototype = {
 		this.menu.style.display = 'none';		
 		this.opened = false;
 		
-		$(this.options.pimpid).onmouseout();
+		if ($(this.options.pimpid))
+			$(this.options.pimpid).onmouseout();
 	},
 	
 	onDocumentClick: function(event) {

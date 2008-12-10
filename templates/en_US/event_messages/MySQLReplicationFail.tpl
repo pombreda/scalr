@@ -1,1 +1,1 @@
-Mysql replication fail on instance {$instanceinfo.instance_id} Public IP: {$instanceinfo.external_ip} Internal IP: {$instanceinfo.internal_ip} 
+Mysql replication fail on instance {$event->InstanceInfo.instance_id} Public IP: {$event->InstanceInfo.external_ip} Internal IP: {$event->InstanceInfo.internal_ip} 

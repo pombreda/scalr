@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Console output";
+	$display["title"] = _("Console output");
 		
     if ($req_iid)
     {
@@ -12,29 +12,16 @@
             
             if ($farminfo["clientid"] != $_SESSION["uid"] && $_SESSION["uid"] != 0)
             {
-            	$errmsg = "Instance not found";
+            	$errmsg = _("Instance not found");
             	CoreUtils::Redirect("farms.view.php");
             }
             
-            $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$farminfo['clientid']}'");
+            $Client = Client::Load($farminfo['clientid']);
             
             if ($farminfo["clientid"] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
                 UI::Redirect("index.php");
-                
-            
-            if ($_SESSION['uid'] == 0)
-		    {
-		    	// Decrypt client prvate key and certificate
-		    	$private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-		    	$certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-		    }
-		    else
-		    {
-		    	$private_key = $_SESSION["aws_private_key"];
-		    	$certificate = $_SESSION["aws_certificate"];
-		    }
 			
-		    $AmazonEC2Client = new AmazonEC2($private_key, $certificate);
+		    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
 		    
 		    try
 		    {

@@ -20,48 +20,48 @@
 	{/literal}
     {include file="inc/intable_header.tpl" header="Apache virtual host settings" color="Gray"}
     <tr>
-		<td width="20%">Virtual host name:</td>
+		<td width="20%">{t}Virtual host name{/t}:</td>
 		<td colspan="6">{$vhost.name}</td>
 	</tr>
 	<tr>
 		<td colspan="2">&nbsp;</td>
 	</tr>
 	<tr>
-		<td width="20%">Document root:</td>
+		<td width="20%">{t}Document root{/t}:</td>
 		<td colspan="6"><input type="text" class="text" size="50" name="document_root_dir" value="{$vhost.document_root_dir}"></td>
 	</tr>
 	<tr>
-		<td width="20%">Logs directory:</td>
+		<td width="20%">{t}Logs directory{/t}:</td>
 		<td colspan="6"><input type="text" class="text" size="50" name="logs_dir" value="{$vhost.logs_dir}"></td>
 	</tr>
 	<tr>
-		<td width="20%">Server admin email:</td>
+		<td width="20%">{t}Server admin email{/t}:</td>
 		<td colspan="6"><input type="text" class="text" size="25" name="server_admin" value="{$vhost.server_admin}"></td>
 	</tr>
 	<tr>
-		<td width="20%">Server alias (space separated):</td>
-		<td colspan="6"><input type="text" class="text" size="25" name="aliases" value="{$vhost.aliases}"> (Exclude: {$vhost.name}, www.{$vhost.name})</td>
+		<td width="20%">{t}Server alias (space separated){/t}:</td>
+		<td colspan="6"><input type="text" class="text" size="25" name="aliases" value="{$vhost.aliases}"> ({t}Exclude{/t}: {$vhost.name}, www.{$vhost.name})</td>
 	</tr>
 	{if $can_use_ssl}
 	<tr>
-		<td width="20%">Enable SSL:</td>
+		<td width="20%">{t}Enable SSL{/t}:</td>
 		<td colspan="6"><input onclick="ShowSSLOption(this)" type="checkbox" {if $vhost.issslenabled ==1}checked{/if} id="issslenabled" name="issslenabled" value="1"></td>
 	</tr>
 	{if $cert_name}
 	<tbody id="ssl_keyname" style="display:;">
 	<tr>
-		<td width="20%">Certificate:</td>
-		<td>{$cert_name}&nbsp;&nbsp;[<a href="javascript:ShowSSLOption($('issslenabled'));">Upload new certificate & private key</a>]</td>
+		<td width="20%">{t}Certificate{/t}:</td>
+		<td>{$cert_name}&nbsp;&nbsp;[<a href="javascript:ShowSSLOption($('issslenabled'));">{t}Upload new certificate & private key{/t}</a>]</td>
 	</tr>
 	</tbody>
 	{/if}
 	<tbody id="ssl_options" style="display:none;">
 	<tr>
-		<td width="20%">Certificate:</td>
+		<td width="20%">{t}Certificate{/t}:</td>
 		<td colspan="6"><input type="file" class="text" name="ssl_cert"></td>
 	</tr>
 	<tr>
-		<td width="20%">Private key:</td>
+		<td width="20%">{t}Private key{/t}:</td>
 		<td colspan="6"><input type="file" class="text" name="ssl_pk"></td>
 	</tr>
 	</tbody>

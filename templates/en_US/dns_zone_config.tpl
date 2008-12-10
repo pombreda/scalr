@@ -23,8 +23,17 @@
                 
         // fifth row
         td5 = document.createElement("TD");
-        td5.innerHTML = "<input type='button' class='btn' name='dleterule' value='Delete' onclick='DeleteHost(\""+container.id+"\")'><input type='hidden' name='hosts[]' value='"+host+"'>";
+        td5.innerHTML = "<input type='button' class='btn' name='dleterule' value='Delete' onclick='DeleteHost(\""+container.id+"\")'>";
         container.appendChild(td5);
+
+		//<input type='hidden' name='hosts[]' value='"+host+"'>
+		var inp = document.createElement("INPUT");
+		inp.type = 'hidden';
+		inp.name = 'hosts[]';
+		inp.value = host;
+		inp.id = container.id+'_inp';
+		
+		document.forms[1].appendChild(inp);
         
         $('hosts_container').appendChild(container);
         
@@ -34,6 +43,12 @@
     function DeleteHost(id)
     {
         $(id).parentNode.removeChild($(id));
+        
+        try
+        {
+        	$(id+"_inp").parentNode.removeChild($(id+"_inp"));
+        }
+        catch(e){}
     }
     {/literal}
     </script>

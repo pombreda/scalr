@@ -4,7 +4,7 @@
 	if ($_SESSION["uid"] != 0)
 	   UI::Redirect("index.php");
 	
-	$display["title"] = "Service log&nbsp;&raquo;&nbsp;Transaction details";
+	$display["title"] = _("Service log&nbsp;&raquo;&nbsp;Transaction details");
 	
     if (!$get_trnid && !$get_strnid)
 	   UI::Redirect("logs_view.php");

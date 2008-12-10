@@ -25,13 +25,13 @@
 								<input type="submit" style="margin-left:6px;" class="btn" name="next" value="Next" />	
 						{/if}
 						{if $button_js}
-								<input id="button_js" style="margin-left:6px;display:none;vertical-align:middle;margin-top:2px;" type="button" onclick="{$button_js_action}" class="btn" name="cbtn_2" value="{$button_js_name}" />
+								<input id="button_js" style="margin-left:6px;display:{if !$show_js_button}none{/if};" type="button" onclick="{$button_js_action}" class="btn" name="cbtn_2" value="{$button_js_name}" />
 						{/if}
 						{if $button2}
-								<input type="submit" style="margin-left:6px;" class="btn" name="cbtn_2" value="{$button2_name}" />	
+								<input type="submit" style="margin-left:6px;" class="btn" id="cbtn_2" name="cbtn_2" value="{$button2_name}" />	
 						{/if}
 						{if $button3}
-								<input type="submit" style="margin-left:6px;" class="btn" name="cbtn_3" value="{$button3_name}" />	
+								<input type="submit" style="margin-left:6px;" class="btn" id="cbtn_3" name="cbtn_3" value="{$button3_name}" />	
 						{/if}
 						{if $cancel_btn}
 							<input type="submit" class="btn" name="cancel" value="Cancel" />&nbsp;

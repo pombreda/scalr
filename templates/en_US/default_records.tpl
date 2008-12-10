@@ -59,6 +59,8 @@
 				<option selected value="A">A</option>
 				<option value="CNAME">CNAME</option>
 				<option value="MX">MX</option>
+				<option value="NS">NS</option>
+				<option value="TXT">TXT</option>
 			</select>
 		</td>
 		<td colspan="2"> <input id="ad_{$add[id]}" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rpriority]" value="10" size=30> <input type="text" class="text" name="add[{$add[id]}][rvalue]" size=30></td>

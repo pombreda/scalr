@@ -55,10 +55,10 @@
 							aws_certificate_enc = ?
 							WHERE id=?",
 							array(
-								$Crypto->Encrypt($key, $post_pass),
-								$Crypto->Encrypt($keyid, $post_pass),
-								$Crypto->Encrypt($pkey, $post_pass),
-								$Crypto->Encrypt($cert, $post_pass),
+								$Crypto->Encrypt(trim($key), $post_pass),
+								$Crypto->Encrypt(trim($keyid), $post_pass),
+								$Crypto->Encrypt(trim($pkey), $post_pass),
+								$Crypto->Encrypt(trim($cert), $post_pass),
 								$client["id"]
 							)
 						);
@@ -98,7 +98,7 @@
 			{
 				// If we cannot update at least one password, rollback all changes
 				$db->RollbackTrans();
-				$mess = "Failed to rehash passwords. ".$e->getMessage();
+				$errmsg = "Failed to rehash passwords. ".$e->getMessage();
 				UI::Redirect("settings_core.php");
 			}
 		}

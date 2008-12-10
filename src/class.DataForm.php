@@ -20,7 +20,7 @@
 		 *
 		 * @return unknown
 		 */
-		function GetInlineHelp()
+		public function GetInlineHelp()
 		{
 			return $this->InlineHelp;
 		}
@@ -30,16 +30,26 @@
 		 *
 		 * @param string $inline_help
 		 */
-		function SetInlineHelp($inline_help)
+		public function SetInlineHelp($inline_help)
 		{
 			$this->InlineHelp = $inline_help;
+		}
+		
+		/**
+		 * Loads DataForm From JSON string
+		 *
+		 * @param string $json_dataform
+		 */
+		public function LoadFromJSON($json_dataform)
+		{
+			$data_form = json_decode($json_dataform);
 		}
 		
 		/**
 		 * Append form field.
 		 * @param FormField
 		 */
-		function AppendField(DataFormField $field)
+		public function AppendField(DataFormField $field)
 		{
 			if ($field instanceof DataFormField)
 				$this->Fields[$field->Name] = $field;
@@ -51,7 +61,7 @@
 		 * Returns array of form fields (DataFormField objects); 
 		 * @return array
 		 */
-		function ListFields()
+		public function ListFields()
 		{
 			return $this->Fields;
 		}
@@ -60,7 +70,7 @@
 		 * Clear fields
 		 *
 		 */
-		function ClearFields()
+		public function ClearFields()
 		{
 			$this->Fields = array();
 		}
@@ -69,7 +79,7 @@
 		 * Return field object by name
 		 * @return DataFormField
 		 */
-		function GetFieldByName($name)
+		public function GetFieldByName($name)
 		{
 			return (isset($this->Fields[$name])) ? $this->Fields[$name] : null;
 		}
