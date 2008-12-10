@@ -15,6 +15,9 @@
         {
             $db = Core::GetDBInstance();
             
+            // Reconfigure observers;
+        	Scalr::ReconfigureObservers();
+            
             $Shell = ShellFactory::GetShellInstance();
             
             $SNMP = new SNMP();
@@ -63,29 +66,28 @@
 		   						$replication_status = 1;
 		   					else
 		   						$replication_status = 0;
+		   						
+			   				if ($replication_status != $instance['mysql_replication_status'])
+			   				{
+			   					if ($replication_status == 0)
+			   						Scalr::FireEvent($farminfo['id'], new MySQLReplicationFailEvent($instance));
+			   					else
+			   						Scalr::FireEvent($farminfo['id'], new MySQLReplicationRecoveredEvent($instance));
+			   				}
 		   				}
 		   				catch(Exception $e)
 		   				{
 		   					$this->Logger->warn(
 		   						new FarmLogMessage(
 		   							$farminfo['id'], 
-		   							"Cannot retreive replication status. {$e->getMessage()}"
+		   							"Cannot retrieve replication status. {$e->getMessage()}"
 		   						)
 		   					);
-		   					continue;
-		   				}
-		   				
-		   				if ($replication_status != $instance['mysql_replication_status'])
-		   				{
-		   					if ($replication_status == 0)
-		   						Scalr::FireEvent($farminfo['id'], EVENT_TYPE::MYSQL_REPLICATION_FAIL, $instance);
-		   					else
-		   						Scalr::FireEvent($farminfo['id'], EVENT_TYPE::MYSQL_REPLICATION_RECOVERED, $instance);
 		   				}
                 	}
                 }
                 else
-                	$this->Logger->debug("[FarmID: {$farminfo['id']}] There are no running slave hosts.");
+                	$this->Logger->info("[FarmID: {$farminfo['id']}] There are no running slave hosts.");
                       
                 //
                 // Check backups and mysql bandle procedures
@@ -108,42 +110,41 @@
 		                	
 		                	$this->Logger->info("[FarmID: {$farminfo['id']}] MySQL Backup already running. Timeout. Clear lock.");
 		                }
-		                
-		                continue;
 	                }
-                	
-                	$timeout = $farminfo["mysql_bcp_every"]*60;
-                    if ($farminfo["dtlastbcp"]+$timeout < time())
-                    {
-                        $this->Logger->info("[FarmID: {$farminfo['id']}] Need new backup");
-                        
-                    	$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
-							ORDER BY isdbmaster ASC
-						", array(INSTANCE_STATE::RUNNING));
-							
-						if (!$instance)
-						{
-							$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
+                	else
+                	{
+	                	$timeout = $farminfo["mysql_bcp_every"]*60;
+	                    if ($farminfo["dtlastbcp"]+$timeout < time())
+	                    {
+	                        $this->Logger->info("[FarmID: {$farminfo['id']}] Need new backup");
+	                        
+	                    	$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
+	                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
 								ORDER BY isdbmaster ASC
-							", array(INSTANCE_STATE::RUNNING));							
-						}
-                            
-                        if ($instance)
-                        {
-                            $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_BACKUP, array());
-                        	$res = $SNMP->SendTrap($trap);
-                            $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
-                            
-                            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
-                        }
-                        else 
-                            $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql instances for run backup procedure!");
-                            
-                        continue;
-                    }
+							", array(INSTANCE_STATE::RUNNING));
+								
+							if (!$instance)
+							{
+								//TODO: Make this query better
+								$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
+	                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
+									ORDER BY isdbmaster ASC
+								", array(INSTANCE_STATE::RUNNING));							
+							}
+	                            
+	                        if ($instance)
+	                        {
+	                            $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
+	                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_BACKUP, array());
+	                        	$res = $SNMP->SendTrap($trap);
+	                            $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+	                            
+	                            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
+	                        }
+	                        else 
+	                            $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql instances for run backup procedure!");
+	                    }
+                	}
                 }
                 
                 if ($farminfo["mysql_bundle"] == 1 && $farminfo["mysql_rebundle_every"] != 0)
@@ -162,39 +163,41 @@
 		                	
 		                	$this->Logger->info("[FarmID: {$farminfo['id']}] MySQL Bundle already running. Timeout. Clear lock.");
 		                }
-		                
-		                continue;
 	                }
-                	
-                	$timeout = $farminfo["mysql_rebundle_every"]*3600;
-	                if ($farminfo["dtlastrebundle"]+$timeout < time())
-	                {
-	                    $this->Logger->info("[FarmID: {$farminfo['id']}] Need mySQL bundle procedure");
-	                    
-	                	// Rebundle
-	               		$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
-							AND isdbmaster='1'
-						", array(INSTANCE_STATE::RUNNING));
-							
-						if (!$instance)
-						{
-							$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
+                	else
+                	{
+	                	$timeout = $farminfo["mysql_rebundle_every"]*3600;
+		                if ($farminfo["dtlastrebundle"]+$timeout < time())
+		                {
+		                    $this->Logger->info("[FarmID: {$farminfo['id']}] Need mySQL bundle procedure");
+		                    
+		                	// Rebundle
+		               		$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
+	                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
 								AND isdbmaster='1'
-							", array(INSTANCE_STATE::RUNNING));							
+							", array(INSTANCE_STATE::RUNNING));
+
+		                	if (!$instance)
+							{
+								//TODO: Make this query better
+								$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
+	                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
+									AND isdbmaster='1'
+								", array(INSTANCE_STATE::RUNNING));							
+							}
+							
+							if ($instance)
+		                    {
+		                        $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
+	                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
+	                        	$res = $SNMP->SendTrap($trap);
+		                        $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$res}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+		                        
+		                        $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
+		                    }
+		                    else 
+		                        $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql master instances for run bundle procedure!");
 						}
-	                    if ($instance)
-	                    {
-	                        $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
-                        	$res = $SNMP->SendTrap($trap);
-	                        $this->Logger->debug("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$res}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
-	                        
-	                        $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
-	                    }
-	                    else 
-	                        $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql master instances for run bundle procedure!");
 	                }
                 }
             }

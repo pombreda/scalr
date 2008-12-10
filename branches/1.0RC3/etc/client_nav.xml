@@ -21,8 +21,18 @@
 		<separator />
 		<item href="sec_groups_view.php">Security groups</item>
 	</node>
-		
-	<item href="logs_view.php">Log</item>
+	
+	<node title="Scripts">
+		<item href="script_templates.php?task=create">Add new</item>
+		<item href="script_templates.php" search="SELECT COUNT(*) FROM scripts WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="script_shortcuts.php">Shortcuts</item>
+	</node>		
+	
+	<node title="Logs">
+		<item href="logs_view.php">Event log</item>
+		<item href="scripting_logs_view.php">Scripting log</item>
+	</node>
 	
 	<node title="Settings">
 		<item href="profile.php">Profile</item>

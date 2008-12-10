@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "IP Access&nbsp;&raquo;&nbsp;Add host";
+	$display["title"] = _("IP Access&nbsp;&raquo;&nbsp;Add host");
 	
 	if ($_POST) 
 	{
@@ -9,7 +9,7 @@
 		
 		// Check FTP login
 		if (!$post_ipaddress)
-			$err[] = "IPaddress must be filled!";
+			$err[] = _("IPaddress must be filled!");
         
 	    if (count($err) == 0)
 	    {	
@@ -17,7 +17,7 @@
     		{
     			$db->Execute("INSERT INTO ipaccess (ipaddress, comment) values (?,?)",array($post_ipaddress, $post_comment));
     			
-    			$mess = "IP address successfully added!";
+    			$okmsg = _("IP address successfully added!");
     			CoreUtils::Redirect("ipaccess_view.php");
     			
     		}
@@ -31,7 +31,7 @@
     		    $uinfo = $db->GetRow("SELECT * FROM ipaccess WHERE id=?", array($post_id));
     			unset($uinfo["id"]);
     		    
-    		    $mess = "Ip address succesfully updated";
+    		    $okmsg = _("Ip address succesfully updated");
     			CoreUtils::Redirect("ipaccess_view.php");
     		}
 	    }

@@ -11,19 +11,19 @@
 </script>
 <div style="padding:4px;margin-left:25px;height:30px;vertical-align:middle;line-height:30px;">
 	<select name="date_type" style="vertical-align:middle;" class="text" onChange="SetFilterType(this.value);">
-		<option {if $date_type == 'Q'}selected{/if} value="Q">Quick Date Range:</option>
-		<option {if $date_type == 'E'}selected{/if} value="E">Exact Date Range:</option>
+		<option {if $date_type == 'Q'}selected{/if} value="Q">{t}Quick Date Range:{/t}</option>
+		<option {if $date_type == 'E'}selected{/if} value="E">{t}Exact Date Range:{/t}</option>
 	</select>
 	
 	<span id="filter_Q" style="display:{if $date_type && $date_type != 'Q'}none{/if};">
 		<select name="quick_date" style="vertical-align:middle;" class="text">
-			<option {if $quick_date == 'today'}selected{/if} value="today">Today</option>
-			<option {if $quick_date == 'yesterday'}selected{/if} value="yesterday">Yesterday</option>
-			<option {if $quick_date == 'last7days'}selected{/if} value="last7days">Last 7 days</option>
-			<option {if $quick_date == 'lastweek'}selected{/if} value="lastweek">Last week (Mon-Sun)</option>
-			<option {if $quick_date == 'lastbusinessweek'}selected{/if} value="lastbusinessweek">Last business week (Mon-Fri)</option>
-			<option {if $quick_date == 'thismonth'}selected{/if} value="thismonth">This month</option>
-			<option {if $quick_date == 'lastmonth'}selected{/if} value="lastmonth">Last month</option>
+			<option {if $quick_date == 'today'}selected{/if} value="today">{t}Today{/t}</option>
+			<option {if $quick_date == 'yesterday'}selected{/if} value="yesterday">{t}Yesterday{/t}</option>
+			<option {if $quick_date == 'last7days'}selected{/if} value="last7days">{t}Last 7 days{/t}</option>
+			<option {if $quick_date == 'lastweek'}selected{/if} value="lastweek">{t}Last week (Mon-Sun){/t}</option>
+			<option {if $quick_date == 'lastbusinessweek'}selected{/if} value="lastbusinessweek">{t}Last business week (Mon-Fri){/t}</option>
+			<option {if $quick_date == 'thismonth'}selected{/if} value="thismonth">{t}This month{/t}</option>
+			<option {if $quick_date == 'lastmonth'}selected{/if} value="lastmonth">{t}Last month{/t}</option>
 		</select>
 	</span>
 	<span id="filter_E" style="display:{if !$date_type || $date_type != 'E'}none{/if};">

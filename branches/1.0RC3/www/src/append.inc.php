@@ -15,6 +15,12 @@
 	    $_SESSION["mess"] = null;
 	}
 	
+	if ($_SESSION["warnmsg"] || $warnmsg)
+	{
+	    $display["warnmsg"] = $_SESSION["warnmsg"] ? $_SESSION["warnmsg"] : $warnmsg;
+	    $_SESSION["warnmsg"] = null;
+	}
+	
 	if ($_SESSION["err"])
 	{
 	    $err = $_SESSION["err"];

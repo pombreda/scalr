@@ -54,11 +54,11 @@ function isDisabled(date) {
     {include file="inc/table_header.tpl" filter=0 paging=""}
     {include file="inc/intable_header.tpl" header="Search" color="Gray"}
         <tr>
-			<td nowrap="nowrap">Search string:</td>
+			<td nowrap="nowrap">{t}Search string{/t}:</td>
 			<td><input type="text" name="search" class="text" id="search" value="{$search}" size="20" /></td>
 		</tr>
 		<tr>
-			<td nowrap="nowrap">Farm:</td>
+			<td nowrap="nowrap">{t}Farm{/t}:</td>
 			<td>
 				<select name="farmid" class="text">
 					<option value="">Any</option>
@@ -69,7 +69,7 @@ function isDisabled(date) {
 			</td>
 		</tr>
 		<tr valign="top">
-			<td nowrap="nowrap">Severity (in transaction):</td>
+			<td nowrap="nowrap">{t}Severity (in transaction){/t}:</td>
 			<td>
 				<div style="width:600px;">
 				{foreach item=item key=key from=$severities}
@@ -79,7 +79,7 @@ function isDisabled(date) {
 			</td>
 		</tr>
 		<tr>
-			<td nowrap="nowrap">Date:</td>
+			<td nowrap="nowrap">{t}Date{/t}:</td>
 			<td>
 			<input name="dt" style="vertical-align:middle;" type="text" class="text" id="dt" value="{$dt}">
 			<input name="reset" style="vertical-align:middle;" type="reset" class="btn" onclick="return showCalendar('dt', 'mm/dd/y');" value=" ... ">
@@ -92,10 +92,10 @@ function isDisabled(date) {
 		<table class="Webta_Items" rules="groups" frame="box" width="100%" cellpadding="2" id="Webta_Items">
 		<thead>
 			<tr>
-				<th>Date</th>
-				<th>First log entry</th>
-				<th>Warnings</th>
-				<th>Errors</th>
+				<th>{t}Date{/t}</th>
+				<th>{t}First log entry{/t}</th>
+				<th>{t}Warnings{/t}</th>
+				<th>{t}Errors{/t}</th>
 				<th></th>
 			</tr>
 		</thead>
@@ -106,7 +106,7 @@ function isDisabled(date) {
 			<td class="Item" valign="top">{$rows[id].action|truncate:102:"...":true}</td>
 			<td class="Item" valign="top">{$rows[id].warns}</td>
 			<td class="Item" valign="top">{$rows[id].errors}</td>
-			<td class="ItemEdit" nowrap valign="top"><a href="syslog_transaction_details.php?trnid={$rows[id].transactionid}">View log entries</a></td>
+			<td class="ItemEdit" nowrap valign="top"><a href="syslog_transaction_details.php?trnid={$rows[id].transactionid}">{t}View log entries{/t}</a></td>
 		</tr>
 		{sectionelse}
 		<tr>

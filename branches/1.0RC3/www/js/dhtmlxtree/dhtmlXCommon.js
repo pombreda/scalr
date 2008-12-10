@@ -2,13 +2,80 @@
 This version of Software is free for using in non-commercial applications. 
 For commercial use or to get Professional Edition please contact info@scbr.com to obtain license*/ 
  
-function dtmlXMLLoaderObject(funcObject, dhtmlObject,async,rSeed){this.xmlDoc="";if(arguments.length==2)this.async=true;else
- this.async=async;this.onloadAction=funcObject||null;this.mainObject=dhtmlObject||null;this.waitCall=null;this.rSeed=rSeed||false;return this;};dtmlXMLLoaderObject.prototype.waitLoadFunction=function(dhtmlObject){this.check=function (){if ((dhtmlObject)&&(dhtmlObject.onloadAction!=null)){if ((!dhtmlObject.xmlDoc.readyState)||(dhtmlObject.xmlDoc.readyState == 4)){dhtmlObject.onloadAction(dhtmlObject.mainObject,null,null,null,dhtmlObject);if (dhtmlObject.waitCall){dhtmlObject.waitCall();dhtmlObject.waitCall=null;};dhtmlObject=null;};};};return this.check;};dtmlXMLLoaderObject.prototype.getXMLTopNode=function(tagName){if (this.xmlDoc.responseXML){var temp=this.xmlDoc.responseXML.getElementsByTagName(tagName);var z=temp[0];}else
- var z=this.xmlDoc.documentElement;if (z){this._retry=false;return z;};if ((_isIE)&&(!this._retry)){var xmlString=this.xmlDoc.responseText;this._retry=true;this.xmlDoc = new ActiveXObject("Microsoft.XMLDOM");this.xmlDoc.async=false;this.xmlDoc.loadXML(xmlString);return this.getXMLTopNode(tagName);};dhtmlxError.throwError("LoadXML","Incorrect XML",[this.xmlDoc,this.mainObject]);return document.createElement("DIV");};dtmlXMLLoaderObject.prototype.loadXMLString=function(xmlString){try
- {var parser = new DOMParser();this.xmlDoc = parser.parseFromString(xmlString,"text/xml");}catch(e){this.xmlDoc = new ActiveXObject("Microsoft.XMLDOM");this.xmlDoc.async=this.async;this.xmlDoc.loadXML(xmlString);};this.onloadAction(this.mainObject,null,null,null,this);if (this.waitCall){this.waitCall();this.waitCall=null;};};dtmlXMLLoaderObject.prototype.loadXML=function(filePath,postMode,postVars,rpc){this.filePath=filePath;if (this.rSeed)filePath+=((filePath.indexOf("?")!=-1)?"&":"?")+"a_dhx_rSeed="+(new Date()).valueOf();if ((!_isIE)&&(window.XMLHttpRequest))
- this.xmlDoc = new XMLHttpRequest();else{if (document.implementation && document.implementation.createDocument){this.xmlDoc = document.implementation.createDocument("", "", null);this.xmlDoc.onload = new this.waitLoadFunction(this);this.xmlDoc.load(filePath);return;}else
- this.xmlDoc = new ActiveXObject("Microsoft.XMLHTTP");};this.xmlDoc.open(postMode?"POST":"GET",filePath,this.async);if (rpc){this.xmlDoc.setRequestHeader("User-Agent", "dhtmlxRPC v0.1 (" + navigator.userAgent + ")");this.xmlDoc.setRequestHeader("Content-type", "text/xml");}else
- if (postMode)this.xmlDoc.setRequestHeader('Content-type','application/x-www-form-urlencoded');this.xmlDoc.onreadystatechange=new this.waitLoadFunction(this);this.xmlDoc.send(null||postVars);};dtmlXMLLoaderObject.prototype.destructor=function(){this.onloadAction=null;this.mainObject=null;this.xmlDoc=null;return null;};function callerFunction(funcObject,dhtmlObject){this.handler=function(e){if (!e)e=window.event;funcObject(e,dhtmlObject);return true;};return this.handler;};function getAbsoluteLeft(htmlObject){var xPos = htmlObject.offsetLeft;var temp = htmlObject.offsetParent;while (temp != null){xPos += temp.offsetLeft;temp = temp.offsetParent;};return xPos;};function getAbsoluteTop(htmlObject) {var yPos = htmlObject.offsetTop;var temp = htmlObject.offsetParent;while (temp != null){yPos += temp.offsetTop;temp = temp.offsetParent;};return yPos;};function convertStringToBoolean(inputString){if (typeof(inputString)=="string") inputString=inputString.toLowerCase();switch(inputString){case "1":
+function dtmlXMLLoaderObject(funcObject, dhtmlObject,async,rSeed)
+{
+	this.xmlDoc="";
+	if(arguments.length==2)
+		this.async=true;
+	else
+ 		this.async=async;
+ 		
+ 	this.onloadAction=funcObject || null;this.mainObject=dhtmlObject||null;this.waitCall=null;this.rSeed=rSeed||false;return this;};
+ 	
+ 	dtmlXMLLoaderObject.prototype.waitLoadFunction=function(dhtmlObject)
+ 	{
+ 		this.check=function ()
+ 		{
+ 			if ((dhtmlObject)&&(dhtmlObject.onloadAction!=null))
+ 			{
+ 				if ((!dhtmlObject.xmlDoc.readyState)||(dhtmlObject.xmlDoc.readyState == 4))
+ 				{
+ 					dhtmlObject.onloadAction(dhtmlObject.mainObject,null,null,null,dhtmlObject);
+ 					if (dhtmlObject.waitCall)
+ 					{
+ 						dhtmlObject.waitCall();
+ 						dhtmlObject.waitCall=null;
+ 					};
+ 					
+ 					dhtmlObject=null;
+ 				};
+ 			};
+ 		};
+ 		
+ 		return this.check;
+ 	};
+ 	
+ 	dtmlXMLLoaderObject.prototype.getXMLTopNode=function(tagName){if (this.xmlDoc.responseXML){var temp=this.xmlDoc.responseXML.getElementsByTagName(tagName);var z=temp[0];}else
+ var z=this.xmlDoc.documentElement;if (z){this._retry=false;return z;};if ((_isIE)&&(!this._retry)){var xmlString=this.xmlDoc.responseText;this._retry=true;this.xmlDoc = new ActiveXObject("Microsoft.XMLDOM");this.xmlDoc.async=false;this.xmlDoc.loadXML(xmlString);return this.getXMLTopNode(tagName);};dhtmlxError.throwError("LoadXML","Incorrect XML",[this.xmlDoc,this.mainObject]);return document.createElement("DIV");};
+ 
+ dtmlXMLLoaderObject.prototype.loadXMLString=function(xmlString){try
+ {var parser = new DOMParser();this.xmlDoc = parser.parseFromString(xmlString,"text/xml");}catch(e){this.xmlDoc = new ActiveXObject("Microsoft.XMLDOM");this.xmlDoc.async=this.async;this.xmlDoc.loadXML(xmlString);};this.onloadAction(this.mainObject,null,null,null,this);if (this.waitCall){this.waitCall();this.waitCall=null;};};
+ 
+ dtmlXMLLoaderObject.prototype.loadXML=function(filePath,postMode,postVars,rpc)
+ {
+ 	this.filePath=filePath;
+ 	if (this.rSeed)
+ 		filePath+=((filePath.indexOf("?")!=-1)?"&":"?")+"a_dhx_rSeed="+(new Date()).valueOf();
+ 		if ((!_isIE)&&(window.XMLHttpRequest))
+ 			this.xmlDoc = new XMLHttpRequest();
+ 		else
+ 		{
+ 			if (document.implementation && document.implementation.createDocument)
+ 			{
+ 				this.xmlDoc = document.implementation.createDocument("", "", null);
+ 				this.xmlDoc.onload = new this.waitLoadFunction(this);
+ 				this.xmlDoc.load(filePath);
+ 				return;
+ 			}
+ 			else
+ 				this.xmlDoc = new ActiveXObject("Microsoft.XMLHTTP");
+ 		};
+ 		
+ 		this.xmlDoc.open(postMode?"POST":"GET",filePath,this.async);
+ 		if (rpc)
+ 		{
+ 			this.xmlDoc.setRequestHeader("User-Agent", "dhtmlxRPC v0.1 (" + navigator.userAgent + ")");
+ 			this.xmlDoc.setRequestHeader("Content-type", "text/xml");
+ 		}
+ 		else
+ 			if (postMode)
+ 				this.xmlDoc.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+ 				
+ 			this.xmlDoc.onreadystatechange=new this.waitLoadFunction(this);
+ 			this.xmlDoc.send(null||postVars);
+ };
+ 
+ dtmlXMLLoaderObject.prototype.destructor=function(){this.onloadAction=null;this.mainObject=null;this.xmlDoc=null;return null;};function callerFunction(funcObject,dhtmlObject){this.handler=function(e){if (!e)e=window.event;funcObject(e,dhtmlObject);return true;};return this.handler;};function getAbsoluteLeft(htmlObject){var xPos = htmlObject.offsetLeft;var temp = htmlObject.offsetParent;while (temp != null){xPos += temp.offsetLeft;temp = temp.offsetParent;};return xPos;};function getAbsoluteTop(htmlObject) {var yPos = htmlObject.offsetTop;var temp = htmlObject.offsetParent;while (temp != null){yPos += temp.offsetTop;temp = temp.offsetParent;};return yPos;};function convertStringToBoolean(inputString){if (typeof(inputString)=="string") inputString=inputString.toLowerCase();switch(inputString){case "1":
  case "true":
  case "yes":
  case "y":

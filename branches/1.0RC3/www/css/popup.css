@@ -17,10 +17,10 @@
 		overflow-x:hidden;
 	}
 	
-	.pop_nw	{ background-position: left top; }
-	.pop_ne	{ background-position: 20% top; }
-	.pop_sw	{ background-position: left 35%; }
-	.pop_se	{ background-position: 20% 35%; }
+	.pop_nw	{ background-position: 0px 0px; }
+	.pop_ne	{ background-position: -25px 0px; }
+	.pop_sw	{ background-position: 0px -25px; }
+	.pop_se	{ background-position: -25px -25px; }
 	
 	.pop_n	{ background: url(/images/popup/n.gif) repeat-x top; width: auto; }
 	.pop_s	{ background: url(/images/popup/s.gif) repeat-x bottom; width: auto; }

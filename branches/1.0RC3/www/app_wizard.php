@@ -1,27 +1,35 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Application creation wizard";
+	$display["title"] = _("Application creation wizard");
     $Validator = new Validator();
+    
+    $Client = Client::Load($_SESSION['uid']);
     
     if ($_SESSION['uid'] == 0)
     {
-    	$errmsg = "Requested page cannot be viewed from admin account";
+    	$errmsg = _("Requested page cannot be viewed from admin account");
     	UI::Redirect("index.php");
     }
     
     if ($req_step == 4)
     {
-        if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", 
+        if (!$_SESSION['wizard'] || !$_SESSION['wizard']["domainname"] || count($_SESSION['wizard']['amis']) == 0)
+        {
+        	$errmsg = _("Your session has been expired.<br>Due to security reasons, you must start ordering proccess over from the beginning.");
+        	UI::Redirect("app_wizard.php");
+        }
+    	
+    	if ($db->GetOne("SELECT id FROM zones WHERE zone=? AND status != ?", 
         	array($_SESSION['wizard']["domainname"], ZONE_STATUS::DELETED))
         ){
-        	$errmsg = "'{$_SESSION['wizard']["domainname"]}' domain already exists in database.";
+        	$errmsg = sprintf(_("'%s' domain already exists in database."), $_SESSION['wizard']["domainname"]);
         	UI::Redirect("app_wizard.php");
         }
     	
     	$_SESSION["wizard"]["dnsami"] = $post_dnsami;
         	                            
-        $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+        $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
                 
         $db->BeginTrans();
         
@@ -34,7 +42,7 @@
         $db->Execute("INSERT INTO farms SET status='0', name=?, clientid=?, hash=?, dtadded=NOW()", array($farmname, $_SESSION['uid'], $farmhash));
         $farmid = $db->Insert_ID();
         
-        $bucket_name = "farm-{$farmid}-{$_SESSION['aws_accountid']}";
+        $bucket_name = "farm-{$farmid}-{$Client->AWSAccountID}";
         
         $db->Execute("UPDATE farms SET bucket_name=? WHERE id=?",
 			array($bucket_name, $farmid)
@@ -50,7 +58,7 @@
             if ($result->keyMaterial)
                 $db->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farmid));
             else 
-                throw new Exception("Cannot create key pair for farm.", E_ERROR);
+                throw new Exception(_("Cannot create key pair for farm."), E_ERROR);
         }
         catch (Exception $e)
         {
@@ -106,7 +114,7 @@
         //
         try
         {
-            $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
+            $AmazonS3 = new AmazonS3($Client->AWSAccessKeyID, $Client->AWSAccessKey);
             $buckets = $AmazonS3->ListBuckets();
             $create_bucket = true;
             foreach ($buckets as $bucket)
@@ -137,7 +145,10 @@
 	        $records = array();
 			$nss = $db->GetAll("SELECT * FROM nameservers");
 			foreach ($nss as $ns)
-	            $records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$_SESSION['wizard']["domainname"]}.", "issystem" => 1);
+			{
+	            $issystem = ($ns['isproxy'] == 1) ? 0 : 1;
+				$records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$_SESSION['wizard']["domainname"]}.", "issystem" => $issystem);
+			}
 			
         	$def_records = $db->GetAll("SELECT * FROM default_records WHERE clientid='{$_SESSION['uid']}'");
             foreach ($def_records as $record)
@@ -187,7 +198,7 @@
 			
 			$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$zoneid}'");
 			
-			TaskQueue::Attach(QUEUE_NAME::CREATE_DNS_ZONE)->Put(new CreateDNSZoneTask($zoneid));
+			TaskQueue::Attach(QUEUE_NAME::CREATE_DNS_ZONE)->AppendTask(new CreateDNSZoneTask($zoneid));
 			
 			foreach ($records as $k=>$v)
 			{
@@ -226,15 +237,15 @@
 			$ZoneControler = new DNSZoneControler();
 			if (!$ZoneControler->Update($zoneid))
 			{
-			    $err[] = "Cannot add new DNS zone: ".Core::GetLastWarning();
+			    $err[] = sprintf(_("Cannot add new DNS zone: %s"), Core::GetLastWarning());
 			}
         }
         catch(Exception $e)
         {
-        	$Logger->warn("Exception thrown during zone update. Cron will fix this zone.");
+        	$Logger->warn(_("Exception thrown during zone update. Cron will repair this zone."));
         }
 		
-		$okmsg = "Application successfully created.";
+		$okmsg = _("Application successfully created.");
 		UI::Redirect("farms_control.php?farmid={$farmid}&new=1&iswiz=1");
     }
     
@@ -242,7 +253,7 @@
 	{
 	    if (count($post_amis) == 0)
 	    {
-	        $err[] = "You must select at least one role";
+	        $err[] = _("You must select at least one role");
 	    }
 	    else 
 	    {
@@ -256,7 +267,7 @@
             
             if ($used_slots+$total_max_count > $i_limit)
             {
-                $err[] = "You cannot launch more than {$i_limit} instances on your account. Please adjust Max Instances setting.";
+                $err[] = sprintf(_("You cannot launch more than %s instances on your account. Please adjust Max Instances setting."), $i_limit);
             }
 	        else 
 	        {
@@ -285,25 +296,24 @@
 	{    
 	    if (!$Validator->IsDomain($post_domainname))
 	    {
-	        $err[] = "Invalid domain name";
+	        $err[] = _("Invalid domain name");
 	        $req_step = 1;
 	    }
 	    else 
 	    {
 	        if (stristr($post_domainname, "scalr.net"))
 	        {
-				$err[] = "You cannot use *.scalr.net as your application";
+				$err[] = _("You cannot use *.scalr.net as your application");
 				$req_step = 1;
 	        }
 			else
 			{
 	    	
-		    	$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id='{$_SESSION['uid']}'");
-	            $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
+		       $num = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$_SESSION['uid']}'");   
 	            	       
-	           if ($num >= $clientinfo['farms_limit'] && $clientinfo['farms_limit'] != 0)
+	           if ($num >= $Client->FarmsLimit && $Client->FarmsLimit != 0)
 	           {
-	               $err[] = "Sorry, you have reached maximum allowed amount of running farms.";
+	               $err[] = _("Sorry, you have reached maximum allowed amount of running farms.");
 	               $req_step = 1;
 	           }
 		        
@@ -312,7 +322,7 @@
 	    	        if ($db->GetOne("SELECT * FROM zones WHERE zone=? AND status != ?", 
 	    	        	array($post_domainname, ZONE_STATUS::DELETED))
 	    	        ){
-	    	           $err[] = "Selected domain name already exists in database.";
+	    	           $err[] = _("Selected domain name already exists in database.");
 	    	           $req_step = 1;
 	    	        }
 	    	        else

@@ -1,1 +1,1 @@
-Rebundle started on instance {$instanceinfo.external_ip} ({$instanceinfo.instance_id}) failed.
+Rebundle started on instance {$event->InstanceInfo.external_ip} ({$event->InstanceInfo.instance_id}) failed.

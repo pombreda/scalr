@@ -64,10 +64,10 @@
         }
                
         /**
-         * Retreive data from node
+         * Retrieve data from node
          *
          */
-        public function RetreiveData($name)
+        public function RetrieveData($name)
         {
             preg_match_all("/[0-9\.]+/si", $this->SNMPTree->Get(".1.3.6.1.4.1.2021.10.1.3.1"), $matches);
             $La1 = $matches[0][0];
@@ -159,6 +159,8 @@
                                     "--rigid",
                             		"--no-gridfit",
                             		"--slope-mode",
+									"--alt-y-grid",
+									"-X0",
                             		"--x-grid", $r["x_grid"]
                                  )
                         );

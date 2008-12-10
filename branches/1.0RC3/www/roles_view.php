@@ -8,68 +8,49 @@
         
 	if (!$farminfo)
 	{
-	    $errmsg = "Farm not found";
+	    $errmsg = _("Farm not found");
 	    UI::Redirect("farms_view.php");
 	}
 	
 	$display["farm_status"] = $farminfo["status"];
 	
 	// Post actions
-	if ($_POST && $post_actionsubmit)
-	{
-		if ($post_action == "launch")
-		{
-			if (count($post_delete) > 0)
-			{
-    		    if ($_SESSION['uid'] == 0)
-    		    {
-    		        $uid = $farminfo["clientid"];
-    		        
-    		        $clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($uid));
 	
-					// Decrypt client prvate key and certificate
-				    $private_key = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-				    $certificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-    		    }
-    		    else
-    		    { 
-                    $uid = $_SESSION["uid"];
-                    
-                    $private_key = $_SESSION["aws_private_key"];
-    				$certificate = $_SESSION["aws_certificate"];
-    		    }
-			    
-				$AmazonEC2Client = new AmazonEC2($private_key, $certificate);
-			   
-			    // Delete users
-    			$i = 0;			
-    			foreach ((array)$post_delete as $k=>$v)
-    			{
-                    $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $v);
-                    if ($roleinfo)
-                    {
-        			    $role = $roleinfo["name"];    
-        				$ami = $v;
-        				
-        				$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
-        				if ($farm_ami_info["max_count"] < $farm_ami_info["min_count"]+1)
-        					$increase_max_count = ", max_count=max_count+1";
-        				
-        				// increase min_count for farm ami
-        				$db->Execute("UPDATE farm_amis SET min_count=min_count+1{$increase_max_count} WHERE farmid='{$farminfo['id']}' AND ami_id='{$v}'");
-        				
-                        $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $v, false, true);                        
-                        if (!$res)
-                            $err[] = "Cannot run instance. See system log for details!";
-                        else
-                            $i++;
-                    }
-    			}
-    			
-    			$okmsg = "{$i} instanses launched";
-    			UI::Redirect("roles_view.php?farmid={$req_farmid}");
-			}
+	if ($req_task == "launch_new_instance" && $farminfo["status"] == 1)
+	{
+		$Client = Client::Load($farminfo["clientid"]);
+				    
+		$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+		   
+		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($req_ami_id));
+		if ($roleinfo)
+        {
+        	$role = $roleinfo["name"];    
+			$ami = $v;
+        		
+			$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}' AND ami_id='{$req_ami_id}'");
+        	if ($farm_ami_info["max_count"] < $farm_ami_info["min_count"]+1)
+        	{
+        		$increase_max_count = ", max_count=max_count+1";
+        		
+        		$warnmsg = sprintf(_("The number of running %s instances is equal to maximum instances setting for this role. Maximum Instances setting for role %s has been increased automatically"), 
+        			$roleinfo['name'], $roleinfo['name']
+        		);
+        	}
+        		
+        	// increase min_count for farm ami
+        	$db->Execute("UPDATE farm_amis SET min_count=min_count+1{$increase_max_count} WHERE farmid='{$farminfo['id']}' AND ami_id='{$req_ami_id}'");
+        		
+            $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $req_ami_id, false, true);                        
+            if (!$res)
+            	$errmsg = _("Cannot run instance. See system log for details.");
+			else
+            	$okmsg = _("Instance successfully launched");
 		}
+		else
+			$errmsg = _("Role not found in database.");
+		
+    	UI::Redirect("roles_view.php?farmid={$req_farmid}");
 	}
     
 	$paging = new SQLPaging();
@@ -107,12 +88,12 @@
 		$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state IN (?,?) AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'", array(INSTANCE_STATE::PENDING, INSTANCE_STATE::INIT));
 	}
 
-	$display["title"] = "Farms > View roles";
+	$display["title"] = _("Farms > View roles");
 	
 	$display["farmid"] = $req_farmid;
 	
 	$display["page_data_options"] = array(
-		array("name" => "Launch new instance", "action" => "launch")
+		array("name" => _("Launch new instance"), "action" => "launch")
 	);
 	
 	require_once ("src/append.inc.php");

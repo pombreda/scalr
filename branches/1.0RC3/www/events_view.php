@@ -11,7 +11,7 @@
         
     
 	$display["farminfo"] = $farminfo;
-	$display["title"] = "Events for farm {$farminfo['name']}";
+	$display["title"] = sprintf(_("Events for farm %s"), $farminfo['name']);
 	
 	$sql = "SELECT * from events WHERE farmid='{$farminfo['id']}'";
 

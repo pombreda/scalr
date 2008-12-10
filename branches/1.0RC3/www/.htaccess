@@ -1,7 +1,6 @@
 Order Deny,Allow
 Allow from any
 
-
 RewriteEngine On
 
 RewriteRule ^farm_amis\.xml$ farm_amis_xml.php?%{QUERY_STRING}    [NE,L]
@@ -15,3 +14,6 @@ RewriteRule ^storage/events/([0-9]+)/timeline\.xml$ timeline.xml.php?farmid=$1 [
 
 #Farm events RSS
 RewriteRule ^storage/events/([0-9]+)/rss\.xml$ rss.xml.php?farmid=$1 [NE,L]
+
+#Environment
+RewriteRule ^query-env/([0-9-]+)/(.*)$ environment.php?version=$1&operation=$2&%{QUERY_STRING} [NE,L]

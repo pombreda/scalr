@@ -32,11 +32,11 @@
 {if !$domainname && !$ezone}
     {include file="inc/intable_header.tpl" header="Application information" color="Gray"}
     <tr>
-		<td width="15%">Farm:</td>
+		<td width="15%">{t}Farm{/t}:</td>
 		<td colspan="6">{$farm.name} <input type='hidden' name='farmid' value="{$farm.id}" /></td>
 	</tr>
 	<tr>
-		<td width="15%">Instance of this role will create A records in DNS zone:</td>
+		<td width="15%">{t}Instance of this role will create A records in DNS zone{/t}:</td>
 		<td colspan="6">
 		  <select name="ami_id" class="text">
 		  {section name=id loop=$roles}
@@ -46,7 +46,7 @@
 		</td>
 	</tr>
 	<tr>
-		<td width="15%">Domain name:</td>
+		<td width="15%">{t}Domain name{/t}:</td>
 		<td colspan="6"><input type="text" class="text" name="domainname" /></td>
 	</tr>
     {include file="inc/intable_footer.tpl" color="Gray"}
@@ -98,11 +98,11 @@
 		<td></td>
 	</tr>
 	<tr>
-		<td class="th">Domain</td>
-		<td class="th">TTL</td>
+		<td class="th">{t}Domain{/t}</td>
+		<td class="th">{t}TTL{/t}</td>
 		<td class="th">&nbsp;</td>
-		<td class="th">Record Type</td>
-		<td class="th" colspan=3>Record value<td>
+		<td class="th">{t}Record Type{/t}</td>
+		<td class="th" colspan=3>{t}Record value{/t}<td>
 	</tr>
 	{section name=id loop=$zone.records}
 	<tr>
@@ -113,9 +113,7 @@
 				<option {if $zone.records[id].rtype == "A"}selected{/if} value="A">A</option>
 				<option {if $zone.records[id].rtype == "CNAME"}selected{/if} value="CNAME">CNAME</option>
 				<option {if $zone.records[id].rtype == "MX"}selected{/if} value="MX">MX</option>
-				{if $zone.records[id].issystem == 1 && $zone.records[id].rtype == "NS"}
-					<option selected value="NS">NS</option>
-				{/if}
+				<option {if $zone.records[id].rtype == "NS"}selected{/if} value="NS">NS</option>
 				<option {if $zone.records[id].rtype == "TXT"}selected{/if} value="TXT">TXT</option>
 			</select>
 		</td>
@@ -130,7 +128,7 @@
 		<td colspan=7>&nbsp;</td>
 	</tr>
 	<tr>
-		<td colspan=7 class="th">Add New Entries Below this Line</td>
+		<td colspan=7 class="th">{t}Add New Entries Below this Line{/t}</td>
 	</tr>
 	{section name=id loop=$add}
 	<tr>
@@ -142,6 +140,7 @@
 				<option value="CNAME">CNAME</option>
 				<option value="MX">MX</option>
 				<option value="TXT">TXT</option>
+				<option value="NS">NS</option>
 			</select>
 		</td>
 		<td colspan="2">

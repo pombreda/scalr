@@ -3,7 +3,7 @@
     	    
 	if ($_SESSION["uid"] == 0)
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
 	}
 	
@@ -22,7 +22,7 @@
 					
 					if ($farminfo['clientid'] != $_SESSION['uid'])
 					{
-						$errmsg = "Instance not found";
+						$errmsg = _("Instance not found");
 					}
 					else
 					{
@@ -30,55 +30,10 @@
 						{
 							try
 							{
-								$AttachVolumeType = new AttachVolumeType();
-								$AttachVolumeType->instanceId = $post_inststanceId;
-								$AttachVolumeType->volumeId = $post_volumeId;
+								Scalr::AttachEBS2Instance($AmazonEC2Client, $instanceinfo, $farminfo, $post_volumeId);
 								
-								try
-								{
-									$SNMP = new SNMP();
-									$SNMP->Connect($instanceinfo['external_ip'], 161, $farminfo['hash'], false, false, true);
-									$result = $SNMP->GetTree("UCD-DISKIO-MIB::diskIODevice");
-									
-									$map = array(
-										"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", 
-										"k", "l", "m", "n", "o", "p", "q", "r", "s", "t", 
-										"u", "v", "w", "x", "y", "z"
-									);
-									
-									$map_used = array();
-									
-									foreach ($result as $disk)
-									{
-										if (preg_match("/^sd([a-z])[0-9]*$/", $disk, $matches))
-											array_push($map_used, $matches[1]);
-									}
-									
-									$device_l = false;
-									while (count($map) != 0 && (in_array($device_l, $map_used) || $device_l == false))
-										$device_l = array_shift($map);
-										
-									if (!$device_l)
-										$errmsg = "There is not available device letter on instance for attaching EBS";
-								}
-								catch(Exception $e)
-								{
-									$errmsg = $e->getMessage();
-								}
-																
-								if (!$errmsg)
-								{
-									$AttachVolumeType->device = "/dev/sd{$device_l}";
-									$res = $AmazonEC2Client->AttachVolume($AttachVolumeType);
-									
-									if ($res->status == 'attaching')
-									{
-										$okmsg = "Volume successfully attached to instance";
-										UI::Redirect("ebs_manage.php");
-									}
-									else
-										$errmsg = "Cannot attach volume at this time. Please try again later.";
-								}
+								$okmsg = _("EBS attachment successfully initialized");
+								UI::Redirect("ebs_manage.php");
 							}
 							catch(Exception $e)
 							{
@@ -96,14 +51,14 @@
 				
 			    if (count($display["instances"]) == 0)
 			    {
-			    	$errmsg = "You don't have running instances";
+			    	$errmsg = _("You don't have running instances");
 			    	UI::Redirect("ebs_manage.php");
 			    }
 			    
 			    if ($errmsg)
 			    	$display["errmsg"] = $errmsg;
 			    
-				$display["title"] = "Attach Elastic block storage to instance";
+				$display["title"] = _("Attach Elastic block storage to instance");
 				$display["volumeId"] = $req_volumeId;
 				$Smarty->assign($display);
 				$Smarty->display("ebs_attach.tpl");
@@ -124,11 +79,34 @@
 					$res = $AmazonEC2Client->DeleteVolume($req_volumeId);
 					if ($res->return)
 					{
-						$okmsg = "Volume deletion initiated";
+						$okmsg = _("Volume deletion initiated");
 						UI::Redirect("ebs_manage.php");
 					}
 					else
-						$errmsg = "Cannot delete volume";
+						$errmsg = _("Cannot delete volume");
+				}
+				catch(Exception $e)
+				{
+					$errmsg = sprintf(_("Cannot delete volume: %s"), $e->getMessage());
+				}
+				
+				$req_volumeId = false;
+				
+				break;
+
+			case "snap_delete":
+				
+				try
+				{
+					$res = $AmazonEC2Client->DeleteSnapshot($req_snapshotId);
+
+					if ($res->return)
+					{
+						$okmsg = _("Snapshot successfully removed");
+						UI::Redirect("ebs_manage.php");
+					}
+					else
+						$errmsg = _("Cannot remove snapshot");
 				}
 				catch(Exception $e)
 				{
@@ -145,11 +123,30 @@
 
 					if ($res->snapshotId)
 					{
-						$okmsg = "Snapshot creation initiated. Snapshot ID: {$res->snapshotId}";
+						$r = $AmazonEC2Client->DescribeVolumes($res->volumeId);
+						$info = $r->volumeSet->item;
+						
+						$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array(
+							$info->attachmentSet->item->instanceId
+						));
+						
+						$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array(
+							$instanceinfo['farmid']
+						));
+						
+						$comment = sprintf(_("Created on farm '%s', role '%s', instance '%s'"), 
+							$farminfo['name'], $instanceinfo['role_name'], $instanceinfo['instance_id']
+						);
+						
+						$db->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW()",
+							array($res->snapshotId, $comment)
+						);
+						
+						$okmsg = sprintf(_("Snapshot creation initiated. Snapshot ID: %s"), $res->snapshotId);
 						UI::Redirect("ebs_manage.php");
 					}
 					else
-						$errmsg = "Cannot create snapshot";
+						$errmsg = _("Cannot create snapshot");
 				}
 				catch(Exception $e)
 				{
@@ -164,13 +161,13 @@
 				{
 					$res = $AmazonEC2Client->DetachVolume(new DetachVolumeType($req_volumeId));
 
-					if ($res->volumeId && $res->status == 'detaching')
+					if ($res->volumeId && $res->status == AMAZON_EBS_STATE::DETACHING)
 					{
-						$okmsg = "Volume detaching initiated";
+						$okmsg = _("Volume detaching initiated");
 						UI::Redirect("ebs_manage.php");
 					}
 					else
-						$errmsg = "Cannot detach volume";
+						$errmsg = _("Cannot detach volume");
 				}
 				catch(Exception $e)
 				{
@@ -186,7 +183,7 @@
 	
 	if ($req_view)
 		$display["view"] = $req_view;
-	
+		
 	// Rows
 	$response = $AmazonEC2Client->DescribeVolumes();
 	
@@ -202,10 +199,21 @@
 		
 		$item = $pv;
 		
-		$item->farmId = $db->GetOne("SELECT farmid FROM farm_instances WHERE instance_id=?", 
-			array($pv->attachmentSet->instanceId)
-		);
+		$info = $db->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($item->volumeId));
 		
+		if ($info)
+		{
+			$item->farmId = $info["farmid"];
+			$item->roleName = $info["role_name"];
+		}
+		else
+		{
+			$item->farmId = $db->GetOne("SELECT farmid FROM farm_instances WHERE instance_id=?", 
+				array($pv->attachmentSet->instanceId)
+			);
+		}
+		
+				
 		if ($item->farmId)
 		{
 			$item->farmName = $db->GetOne("SELECT name FROM farms WHERE id=?",
@@ -226,46 +234,11 @@
 	
 	$display["vols"] = $vols;
 	
-	// Rows
-	$response = $AmazonEC2Client->DescribeSnapshots();
-
-	$rowz = $response->snapshotSet->item;
-		
-	if ($rowz instanceof stdClass)
-		$rowz = array($rowz);
-			
-	foreach ($rowz as $pk=>$pv)
-	{		
-		$pv->startTime = date("Y-m-d H:i:s", strtotime($pv->startTime));
-		$item = $pv;	
-		
-		$item->progress = (int)preg_replace("/[^0-9]+/", "", $item->progress);
-		
-		$item->free = 100 - $item->progress;
-		
-		$item->bar_begin = ($item->progress == 0) ? "empty" : "filled";
-    	$item->bar_end = ($item->free != 0) ? "empty" : "filled";
-    	
-    	$item->used_percent_width = round(190/100*$item->progress, 2);
-    	$item->free_percent_width = round(190/100*$item->free, 2);
-
-    	if ($req_volumeId)
-    	{
-    		if ($req_volumeId == $item->volumeId)
-    		{
-    			$snaps[] = $item;
-    		}
-    		
-    		$display["snaps_header"] = "Snapshots for {$item->volumeId}"; 
-    	}
-    	elseif (!$req_snap_id || $req_snap_id == $item->snapshotId)
-    	{
-			$snaps[] = $item;
-    	}
-	}
+	$Smarty->assign(array("table_title_text" => _("Snapshots"), "reload_action" => "ReloadPage();"));
+	$display["snaps_filter"] = $Smarty->fetch("inc/table_title.tpl");
+	$display["snaps_paging"] = $Smarty->fetch("inc/table_reload_icon.tpl");
 	
-	$display["snaps"] = $snaps;
-	$display["title"] = "Elastic Block Storage > Manage";
+	$display["title"] = _("Elastic Block Storage > Manage");
 	$display["farmid"] = $req_farmid;
 	
 	$display["page_data_options"] = array();

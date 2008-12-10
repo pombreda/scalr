@@ -48,13 +48,13 @@
     		array($farminfo['clientid'], 'reconfigure_event_daemon', '1')
     	);
     	
-    	$okmsg = "Notification settings successfully updated";
+    	$okmsg = _("Notification settings successfully updated");
     	UI::Redirect("configure_event_notifications.php?farmid={$req_farmid}");
     }
     
     
 	$display["farminfo"] = $farminfo;
-	$display["title"] = "Configure notifications for {$farminfo['name']} farm";
+	$display["title"] = sprintf(_("Configure notifications for %s farm"), $farminfo['name']);
 	
 	$observers = glob(APPPATH."/observers/class.*.php");
 	foreach ($observers as $observer)

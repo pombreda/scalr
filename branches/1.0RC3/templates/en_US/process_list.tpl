@@ -16,9 +16,19 @@
 		{
 			var url = '/server/server.php?'+uri; 
 		
-			$('table_loader').style.display = '';
-			$('table_body_list').style.display = 'none';
+			$('table_body_list').update(
+			'<tr id="table_loader">'+
+				'<td colspan="30" align="center">'+
+					'<img style="vertical-align:middle;" src="/images/snake-loader.gif"> Loading process list. Please wait...'+
+				'</td>'+
+			'</tr>'
+			);
+			
 			$('table_refresh_icon').style.display = 'none';
+		
+			$$('div.vrule').each(function(item){
+				item.parentNode.removeChild(item);
+			});
 		
 			new Ajax.Request(url,
 			{ 
@@ -29,11 +39,9 @@
 					try
 					{
 						$(transport.request.options.contaner_name).update(transport.responseText);
-						$('table_loader').style.display = 'none';
-						$('table_body_list').style.display = '';
 						$('table_refresh_icon').style.display = '';
 						
-						window.setTimeout('webtacp.reloadTables()', 1000);
+						window.setTimeout('webtacp.reloadTables()', 200);
 					}
 					catch(e)
 					{
@@ -61,21 +69,17 @@
 	<thead>
 		<tr>
 			<th>Process</th>
-			<!-- <th>CPU Usage</th>  -->
 			<th width="150">RAM Usage</th>
 			<th width="150">Type</th>
 			<th width="150" nowrap>Status</th>
 		</tr>
 	</thead>
-	<tbody>
+	<tbody id="table_body_list">
 		<tr id="table_loader">
 			<td colspan="30" align="center">
 				<img style="vertical-align:middle;" src="/images/snake-loader.gif"> Loading process list. Please wait...
 			</td>
 		</tr>
-	</tbody>
-	<tbody id="table_body_list">
-	
 	</tbody>
 	</table>
 	{include file="inc/table_footer.tpl" disable_footer_line=1}	

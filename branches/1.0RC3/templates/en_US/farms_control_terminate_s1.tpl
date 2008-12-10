@@ -14,9 +14,17 @@
 		<br />
 			{section name=id loop=$outdated_farm_amis}
 			<div style="margin-bottom:10px;">
-				<div>
+				<div style="width:100%;">
+					<div style="float:left;line-height:40px;">
 					<input {if $outdated_farm_amis[id].running}checked disabled{/if} onclick="SetSyncChecked('{$outdated_farm_amis[id].ami_id}', this.checked);" type="checkbox" name="sync[]" value="{$outdated_farm_amis[id].ami_id}" style="vertical-align:middle;"> 
 					{$outdated_farm_amis[id].name} ({$outdated_farm_amis[id].ami_id}) &nbsp;&nbsp;Last synchronization: {if $outdated_farm_amis[id].dtlastsync}{$outdated_farm_amis[id].dtlastsync}{else}Never{/if}
+					</div>
+					{if $outdated_farm_amis[id].alias == 'mysql'}
+					<div class="Webta_ExperimentalMsg" style="float:left;margin-left:15px;padding-right:15px;font-size:12px;">
+						The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$farminfo.id}'>Click here if you wish to bundle and save MySQL data</a>.
+					</div> 
+					{/if}
+					<div style="clear:both;font-size:1px;"></div>
 				</div>
 				{if !$outdated_farm_amis[id].running}
 				<div id="i_{$outdated_farm_amis[id].ami_id}" style="margin-left:20px;display:none;">

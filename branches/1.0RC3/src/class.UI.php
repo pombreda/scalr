@@ -126,6 +126,9 @@
 			if (!$_SESSION["errmsg"])
 				$_SESSION["errmsg"] = $GLOBALS["errmsg"];
 			
+			if (!$_SESSION["warnmsg"])
+				$_SESSION["warnmsg"] = $GLOBALS["warnmsg"];
+				
 			if (!$_SESSION["err"])
 				$_SESSION["err"] = $GLOBALS["err"];
 			

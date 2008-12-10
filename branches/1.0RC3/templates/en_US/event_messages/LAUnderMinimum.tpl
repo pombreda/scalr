@@ -1,1 +1,1 @@
-Load averages for role {$roleinfo.name} (AMI: {$roleinfo.ami_id}) {$LA} is under minimum {$MIN_LA}
+Load averages for role {$event->RoleInfo.name} (AMI: {$event->RoleInfo.ami_id}) {$event->LA} is under minimum {$event->MinLA}

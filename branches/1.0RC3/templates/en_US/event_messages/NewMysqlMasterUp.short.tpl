@@ -1,1 +1,1 @@
-New MySQL master: {$instanceinfo.external_ip} Up
+New MySQL master: {$event->InstanceInfo.external_ip} Up

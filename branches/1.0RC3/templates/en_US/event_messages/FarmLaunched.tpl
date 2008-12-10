@@ -1,1 +1,1 @@
-Farm {$farm.name} (ID: {$farm.id}) launched
+Farm {$event->Farm.name} (ID: {$event->Farm.id}) launched

@@ -71,37 +71,30 @@
 	define("CF_TEMPLATES_PATH", APPPATH."/templates/".LOCALE);
 	define("CF_SMARTYBIN_PATH", CACHEPATH."/smarty_bin/".LOCALE);
 	define("CF_SMARTYCACHE_PATH", CACHEPATH."/smarty/".LOCALE);
-
-	// Load enums
-	require_once(SRCPATH."/types/enum.APPCONTEXT.php");
-	require_once(SRCPATH."/types/enum.FORM_FIELD_TYPE.php");
-	require_once(SRCPATH."/types/enum.SUBSCRIPTION_STATUS.php");
-	require_once(SRCPATH."/types/enum.INSTANCE_TYPE.php");
-	require_once(SRCPATH."/types/enum.INSTANCE_ARCHITECTURE.php");
-	require_once(SRCPATH."/types/enum.ZONE_STATUS.php");
-	require_once(SRCPATH."/types/enum.EVENT_TYPE.php");
-	require_once(SRCPATH."/types/enum.RRD_STORAGE_TYPE.php");
-	require_once(SRCPATH."/types/enum.GRAPH_TYPE.php");
-	require_once(SRCPATH."/types/enum.SNMP_TRAP.php");
-	require_once(SRCPATH."/types/enum.MYSQL_BACKUP_TYPE.php");
-	require_once(SRCPATH."/types/enum.FARM_STATUS.php");
-	require_once(SRCPATH."/types/enum.INSTANCE_COST.php");
-	require_once(SRCPATH."/types/enum.INSTANCE_STATE.php");	
-	require_once(SRCPATH."/types/enum.QUEUE_NAME.php");
-	require_once(SRCPATH."/types/enum.ROLE_ALIAS.php");
-	require_once(SRCPATH."/types/enum.ROLE_TYPE.php");
 	
-	//Load structs
-	require_once(SRCPATH."/structs/struct.CONTEXTS.php");
-	require_once(SRCPATH."/structs/struct.CONFIG.php");
+	// require autoload definition
+	require_once (SRCPATH."/autoload.inc.php");
+
+	// require sanitizer
+	require_once (LIBPATH."/Data/Text/HTMLPurifier/HTMLPurifier.auto.php");
 	
 	require_once(SRCPATH."/exceptions/class.ApplicationException.php");
 	require_once(SRCPATH."/class.UI.php");
 	require_once(SRCPATH."/class.Debug.php");
 	require_once(SRCPATH."/class.TaskQueue.php");
+	require_once(SRCPATH."/class.FarmTerminationOptions.php");
 	
 	require_once(SRCPATH."/class.DataForm.php");
 	require_once(SRCPATH."/class.DataFormField.php");
+	
+	require_once(SRCPATH."/queue_tasks/abstract.Task.php");
+	require_once(SRCPATH."/queue_tasks/class.CheckEBSVolumeStateTask.php");
+	require_once(SRCPATH."/queue_tasks/class.EBSMountTask.php");
+	require_once(SRCPATH."/queue_tasks/class.EBSDeleteTask.php");
+	
+	require_once(SRCPATH."/queue_tasks/class.FireDeferredEventTask.php");
+	require_once(SRCPATH."/queue_tasks/class.CreateDNSZoneTask.php");
+	require_once(SRCPATH."/queue_tasks/class.DeleteDNSZoneTask.php");
 	
 	// All uncaught exceptions will raise ApplicationException
 	function exception_handler($exception) 
@@ -137,13 +130,21 @@
 			
 	$cfg = parse_ini_file(APPPATH."/etc/config.ini", true);
 	if (!count($cfg)) { 
-		die("Cannot parse config.ini file"); 
+		die(_("Cannot parse config.ini file")); 
 	};
 
 	define("CF_DEBUG_DB", $cfg["debug"]["db"]);
 
-	// ADODB init 
-	$db = Core::GetDBInstance($cfg["db"]);		
+	// ADODB init
+	try
+	{
+		$db = Core::GetDBInstance($cfg["db"]);
+	}
+	catch(Exception $e)
+	{		
+		throw new Exception("Service is temporary not available. Please try again in a minute.");
+		//TODO: Notify about this.		
+	}
 	
 	// Select config from db
 	foreach ($db->GetAll("select * from config") as $rsk)
@@ -187,6 +188,7 @@
 		
 	// Require log4php stuff
 	require_once (SRCPATH.'/class.FarmLogMessage.php');
+	require_once (SRCPATH.'/class.ScriptingLogMessage.php');
 	require_once (SRCPATH.'/class.LoggerPatternLayoutScalr.php');
 	require_once (SRCPATH.'/class.LoggerPatternParserScalr.php');
 	require_once (SRCPATH.'/class.LoggerBasicPatternConverterScalr.php');
@@ -236,10 +238,14 @@
 	$Mailer = Core::GetPHPSmartyMailerInstance();
 	$Mailer->From 		= CONFIG::$EMAIL_ADDRESS;
 	$Mailer->FromName 	= CONFIG::$EMAIL_NAME;
+	$Mailer->CharSet 	= "UTF-8";
 	
 	// Crtypto init
 	$Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
 	    
+	
+	//TODO: Move all timeouts to config UI.
+	
     // Set zone lock timeouts
     CONFIG::$ZONE_LOCK_WAIT_TIMEOUT = 5000000; // in miliseconds (1000000 = 1 second)
     CONFIG::$ZONE_LOCK_WAIT_RETRIES = 3;
@@ -250,7 +256,7 @@
     CONFIG::$EVENTS_RSS_CACHE_LIFETIME = 300; // in seconds
     CONFIG::$EVENTS_TIMELINE_CACHE_LIFETIME = 300; // in seconds
     CONFIG::$AJAX_PROCESSLIST_CACHE_LIFETIME = 60; // in seconds
-
+    
     // Get control password
     $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
        
@@ -260,20 +266,7 @@
     // Require observer interfaces
     require_once (APPPATH.'/observers/interface.IDeferredEventObserver.php');
     require_once (APPPATH.'/observers/interface.IEventObserver.php');
-    
-    // Require deferred event observers
-    require_once (APPPATH.'/observers/class.MailEventObserver.php');
-    require_once (APPPATH.'/observers/class.RESTEventObserver.php');
-    
-    // Require event observers
-    require_once (APPPATH.'/observers/abstract.EventObserver.php');
-    require_once (APPPATH.'/observers/class.DNSEventObserver.php');
-    require_once (APPPATH.'/observers/class.DBEventObserver.php');
-    require_once (APPPATH.'/observers/class.SNMPInformer.php');
-    require_once (APPPATH.'/observers/class.EC2EventObserver.php');
-    require_once (APPPATH.'/observers/class.SSHWorker.php');
-    require_once (APPPATH.'/observers/class.ElasticIPsEventObserver.php');
-        
+                    
     require_once (SRCPATH.'/class.Scalr.php');
         
     //
@@ -282,10 +275,12 @@
     Scalr::AttachObserver(new SSHWorker());
 	Scalr::AttachObserver(new DBEventObserver());
 	Scalr::AttachObserver(new EC2EventObserver());
+	Scalr::AttachObserver(new ScriptingEventObserver());
+	Scalr::AttachObserver(new EBSEventObserver());
 	Scalr::AttachObserver(new SNMPInformer());
 	Scalr::AttachObserver(new ElasticIPsEventObserver());
 	Scalr::AttachObserver(new DNSEventObserver());
-	    
+			    
     //
     // Attach deferred event observers
     //

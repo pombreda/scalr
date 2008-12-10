@@ -61,7 +61,7 @@
             //
             if ($db->GetOne("SELECT status FROM farms WHERE id=?", array($farminfo["id"])) != 1)
             {
-            	$this->Logger->error("[FarmID: {$farminfo['id']}] Farm terminated by client.");
+            	$this->Logger->warn("[FarmID: {$farminfo['id']}] Farm terminated by client.");
             	return;
             }
             
@@ -94,10 +94,13 @@
             }
         }
         
-        private function GenerateGraph($farmid, $role_name, $rrddbpath, $watchername, $graph_type)
+        public function GenerateGraph($farmid, $role_name, $rrddbpath, $watchername, $graph_type)
         {
+        	if (CONFIG::$RRD_GRAPH_STORAGE_TYPE == RRD_STORAGE_TYPE::AMAZON_S3)
+        		$image_path = APPPATH."/cache/stats/{$farmid}/{$role_name}.{$watchername}.{$graph_type}.gif";
+        	else
+        		$image_path = CONFIG::$RRD_GRAPH_STORAGE_PATH."/{$farmid}/{$role_name}_{$watchername}.{$graph_type}.gif";
         	
-        	$image_path = APPPATH."/cache/stats/{$farmid}/{$role_name}.{$watchername}.{$graph_type}.gif";
         	@mkdir(dirname($image_path), 0777, true);
 
         	$graph_info = $this->GetGraphicInfo($graph_type);
@@ -167,16 +170,9 @@
             		exit;
             	}
             }
-            else
-            {
-            	// Copy image from temporary dir to storage
-            	$new_path = CONFIG::$RRD_GRAPH_STORAGE_PATH."/{$farmid}/{$role_name}_{$watchername}.{$graph_type}.gif";
-            	@mkdir(dirname($new_path));
-            	@copy($image_path, $new_path);
-            }
         }
         
-        private function GetGraphicInfo($type)
+        public function GetGraphicInfo($type)
         {
         	switch($type)
             {
@@ -185,7 +181,7 @@
             			"start" => "-1d5min", 
             			"end" => "-5min", 
             			"step" => 60, 
-            			"update_every" => 300,
+            			"update_every" => 600,
             			"x_grid" => "HOUR:1:HOUR:2:HOUR:2:0:%H"
             		);
             		break;
