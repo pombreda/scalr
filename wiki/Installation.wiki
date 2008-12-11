@@ -1,4 +1,4 @@
-#summary Scalr v1 Instalation and Configuration
+#summary Scalr v1 Installation and Configuration
 #labels Featured
 
 = Scalr v1 Instalation and Configuration =
@@ -9,7 +9,7 @@
 To quickly check either your server meets Scalr system requirements, use testenvironment.php script from app/www folder.
 Simply upload php file on your host and open it in browser. It should find most of major issues.
 
-Scalr requires a webserver and can run on any posix-compatible (Linux, BSD etc.) operating system, as long as the following requirements are met:
+Scalr requires a web server and can run on any POSIX-compatible (Linux, BSD etc.) operating system, as long as the following requirements are met:
   * PHP 5.2.5 or higher, 
   * MySQL 5.0 or higher (MySQL 5.1 or higher preferred)
 
@@ -81,3 +81,7 @@ Where XXXXXXXXXXXX is Your Access Key name, which you specify on "Settings->Core
 === Configuration ===
 Installation complete! You may now proceed to configuration.
 Log in as admin / admin, go to *Settings->Core settings* and edit settings.
+
+
+== Known issues == 
+  * If you plan to run Scalr on Fedora. Apparently snmptrap tool on Fedora uses port 161 instead of standard 162  - http://groups.google.com/group/scalr-discuss/t/68457bc1edd9d8b4
