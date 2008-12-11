@@ -1,4 +1,5 @@
 #summary Upgrading Scalr from Version 1.0 RC2 to 1.0 RC3
+#labels Phase-Deploy
 
 = Update source code =
 
@@ -10,7 +11,7 @@ svn up
   * If you installed from the archive, simply download the RC3 archive and replace all files with new ones (except etc folder) 
 
 = Update database = 
-  * Import sql/upgrade_1.0RC2-1.0RC3.sql sql/upgrade_1.0RC2-1.0RC3.sql into your database.
+  * Import sql/upgrade_1.0RC2-1.0RC3.sql into your database.
   * execute bin/upgrade_from_RC2_to_RC3.php in shell.
 
 {{{
