@@ -25,7 +25,7 @@ Select what region your farm will run in.
 == EBS volumes re-attaching to a same instance within a role. == 
 If you enable EBS inside a role settings, Volume #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts.
 
-==  Attach and mount EBS volume to a particular instance. 
+==  Attach and mount EBS volume to a particular instance. ==
 Set the size and push the button.
  Volumes always get attached and mounted whenever instance boots up.
 
