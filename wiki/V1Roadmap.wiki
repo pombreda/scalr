@@ -43,7 +43,7 @@ With one-click sorting and other cool goodies.
 Whenever you create a farm, yourfarm.scalr.ws is created for you. 
 
 == Misc ==
-  * Bye, SNMP+REST, hello messaging (ActiveMQ).
+  * Bye SNMP+REST, hello messaging (ActiveMQ).
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
