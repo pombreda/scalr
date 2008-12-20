@@ -1,8 +1,8 @@
 #summary Scalr v1 Roadmap.
 #labels Featured
 
-This page lists features that Scalr team is currently working on and planning to release soon.
-It should not be considered "final" and can be (and will be) re-arranged along the way.
+_This page lists features that Scalr team is currently working on and planning to release soon.
+It should not be considered "final" and can be (and will be) re-arranged along the way._
 
 
 = January 2009 = 
