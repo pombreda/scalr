@@ -40,7 +40,7 @@ Select a bucket, select Application, enter subdomain name, done.
 With one-click sorting and other cool goodies. 
 
 == yourfarm.scalr.ws ==
-Whenever you create a farm, yourfarm.scalr.ws is created for you. 
+Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
 
 == Misc ==
   * Bye SNMP+REST, hello messaging (ActiveMQ).
