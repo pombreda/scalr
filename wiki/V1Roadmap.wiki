@@ -6,6 +6,22 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 
 
 = January 2009 = 
+
+== EBS Arrays == 
+Create a storage device (up to 10 TB for now), attach it to an instance. 
+Enter the desired size and Scalr will do the rest - create volumes, join them into a single device, create filesystem and mount it on your instance.
+
+== Automatic EBS snapshots
+Set how frequently Scalr will make snapshots of your volumes. 
+Auto-EBS, manual EBS, EBS arrays - all support this feature.
+
+== EBS for mySQL role ==
+
+A single EBS volume is used as datadir on master and to delived latest data to slaves (via snaphots).
+
+== Support for Europe locations ==
+Select what region your farm will run in.
+
 == EBS volumes re-attaching to a same instance within a role. == 
 If you enable EBS inside a role settings, Volume #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts.
 
@@ -13,20 +29,6 @@ If you enable EBS inside a role settings, Volume #1 always gets attached to an i
 Set the size and push the button.
  Volumes always get attached and mounted whenever instance boots up.
 
-== EBS Arrays == 
-Create a storage device (up to 10 TB for now), attach it to an instance. 
-Enter the desired size and Scalr will do the rest - create volumes, join them with LVM, create filesystem and mount it on your instance.
-
-== Automatic snapshots
-Set how frequently Scalr will make snapshots of your volumes. 
-Auto-EBS, manual EBS, EBS arrays - all support this feature.
-
-== Support for Europe locations ==
-Select what region your farm will run in.
-
-== EBS for mySQL role ==
-
-A single EBS volume is used as datadir on master and to delived latest data to slaves (via snaphots).
 
 
 = Future Release = 
