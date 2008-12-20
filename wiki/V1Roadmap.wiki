@@ -11,7 +11,7 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 Create a storage device (up to 10 TB for now), attach it to an instance. 
 Enter the desired size and Scalr will do the rest - create volumes, join them into a single device, create filesystem and mount it on your instance.
 
-== Automatic EBS snapshots
+== Automatic EBS snapshots ==
 Set how frequently Scalr will make snapshots of your volumes. 
 Auto-EBS, manual EBS, EBS arrays - all support this feature.
 
