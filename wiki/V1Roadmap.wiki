@@ -38,7 +38,7 @@ Select a bucket, select Application, enter subdomain name, done.
 
 == New extJS-based interface ==
 With one-click sorting and other cool goodies. 
- * 
+
 == yourfarm.scalr.ws ==
 Whenever you create a farm, yourfarm.scalr.ws is created for you. 
 
