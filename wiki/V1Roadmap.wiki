@@ -47,3 +47,4 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
+  * New Scripting events:  beforeHostTerminate, beforeInstanceLaunch
