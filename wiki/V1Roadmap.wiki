@@ -35,6 +35,9 @@ Set the size and push the button.
 
 
 = Future Release = 
+elastic IPs re-assigning to a same instance within a role.
+
+If you enable elastic IPs inside a role settings, IP #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts. 
  == Cloudfront support == 
 Select a bucket, select Application, enter subdomain name, done.
 
