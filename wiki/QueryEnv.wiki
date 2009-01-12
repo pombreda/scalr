@@ -1,0 +1,22 @@
+#summary Query-Env: a REST API for farm settings
+
+= What's this? =
+
+Query-Env is a way to retrieve various farm settings from any instance of the farm.
+
+For example, you can get a list of all instances, grouped by role name, LVM volumes assigned to an instance, list SSL certificates and virtualhosts.
+
+
+== Availability and version ==
+The current API version is: 2008-11-25
+
+
+== Reference ==  
+
+The API call is  HTTP or HTTPS GET request to 
+https://scalr.net/query-env/QUERY?
+
+, where QUERY is the name of the query
+
+   * 
+
