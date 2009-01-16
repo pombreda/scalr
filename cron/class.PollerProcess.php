@@ -358,6 +358,13 @@
                                     if ($db_item_info['isipchanged'] == 1)
                                     {
                                     	$ip = @gethostbyname($instance_dns);
+                                    	
+                                    	if ($ip != $instance_dns && substr($ip, 0, 3) == '10.')
+                                    	{
+                                    		preg_match("/([0-9]{2,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3})/si", $instance_dns, $matches);
+											$ip = str_replace("-", ".", $matches[1]);
+                                    	}
+                                    	
                                 		if ($ip && $ip != $instance_dns)
                                 		{
 	                                    	Scalr::FireEvent(
