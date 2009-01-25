@@ -20,3 +20,108 @@ https://scalr.net/query-env/QUERY?
 
    * 
 
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- /API_DATE/get-latest-version -->
+<response>
+	<version></version>
+</reponse>
+
+
+<!-- /API_DATE/list-ebs-mountpoints -->
+<response>
+	<mountpoints>
+		<mountpoint name='some_name_for_LVM' dir='/mnt/storage1' createfs='1' isarray='0'>
+			<volumes>
+				<volume volume-id='vol-123451' device='/dev/sdb'></volume>
+			</volumes>
+		</mountpoint>
+		<mountpoint name='some_name_for_LVM' dir='/mnt/storage2' createfs='0' isarray='1'>
+			<volumes>
+				<volume volume-id='vol-123452' device='/dev/sdb'></volume>
+				<volume volume-id='vol-123453' device='/dev/sdc'></volume>
+			</volumes>
+		</mountpoint>
+	</mountpoints>
+</response>
+
+<!--   /API_DATE/list-roles?[role=STRING][behaviour=STRING] -->
+<response>
+	<roles>
+		<role behaviour="mysql" name="mysql-lvm">
+			<hosts>
+				<host replication-master="1" internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+				<host replication-master="0" internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+			</hosts>
+		</role>
+		<role behaviour="www" name="www64">
+			<hosts>
+				<host internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+				<host internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+			</hosts>
+		</role>
+		<role behaviour="www" name="www-custom">
+			<hosts>
+				<host internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+				<host internal-ip="211.31.14.198" external-ip="211.31.14.198" />
+			</hosts>
+		</role>
+	</roles>
+</response>
+
+
+<!--  /API_DATE/get-https-certificate -->
+	<response>
+			<cert>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</cert>
+			<pkey>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</pkey>
+		</response>
+
+<!-- /API_DATE/list-role-params?[name=STRING] -->
+<response>
+<params>
+		<param name="external_ips_to_allow_access_from">
+			<value>
+				<![CDATA[
+					
+				]]>
+			</value>
+		</param>
+</params>
+</response>		
+
+					
+<!-- /API_DATE/list-virtualhosts?[name=gpanel.net][https=1|0] -->
+<response>
+		<vhosts>
+			<vhost hostname="gpanel.net" type="apache">
+				<raw>
+				<![CDATA[
+
+				]]>
+				</raw>			
+			</vhost>
+			
+			<vhost hostname="gpanel2.net" https="1" type="nginx">
+				<raw>
+				<![CDATA[
+
+				]]>
+				</raw>				
+			</vhost>
+		</vhosts>
+	</app>
+</response>
+
+<!-- /API_DATE/list-scripts?[event=STRING][asynchronous=1|0][name=STRING] -->
+<response>
+	<scripts>
+	<script asynchronous="1" exec-timeout="100" name="script_name">
+		<body>
+		<![CDATA[
+		
+		]]>
+		</body>
+	</script>
+	</scripts>
+</response>
