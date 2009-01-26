@@ -14,22 +14,22 @@ The current API version is: 2008-11-25
 == Reference ==  
 
 The API call is  HTTP or HTTPS GET request to 
-https://scalr.net/query-env/QUERY?
+https://scalr.net/query-env/API-VERSION/QUERY?
 
-, where QUERY is the name of the query
+, where QUERY is the name of the query:
 
-   * 
-
-
+* /get-latest-version *
+{{{
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!-- /API_DATE/get-latest-version -->
 <response>
-	<version></version>
+	<version>2008-12-16</version>
 </reponse>
+}}}
 
 
-<!-- /API_DATE/list-ebs-mountpoints -->
+* /list-ebs-mountpoints *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
 	<mountpoints>
 		<mountpoint name='some_name_for_LVM' dir='/mnt/storage1' createfs='1' isarray='0'>
@@ -45,8 +45,12 @@ https://scalr.net/query-env/QUERY?
 		</mountpoint>
 	</mountpoints>
 </response>
+}}}
 
-<!--   /API_DATE/list-roles?[role=STRING][behaviour=STRING] -->
+
+* /list-roles?[role=STRING][behaviour=STRING] *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
 	<roles>
 		<role behaviour="mysql" name="mysql-lvm">
@@ -69,59 +73,70 @@ https://scalr.net/query-env/QUERY?
 		</role>
 	</roles>
 </response>
+}}}
 
 
-<!--  /API_DATE/get-https-certificate -->
-	<response>
-			<cert>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</cert>
-			<pkey>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</pkey>
-		</response>
+* /get-https-certificate *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+	<cert>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</cert>
+	<pkey>MIICWjCCAhigAwIBAgIESPX5.....1myoZSPFYXZ3AA9kwc4uOwhN</pkey>
+</response>
+}}}
 
-<!-- /API_DATE/list-role-params?[name=STRING] -->
+* /list-role-params?[name=STRING] *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
 <params>
-		<param name="external_ips_to_allow_access_from">
-			<value>
-				<![CDATA[
+	<param name="external_ips_to_allow_access_from">
+		<value>
+			<![CDATA[
 					
-				]]>
-			</value>
-		</param>
+			]]>
+		</value>
+	</param>
 </params>
 </response>		
-
+}}}
 					
-<!-- /API_DATE/list-virtualhosts?[name=gpanel.net][https=1|0] -->
+* /list-virtualhosts?[name=gpanel.net][https=1|0] *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
-		<vhosts>
-			<vhost hostname="gpanel.net" type="apache">
-				<raw>
+	<vhosts>
+		<vhost hostname="gpanel.net" type="apache">
+			<raw>
 				<![CDATA[
 
 				]]>
-				</raw>			
-			</vhost>
+			</raw>			
+		</vhost>
 			
-			<vhost hostname="gpanel2.net" https="1" type="nginx">
-				<raw>
+		<vhost hostname="gpanel2.net" https="1" type="nginx">
+			<raw>
 				<![CDATA[
-
+				
 				]]>
-				</raw>				
-			</vhost>
-		</vhosts>
-	</app>
+			</raw>				
+		</vhost>
+	</vhosts>
 </response>
+}}}
 
-<!-- /API_DATE/list-scripts?[event=STRING][asynchronous=1|0][name=STRING] -->
+* /list-scripts?[event=STRING][asynchronous=1|0][name=STRING] *
+{{{
+<?xml version="1.0" encoding="UTF-8"?>
 <response>
 	<scripts>
-	<script asynchronous="1" exec-timeout="100" name="script_name">
-		<body>
-		<![CDATA[
+		<script asynchronous="1" exec-timeout="100" name="script_name">
+			<body>
+				<![CDATA[
 		
-		]]>
-		</body>
-	</script>
+				]]>
+			</body>
+		</script>
 	</scripts>
 </response>
+}}}
