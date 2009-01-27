@@ -8,7 +8,7 @@
 || app || app64 || ami-bac420d3 || ami-0ac62263 || Application server (Apache2 + mod_php + PHP 5.2.4) ||
 || www || www64 || ami-72f2161b || ami-01ca2e68 || Frontend load balancer and HTTP server ||
 || base || base64 || ami-51f21638 || ami-03ca2e6a || The clean image for building custom roles ||
-|| mysqllvm || mysqllvm64 || ami-51fa1e38 || ami-21cf2b48 || MySQL server (LVM) ||
+|| mysqllvm || mysqllvm64 || ami-d09572b9 || ami-21cf2b48 || MySQL server (LVM) ||
 || app-rails || app-rails64 || ami-c2d034ab || ami-69d23600 || Application server (Apache2 + mod_rails + Rails 2.1.1) ||
 || memcached || || ami-cfd034a6 || || Memcached server ||
 || app-tomcat || || ami-5a2fcb33 || || Application server (Apache Tomcat 5.5) ||
