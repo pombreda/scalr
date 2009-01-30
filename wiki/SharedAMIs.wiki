@@ -1,7 +1,7 @@
 #summary Shared AMIs for standard Scalr roles
 #labels Featured
 
-== Shared AMIs (US region)==
+== Shared AMIs (us-east-1 Region)==
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
 || mysql || mysql64 || ami-2cf21645 || ami-e8c62281 || MySQL server ||
@@ -15,7 +15,7 @@
 || || app-tomcat6 || || ami-6436d20d || Application server (Apache Tomcat 6.0) ||
 
 
-== Shared AMIs (EU region)==
+== Shared AMIs (eu-west-1 Region)==
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
 || mysql || mysql64 || ami-221c3456 || ami-201c3454 || MySQL server ||
