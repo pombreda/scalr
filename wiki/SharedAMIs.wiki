@@ -3,7 +3,7 @@
 
 == Shared AMIs ==
 
-=== us-east-1 Region ===
+=== Region: us-east-1 ===
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
 || mysql || mysql64 || ami-2cf21645 || ami-e8c62281 || MySQL server ||
 || app || app64 || ami-bac420d3 || ami-0ac62263 || Application server (Apache2 + mod_php + PHP 5.2.4) ||
@@ -16,7 +16,7 @@
 || || app-tomcat6 || || ami-6436d20d || Application server (Apache Tomcat 6.0) ||
 
 
-=== eu-west-1 Region ===
+=== Region: eu-west-1 ===
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
 || mysql || mysql64 || ami-221c3456 || ami-201c3454 || MySQL server ||
