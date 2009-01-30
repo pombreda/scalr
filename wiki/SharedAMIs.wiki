@@ -15,7 +15,7 @@
 || app-tomcat || || ami-5a2fcb33 || || Application server (Apache Tomcat 5.5) ||
 || || app-tomcat6 || || ami-6436d20d || Application server (Apache Tomcat 6.0) ||
 
-
+<br><br>
 === Region: eu-west-1 ===
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
