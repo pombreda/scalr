@@ -18,7 +18,7 @@ In MySQL role, 1st IP always gets attached to MySQL master.
 Select a bucket, select Application, enter subdomain name, done.
 
 == Optimization of MySQL Role == 
-Making snapshot and promoting new master takes a long time. We have a few ideas about how to make this processes faster.
+Making snapshot and promoting new master takes a long time. We have a few ideas about how to make these processes faster.
 
 <br />
 = <strike>January 2009</strike> = 
