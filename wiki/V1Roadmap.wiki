@@ -8,7 +8,7 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 
 == EBS for MySQL role ==
 
-A single EBS volume is used as datadir on master and to delived latest data to slaves (via snaphots).
+A single EBS volume is used as datadir on master and to deliver latest data to slaves (via snapshots).
 
 == Elastic IPs re-assigning to a same instance within a role==
 If you enable elastic IPs inside a role settings, IP #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts. 
