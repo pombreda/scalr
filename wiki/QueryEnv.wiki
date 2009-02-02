@@ -8,7 +8,7 @@ For example, you can get a list of all instances, grouped by role name, LVM volu
 
 
 == Availability and version ==
-The current API version is: 2008-11-25
+The current API version is: 2008-12-16
 
 
 == Reference ==  
