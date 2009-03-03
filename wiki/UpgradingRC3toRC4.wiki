@@ -8,7 +8,7 @@
 svn up 
 }}}
 
-  * If you installed from the archive, simply download the RC3 archive and replace all files with new ones (except etc folder) 
+  * If you installed from the archive, simply download the RC4 archive and replace all files with new ones (except etc folder) 
 
 = Update database = 
   * Import sql/upgrade_1.0RC3-1.0RC4.sql into your database.
