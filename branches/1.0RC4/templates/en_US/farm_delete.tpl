@@ -1,6 +1,6 @@
 {include file="inc/header.tpl"}
 	{include file="inc/table_header.tpl"}
-		{include file="inc/intable_header.tpl" header="Delete farm" color="Gray"}
+		{include file="inc/intable_header.tpl" header="Delete farm $farm_name ($farm_id)" color="Gray"}
     	<tr>
     		<td colspan="2">
     		  {if $app_count > 0}There are {$app_count} applications assigned to this farm. These applications will be deleted too and DNS zones will be erased.{/if}

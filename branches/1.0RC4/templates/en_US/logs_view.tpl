@@ -35,6 +35,7 @@
 		<tr>
 			<th>Time</th>
 			<th>Severity</th>
+			{if !$hide_farm_column}<th>Farm</th>{/if}
 			<th>Caller</th>
 			<th>Message</th>
 		</tr>
@@ -44,16 +45,17 @@
 	<tr id='tr_{$smarty.section.id.iteration}' {if $rows[id].severity == 'FATAL' || $rows[id].severity == 'ERROR'}style="background-color:pink;"{/if}>
 		<td class="Item" valign="top" nowrap>{$rows[id].time}</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
+		{if !$hide_farm_column}<td class="Item" valign="top" nowrap><a href="farms_view.php?id={$rows[id].farmid}">{$rows[id].farm_name}</a></td>{/if}
 		<td class="Item" valign="top" nowrap>{if $rows[id].servername}<a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a>/{$rows[id].source}{else}{$rows[id].source}{/if}</td>
 		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
 	</tr>
 	{sectionelse}
 	<tr>
-		<td colspan="5" align="center">No log entries found</td>
+		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">No log entries found</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="5" align="center">&nbsp;</td>
+		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">&nbsp;</td>
 		<!--<td class="ItemDelete" valign="top">&nbsp;</td>-->
 	</tr>
 	</tbody>

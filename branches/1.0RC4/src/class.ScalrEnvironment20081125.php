@@ -22,6 +22,8 @@
             
             if (!in_array($this->GetArg("event"), $scalr_events))
             	$event_name = $instance_events[$this->GetArg("event")];
+            else
+            	$event_name = $this->GetArg("event");
 
             if (!$event_name && preg_match("/^CustomEvent-[0-9]+-[0-9]+$/si", $this->GetArg("event")))
             	$custom_event_name = $this->GetArg("event");
@@ -40,7 +42,7 @@
 
 			if ($custom_event_name)
 			{
-				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND event_name=?",
+				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND event_name=? ORDER BY order_index ASC",
 					array($this->GetArg("farmid"), $custom_event_name)
 				);
 			}
@@ -60,7 +62,7 @@
 	            	}
 	            		
 	            	$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (ami_id=? OR ami_id=?) 
-	            		AND event_name=?",
+	            		AND event_name=? ORDER BY order_index ASC",
 						array($this->GetArg("farmid"), $farm_ami_info['ami_id'], $farm_ami_info['replace_to_ami'], $event_name)
 					);
 	            }
@@ -82,7 +84,7 @@
 					$target_role_name = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_ami_info['ami_id']));
 					
 					$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (ami_id=? OR ami_id=?) 
-	            		AND event_name=? AND (target = ? OR (target = ? AND ami_id=?))",
+	            		AND event_name=? AND (target = ? OR (target = ? AND ami_id=?)) ORDER BY order_index ASC",
 						array(
 							$this->GetArg("farmid"), 
 							$target_ami_info['ami_id'], 
@@ -124,7 +126,7 @@
 					
 					if ($template)
 					{
-						$params = array_merge($instance_info, unserialize($script['params']));
+						$params = array_merge($instance_info, (array)unserialize($script['params']));
 						
 						// Prepare keys array and array with values for replacement in script
 						$keys = array_keys($params);

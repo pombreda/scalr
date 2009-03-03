@@ -8,42 +8,56 @@
 		public function Run()
 		{
 			$DB = Core::GetDBInstance();
-			$ebsinfo = $DB->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($this->VolumeID));
-			if ($ebsinfo)
+			
+			try
+			{
+				$DBEBSVolume = DBEBSVolume::Load($this->VolumeID);
+			}
+			catch (Exception $e)
+			{
+				
+			}
+			
+			if ($DBEBSVolume)
 			{
 				try
 				{
 					// Get farminfo from database
-					$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($ebsinfo['farmid']));
+					$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBEBSVolume->FarmID));
 					// Get instance info fro database
-					$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($ebsinfo['instance_id']));
+					$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($DBEBSVolume->InstanceID));
 					// Get farm role info
-					$farm_role_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? OR replace_to_ami=? AND farmid=?",
+					$farm_role_info = $DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=? OR replace_to_ami=? AND farmid=?",
 						array($instanceinfo['ami_id'], $instanceinfo['ami_id'], $farminfo['id'])
 					);
 					
 					// Get EC2 Client
-					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['clientid']);
+					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['clientid'], $farminfo['region']);
 					
 					// Check volume status
-					$response = $EC2Client->DescribeVolumes($ebsinfo['volumeid']);
+					$response = $EC2Client->DescribeVolumes($DBEBSVolume->VolumeID);
 					$volume = $response->volumeSet->item;
 					
 					if ($volume->status == AMAZON_EBS_STATE::IN_USE)
 					{
-						if ($volume->attachmentSet->status == 'attached')
+						if ($volume->attachmentSet->item->status == 'attached')
 						{
-							$createfs = $farm_role_info['ebs_snapid'] ? 0 : 1;
+							$createfs = ($farm_role_info['ebs_snapid'] || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
 	
 							// Nicolas request. Device not avaiable on instance after attached state. need some time.
 							sleep(5);
 							
-							$SNMP = new SNMP();
-							$trap = vsprintf(SNMP_TRAP::MOUNT_EBS, array($ebsinfo['device'], $farm_role_info['ebs_mountpoint'], $createfs));
-				            $res = $SNMP->SendTrap($trap);
-				            $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap mountEBS ({$trap}) to '{$instanceinfo['instance_id']}' ('{$instanceinfo['external_ip']}') complete ({$res})");
+							$DBInstance = DBInstance::LoadByID($instanceinfo['id']);
+							$DBInstance->SendMessage(new MountPointsReconfigureScalrMessage(
+								$DBEBSVolume->Device, 
+								$farm_role_info['ebs_mountpoint'], 
+								$createfs
+							));
 							
-							$DB->Execute("UPDATE farm_ebs SET state=?, isfsexists='1' WHERE volumeid=?", array(FARM_EBS_STATE::ATTACHED, $ebsinfo['volumeid']));
+							$DBEBSVolume->State = FARM_EBS_STATE::MOUNTING;
+				            $DBEBSVolume->Save();
+				            
+				            return true;
 						}
 						else
 							return false;

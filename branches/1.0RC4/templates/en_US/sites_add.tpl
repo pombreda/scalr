@@ -4,11 +4,21 @@
 	function CheckPrAdd(tp, id, val)
 	{
 		$("spf_link_"+id).style.display = 'none';
+		$(tp+"_"+id+"_weight").style.display = 'none';
+		$(tp+"_"+id+"_port").style.display = 'none';
+		
 		
 		if (val == 'MX')
 		{
 			$(tp+"_"+id).style.display = '';
 			$(tp+"_"+id).value = '10';
+		}
+		else if (val == 'SRV')
+		{
+			$(tp+"_"+id).style.display = '';
+			
+			$(tp+"_"+id+"_weight").style.display = '';
+			$(tp+"_"+id+"_port").style.display = '';
 		}
 		else if (val == 'TXT')
 		{
@@ -115,9 +125,15 @@
 				<option {if $zone.records[id].rtype == "MX"}selected{/if} value="MX">MX</option>
 				<option {if $zone.records[id].rtype == "NS"}selected{/if} value="NS">NS</option>
 				<option {if $zone.records[id].rtype == "TXT"}selected{/if} value="TXT">TXT</option>
+				<option {if $zone.records[id].rtype == "SRV"}selected{/if} value="SRV">SRV</option>
 			</select>
 		</td>
-		<td colspan="2"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" id="ed_{$zone.records[id].id}" style="display:{if $zone.records[id].rtype != "MX"}none{/if};" type=text name="zone[records][{$zone.records[id].id}][rpriority]" size=5 value="{$zone.records[id].rpriority}"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text id="zone[records][{$zone.records[id].id}][rvalue]" name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}">
+		<td colspan="2"> 
+			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'priority') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}" size="5" style="display:{if $zone.records[id].rtype != "MX" && $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rpriority]" value="{$zone.records[id].rpriority}" size=30> 
+			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'weight') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_weight" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rweight]" value="{$zone.records[id].rweight}" size=30>
+			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'port') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_port" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rport]" value="{$zone.records[id].rport}" size=30>
+			
+			<input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text id="zone[records][{$zone.records[id].id}][rvalue]" name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}">
 			<span style="display:{if $zone.records[id].rtype != "TXT"}none{/if};vertical-align:middle;" id="spf_link_{$zone.records[id].id}">
 				&nbsp;&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" onclick="AddSPFRecord('{$zone.records[id].id}', this);" name="spf" value="SPF constructor" class="btn">
 			</span>
@@ -141,10 +157,15 @@
 				<option value="MX">MX</option>
 				<option value="TXT">TXT</option>
 				<option value="NS">NS</option>
+				<option value="SRV">SRV</option>
 			</select>
 		</td>
 		<td colspan="2">
-			<input id="ad_{$add[id]}" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rpriority]" value="10" size=30> <input type="text" class="text" id="add[{$add[id]}][rvalue]" name="add[{$add[id]}][rvalue]" size=30>
+			<input onclick="{literal}if (this.value == 'priority') { this.value=''; } {/literal}" id="ad_{$add[id]}" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rpriority]" value="priority" size=30> 
+			<input onclick="{literal}if (this.value == 'weight') { this.value=''; } {/literal}" id="ad_{$add[id]}_weight" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rweight]" value="weight" size=30>
+			<input onclick="{literal}if (this.value == 'port') { this.value=''; } {/literal}" id="ad_{$add[id]}_port" size="5" style="display:none;" type="text" class="text" name="add[{$add[id]}][rport]" value="port" size=30>
+			
+			<input type="text" class="text" id="add[{$add[id]}][rvalue]" name="add[{$add[id]}][rvalue]" size=30>
 			<span style="display:none;vertical-align:middle;" id="spf_link_{$add[id]}">
 				&nbsp;&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" onclick="AddSPFRecord('{$add[id]}', this);" name="spf" value="SPF constructor" class="btn">	
 			</span>

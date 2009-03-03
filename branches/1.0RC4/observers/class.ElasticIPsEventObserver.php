@@ -15,7 +15,7 @@
 		 *
 		 * @return AmazonEC2
 		 */
-		private function GetAmazonEC2ClientObject()
+		private function GetAmazonEC2ClientObject($region)
 		{
 	    	// Get ClientID from database;
 			$clientid = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
@@ -24,7 +24,10 @@
 			$Client = Client::Load($clientid);
 	
 	    	// Return new instance of AmazonEC2 object
-			return new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
+			return $AmazonEC2Client;
 		}
 		
 		/**
@@ -44,7 +47,7 @@
 			$ips = $this->DB->GetAll("SELECT * FROM elastic_ips WHERE farmid=?", array($this->FarmID));
 			if (count($ips) > 0)
 			{
-				$EC2Client = $this->GetAmazonEC2ClientObject();
+				$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 				foreach ($ips as $ip)
 				{
 					try
@@ -71,9 +74,9 @@
 		 * Check Elastic IP availability
 		 * 
 		 */
-		private function CheckElasticIP($ipaddress)
+		private function CheckElasticIP($ipaddress, $farminfo)
 		{
-			$EC2Client = $this->GetAmazonEC2ClientObject();
+			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 			
 			$this->Logger->debug(sprintf(_("Checking IP: %s"), $ipaddress));
 			
@@ -107,12 +110,14 @@
 				array($this->FarmID, $event->InstanceInfo['ami_id'], $event->InstanceInfo['ami_id'])
 			);
 			
+			$farm_role_info['name'] = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_role_info['ami_id']));
+			
 			if (!$farm_role_info['use_elastic_ips'])
 				return;
 			
 			// Check for already allocated and free elastic IP in database
-			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND (state = '0' OR instance_id = ?)",
-				array($this->FarmID, $event->InstanceInfo["instance_id"])
+			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND ((state = '0' AND role_name=?) OR instance_id = ?)",
+				array($this->FarmID, $farm_role_info['name'], $event->InstanceInfo["instance_id"])
 			);
 			
 			$this->Logger->debug(sprintf(_("IP for replace: %s"), $ip['ipaddress']));
@@ -122,7 +127,7 @@
 			//
 			if ($ip['ipaddress'])
 			{
-				if (!$this->CheckElasticIP($ip['ipaddress']))
+				if (!$this->CheckElasticIP($ip['ipaddress'], $farminfo))
 				{
 					$this->Logger->warn(new FarmLogMessage(
 						$this->FarmID, 
@@ -139,9 +144,7 @@
 			
 			// If free IP not found we mus allocate new IP
 			if (!$ip)
-			{
-				$farm_role_info['name'] = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_role_info['ami_id']));
-				
+			{				
 				$this->Logger->debug(sprintf(_("Farm role: %s, %s, %s"), $farm_role_info['name'], $farm_role_info['ami_id'], $farm_role_info['id']));
 				
 				if ($farm_role_info['use_elastic_ips'])
@@ -155,7 +158,7 @@
 					// Check elastic IPs limit. We cannot allocate more than 'Max instances' option for role
 					if ($alocated_ips < $farm_role_info['max_count'])
 					{
-						$EC2Client = $this->GetAmazonEC2ClientObject();
+						$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 						
 						try
 						{
@@ -201,7 +204,7 @@
 			if ($ip['ipaddress'])
 			{
 				if (!$EC2Client)
-					$EC2Client = $this->GetAmazonEC2ClientObject();
+					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 					
 				$assign_retries = 1;
 				try
@@ -295,7 +298,7 @@
 					
 					try
 					{
-						$EC2Client = $this->GetAmazonEC2ClientObject();
+						$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 						$EC2Client->ReleaseAddress($ip['ipaddress']);
 						
 						$this->DB->Execute("DELETE FROM elastic_ips WHERE ipaddress=?", array($ip['ipaddress']));
@@ -323,7 +326,7 @@
 					{
 						try
 						{
-							$EC2Client = $this->GetAmazonEC2ClientObject();
+							$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 							$EC2Client->ReleaseAddress($ip['ipaddress']);
 							
 							$this->DB->Execute("DELETE FROM elastic_ips WHERE ipaddress=?", array($ip['ipaddress']));

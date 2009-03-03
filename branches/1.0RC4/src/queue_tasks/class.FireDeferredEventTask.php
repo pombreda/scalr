@@ -19,7 +19,7 @@
 		
 		public function Run()
 		{
-			$DB = Core::GetDBInstance();
+			$DB = Core::GetDBInstance(null, true);
 			
 			$event = $DB->GetRow("SELECT * FROM events WHERE id=?", array($this->EventID));
             if ($event)

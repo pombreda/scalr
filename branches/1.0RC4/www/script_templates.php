@@ -76,7 +76,7 @@
 		}
 		
 		// Check template usage
-		$roles_count = $db->GetOne("SELECT COUNT(*) FROM farm_role_scripts WHERE scriptid=?",
+		$roles_count = $db->GetOne("SELECT COUNT(*) FROM farm_role_scripts WHERE scriptid=? AND event_name NOT LIKE 'CustomEvent-%'",
 			array($req_id)
 		);
 		
@@ -88,6 +88,7 @@
 		}
 		
 		// Delete tempalte and all revisions
+		$db->Execute("DELETE FROM farm_role_scripts WHERE scriptid=?", array($req_id));
 		$db->Execute("DELETE FROM scripts WHERE id=?", array($req_id));
 		$db->Execute("DELETE FROM script_revisions WHERE scriptid=?", array($req_id));
 		
@@ -408,13 +409,13 @@
     }
     
 	$paging->SetSQLQuery($sql);
-	$paging->ApplyFilter($_POST["filter_q"], array("name", "description"));
-	$paging->AdditionalSQL = "GROUP BY script_revisions.scriptid ORDER BY dtupdated DESC";	
+	$paging->AdditionalSQL = "GROUP BY script_revisions.scriptid ORDER BY dtupdated DESC";
+	$paging->ApplyFilter($_POST["filter_q"], array("name", "description"));	
 	$paging->ApplySQLPaging();
 	$paging->ParseHTML();
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-
+	
 	// Rows
 	$display["rows"] = $db->GetAll($paging->SQL);	
 	foreach ($display["rows"] as &$row)

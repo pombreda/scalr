@@ -32,9 +32,11 @@
 	    	$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($post_ami_id, ROLE_TYPE::SHARED));
 	    	if (!$info)
 	    	{
-	    		$AmazonEC2 = new AmazonEC2(
+	    		$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($post_region)); 
+				$AmazonEC2->SetAuthKeys(
 					APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-					APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", true
+					APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", 
+					true
 				);
 				
 				// Generate DescribeImagesType object
@@ -59,12 +61,14 @@
 				catch(Exception $e)
 				{
 					$err[] = $e->getMessage();
+					$display['ami_id'] = false;
 				}
 	    	}
 	    }
 	    else
 	    {
 	    	$err[] = _("AMI required");
+	    	$display['ami_id'] = false;
 	    }
 	       
 	    $isstable = ($post_isstable == 1) ? '1' : '0';
@@ -86,7 +90,8 @@
 		           		alias=?, 
 		           		architecture=?,
 		           		isstable=?,
-		           		description=?", 
+		           		description=?,
+		           		region=?", 
 		           array(
 		           		$post_ami_id,
 		           		ROLE_TYPE::SHARED, 
@@ -96,7 +101,8 @@
 		           		$post_alias, 
 		           		$post_arch,
 		           		$isstable,
-		           		$post_description
+		           		$post_description,
+		           		$post_region
 		           		)
 		           	);
 		        
@@ -134,24 +140,28 @@
 	                    
 	                if ($info['name'] != $post_name)
 	                {
-	                	$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=?",
-	                		array($post_name, $info['name'])
+	                	$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
+	                		array($post_name, $info['name'], $info['region'])
 	                	);
 	                	
-	                	$db->Execute("UPDATE zones SET role_name=? WHERE role_name=?",
-	                		array($post_name, $info['name'])
+	                	$db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
+	                		array($post_name, $info['name'], $info['region'])
 	                	);
 	                	
-	                	$db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=?",
-	                		array($post_name, $info['name'])
+	                	$db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND region=?",
+	                		array($post_name, $info['name'], $info['region'])
 	                	);
 	                	
-	                	$db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=?",
-                        	array($post_name, $info['name'])
+	                	$db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=? AND region=?",
+                        	array($post_name, $info['name'], $info['region'])
                         );
                         
-                        $db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=?",
-                        	array($post_name, $info['name'])
+                        $db->Execute("UPDATE ebs_arrays SET role_name=? WHERE role_name=? AND region=?",
+                        	array($post_name, $info['name'], $info['region'])
+                        );
+                        
+                        $db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
+                        	array($post_name, $info['name'], $info['region'])
                         );
 	                }
 		        }
@@ -232,13 +242,13 @@
 	}
 	
 	if ($req_ami_id)
-	{
-		$display["ami_id"] = $req_ami_id;
-		
+	{		
 		$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
 		if ($info)
 		{
-		    $display = array_merge($display, $info);
+		    $display["ami_id"] = $req_ami_id;
+		    
+			$display = array_merge($display, $info);
 		    $display["arch"] = $info["architecture"];
 		    
 		    $rules = $db->GetAll("SELECT * FROM security_rules WHERE roleid=?", array($info['id']));

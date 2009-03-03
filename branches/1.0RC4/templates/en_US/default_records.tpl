@@ -35,6 +35,7 @@
 				<option {if $zone.records[id].rtype == "CNAME"}selected{/if} value="CNAME">CNAME</option>
 				<option {if $zone.records[id].rtype == "MX"}selected{/if} value="MX">MX</option>
 				<option {if $zone.records[id].rtype == "NS"}selected{/if} value="NS">NS</option>
+				<option {if $zone.records[id].rtype == "TXT"}selected{/if} value="TXT">TXT</option>
 			</select>
 		</td>
 		<td colspan="2"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" id="ed_{$zone.records[id].id}" style="display:{if $zone.records[id].rtype != "MX"}none{/if};" type=text name="zone[records][{$zone.records[id].id}][rpriority]" size=5 value="{$zone.records[id].rpriority}"> <input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}"></td>

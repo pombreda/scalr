@@ -20,7 +20,8 @@
 	{
 		$Client = Client::Load($farminfo["clientid"]);
 				    
-		$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 		   
 		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($req_ami_id));
 		if ($roleinfo)
@@ -41,7 +42,7 @@
         	// increase min_count for farm ami
         	$db->Execute("UPDATE farm_amis SET min_count=min_count+1{$increase_max_count} WHERE farmid='{$farminfo['id']}' AND ami_id='{$req_ami_id}'");
         		
-            $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $req_ami_id, false, true);                        
+            $res = Scalr::RunInstance(CONFIG::$SECGROUP_PREFIX.$role, $farminfo['id'], $role, $farminfo['hash'], $req_ami_id, false, true);                        
             if (!$res)
             	$errmsg = _("Cannot run instance. See system log for details.");
 			else

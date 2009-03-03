@@ -22,7 +22,7 @@ background-color: #FFFFCC;
 }
 .selectionBar {
 	top:0;
-	background-color: Black;
+	background-color: #000000;
 	position:absolute;
 	overflow:hidden;
 	height: 2px;

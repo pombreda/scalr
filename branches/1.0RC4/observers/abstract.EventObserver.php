@@ -85,5 +85,7 @@
 		public function OnMySQLReplicationFail(MySQLReplicationFailEvent $event) {}
 		
 		public function OnMySQLReplicationRecovered(MySQLReplicationRecoveredEvent $event) {}
+		
+		public function OnEBSVolumeMounted(EBSVolumeMountedEvent $event) {}
 	}
 ?>

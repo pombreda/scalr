@@ -9,11 +9,21 @@
 		UI::Redirect("index.php");
 	}
 	
-	$AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
-
-	$SNMP = new SNMP();
+	if (!$req_region)
+    {			
+		$Smarty->assign($display);
+		$Smarty->display("region_information_step.tpl");
+		exit();
+    }
+    else
+    	$region = $req_region;
+    	
+    $display['region'] = $region;
 	
-    if ($_POST) 
+	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
+	$AmazonEC2Client->SetAuthKeys($_SESSION['aws_private_key'], $_SESSION['aws_certificate']);
+	
+    if ($_POST && $post_step == 2) 
 	{
         $Validator = new Validator();
 		
@@ -71,17 +81,17 @@
 		                
 		                $db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
 		                	iscompleted='0', default_minLA=?, default_maxLA=?, alias=?, architecture=?, 
-		                	instance_type=?, dtbuildstarted=NOW()", 
+		                	instance_type=?, dtbuildstarted=NOW(), region=?", 
 		                	array($post_name, ROLE_TYPE::CUSTOM, $_SESSION['uid'], $instance_info['instance_id'], 
-		                		$post_default_minLA, $post_default_maxLA, $alias, $architecture, $instance_type)
+		                		$post_default_minLA, $post_default_maxLA, $alias, $architecture, $instance_type,
+		                		$instance_info['region'])
 		                );
 	                    $roleid = $db->Insert_ID();
 
-	                    
-		                $SNMP->Connect($instance_info['external_ip'], null, $farminfo['hash']);
-		                $trap = vsprintf(SNMP_TRAP::START_REBUNDLE, array($post_name));
-		                $res = $SNMP->SendTrap($trap);
-		                $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startRebundle ({$trap}) to '{$instance_info['instance_id']}' ('{$instance_info['external_ip']}') complete ({$res})");
+	                    $DBInstance = DBInstance::LoadByID($instance_info['id']);
+	                    $DBInstance->SendMessage(new StartRebundleScalrMessage(
+	                    	$post_name
+	                    ));
 	                }
 	                catch(Exception $e)
 	                {
@@ -137,7 +147,7 @@
 			
 	if (count($display["rows"]) == 0)
 	{
-		$errmsg = _("You must have at least one running instance");
+		$errmsg = _("You must have at least one running instance in specified region");
 		UI::Redirect("client_roles_view.php");
 	}
 	

@@ -8,19 +8,42 @@
 		public function Run()
 		{
 			$DB = Core::GetDBInstance();
-			$ebsinfo = $DB->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($this->VolumeID));
-			if ($ebsinfo)
+
+			try
 			{
-				// Get farminfo from database
-				$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($ebsinfo['farmid']));
+				$DBEBSVolume = DBEBSVolume::Load($this->VolumeID);
+				if ($DBEBSVolume->State == FARM_EBS_STATE::ATTACHED)
+					return true;
+			}
+			catch(Exception $e)
+			{
+				
+			}
+			
+			if ($DBEBSVolume)
+			{
+
+				if ($DBEBSVolume->EBSArrayID)
+				{
+					$DBEBSArray = DBEBSArray::Load($DBEBSVolume->EBSArrayID);
+					$Client = Client::Load($DBEBSArray->ClientID);
+					$region = $DBEBSArray->Region;
+				}
+				else
+				{
+					// Get farminfo from database
+					$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBEBSVolume->FarmID));
+					$Client = Client::Load($farminfo['clientid']);
+					$region = $farminfo['region'];
+				}
 
 				// Get EC2 Client
-				$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['clientid']);
+				$EC2Client = $this->GetAmazonEC2ClientObject($Client->ID, $region);
 				
 				try
 				{
 					// Check volume status
-					$response = $EC2Client->DescribeVolumes($ebsinfo['volumeid']);
+					$response = $EC2Client->DescribeVolumes($DBEBSVolume->VolumeID);
 					
 					$volume = $response->volumeSet->item;
 				}
@@ -28,7 +51,7 @@
 				{
 					if (stristr($e->getMessage(), "does not exist"))
 					{
-						$DB->Execute("DELETE FROM farm_ebs WHERE volumeid=?", array($this->VolumeID));
+						$DBEBSVolume->Delete();
 						return true;
 					}
 					else
@@ -39,7 +62,7 @@
 				}
 				
 				Logger::getLogger(__CLASS__)->info(sprintf(_("Current volume '%s' status: %s"), 
-					$ebsinfo['volumeid'], $volume->status)
+					$DBEBSVolume->VolumeID, $volume->status)
 				);
 				
 				switch ($volume->status)
@@ -49,12 +72,11 @@
 						// If volume in-use we should detach it first
 						try
 						{
-							$DetachVolumeType = new DetachVolumeType($ebsinfo['volumeid']);
+							$DetachVolumeType = new DetachVolumeType($DBEBSVolume->VolumeID);
 							$EC2Client->DetachVolume($DetachVolumeType);
 							
-							$DB->Execute("UPDATE farm_ebs SET state=? WHERE volumeid=?", 
-								array(FARM_EBS_STATE::DETACHING, $this->VolumeID)
-							);
+							$DBEBSVolume->State = FARM_EBS_STATE::DETACHING;
+							$DBEBSVolume->Save();
 						}
 						catch(Exception $e)
 						{
@@ -79,12 +101,11 @@
 						
 						try
 						{
-							Logger::getLogger(__CLASS__)->info(sprintf(_("Sending volume delete request to EC2. VolumeID: %s"), $ebsinfo['volumeid']));
-							$EC2Client->DeleteVolume($ebsinfo['volumeid']);
+							Logger::getLogger(__CLASS__)->info(sprintf(_("Sending volume delete request to EC2. VolumeID: %s"), $DBEBSVolume->VolumeID));
+							$EC2Client->DeleteVolume($DBEBSVolume->VolumeID);
 							
-							$DB->Execute("UPDATE farm_ebs SET state=? WHERE volumeid=?", 
-								array(FARM_EBS_STATE::DELETING, $this->VolumeID)
-							);
+							$DBEBSVolume->State = FARM_EBS_STATE::DELETING;
+							$DBEBSVolume->Save();
 						}
 						catch(Exception $e)
 						{

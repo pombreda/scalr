@@ -32,8 +32,9 @@
     	var zone = '{$rows[id].zone}';
     	
     	var menu = [
-            {literal}{href: 'sites_add.php?ezone='+zone, innerHTML: '{/literal}{t}Edit DNS zone{/t}{literal}'}{/literal}
-            
+            {literal}{href: 'sites_add.php?ezone='+zone, innerHTML: '{/literal}{t}Edit DNS zone{/t}{literal}'},{/literal}
+            {literal}{type:'separator'},{/literal}
+            {literal}{href: 'app_switch.php?application='+zone, innerHTML: '{/literal}{t}Switch application to another farm / role{/t}{literal}'}{/literal}
             {if $rows[id].role_alias == 'app' || $rows[id].role_alias == 'www'},{literal}{href: 'vhost.php?name='+zone, innerHTML: 'Configure apache virtual host'}{/literal}{/if}
         ];
         

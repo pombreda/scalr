@@ -32,7 +32,7 @@
             	$display["warnmsg"] = _("You are about to synchronize MySQL instance. The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$instanceinfo['farmid']}'>Click here if you wish to bundle and save MySQL data</a>.");
             
             if (!$ami_info)
-            	$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=?", array($instanceinfo['role_name'], ROLE_TYPE::SHARED));
+            	$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=? AND region=?", array($instanceinfo['role_name'], ROLE_TYPE::SHARED, $instanceinfo['region']));
             
             if ($db->GetOne("SELECT id FROM ami_roles WHERE `replace` = '{$ami_info["ami_id"]}' and clientid='{$farminfo['clientid']}'"))
             {
@@ -81,7 +81,6 @@
         	UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
 		
 		$Validator = new Validator();
-		$SNMP = new SNMP();
         
 		if (!preg_match("/^[A-Za-z0-9-]+$/", $post_name))
             $err[] = _("Allowed chars for role name is [A-Za-z0-9-]");
@@ -102,7 +101,7 @@
 			$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo["ami_id"]));
 			if (!$instance_ami_info)
 			{
-				$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=?", array($instanceinfo["role_name"], ROLE_TYPE::SHARED));
+				$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=? AND region=?", array($instanceinfo["role_name"], ROLE_TYPE::SHARED, $instanceinfo["region"]));
 				$db->Execute("UPDATE farm_instances SET ami_id=? WHERE farmid=? AND ami_id=?", array($instance_ami_info["ami_id"], $instanceinfo["farmid"], $instanceinfo['ami_id']));
 			}
                 
@@ -125,9 +124,6 @@
 			if (!$i_type)
 				$i_type = $instance_ami_info["instance_type"];
 			
-				
-			
-			
 			$ami_info = $instance_ami_info;
                                 
 			$db->BeginTrans();
@@ -137,14 +133,16 @@
 				// Update last synchronization date
 				$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instanceinfo['id']));
                 
-				$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW()", 
-					array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type)
+				$ismasterbundle = $instanceinfo['isdbmaster'];
+				
+				$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW(), `ismasterbundle`=?, `region`=?", 
+					array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type, $ismasterbundle, $instanceinfo['region'])
 				);
                 
-				$SNMP->Connect($instanceinfo['external_ip'], null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::START_REBUNDLE, array($post_name));
-				$res = $SNMP->SendTrap($trap);
-				$Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startRebundle ({$trap}) to '{$instanceinfo['instance_id']}' ('{$instanceinfo['external_ip']}') complete ({$res})");
+				$DBInstance = DBInstance::LoadByID($instanceinfo['id']);
+				$DBInstance->SendMessage(new StartRebundleScalrMessage(
+					$post_name
+				));
 			}
 			catch(Exception $e)
 			{

@@ -1,7 +1,7 @@
 {include file="inc/header.tpl"}
 	<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
 	<script type="text/javascript" src="js/class.SelectControl.js"></script>
-    {include file="inc/table_header.tpl"}
+    {include file="inc/table_header.tpl" show_region_filter=1}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
 		<tr>
@@ -71,18 +71,19 @@
 		    		{if $rows[id].iscompleted == 1 && !$rows[id].isreplaced}
 		    			,{literal}{type:'separator'}{/literal},
 		    			{literal}{href: 'client_role_edit.php?id='+id, innerHTML: 'Edit'},{/literal}
-		    		{/if}
-		    		
-		    		{if $rows[id].roletype == 'CUSTOM' && $rows[id].iscompleted == 1 && !$rows[id].isreplaced}
-		    			{literal}{type:'separator'},{/literal}
-		    			{literal}{href: 'client_role_edit.php?task=share&id='+id, innerHTML: 'Share this role'},{/literal}
+		    				    		
+			    		{if $rows[id].roletype == 'CUSTOM'}
+			    			{literal}{type:'separator'},{/literal}
+			    			{literal}{href: 'client_role_edit.php?task=share&id='+id, innerHTML: 'Share this role'},{/literal}
+			    		{/if}
+			    		
+			    		{literal}{type:'separator'},{/literal}
 		    		{/if}
 	            {else}
 	            	{if $rows[id].iscompleted == 1 && !$rows[id].isreplaced}
 	            	,
 	            	{/if}
 	            {/if}
-	            {literal}{type:'separator'},{/literal}
 	            {literal}{href: 'custom_role_log.php?id='+id, innerHTML: 'View bundle log'}{/literal}
 	        {/if}
         ];
@@ -94,7 +95,7 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="12" align="center">{t}No roles found{/t}</td>
+		<td colspan="12" align="center">{t region=$smarty.session.aws_region}No roles found in '%1' region{/t}</td>
 	</tr>
 	{/section}
 	<tr>

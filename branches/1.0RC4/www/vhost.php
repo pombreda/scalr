@@ -30,7 +30,7 @@
 		{
 			if ($post_issslenabled == 1)
 			{
-				$info = $db->GetOne("SELECT id FROM vhosts WHERE name=?", array($req_name));
+				$info = $db->GetRow("SELECT * FROM vhosts WHERE name=?", array($req_name));
 				if (!$info)
 				{
 					if (!$_FILES['ssl_cert']['size'])
@@ -53,8 +53,15 @@
 				$issslenabled = ($post_issslenabled) ? 1 : 0;
 				if ($issslenabled)
 				{
-					$ssl_cert = @file_get_contents($_FILES['ssl_cert']['tmp_name']);
-					$ssl_pkey = @file_get_contents($_FILES['ssl_pk']['tmp_name']);
+					if ($_FILES['ssl_cert']['tmp_name'])
+						$ssl_cert = @file_get_contents($_FILES['ssl_cert']['tmp_name']);
+					else
+						$ssl_cert = $info['ssl_cert'];
+						
+					if ($_FILES['ssl_pk']['tmp_name'])
+						$ssl_pkey = @file_get_contents($_FILES['ssl_pk']['tmp_name']);
+					else
+						$ssl_pkey = $info['ssl_pkey'];
 				}
 			}
 			
@@ -77,8 +84,7 @@
 			);
 			
 			$zone_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($zoneinfo['ami_id']));
-			
-			$SNMP = new SNMP();
+
 			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($zoneinfo['farmid']));
 			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
 				array($zoneinfo['farmid'], INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
@@ -92,10 +98,11 @@
 				if ($zone_ami_info['alias'] == ROLE_ALIAS::APP && $zone_ami_info['ami_id'] != $instance['ami_id'])
 					continue;
 				
-				$SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-                $trap = vsprintf(SNMP_TRAP::VHOST_RECONFIGURE, array($req_name, $issslenabled));
-                $res = $SNMP->SendTrap($trap);
-                $Logger->info("[FarmID: {$zoneinfo['farmid']}] Sending SNMP Trap vhostReconfigure ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+				$DBInstance = DBInstance::LoadByID($instance['id']);
+				$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
+					$req_name, 
+					$issslenabled
+				));
 			}
 			
 			$okmsg = "Virtual host settings successfully updated";

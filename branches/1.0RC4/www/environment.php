@@ -2,8 +2,23 @@
     define("NO_AUTH", true);
     include("src/prepend.inc.php");  
     
+    /*
+     * Date: 2008-11-25
+     * Initial Query-env interface
+     */
     require(dirname(__FILE__)."/../src/class.ScalrEnvironment20081125.php");
+    
+    /*
+     * Date: 2008-12-16
+     * Added /list-ebs-mountpoints method
+     */
+    require(dirname(__FILE__)."/../src/class.ScalrEnvironment20081216.php");
 
+    
+    
+    /**
+     * ***************************************************************************************
+     */
     try
     {
    	 	$EnvironmentObject = ScalrEnvironmentFactory::CreateEnvironment($req_version);

@@ -62,6 +62,7 @@
 	            		{literal}{href: 'instance_eip.php?iid='+iid+'&task=assign', innerHTML: 'Associate Elastic IP'}{/literal},
 	            	{/if}
 	            {/if}
+	            {literal}{href: 'ebs_manage.php?task=attach&instanceID='+iid, innerHTML: 'Attach EBS volume'}{/literal},
 	        {/if}
 	        {if $rows[id]->instancesSet->item->instanceState->name == 'running'}
 	        	{if $rows[id]->Alias == 'mysql'}

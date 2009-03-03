@@ -34,7 +34,6 @@
     		if ($_SESSION['issync'])
 		    {
 		    	$db->BeginTrans();
-		    	$SNMP = new SNMP();
 		    	
 		    	$Logger->debug("Checking and execute sync routines...");
 		    	
@@ -124,11 +123,10 @@
 			    			array(INSTANCE_STATE::PENDING_TERMINATE, $instance['id'])
 			    		);
 			    		
-			    		// Send rebundle trap
-			    		$SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-						$trap = vsprintf(SNMP_TRAP::START_REBUNDLE, array($rolename));
-						$res = $SNMP->SendTrap($trap);
-						$Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startRebundle ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+			    		$DBInstance = DBInstance::LoadByID($instance['id']);
+			    		$DBInstance->SendMessage(new StartRebundleScalrMessage(
+			    			$rolename
+			    		));
 		    		}
 		    		catch(Exception $e)
 		    		{
@@ -160,7 +158,7 @@
     {
         $display["action"] = "Launch";
         $display["show_dns"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid=?", $farminfo['id']);
-        $display["num"] = $db->GetOne("SELECT COUNT(*) FROM farm_amis WHERE farmid=?", $farminfo['id']);
+        $display["num"] = $db->GetOne("SELECT SUM(min_count) FROM farm_amis WHERE farmid=?", $farminfo['id']);
     }
     else
     { 

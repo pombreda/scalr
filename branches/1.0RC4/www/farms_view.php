@@ -57,6 +57,7 @@
 	    $sql .= " AND status='{$status}'";
 	    $paging->AddURLFilter("status", $status);
 	}
+	
 	//
 	//Paging
 	//

@@ -64,7 +64,7 @@
          * Retrieve data from node
          *
          */
-        public function RetrieveData($name)
+        public function RetreiveData($name)
         {
             //
             // Add data to rrd

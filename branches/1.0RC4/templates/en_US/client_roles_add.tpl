@@ -49,5 +49,7 @@
     		<td><input type="text" class="text" name="default_maxLA" id="default_maxLA" value="{$default_maxLA}" /></td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
+        <input type="hidden" name="region" value="{$region}" />
+        <input type="hidden" name="step" value="2" />
 	{include file="inc/table_footer.tpl" button2=1 button2_name="Create custom role"}
 {include file="inc/footer.tpl"}

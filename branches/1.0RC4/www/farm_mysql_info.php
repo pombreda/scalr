@@ -64,8 +64,6 @@
 	
    	if ($_POST)
 	{
-		$SNMP = new SNMP();
-		
 		if ($post_run_bcp)
 		{
 			$mysql_slave = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isdbmaster='0' AND ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql')",
@@ -76,12 +74,10 @@
 				$errmsg = _("There is no running mysql slave instance.");
 			else
 			{
-				$SNMP->Connect($mysql_slave['external_ip'], null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::MYSQL_START_BACKUP, array());
-				$res = $SNMP->SendTrap($trap);
-	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$mysql_slave['instance_id']}' ('{$mysql_slave['external_ip']}') complete ({$res})");
-	                            
-	            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$mysql_slave['instance_id']}' WHERE id='{$farminfo['id']}'");
+				$DBInstance = DBInstance::LoadByID($mysql_slave['id']);
+				$DBInstance->SendMessage(new MakeMySQLBackupScalrMessage());
+				
+				$db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$mysql_slave['instance_id']}' WHERE id='{$farminfo['id']}'");
 	            
 	            $okmsg = _("Backup request successfully sent to instance");
 	            UI::Redirect("farm_mysql_info.php?farmid={$farminfo['id']}");
@@ -97,10 +93,8 @@
 				$errmsg = _("There is no running mysql master instance.");
 			else
 			{
-				$SNMP->Connect($mysql_master['external_ip'], null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
-				$res = $SNMP->SendTrap($trap);
-	            $Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$trap}) to '{$mysql_master['instance_id']}' ('{$mysql_master['external_ip']}') complete ({$res})");
+				$DBInstance = DBInstance::LoadByID($mysql_master['id']);
+				$DBInstance->SendMessage(new MakeMySQLDataBundleScalrMessage());
 	                            
 	            $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$mysql_master['instance_id']}' WHERE id='{$farminfo['id']}'");
 	            

@@ -5,6 +5,16 @@
 		<td width="15%">Domain name:</td>
 		<td colspan="6"><input type="text" class="text" name="domainname" value="{$domainname}" /> Use <b>ns1.scalr.net</b>, <b>ns2.scalr.net</b> and <b>ns3.scalr.net</b> as nameservers for this domain.</td>
 	</tr>
+	<tr>
+		<td width="15%">Region:</td>
+		<td colspan="6">
+			<select name="region" id="region" style="vertical-align:middle;">
+				{section name=id loop=$regions}
+					<option {if $region == $regions[id]}selected{/if} value="{$regions[id]}">{$regions[id]}</option>
+				{/section}
+			</select>
+		</td>
+	</tr>
 {include file="inc/intable_footer.tpl" color="Gray"}
 <input type="hidden" name="step" value="2">
 {include file="inc/table_footer.tpl" button2=1 button2_name='Next'}

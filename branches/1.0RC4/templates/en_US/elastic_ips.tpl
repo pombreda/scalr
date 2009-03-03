@@ -1,5 +1,7 @@
 {include file="inc/header.tpl"}
-    {include file="inc/table_header.tpl"}
+	<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
+	<script type="text/javascript" src="js/class.SelectControl.js"></script>
+    {include file="inc/table_header.tpl" show_region_filter=1}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
 		<tr>
@@ -8,6 +10,7 @@
 			<th>IP address</th>
 			<th>Used by role</th>
 			<th>Instance</th>
+			<th width="1%">Options</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -40,14 +43,31 @@
 			{$rows[id]->instanceId}
 		{/if}
 		</td>
+		<td class="ItemEdit" valign="top"><a id="control_{$rows[id]->publicIp|@md5}" href="javascript:void(0)">Options</a></td>
 	</tr>
+	<script language="Javascript" type="text/javascript">
+    	var ip = '{$rows[id]->publicIp}';
+    	var ip_hash = '{$rows[id]->publicIp|@md5}';
+
+    	var menu = [
+            {literal}{href: 'elastic_ips.php?task=release&ip='+ip, innerHTML: 'Release'}{/literal}
+        ];
+        
+        
+        {literal}			
+        var control = new SelectControl({menu: menu});
+        control.attach('control_'+ip_hash);
+        {/literal}
+	
+	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="5" align="center">No elastic IPs allocated</td>
+		<td colspan="6" align="center">No elastic IPs allocated</td>
 	</tr>
 	{/section}
 	<tr>
 		<td colspan="5" align="center">&nbsp;</td>
+		<td class="ItemEdit" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>
 	</table>
