@@ -1,0 +1,1 @@
+{$event->InstanceInfo.external_ip}({$event->InstanceInfo.role_name}) Up
