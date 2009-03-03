@@ -49,7 +49,8 @@
 		
 				try
 		    	{
-			   		$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+			   		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($info['region'])); 
+					$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 			   		
 			   		$DescribeImagesType = new DescribeImagesType();
 			   		$DescribeImagesType->imagesSet->item[] = array("imageId" => $info['ami_id']);
@@ -127,27 +128,31 @@
 			
 			if ($post_name != $info['name'] && $req_task == 'share')
 			{
-				$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=? AND clientid=?",
-                	array($post_name, $info['name'], $_SESSION['uid'])
+				$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=? farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
                 );
                 
-                $db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND clientid=?",
-                	array($post_name, $info['name'], $_SESSION['uid'])
+                $db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
                 );
                 
-                $db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=?)",
-                	array($post_name, $info['name'], $_SESSION['uid'])
+                $db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
                 );
                 
-                $db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=?)",
-					array($post_name, $info['name'], $_SESSION['uid'])
+                $db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
 				);
-                        
-				$db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=?)",
-					array($post_name, $info['name'], $_SESSION['uid'])
+
+				$db->Execute("UPDATE ebs_arrays SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
 				);
 				
-				$db->Execute("UPDATE ami_roles SET name=?WHERE id=?", 
+				$db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
+				);
+				
+				$db->Execute("UPDATE ami_roles SET name=? WHERE id=?", 
 	           		array($post_name, $req_id)
 	            );
 	            

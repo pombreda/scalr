@@ -2,7 +2,14 @@
 <table border="0" width="100%" cellspacing="0" cellpadding="0" height="40">
 	<tr>
 		<td align="center" nowrap width="10">&nbsp;</td>
-		<td width="310" align="left" valign="bottom">{if $filter}{$filter}{/if}</td>
+		<td align="left" valign="bottom" width="500px">
+			<div style="padding:0px;">
+			{if $show_region_filter}
+				{include file="inc/region_filter.tpl"}
+			{/if}
+			{if $filter}{$filter}{/if}
+			</div>
+		</td>
 		<td colspan="4" align="left" valign="bottom">{$paging}</td>
 		<td align="center" nowrap>&nbsp;</td>
 	</tr>

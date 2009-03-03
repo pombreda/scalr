@@ -39,7 +39,7 @@
         	$this->SNMPTree->Connect($host, 161, $this->Community, 5, 3);
         }
         
-        public function RetrieveData($watcher_name)
+        public function RetreiveData($watcher_name)
         {
         	if (!$this->WatchersCache[$watcher_name])
         		$this->WatchersCache[$watcher_name] = new ReflectionClass("{$watcher_name}Watcher");

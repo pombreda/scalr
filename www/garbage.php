@@ -11,7 +11,7 @@
 	
 	if ($_POST)
 	{
-		$remove_items = serialize(array("buckets" => $_POST['buckets'], "keypairs" => $_POST["keypairs"]));
+		$remove_items = serialize(array("buckets" => $_POST['buckets'], "keypairs" => $_POST["keypairs"], "region" => $_SESSION['aws_region']));
 		
 		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array($_SESSION['uid'], $remove_items));
 		
@@ -20,7 +20,8 @@
 	}
 			
 	// Create AmazonEC2 cleint object
-    $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
+	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
     
     // Create Amazon s3 client object
     $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
@@ -30,7 +31,7 @@
     foreach ($buckets as $bucket)
     {
     	// Check is bucket created by scarl all scarl buckets has name FARM-[FARMID]-[AWS_ACCOUNT_ID]
-    	preg_match("/^FARM-([0-9]+)-{$_SESSION['aws_accountid']}$/", $bucket->Name, $matches);
+    	preg_match("/^FARM-([0-9]+)-{$_SESSION['aws_accountid']}$/si", $bucket->Name, $matches);
     	if ($matches[1])
     	{
     		// Check is bucked used by scarl or no
@@ -53,7 +54,7 @@
     	
     	foreach ($key_pairs as $key_pair)
     	{
-    		preg_match("/^FARM-([0-9]+)$/", $key_pair->keyName, $matches);
+    		preg_match("/^FARM-([0-9]+)$/si", $key_pair->keyName, $matches);
 	    	if ($matches[1])
 	    	{
 	    		// Check is bucked used by scarl or no

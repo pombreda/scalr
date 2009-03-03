@@ -440,6 +440,16 @@ function SetField()
     		<td width="20%">AMI:</td>
     		<td><input type="text" class="text" name="ami_id" value=""></td>
     	</tr>
+    	<tr>
+    		<td width="20%">Region:</td>
+    		<td>
+    			<select name="region" id="region" style="vertical-align:middle;">
+					{section name=id loop=$regions}
+						<option {if $region == $regions[id]}selected{/if} value="{$regions[id]}">{$regions[id]}</option>
+					{/section}
+				</select>
+    		</td>
+    	</tr>
     	{/if}
 		<tr>
     		<td width="20%">Role name:</td>

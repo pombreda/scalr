@@ -102,11 +102,13 @@
 				$key = realpath($key);
 				try
 				{
-					$AmazonEC2 = new AmazonEC2(
+					$AmazonEC2Client = AmazonEC2::GetInstance(); 
+					$AmazonEC2Client->SetAuthKeys(
 						$keys[0], 
-						str_replace("pk-", "cert-", $key), true
+						str_replace("pk-", "cert-", $key), 
+						true
 					);
-				
+					
 					$AmazonEC2->DescribeInstances();
 				}
 				catch(Exception $e)

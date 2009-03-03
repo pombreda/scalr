@@ -49,7 +49,8 @@
 		EVENT_TYPE::HOST_DOWN,
 		EVENT_TYPE::REBOOT_COMPLETE, 
 		EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED,
-		EVENT_TYPE::NEW_MYSQL_MASTER
+		EVENT_TYPE::NEW_MYSQL_MASTER,
+		EVENT_TYPE::EBS_VOLUME_MOUNTED
 	);	
 		
 	foreach ($events as $event)
@@ -74,8 +75,6 @@
 	    
 	    foreach ($templates as $template)
 	    {
-	    	
-	    	
 	    	$idomNode = $tree->createElement("item");
 	        $idomNode->setAttribute("text", $template["name"]);
 	        $idomNode->setAttribute("id", "{$event}_{$template["id"]}");
@@ -102,7 +101,7 @@
 	        
 	        $idomNode->setAttribute("child", "0");
 	        
-	        $dbversions = $db->GetAll("SELECT * FROM script_revisions WHERE scriptid=? AND (approval_state=? OR revision IN (SELECT version FROM farm_role_scripts WHERE scriptid=? AND farmid=?))", 
+	        $dbversions = $db->GetAll("SELECT * FROM script_revisions WHERE scriptid=? AND (approval_state=? OR (SELECT clientid FROM scripts WHERE scripts.id=script_revisions.scriptid) = '{$_SESSION['uid']}' OR revision IN (SELECT version FROM farm_role_scripts WHERE scriptid=? AND farmid=?))", 
 	        	array($template['id'], APPROVAL_STATE::APPROVED, $template['id'], $req_farmid)
 	        );
 	        $versions = array();
@@ -133,8 +132,8 @@
 		    $userData = $tree->createElement("userdata", json_encode($versions));
 		    $userData->setAttribute("name", "versions");
 		    $idomNode->appendChild($userData);		    
-	        
-	    	$eventNode->appendChild($idomNode);    
+		    
+	    	$eventNode->appendChild($idomNode);
 	    }
 	    
 	    $tree->documentElement->appendChild($eventNode);
@@ -143,7 +142,7 @@
 	//TODO: Move it to class
 	function GetCustomVariables($template)
 	{
-		preg_match_all("/\%([^\%]+)\%/si", $template, $matches);
+		preg_match_all("/\%([^\%\s]+)\%/si", $template, $matches);
 		return $matches[1];		
 	}
 	

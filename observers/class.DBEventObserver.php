@@ -156,6 +156,7 @@
 					array($role_name, $this->FarmID, $event->InstanceInfo['role_name'])
 				);
 
+				
 				$this->DB->Execute("UPDATE farm_ebs SET role_name=? WHERE farmid=? AND role_name=?",
 					array($role_name, $this->FarmID, $event->InstanceInfo['role_name'])
                 );
@@ -164,11 +165,21 @@
 					array(FARM_EBS_STATE::AVAILABLE, $event->InstanceInfo['instance_id'], FARM_EBS_STATE::ATTACHED)
 				);
                 
+				
+				$this->DB->Execute("UPDATE ebs_arrays SET role_name=? WHERE farmid=? AND role_name=?",
+					array($role_name, $this->FarmID, $event->InstanceInfo['role_name'])
+                );
+				
+                $this->DB->Execute("UPDATE ebs_arrays SET status=?, instance_id='' WHERE instance_id=? AND status=?", 
+					array(EBS_ARRAY_STATUS::AVAILABLE, $event->InstanceInfo['instance_id'], EBS_A)
+				);
+				
+				
                 $this->DB->Execute("UPDATE vhosts SET role_name=? WHERE farmid=? AND role_name=?",
 					array($role_name, $this->FarmID, $event->InstanceInfo['role_name'])
                 );
                 
-				if ($old_ami_info["roletype"] != "SHARED")
+				if ($old_ami_info["roletype"] != ROLE_TYPE::SHARED)
 				{
 					$this->DB->Execute("UPDATE farm_amis SET ami_id=?, replace_to_ami='', dtlastsync=NOW() 
 						WHERE ami_id=? AND farmid IN (SELECT id FROM farms WHERE clientid=?)",
@@ -329,6 +340,11 @@
 				array($this->FarmID, $event->InstanceInfo["instance_id"])
 			);
 			
+			// Delete messages
+			$this->DB->Execute("DELETE FROM messages WHERE instance_id=?", 
+				array($event->InstanceInfo["instance_id"])
+			);
+			
 			// Update backup status for farm
 			$this->DB->Execute("UPDATE farms SET isbcprunning='0', isbundlerunning='0' WHERE bcp_instance_id=?", 
 				array($event->InstanceInfo["instance_id"])
@@ -359,6 +375,10 @@
 			
 			// Update elastic IPs  mysql table, mark used IP as unused
 			$this->DB->Execute("UPDATE elastic_ips SET state='0', instance_id='' WHERE instance_id=? AND farmid=?",
+				array($event->InstanceInfo['instance_id'], $this->FarmID)
+			);
+			
+			$this->DB->Execute("UPDATE farm_ebs SET state='Available', instance_id='', device='' WHERE instance_id=? AND farmid=?",
 				array($event->InstanceInfo['instance_id'], $this->FarmID)
 			);
 			

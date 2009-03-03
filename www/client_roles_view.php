@@ -54,7 +54,8 @@
 			{			
 			    $Client = Client::Load($roleinfo['clientid']);
 			    
-			    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+			    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($roleinfo['region'])); 
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 			    
 				foreach ($instances as $instance)
 				{
@@ -133,8 +134,11 @@
 	if ($_SESSION['uid'] == 0)
 	   $sql = "SELECT * from ami_roles WHERE 1=1";
 	else
-	   $sql = "SELECT * from ami_roles WHERE clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."')";
+	   $sql = "SELECT * from ami_roles WHERE (clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."'))";
 		
+	//Region filter
+	$sql .= " AND region='".$_SESSION['aws_region']."'";
+	   
 	if ($req_clientid)
 	{
 	    $id = (int)$req_clientid;
@@ -169,8 +173,7 @@
 	$paging->ParseHTML();
 	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
 	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-
-
+	
 	$rows = $db->GetAll($paging->SQL);
 	
 	//

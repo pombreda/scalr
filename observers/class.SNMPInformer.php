@@ -2,13 +2,10 @@
 	class SNMPInformer extends EventObserver 
 	{
 		public $ObserverName = 'SNMPInformer';
-		private $SNMP;
 		
 		function __construct()
 		{
 			parent::__construct();
-			
-			$this->SNMP = new SNMP();
 		}
 				
 		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
@@ -20,16 +17,12 @@
 			);
 			foreach ((array)$instances as $instance)
 			{
-				$this->SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-                $trap = vsprintf(SNMP_TRAP::NEW_MYSQL_MASTER, 
-                	array(
-                		$event->InstanceInfo['internal_ip'], 
-                		$event->SnapURL,
-                		$event->InstanceInfo['role_name']
-                	)
-                );
-                $res = $this->SNMP->SendTrap($trap);
-                $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap newMysqlMaster ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+				$DBInstance = DBInstance::LoadByID($instance['id']);
+				$DBInstance->SendMessage(new NewMySQLMasterUpScalrMessage(
+					$event->InstanceInfo['internal_ip'], 
+                	$event->SnapURL,
+                	$event->InstanceInfo['role_name']
+				));
 			}
 		}
 		
@@ -39,16 +32,16 @@
 			
 			$Client = Client::Load($farminfo["clientid"]);
 			
-			$this->SNMP->Connect($event->ExternalIP, null, $farminfo['hash']);
-			$trap = vsprintf(SNMP_TRAP::HOST_INIT, array($Client->AWSAccountID));
-            $res = $this->SNMP->SendTrap($trap);
-            $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostInit ({$trap}) to '{$event->InstanceInfo['instance_id']}' ('{$event->ExternalIP}') complete ({$res})");
+			$DBInstance = DBInstance::LoadByID($event->InstanceInfo['id']);
+			$DBInstance->SendMessage(new HostInitScalrMessage(
+				$Client->AWSAccountID
+			));
 		}
 						
 		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE name='{$event->InstanceInfo["role_name"]}' AND iscompleted='1'");
+			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$event->InstanceInfo["ami_id"]}' AND iscompleted='1'");
 			
 			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN(?,?)", 
 				array($farminfo["id"], INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT)
@@ -56,16 +49,12 @@
 			
 			foreach ((array)$instances as $instance)
 			{
-				$this->SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-				
-				$trap = vsprintf(SNMP_TRAP::HOST_UP, array(
+				$DBInstance = DBInstance::LoadByID($instance['id']);
+				$DBInstance->SendMessage(new HostUpScalrMessage(
 					$alias, 
 					$event->InstanceInfo['internal_ip'], 
-					$event->InstanceInfo["role_name"])
-				);
-				
-				$res = $this->SNMP->SendTrap($trap);
-				$this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostUp ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+					$event->InstanceInfo["role_name"]
+				));
 			}
 		}
 		
@@ -81,13 +70,16 @@
 				array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
 			);
 			
+			$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($event->InstanceInfo['ami_id']));
+			$is_synchronize = ($farm_ami_info['replace_to_ami']) ? true : false;
+			
 			// Get alias of role
 			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$event->InstanceInfo['ami_id']}'");
 			
 			$first_in_role_handled = false;
 			foreach ($farm_instances as $farm_instance_snmp)
 			{
-				if ($farm_instance_snmp["state"] != INSTANCE_STATE::RUNNING || !$farm_instance_snmp["external_ip"])
+				if (!$farm_instance_snmp["external_ip"])
 					continue;
 
 				if ($farm_instance_snmp["id"] == $event->InstanceInfo["id"])
@@ -104,25 +96,26 @@
 				
 				if ($event->InstanceInfo['isdbmaster'] == 1 && !$first_in_role_handled)
 				{
-					$calias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
-					if ($calias == ROLE_ALIAS::MYSQL)
+					if (!$is_synchronize || $farm_instance_snmp['ami_id'] != $event->InstanceInfo['ami_id'])
 					{
-						$first_in_role_handled = true;
-						$isfirstinrole = '1';
+						$calias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
+						if ($calias == ROLE_ALIAS::MYSQL)
+						{
+							$first_in_role_handled = true;
+							$isfirstinrole = '1';
+						}
 					}	
 				}
 								
 				if ($event->InstanceInfo['internal_ip'])
 				{
-					$this->SNMP->Connect($farm_instance_snmp['external_ip'], null, $farminfo['hash']);
-	                $trap = vsprintf(SNMP_TRAP::HOST_DOWN, array(
-	                	$alias, 
+					$DBInstance = DBInstance::LoadByID($farm_instance_snmp['id']);
+					$DBInstance->SendMessage(new HostDownScalrMessage(
+						$alias, 
 	                	$event->InstanceInfo['internal_ip'], 
 	                	$isfirstinrole,
-	                	$event->InstanceInfo["role_name"])
-	                );
-	                $res = $this->SNMP->SendTrap($trap);
-	                $this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap hostDown ({$trap}) to '{$farm_instance_snmp['instance_id']}' ('{$farm_instance_snmp['external_ip']}') complete ({$res})");
+	                	$event->InstanceInfo["role_name"]
+					));
 				}
 			}
 		}

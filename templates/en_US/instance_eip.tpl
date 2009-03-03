@@ -1,9 +1,9 @@
 {include file="inc/header.tpl"}
 {include file="inc/table_header.tpl"}
 	{if $task == "assign"}
-    {include file="inc/intable_header.tpl" header="Assign options" color="Gray"}
+    {include file="inc/intable_header.tpl" header="Assign options" color="Gray" intable_first_column_width="25%"}
     <tr>
-		<td width="280"><input {if $ips|@count == 0}disabled{else}checked{/if} type="radio" name="assigntype" value="1"> Assign already allocated elastic IP:</td>
+		<td width="500"><input style="vertical-align:middle;" {if $ips|@count == 0}disabled{else}checked{/if} type="radio" name="assigntype" value="1"> Assign already allocated elastic IP:</td>
 		<td colspan="6">
 		  <select name="eip" {if $ips|@count == 0}disabled{/if} class="text" style="vertical-align:middle;">
 		  {section name=id loop=$ips}
@@ -15,7 +15,7 @@
 		</td>
 	</tr>
 	<tr>
-		<td width="280"><input {if $ips|@count == 0}checked{/if} type="radio" name="assigntype" value="2"> Allocate and assign new elastic IP</td>
+		<td width="500"><input {if $ips|@count == 0}checked{/if} type="radio" name="assigntype" value="2"> Allocate and assign new elastic IP</td>
 		<td colspan="6">
 		</td>
 	</tr>

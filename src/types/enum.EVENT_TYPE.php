@@ -27,6 +27,8 @@
 		const MYSQL_REPLICATION_FAIL = "MySQLReplicationFail";
 		const MYSQL_REPLICATION_RECOVERED = "MySQLReplicationRecovered";
 		
+		const EBS_VOLUME_MOUNTED = "EBSVolumeMounted";
+		
 		public static function GetEventDescription($event_type)
 		{
 			$descriptions = array(
@@ -43,11 +45,12 @@
 				self::FARM_TERMINATED 	=> _("Farm has been terminated."),
 				self::HOST_INIT			=> _("Instace booted up, Scalr environment not configured and services not initialized yet."),
 				self::NEW_MYSQL_MASTER	=> _("One of MySQL instances promoted as master on boot up, or one of mySQL slaves promoted as master."), // due to master failure.",
-				self::MYSQL_BACKUP_COMPLETE => _("MySQL backup completed succesfully."),
-				self::MYSQL_BACKUP_FAIL => _("MySQL backup failed."),
-				self::INSTANCE_IP_ADDRESS_CHANGED => _("Public IP address of the instance was changed upon reboot or within Elastic IP assignments."),
-				self::MYSQL_REPLICATION_FAIL => _("MySQL replication failure"),
-				self::MYSQL_REPLICATION_RECOVERED => _("MySQL replication recovered after failure")
+				self::MYSQL_BACKUP_COMPLETE 		=> _("MySQL backup completed succesfully."),
+				self::MYSQL_BACKUP_FAIL 			=> _("MySQL backup failed."),
+				self::INSTANCE_IP_ADDRESS_CHANGED 	=> _("Public IP address of the instance was changed upon reboot or within Elastic IP assignments."),
+				self::MYSQL_REPLICATION_FAIL 		=> _("MySQL replication failure."),
+				self::MYSQL_REPLICATION_RECOVERED 	=> _("MySQL replication recovered after failure."),
+				self::EBS_VOLUME_MOUNTED			=> _("Single EBS volume or array of EBS volumes attached and mounted to instance.")
 			);
 			
 			return $descriptions[$event_type];

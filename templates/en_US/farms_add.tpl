@@ -75,6 +75,7 @@
 	                                
 	                                var MANAGER_ACTION = '{if $id}edit{else}create{/if}';
 	                                var FARM_ID		   = '{$id}';
+	                                var REGION		   = '{$region}';
 	                                                                
 									
 									{if $roles}
@@ -120,8 +121,8 @@
 		                                
 		                                tree.enableDragAndDrop(false);
 		                                {/literal} 
-		                                tree.setXMLAutoLoading("farm_amis.xml?farmid={$id}&ami_id={$ami_id}");
-		            	                tree.loadXML("farm_amis.xml?farmid={$id}&ami_id={$ami_id}");
+		                                tree.setXMLAutoLoading("farm_amis.xml?farmid={$id}&ami_id={$ami_id}&region="+REGION);
+		            	                tree.loadXML("farm_amis.xml?farmid={$id}&ami_id={$ami_id}&region="+REGION);
 		            	                
 		            	                {literal}
 		            	                tree.OnXMLLoaded = function()
@@ -213,12 +214,39 @@
 		                                events_tree.enableCheckBoxes(true);
 		                                events_tree.enableThreeStateCheckboxes(true);
 		                                
-		                                events_tree.enableDragAndDrop(false);
+		                                events_tree.enableDragAndDrop(true);
 		                                events_tree.setXMLAutoLoading("role_scripts_xml.php?farmid={$id}");
+		                                events_tree.setDragHandler(ScriptsDragHandler);
 		            	                events_tree.loadXML("role_scripts_xml.php?farmid={$id}");
-		            	                
+												   		            	     
 			            	            {literal}
-			            	            	            	            
+
+			            	            events_tree.onDragEnd = function(itemId)
+										{
+											if (RoleTabObject.CurrentRoleObject && RoleTabObject.CurrentRoleObject)
+											{
+												for (var key in RoleTabObject.CurrentRoleObject.scripts)
+												{
+													if (typeof(key) == 'string')
+													{
+			            	            				RoleTabObject.CurrentRoleObject.scripts[key].order_index = events_tree.getIndexById(key);
+													}
+												}
+											}
+										}
+			            	            
+			            	            function ScriptsDragHandler(idFrom,idTo)
+		            	                {
+			            	            	var pid = events_tree.getParentId(idFrom);
+
+			            	            	//_print(events_tree.getIndexById(idFrom));
+			            	            	
+											if (pid == idTo)
+												return true;
+											else
+			            	                    return false;
+		            	                }
+					            	            	            	            
 			            	            events_tree.setOnSelectStateChange(function(itemId)
 		            	                {
 		            	                	if (events_tree.getUserData(itemId,"isFolder") == 1)
@@ -451,6 +479,12 @@
                             		<td width="20%">Name:</td>
                             		<td><input type="text" class="text" name="farm_name" id="farm_name" value="{$farminfo.name}" /></td>
                             	</tr>
+                            	<tr>
+                            		<td width="20%">Region:</td>
+                            		<td>
+                            			{$region}
+                            		</td>
+                            	</tr>
                            		{include file="inc/intable_footer.tpl" color="Gray"}
                            		
                            		<div id="tab_contents_roles" class="tab_contents" style="display:none;">
@@ -616,8 +650,12 @@
 							    		<td colspan="2"><input onclick="ShowEBSOptions(this.value);" type="radio" name="ebs_ctype" checked value="1" style="vertical-align:middle;"> Do not use EBS</td>
 							    	</tr>
                            			<tr>
-							    		<td colspan="2"><input onclick="ShowEBSOptions(this.value);" type="radio" name="ebs_ctype" value="2" style="vertical-align:middle;"> Attach empty volume with size:
-							    			<input style="vertical-align:middle;" type="text" id="ebs_size" name="ebs_size" value="1" class="text" size="3"> GB</td>
+							    		<td colspan="2">
+							    			<div style="float:left;">
+							    				<input onclick="ShowEBSOptions(this.value);" type="radio" name="ebs_ctype" value="2" style="vertical-align:middle;"> Attach empty volume with size:
+							    				<input style="vertical-align:middle;" type="text" id="ebs_size" name="ebs_size" value="1" class="text" size="3"> GB
+							    			</div>							    			
+							    		</td>
 							    	</tr>
 							    	<tr>
 							    		<td colspan="2"><input onclick="ShowEBSOptions(this.value);" type="radio" {if $snapshots|@count == 0}disabled{/if} name="ebs_ctype" value="3" style="vertical-align:middle;"> Attach volume from snapshot:
@@ -647,6 +685,9 @@
 									<tr>
 										<td colspan="2">Terminate instance if it will not send 'hostUp' or 'hostInit' event after launch in <input name="launch_timeout" type="text" class="text" id="launch_timeout" value="" size="3"> seconds.</td>
 									</tr>
+									<tr>
+										<td colspan="2">Terminate instance if cannot retrieve it's status in <input name="status_timeout" type="text" class="text" id="status_timeout" value="" size="3"> minutes.</td>
+									</tr>
 									</tbody>
 									
 									<tbody id="itab_contents_scripts" class="itab_contents" style="display:none;">
@@ -669,6 +710,7 @@
 														<p class="placeholder">
 															Scalr can execute scripts on instances upon various events.<br>
 															Tick the checkbox to enable the script and enter variable values.<br>
+															Drag scripts in the tree to change the order of scripts to be executed.<br>
 															Scalr will replace variables in template with entered values before executing script on instance.<br> 
 															
 															You can create your own scripts templates inside Settings &rarr; Script templates.<br>

@@ -7,14 +7,14 @@
     		
     		$scriptid = (int)$req_scriptid;
     		
-    		$dbversions = $db->GetAll("SELECT * FROM script_revisions WHERE scriptid=? AND approval_state=? ORDER BY revision ASC", 
+    		$dbversions = $db->GetAll("SELECT * FROM script_revisions WHERE scriptid=? AND approval_state=? ORDER BY revision DESC", 
 	        	array($scriptid, APPROVAL_STATE::APPROVED)
 	        );
     		
     		$versions = array();
 	        foreach ($dbversions as $version)
 	        {
-	        	preg_match_all("/\%([^\%]+)\%/si", $version["script"], $matches);
+	        	preg_match_all("/\%([^\%\s]+)\%/si", $version["script"], $matches);
 	        	$vars = $matches[1];
 			    $data = array();
 			    foreach ($vars as $var)
@@ -49,8 +49,8 @@
             if ($role_info['name'] == $role_name)
             	die("ok");
             	
-            $chk = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted != '2' AND ami_id != ?", 
-            	array($role_name, $ami_id)
+            $chk = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted != '2' AND ami_id != ? AND region=?", 
+            	array($role_name, $ami_id, $role_info['region'])
             );
             if (!$chk)
             	die("ok");
@@ -186,9 +186,38 @@
     		
     		break;
     	
+    	case "get_array_snapshots":
+    		
+    		$snaps = $db->GetAll("SELECT * FROM ebs_array_snaps WHERE clientid=? ORDER BY id DESC", array($_SESSION['uid']));
+    		
+    		$Smarty->assign(array("snaps" => $snaps, "error" => $error));
+            $content = $Smarty->fetch("ajax_tables/ebs_array_snaps_list.tpl");
+			
+            print $content;
+            exit();
+    		
+    		break;
+    		
     	case "get_snapshots_list":
-
-    		$AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+			
+    		if ($req_volumeid)
+    		{
+    			try
+    			{
+	    			$DBEBSVolume = DBEBSVolume::Load($req_volumeid);    			
+	    			$region = $DBEBSVolume->Region;
+    			}
+    			catch(Exception $e)
+    			{
+    				$region = $_SESSION['aws_region'];
+    			}
+    		}
+    		else
+    			$region = $_SESSION['aws_region'];
+    		
+    		
+    		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
+			$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
     		
     		// Rows
 			$response = $AmazonEC2Client->DescribeSnapshots();
@@ -385,7 +414,9 @@
 
 	    	try
 	    	{
-    			$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+    			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region']));
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
     			$response = $AmazonEC2Client->DescribeInstances($get_iid);
     			$instanceset = $response->reservationSet->item->instancesSet;
     			$instanceinfo['type'] = $instanceset->item->instanceType;

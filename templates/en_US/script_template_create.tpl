@@ -93,8 +93,12 @@
     						{section name=id loop=$sys_vars}
     						<span onclick="AddVarToScript('{$sys_vars[id]}');" title="Click to add variable to script" style="cursor:pointer;margin-right:5px;white-space:nowrap">%{$sys_vars[id]}%</span>
     						{/section}
+    						<!--
     						<br><br>
-    						{t}You may use own variables as %variable%. Variable values can be set for each role in farm settings.{/t} 
+    						<i>{t}Built-in %mountpoint% variable avaiable only if script executed on EBSVolumeMounted event.{/t}</i>
+    						 -->
+    						<br><br>
+    						{t}You may use own variables as %variable%. Variable values can be set for each role in farm settings.{/t}
     					</td>
     				</tr>
     			</table>

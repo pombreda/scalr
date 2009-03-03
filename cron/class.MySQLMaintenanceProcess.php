@@ -134,12 +134,10 @@
 	                            
 	                        if ($instance)
 	                        {
-	                            $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-	                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_BACKUP, array());
-	                        	$res = $SNMP->SendTrap($trap);
-	                            $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBackup ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
-	                            
-	                            $db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
+	                            $DBInstance = DBInstance::LoadByID($instance['id']);
+	                            $DBInstance->SendMessage(new MakeMySQLBackupScalrMessage());
+	                        	
+	                        	$db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
 	                        }
 	                        else 
 	                            $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql instances for run backup procedure!");
@@ -188,10 +186,8 @@
 							
 							if ($instance)
 		                    {
-		                        $SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-	                            $trap = vsprintf(SNMP_TRAP::MYSQL_START_REBUNDLE, array());
-	                        	$res = $SNMP->SendTrap($trap);
-		                        $this->Logger->info("[FarmID: {$farminfo['id']}] Sending SNMP Trap startBundle ({$res}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+		                        $DBInstance = DBInstance::LoadByID($instance['id']);
+	                            $DBInstance->SendMessage(new MakeMySQLDataBundleScalrMessage());
 		                        
 		                        $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
 		                    }

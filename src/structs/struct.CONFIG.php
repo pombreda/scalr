@@ -93,7 +93,7 @@
 		public static $EVENTS_TIMELINE_CACHE_LIFETIME;
 		public static $AJAX_PROCESSLIST_CACHE_LIFETIME;
 		
-		public static $HTTP_PROTO;
+		public static $HTTP_PROTO = "http";
 		
 		public static $RRDTOOL_PATH;
 		public static $RRD_DEFAULT_FONT_PATH;

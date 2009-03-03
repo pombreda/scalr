@@ -15,20 +15,22 @@
 	if ($req_farmid)
 	{
 	    if ($_SESSION["uid"] != 0)
-	       $farminfo = $db->GetRow("SELECT id, clientid FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
+	       $farminfo = $db->GetRow("SELECT id, clientid, region FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
 	    else
-	       $farminfo = $db->GetRow("SELECT id, clientid FROM farms WHERE id=?", array($req_farmid));
+	       $farminfo = $db->GetRow("SELECT id, clientid, region FROM farms WHERE id=?", array($req_farmid));
+	       
+	    $req_region = $farminfo['region'];
 	}
 		   
 	//
 	// Default AMIs
 	//
 	if ($_SESSION['uid'] != 0)
-		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1' AND (roletype = ? OR (roletype = ? AND clientid=?))", 
-			array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['uid'])
+		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1' AND (roletype = ? OR (roletype = ? AND clientid=?)) AND region=?", 
+			array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['uid'], $req_region)
 		);
 	else
-		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1'");
+		$amis = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1' AND region=?", array($req_region));
 	
 	$used_mysql = $db->GetOne("SELECT ami_id FROM farm_amis WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql') AND farmid=?",
     	array($farminfo['id'])

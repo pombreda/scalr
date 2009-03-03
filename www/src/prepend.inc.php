@@ -64,4 +64,11 @@
     		}
     	}
     }
+    
+    if ($req_region)
+    	$_SESSION['aws_region'] = $req_region; 
+    
+    //TODO: Move default region to config
+    if (!$_SESSION['aws_region'])
+    	$_SESSION['aws_region'] = 'us-east-1';
 ?>

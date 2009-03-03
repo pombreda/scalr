@@ -9,15 +9,25 @@
 			$farm_id = (int)$req_FarmID;
 			$hash = preg_replace("/[^A-Za-z0-9]+/", "", $req_Hash);
 		
+			$pkg_ver = $req_PkgVer;
+			
 			// Add log infomation about event received from instance
 			$Logger->info("Event '{$req_EventType}' received from '{$_SERVER['REMOTE_ADDR']}': FarmID={$farm_id}, Hash={$hash}, InstanceID={$req_InstanceID}");
 			$Logger->info("Event data: {$req_Data}");
+			$Logger->info("Scalarizr version: {$req_PkgVer}");
 			
 			// Get farminfo and instanceinfo from database
 			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND hash=?", array($farm_id, $hash));
 			$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=?
 		                                     AND instance_id=?", array($farm_id, $req_InstanceID));
 
+			if ($instanceinfo['scalarizr_pkg_version'] != $pkg_ver)
+			{
+				$db->Execute("UPDATE farm_instances SET scalarizr_pkg_version=? WHERE id=?",
+					array($pkg_ver, $instanceinfo['id'])
+				);
+			}
+			
 			$chunks = explode(";", $req_Data);
 			foreach ($chunks as $chunk)
 			{
@@ -44,9 +54,12 @@
 					try
 					{
 						$Client = Client::Load($farminfo['clientid']);
-						$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+
+						$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+						$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+						
 				    	$response = $AmazonEC2Client->DescribeInstances($req_InstanceID);
-				    	$ip = gethostbyname($response->reservationSet->item->instancesSet->item->dnsName);
+				    	$ip = @gethostbyname($response->reservationSet->item->instancesSet->item->dnsName);
 				    	
 				    	$_SERVER['REMOTE_ADDR'] = $ip;
 				    	
@@ -160,14 +173,41 @@
 				    //********************		
 					case "mountResult":
 						
-						$ebsinfo = $db->GetRow("SELECT * FROM farm_ebs WHERE instance_id=? AND state=?", array($req_InstanceID, FARM_EBS_STATE::MOUNTING));
-						if ($ebsinfo)
+						if (!$data['name'])
 						{
-							$db->Execute("UPDATE farm_ebs SET state=? WHERE id=?", array(FARM_EBS_STATE::ATTACHED, $ebsinfo['id']));
+							$ebsinfo = $db->GetRow("SELECT * FROM farm_ebs WHERE instance_id=? AND state=?", array($req_InstanceID, FARM_EBS_STATE::MOUNTING));
+							if ($ebsinfo)
+								$db->Execute("UPDATE farm_ebs SET state=?, isfsexists='1' WHERE id=?", array(FARM_EBS_STATE::ATTACHED, $ebsinfo['id']));
 						}
+						else
+						{
+							if ($data['isarray'] == 1)
+							{
+								// EBS array
+								$db->Execute("UPDATE ebs_arrays SET status=?, isfscreated='1' WHERE name=? AND instance_id=?",
+									array(EBS_ARRAY_STATUS::IN_USE, $data['name'], $req_InstanceID)
+								);
+							}
+							else
+							{
+								// Single volume
+								$ebsinfo = $db->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($data['name']));
+								if ($ebsinfo)
+									$db->Execute("UPDATE farm_ebs SET state=?, isfsexists='1' WHERE id=?", array(FARM_EBS_STATE::ATTACHED, $ebsinfo['id']));
+							}
+						}
+						
+						if ($data['mountpoint'] && $data['success'] == 1)
+							Scalr::FireEvent($req_FarmID, new EBSVolumeMountedEvent($instanceinfo, $data['mountpoint']));
 						
 						break;
 					
+					case "trapACK": 
+					
+						$db->Execute("UPDATE messages SET isdelivered='1' WHERE messageid=?", array($data['trap_id']));
+						
+						break;
+						
 					case "scriptingLog":
 												
 	            		$event_name = ($instance_events[$data['eventName']]) ? $instance_events[$data['eventName']] : $data['eventName'];  

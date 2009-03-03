@@ -17,34 +17,45 @@
 		 * @param integer $clientid
 		 * @return AmazonEC2
 		 */
-		protected function GetAmazonEC2ClientObject($clientid)
+		protected function GetAmazonEC2ClientObject($clientid, $region)
 		{
 	    	// Get Client Object
 			$Client = Client::Load($clientid);
 	
 	    	// Return new instance of AmazonEC2 object
-			return new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
+			return $AmazonEC2Client;
 		}
 		
 		public function Run()
 		{
 			$DB = Core::GetDBInstance();
-			$ebsinfo = $DB->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($this->VolumeID));
-			if ($ebsinfo)
+			
+			try
 			{
-				if ($ebsinfo['state'] == FARM_EBS_STATE::CREATING)
+				$DBEBSVolume = DBEBSVolume::Load($this->VolumeID);
+			}
+			catch (Exception $e)
+			{
+				//
+			}
+			
+			if ($DBEBSVolume)
+			{
+				if ($DBEBSVolume->State == FARM_EBS_STATE::CREATING)
 				{
 					try
 					{
-						// Get farminfo from database
-						$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($ebsinfo['farmid']));
-						
 						// Get instance info fro database
-						$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($ebsinfo['instance_id']));
+						$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($DBEBSVolume->InstanceID));
+						$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
 						
+						$Client = Client::Load($farminfo['clientid']);										
 						
 						// Get EC2 Client
-						$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['clientid']);
+						$EC2Client = $this->GetAmazonEC2ClientObject($Client->ID, $farminfo['region']);
 						
 						// Check volume status
 						$response = $EC2Client->DescribeVolumes($this->VolumeID);
@@ -58,35 +69,42 @@
 							{
 								try
 								{
-									Scalr::AttachEBS2Instance($EC2Client, $instanceinfo, $farminfo, $this->VolumeID);
+									Scalr::AttachEBS2Instance($EC2Client, $instanceinfo, $farminfo, $DBEBSVolume);
 								}
 								catch(Exception $e)
 								{
-									LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($ebsinfo['farmid'],
+									LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
 										sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
 									));
 									return false;
 								}
-								
-								$DB->Execute("UPDATE farm_ebs SET state=? WHERE volumeid=?", array(FARM_EBS_STATE::ATTACHED, $this->VolumeID));
 							}
 							else
 							{
-								$DB->Execute("UPDATE farm_ebs SET state=?, instance_id='' WHERE volumeid=?", array(FARM_EBS_STATE::AVAILABLE, $this->VolumeID));
-								return true;
+								// We cannot use DBEBSVolume->Save() in this case. Deadlock.
+								
+								$DB->Execute("UPDATE farm_ebs SET state=?, instance_id='' WHERE id=?", array(FARM_EBS_STATE::AVAILABLE, $DBEBSVolume->ID));
+								
+								//$DBEBSVolume->State = FARM_EBS_STATE::AVAILABLE;
+								//$DBEBSVolume->InstanceID = '';
+								//$DBEBSVolume->Save();
 							}
 						}
-						elseif ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->instanceId == $ebsinfo['instance_id'])
+						elseif ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->instanceId == $DBEBSVolume->InstanceID)
 						{
-							$DB->Execute("UPDATE farm_ebs SET state=? WHERE volumeid=?", array(FARM_EBS_STATE::ATTACHED, $this->VolumeID));
-							return true;
+							// We cannot use DBEBSVolume->Save() in this case. Deadlock.
+							
+							$DB->Execute("UPDATE farm_ebs SET state=? WHERE id=?", array(FARM_EBS_STATE::ATTACHED, $DBEBSVolume->ID));
+							
+							//$DBEBSVolume->State = FARM_EBS_STATE::ATTACHED;
+							//$DBEBSVolume->Save();
 						}
 						else
 						{
 							if ($volume->status == AMAZON_EBS_STATE::IN_USE)
 							{
-								LoggerManager::getLogger(__CLASS__)->warn(new FarmLogMessage($ebsinfo['farmid'],
-									sprintf(_("Cannot attach volume %s to instance %s. Volume already attached to another instance. Sending detach request..."), $this->VolumeID, $ebsinfo['instance_id'])
+								LoggerManager::getLogger(__CLASS__)->warn(new FarmLogMessage($DBEBSVolume->FarmID,
+									sprintf(_("Cannot attach volume %s to instance %s. Volume already attached to another instance. Sending detach request..."), $this->VolumeID, $DBEBSVolume->InstanceID)
 								));
 								
 								$DetachVolumeType = new DetachVolumeType($this->VolumeID);
@@ -96,7 +114,7 @@
 							}
 							else
 							{
-								LoggerManager::getLogger(__CLASS__)->error(new FarmLogMessage($ebsinfo['farmid'],
+								LoggerManager::getLogger(__CLASS__)->error(new FarmLogMessage($DBEBSVolume->FarmID,
 									sprintf(_("Cannot attach volume %s to instance. Volume status: %s"), $this->VolumeID, $volume->status)
 								));
 								return false;

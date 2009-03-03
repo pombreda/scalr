@@ -18,6 +18,7 @@
 			</div>
 			<script language="Javascript" type="text/javascript">
 			var NoCloseButton = false;
+			var REGION = '{$smarty.session.wizard.region}';
 			{literal}
 				Event.observe(window, 'load', function(){
 					window.popup = new NewPopup('role_info_popup', {target: '', width: 270, height: 120, selecters: new Array()});
@@ -45,8 +46,8 @@
 			tree.enableThreeStateCheckboxes(true);
             
             tree.enableDragAndDrop(false);
-            tree.setXMLAutoLoading("farm_amis.xml?farmid=");
-            tree.loadXML("farm_amis.xml?farmid=");
+            tree.setXMLAutoLoading("farm_amis.xml?farmid=&region="+REGION);
+            tree.loadXML("farm_amis.xml?farmid=&region="+REGION);
             
             {literal}
 			tree.setOnSelectStateChange(function(itemId)

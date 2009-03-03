@@ -3,19 +3,18 @@
 	{
 		public $ObserverName = 'Scripting';
 		private $Crypto;
-		private $SNMP;
 		
 		function __construct()
 		{
-			parent::__construct();
-			
-			$this->SNMP = new SNMP();
-			
+			parent::__construct();			
 			$this->Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
 		}
 
 		public function OnHostDown(HostDownEvent $event)
 		{
+			if ($event->InstanceInfo['isrebootlaunched'] == 1)
+				return;
+				
 			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
 				array($event->InstanceInfo['id'])
 			);
@@ -71,10 +70,23 @@
 			$this->SendExecTrap($instanceinfo, EVENT_TYPE::NEW_MYSQL_MASTER);
 		}
 		
+		public function OnEBSVolumeMounted(EBSVolumeMountedEvent $event)
+		{
+			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
+				array($event->InstanceInfo['id'])
+			);
+			
+			$this->SendExecTrap($instanceinfo, EVENT_TYPE::EBS_VOLUME_MOUNTED);
+		}
+		
 		private function SendExecTrap($instanceinfo, $event_name)
 		{			
-			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN(?,?)",
-				array($instanceinfo['farmid'], INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT)
+			// Try to send trap to all instances
+			// , INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT (AND state IN(?,?))
+			// Comment: Scripting mount event before hostInit.
+			
+			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=?",
+				array($instanceinfo['farmid'])
 			);
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
@@ -83,18 +95,28 @@
 			{
 				// For INSTANCE_IP_ADDRESS_CHANGED we must sent trap to all instances include instance where ip adress changed.
 				// For other events we must exclude instance that fired event from trap list.
-				if ($event_name != EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED && $instanceinfo['id'] == $instance['id'])
-					continue;
+				if ($instanceinfo['id'] == $instance['id'])
+				{
+					if (!in_array($event_name, array(EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED, EVENT_TYPE::EBS_VOLUME_MOUNTED))) 
+					{
+						continue;
+					}
+					else
+					{
+						//TODO: Remove this ugly hack and think about better solution.
+						$instanceinfo['internal_ip'] = '127.0.0.1';
+					}
+				}
 
-				$this->SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::NOTIFY_EVENT, array(
-					$instanceinfo['internal_ip'],
-					$this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id'])),
-					$instanceinfo['role_name'],
-					$event_name
-				));
-            	$res = $this->SNMP->SendTrap($trap);
-            	$this->Logger->info("[FarmID: {$this->FarmID}] Sending SNMP Trap notifyEvent ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+				$DBInstance = DBInstance::LoadByID($instance['id']);
+				$DBInstance->SendMessage(
+					new EventNoticeScalrMessage(
+						$instanceinfo['internal_ip'],
+						$this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id'])),
+						$instanceinfo['role_name'],
+						$event_name
+					)
+				);
 			}
 		}
 	}

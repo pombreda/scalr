@@ -21,7 +21,8 @@
             if ($farminfo["clientid"] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
                 UI::Redirect("index.php");
 			
-		    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+		    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 		    
 		    try
 		    {

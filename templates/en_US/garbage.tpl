@@ -30,7 +30,7 @@
 	</table>
 	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
 	
-	{include file="inc/table_header.tpl" table_header_text="EC2 KeyPairs" nofilter='1'}
+	{include file="inc/table_header.tpl" show_region_filter=1 show_region_filter_title="EC2 keypair in"}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items_">
 	<thead>
 		<tr>

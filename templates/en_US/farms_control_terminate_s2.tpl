@@ -11,11 +11,11 @@
 <tr>
 	<td colspan="2">
 		<div style="margin-top:10px;margin-left:-2px;">
-			<input type="radio" style="vertical-align:middle;" checked="checked" name="keep_elastic_ips" value="0">
+			<input type="radio" style="vertical-align:middle;" name="keep_elastic_ips" value="0">
 			<span style="vertical-align:middle;">Release the static IP adresses that are allocated for this farm. When you start the farm again, new IPs will be allocated.</span>
 		</div>
 		<div style="margin-top:10px;margin-left:-2px;">
-			<input type="radio" style="vertical-align:middle;" name="keep_elastic_ips" value="1">
+			<input type="radio" style="vertical-align:middle;" checked="checked" name="keep_elastic_ips" value="1">
 			<span style="vertical-align:middle;">Keep the static IP adresses that are allocated for this farm. Amazon will keep billing you for them even when the farm is stopped.</span>
 		</div>
 	</td>
@@ -28,11 +28,11 @@
 <tr>
 	<td colspan="2">
 		<div style="margin-top:10px;margin-left:-2px;">
-			<input type="radio" style="vertical-align:middle;" checked="checked" name="keep_ebs" value="0">
+			<input type="radio" style="vertical-align:middle;" name="keep_ebs" value="0">
 			<span style="vertical-align:middle;">Release the EBS volumes created for this farm. When you start the farm again, new EBS volumes will be created.</span>
 		</div>
 		<div style="margin-top:10px;margin-left:-2px;">
-			<input type="radio" style="vertical-align:middle;" name="keep_ebs" value="1">
+			<input type="radio" style="vertical-align:middle;" checked="checked" name="keep_ebs" value="1">
 			<span style="vertical-align:middle;">Keep the EBS volumes that are created for this farm. Amazon will keep billing you for them even when the farm is stopped.</span>
 		</div>
 	</td>

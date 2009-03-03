@@ -19,8 +19,16 @@
             <td><input name="host" type="text" {if $id}disabled{/if} class="text" id="su_login" value="{$ns.host}" /></td>
         </tr>
         <tr>
+            <td nowrap="nowrap" width="20%">Nameserver IP:</td>
+            <td><input name="ipaddress" type="text" class="text" id="ipaddress" value="{$ns.ipaddress}" /></td>
+        </tr>
+        <tr>
             <td nowrap="nowrap" width="20%">Proxy Name Server:</td>
             <td><input onclick="disableForm(this);" type="checkbox" {if $ns.isproxy == 1}checked{/if} name="isproxy" id="isproxy" value="1"></td>
+        </tr>
+        <tr>
+            <td nowrap="nowrap" width="20%">Backup Name Server:</td>
+            <td><input type="checkbox" {if $ns.isbackup == 1}checked{/if} name="isbackup" id="isbackup" value="1"></td>
         </tr>
         <tr>
             <td nowrap="nowrap">Port:</td>

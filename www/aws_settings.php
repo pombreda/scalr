@@ -53,7 +53,8 @@
         {
         	try
         	{
-	        	$AmazonEC2Client = new AmazonEC2($private_key, $cert);
+	        	$AmazonEC2Client = AmazonEC2::GetInstance(); 
+				$AmazonEC2Client->SetAuthKeys($private_key, $cert);
 	
 	            $RunInstancesType = new RunInstancesType();
 		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM ami_roles WHERE roletype=? AND architecture=?",

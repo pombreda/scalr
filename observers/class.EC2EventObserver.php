@@ -15,7 +15,7 @@
 		 *
 		 * @return AmazonEC2
 		 */
-		private function GetAmazonEC2ClientObject()
+		private function GetAmazonEC2ClientObject($region)
 		{
 	    	// Get ClientID from database;
 			$clientid = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
@@ -24,7 +24,10 @@
 			$Client = Client::Load($clientid);
 	
 	    	// Return new instance of AmazonEC2 object
-			return new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
+			return $AmazonEC2Client;
 		}
 				
 		public function OnHostUp(HostUpEvent $event)
@@ -38,7 +41,7 @@
 				{
 					$this->Logger->debug("Going to termination old instance...");
 					
-					$EC2Client = $this->GetAmazonEC2ClientObject();
+					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 					
 					$this->DB->Execute("UPDATE farm_instances SET replace_iid='' WHERE id='{$event->InstanceInfo['id']}'");
 
@@ -77,10 +80,10 @@
 		 */
 		public function OnRebundleFailed(RebundleFailedEvent $event)
 		{
-			$EC2Client = $this->GetAmazonEC2ClientObject();
-			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-
+			
+			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+			
 			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
@@ -107,9 +110,9 @@
 		 */
 		public function OnRebundleComplete(RebundleCompleteEvent $event)
 		{
-			$EC2Client = $this->GetAmazonEC2ClientObject();
-			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+			
+			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 
 			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
 			{
@@ -136,10 +139,10 @@
 		 */
 		public function OnFarmTerminated(FarmTerminatedEvent $event)
 		{
-			$EC2Client = $this->GetAmazonEC2ClientObject();
-			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
+			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+						
 			if ($farminfo['status'] == FARM_STATUS::SYNCHRONIZING)
 			{
 				// Do not terminate pending terminate instances.

@@ -87,17 +87,19 @@
 						$GLOBALS['warnings'] = array();
 						
 						$reflection = new ReflectionClass("{$v['rtype']}DNSRecord");
-						if ($v['rtype'] != 'MX')
-							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
-						else
+						if ($v['rtype'] == 'MX')
 							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"]);
+						elseif($v['rtype'] == 'SRV')
+							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
+						else
+							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
 						
 						if ($c->__toString() == "")
 						{
 							$err = array_merge($GLOBALS['warnings'], $err);
 						}
 						else
-							$db->Execute("UPDATE records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=? WHERE id=?", array($v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $k));
+							$db->Execute("UPDATE records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `rweight`=?, `rport`=? WHERE id=?", array($v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"], (int)$v["rweight"], (int)$v["rport"], $k));
 					}
 					else
 						$db->Execute("DELETE FROM records WHERE id=?", array($k));
@@ -113,15 +115,35 @@
 						$GLOBALS['warnings'] = array();
 						
 						$reflection = new ReflectionClass("{$v['rtype']}DNSRecord");
-						if ($v['rtype'] != 'MX')
-							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
-						else
+						if ($v['rtype'] == 'MX')
 							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"]);
+						elseif($v['rtype'] == 'SRV')
+							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
+						else
+							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
 						
 						if ($c->__toString() == "")
 							$err = array_merge($GLOBALS['warnings'], $err);
 						else
-							$db->Execute("INSERT INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"]));
+							$db->Execute("INSERT INTO records SET 
+								zoneid=?, 
+								`rtype`=?, 
+								`ttl`=?, 
+								`rpriority`=?, 
+								`rvalue`=?, 
+								`rkey`=?, 
+								`rweight`=?, 
+								`rport`=?", 
+							array(
+								$zoneinfo["id"], 
+								$v["rtype"], 
+								$v["ttl"], 
+								(int)$v["rpriority"], 
+								$v["rvalue"], 
+								$v["rkey"], 
+								(int)$v["rweight"], 
+								(int)$v["rport"]
+							));
 					}
 				}
 								
@@ -200,7 +222,6 @@
 					
 					$zone_ami_info = $roleinfo;
 					
-					$SNMP = new SNMP();
 					$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
 					$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($post_farmid));
 					foreach ((array)$instances as $instance)
@@ -212,10 +233,11 @@
 						if ($zone_ami_info['alias'] == ROLE_ALIAS::APP && $zone_ami_info['ami_id'] != $instance['ami_id'])
 							continue;
 						
-						$SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-		                $trap = vsprintf(SNMP_TRAP::VHOST_RECONFIGURE, array($post_domainname, $_SESSION["vhost_settings"]["issslenabled"]));
-		                $res = $SNMP->SendTrap($trap);
-		                $Logger->info("[FarmID: {$post_farmid}] Sending SNMP Trap vhostReconfigure ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
+						$DBInstance = DBInstance::LoadByID($instance['id']);
+						$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
+							$post_domainname, 
+							$_SESSION["vhost_settings"]["issslenabled"]
+						));
 					}
 				}
 				catch(Exception $e)
@@ -225,7 +247,7 @@
 			}
 			
 		    $records = array();
-			$nss = $db->GetAll("SELECT * FROM nameservers WHERE isproxy='0'");
+			$nss = $db->GetAll("SELECT * FROM nameservers WHERE isproxy='0' AND isbackup='0'");
 			foreach ($nss as $ns)
 			{
 				$records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$post_domainname}.", "issystem" => 1);
@@ -263,16 +285,18 @@
     			if ($v["rkey"] != '' || $v["rvalue"] != '')
     			{
 	    			$reflection = new ReflectionClass("{$v['rtype']}DNSRecord");
-					if ($v['rtype'] != 'MX')
-						$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
-					else
+					if ($v['rtype'] == 'MX')
 						$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"]);
+					elseif($v['rtype'] == 'SRV')
+						$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
+					else
+						$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
 					
 					if ($c->__toString() == "")
 						$err = array_merge($GLOBALS['warnings'], $err);
     			}
     		}
-
+    		    		
     		if (count($err) == 0)
     		{	    		
 	    		$post_zone['soa_owner'] = trim(str_replace("@", ".", $post_zone['soa_owner']), ".");
@@ -308,7 +332,27 @@
 				foreach ($records as $k=>$v)
 				{
 					if ($v["rkey"] != '' || $v["rvalue"] != '')
-						$db->Execute("REPLACE INTO records SET zoneid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `issystem`=?", array($zoneinfo["id"], $v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"], $v["issystem"] ? 1 : 0));
+						$db->Execute("REPLACE INTO records SET 
+							zoneid=?, 
+							`rtype`=?, 
+							`ttl`=?, 
+							`rpriority`=?, 
+							`rvalue`=?, 
+							`rkey`=?, 
+							`issystem`=?, 
+							`rweight`=?, 
+							`rport`=?", 
+						array(
+							$zoneinfo["id"], 
+							$v["rtype"],
+							$v["ttl"], 
+							(int)$v["rpriority"], 
+							$v["rvalue"], 
+							$v["rkey"], 
+							($v["issystem"] ? 1 : 0), 
+							(int)$v["rweight"], 
+							(int)$v["rport"]
+						));
 				}
 
 				try
@@ -448,11 +492,11 @@
     			$records = array_merge($records, $instance_records);
     		}
     		    
-            $nss = $db->GetAll("SELECT * FROM nameservers");
+            $nss = $db->GetAll("SELECT * FROM nameservers WHERE isbackup='0'");
             foreach ($nss as $ns)
             {
             	$issystem = ($ns['isproxy'] == 1) ? 0 : 1;
-            	$records[] = array("rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$display["domainname"]}.", "issystem" => $issystem);
+            	$records[] = array("id" => "c".rand(10000, 999999), "rtype" => "NS", "ttl" => 14400, "rvalue" => "{$ns["host"]}.", "rkey" => "{$display["domainname"]}.", "issystem" => $issystem);
             }
                 
                 
