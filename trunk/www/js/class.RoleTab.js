@@ -30,6 +30,7 @@ var RoleTab = Class.create();
                            				
                            				reboot_timeout: $('reboot_timeout'),
                            				launch_timeout: $('launch_timeout'),
+                           				status_timeout: $('status_timeout'),
                            				
                            				scal_min_instances : $('minCount'),
                            				scal_max_instances : $('maxCount'),
@@ -63,6 +64,8 @@ var RoleTab = Class.create();
                            			}
                            				
                            			this.CurrentRoleObject.options.reboot_timeout = this.elements.reboot_timeout.value; 	
+                           			this.CurrentRoleObject.options.status_timeout = this.elements.status_timeout.value;
+                           			
                            			this.CurrentRoleObject.options.launch_timeout = this.elements.launch_timeout.value;
                            				
                            			this.CurrentRoleObject.options.min_instances = this.elements.scal_min_instances.value; 	
@@ -307,7 +310,21 @@ var RoleTab = Class.create();
 	                           					if (events_tree._globalIdStorageFind(key) != 0)
 	                           					{
 	                           						events_tree.setCheck(key, 1);
-	                           						events_tree.openItem(events_tree.getParentId(key));
+	                           						
+	                           						//moveNode: Node
+	                           						var mn_n = events_tree._globalIdStorageFind(key);
+	                           						var pid =  events_tree.getParentId(key);
+	                           						var mn_t = events_tree._globalIdStorageFind(pid);
+	                           						
+	                           						var indexItem = events_tree.getItemIdByIndex(pid, this.CurrentRoleObject.scripts[key].order_index);
+	                           						
+	                           						var mn_b = events_tree._globalIdStorageFind(indexItem);
+	                           						
+	                           						events_tree._moveNodeTo(mn_n, mn_t, mn_b);
+	                           						
+	                           						//_moveNodeTo=function(itemObject,targetObject,beforeNode)
+	                           						
+	                           						events_tree.openItem(pid);
 	                           					}
 	                           				}
 	                           				/******************/
@@ -363,6 +380,7 @@ var RoleTab = Class.create();
 	                           				
 	                           				this.elements.reboot_timeout.value = this.CurrentRoleObject.options.reboot_timeout;
 	                           				this.elements.launch_timeout.value = this.CurrentRoleObject.options.launch_timeout;
+	                           				this.elements.status_timeout.value = this.CurrentRoleObject.options.status_timeout;
 	                           				
 	                           				this.elements.scal_min_instances.value = this.CurrentRoleObject.options.min_instances;
 	                           				this.elements.scal_max_instances.value = this.CurrentRoleObject.options.max_instances;
@@ -581,10 +599,12 @@ var RoleTab = Class.create();
 
 									if (!this.CurrentRoleObject || !this.CurrentRoleObject.scripts || !this.CurrentRoleObject.scripts[this.CurrentRoleScript])
 										return;
-
+									
 									this.CurrentRoleObject.scripts[this.CurrentRoleScript].target = $('event_script_target_value').value;
 									this.CurrentRoleObject.scripts[this.CurrentRoleScript].version = $('script_version').value;
 									this.CurrentRoleObject.scripts[this.CurrentRoleScript].timeout = $('scripting_timeout').value;
+									
+									this.CurrentRoleObject.scripts[this.CurrentRoleScript].order_index = events_tree.getIndexById(this.CurrentRoleScript);
 									
 									this.CurrentRoleObject.scripts[this.CurrentRoleScript].issync = $('issync_1').checked ? 1 : 0;
 									

@@ -5,7 +5,7 @@
     $Validator = new Validator();
     
     $Client = Client::Load($_SESSION['uid']);
-    
+
     if ($_SESSION['uid'] == 0)
     {
     	$errmsg = _("Requested page cannot be viewed from admin account");
@@ -29,7 +29,8 @@
     	
     	$_SESSION["wizard"]["dnsami"] = $post_dnsami;
         	                            
-        $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+        $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION["wizard"]["region"]));
+		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
                 
         $db->BeginTrans();
         
@@ -39,7 +40,9 @@
         $farmname = preg_replace("/[^A-Za-z0-9]+/", "", $_SESSION['wizard']["domainname"]);
                 
         $farmhash = $Crypto->Sault(14);
-        $db->Execute("INSERT INTO farms SET status='0', name=?, clientid=?, hash=?, dtadded=NOW()", array($farmname, $_SESSION['uid'], $farmhash));
+        $db->Execute("INSERT INTO farms SET status='0', name=?, clientid=?, hash=?, dtadded=NOW(), region=?", 
+        	array($farmname, $_SESSION['uid'], $farmhash, $_SESSION["wizard"]["region"])
+        );
         $farmid = $db->Insert_ID();
         
         $bucket_name = "farm-{$farmid}-{$Client->AWSAccountID}";
@@ -126,8 +129,10 @@
                 }
             }
             
+            $is_europe = ($_SESSION["wizard"]["region"] == 'eu-west-1') ? true : false;
+            
             if ($create_bucket)
-               $AmazonS3->CreateBucket($bucket_name);
+               $AmazonS3->CreateBucket($bucket_name, $is_europe);
         }
         catch (Exception $e)
         {
@@ -143,7 +148,7 @@
 	        $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$_SESSION['wizard']["dnsami"]}'");
         	
 	        $records = array();
-			$nss = $db->GetAll("SELECT * FROM nameservers");
+			$nss = $db->GetAll("SELECT * FROM nameservers WHERE isbackup='0'");
 			foreach ($nss as $ns)
 			{
 	            $issystem = ($ns['isproxy'] == 1) ? 0 : 1;
@@ -328,12 +333,12 @@
 	    	        else
 	    	        {
 	        	        $display["amis"] = $post_amis;
-	        	        $display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
 	        	        
 	        	        $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM ami_roles WHERE roletype=? OR (roletype=? and clientid=?)", 
-					    	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['clientid'])
+					    	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['uid'])
 					    );
 	        	        
+					    $_SESSION["wizard"]["region"] = $post_region;
 	        	        $_SESSION["wizard"]["domainname"] = $post_domainname;
 	    	        }
 	            }
@@ -348,6 +353,7 @@
         $_SESSION["wizard"] = null;
         $template_name = "app_wizard_step1.tpl";
         $display["domainname"] = $_POST["domainname"];
+        $display['region'] = $_POST["region"];
     }
 	
 	require("src/append.inc.php"); 

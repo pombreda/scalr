@@ -18,7 +18,8 @@
     if ($post_cancel)
 		UI::Redirect("instances_view.php?farmid={$farminfo['id']}");
     
-    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
     
 	$display["title"] = _("Instances&nbsp;&raquo;&nbsp;View");
 	
@@ -229,7 +230,7 @@
 		}
 		
 		if ($okmsg)
-			UI::Redirect("?farmid={$req_farmid}");
+			UI::Redirect("instances_view.php?farmid={$req_farmid}");
 	}
 	
 	//Paging
@@ -306,10 +307,12 @@
 	    $rowz[$pk]->IsRebootLaunched = $iinfo["isrebootlaunched"];
 	    
 	    $farm_ami_info = $db->GetRow("SELECT * From farm_amis WHERE ami_id=? AND farmid=?",
-	    	array($rowz[$pk]->instancesSet->item->imageId, $get_farmid)
+	    	array($iinfo['ami_id'], $get_farmid)
 	    );
 	    $rowz[$pk]->canUseCustomEIPs = ($farm_ami_info['use_elastic_ips']) ? false : true;
 	    $rowz[$pk]->customEIP = $iinfo['custom_elastic_ip'];
+	    
+	    $rowz[$pk]->InstanceIndex = $iinfo['index'];
 	    
 	    ///
 	    ///
@@ -329,6 +332,8 @@
 	       $rowz[$pk]->LA = _("Unknown");
 	    ///
 	    
+	    $rowz[$pk]->instancesSet->item->imageId = $iinfo['ami_id'];
+	       
 		$doadd = true;
 		if (isset($get_state))
 		{
@@ -363,8 +368,33 @@
 			$rowz1[] = $rowz[$pk];
 	}
 	
-	$rowz = $rowz1;
+	$rowz = array();
 	
+	//
+	// Sort instances by role & index
+	//
+	$sortable_rows = array();
+	foreach ($rowz1 as $r)
+	{
+		if (!$sortable_rows[$r->Role][$r->InstanceIndex])
+			$sortable_rows[$r->Role][$r->InstanceIndex] = $r;
+		else
+		{
+			$i = $r->InstanceIndex;
+			while ($sortable_rows[$r->Role][$i])
+				$i++;
+			
+			$sortable_rows[$r->Role][$i] = $r;
+		}
+	}
+		
+	foreach ($sortable_rows as $role => $instances)
+	{
+		ksort($instances);		
+		foreach ($instances as $i)
+			$rowz[] = $i;
+	}
+		
 	$paging->Total = count($rowz); 
 	
 	if (isset($get_farmid))

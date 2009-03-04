@@ -129,7 +129,7 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        			
 	        		$this->db->Execute($query);
 	        		
-	        		$event->message = $this->db->qstr("[Farm: {$event->message->FarmID}] {$event->message->Message}");
+	        		$event->message = $this->db->qstr("[FarmID: {$event->message->FarmID}] {$event->message->Message}");
 	        	}
 	        	elseif ($event->message instanceof ScriptingLogMessage)
 	        	{
@@ -155,7 +155,7 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	
 	            $event->subThreadName = defined("SUB_TRANSACTIONID") ? SUB_TRANSACTIONID : TRANSACTION_ID;
 	            
-	            $event->farmID = defined("LOGGER_FARMID") ? LOGGER_FARMID : "";
+	            $event->farmID = defined("LOGGER_FARMID") ? LOGGER_FARMID : null;
 	            
 	        	$level = $event->getLevel()->toString();
 	        	if ($level == "FATAL" || $level == "ERROR")
@@ -183,14 +183,14 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		
 	        		$event->backtrace = "''";
 	        	}
-	        		
+	        	
 	            $query = $this->layout->format($event);
             
             	$this->db->Execute($query);
             }
             catch(Exception $e)
             {
-            	
+
             }
             
             // close connection

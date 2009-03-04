@@ -2,6 +2,7 @@
 	
 	abstract class Event
 	{
+		public $SkipDeferredOperations = false;
 		
 		/**
 		 * Returns event name

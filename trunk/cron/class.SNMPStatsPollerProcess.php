@@ -66,9 +66,7 @@
             
             //
             // Collect information from database
-            //
-            $this->Logger->info("[FarmID: {$farminfo['id']}] Begin polling...");
-			
+            //			
             $SNMP_community = $farminfo["hash"];
             
             // Check data folder for farm
@@ -112,7 +110,7 @@
             		foreach (array_keys($this->Watchers) as $watcher_name)
             		{            			
             			// Get data
-            			$data = $Watcher->RetrieveData($watcher_name);
+            			$data = $Watcher->RetreiveData($watcher_name);
             			
             			$this->Logger->info("Retrieved data from {$ami_instance['external_ip']} ($watcher_name): ".implode(", ", $data));
             			

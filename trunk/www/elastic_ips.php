@@ -7,9 +7,28 @@
 		UI::Redirect("index.php");
 	}
 	
+	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
+	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+
+	if ($req_task == 'release')
+	{
+		try
+		{
+			$AmazonEC2Client->ReleaseAddress($req_ip);
+			$db->Execute("DELETE FROM elastic_ips WHERE ipaddress=?", array($req_ip));
+		}
+		catch(Exception $e)
+		{
+			$errmsg = sprintf(_("Cannot release elastic IP: %s"), $e->getMessage());
+		}
 		
-    $AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
-		
+		if (!$errmsg)
+		{
+			$okmsg = _("Elastic IP successfully released");
+			UI::Redirect("elastic_ips.php");
+		}
+	}
+	
 	$paging = new SQLPaging();
 	$paging->ItemsOnPage = 20;
 

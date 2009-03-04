@@ -26,12 +26,17 @@
     			$this->GetArg('instanceid')
     		));
     		
+    		if (!$instanceinfo || !$farminfo)
+    			return false;
+    		
     		if (!$farminfo || $farminfo['hash'] != $this->GetArg('authhash') || $instanceinfo['farmid'] != $farminfo['id'])
     		{
     			throw new Exception(sprintf(_("Cannot verify the instance you are making request from. Make sure that farmid (%s), instance-id (%s) and auth-hash (%s) pamaters are valid."),
     				$this->GetArg('farmid'), $this->GetArg('instanceid'), $this->GetArg('authhash')
     			));
     		}
+    		
+    		return true;
     	}
     	
     	/**
@@ -51,7 +56,8 @@
 				//
 				// Verify Calling Instance
 				//
-				$this->VerifyCallingInstance();
+				if (!$this->VerifyCallingInstance())
+					return false;
 				
 				// Call method
 				try

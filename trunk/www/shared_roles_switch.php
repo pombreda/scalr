@@ -33,15 +33,21 @@
 		$okmsg = _("Role successfully switched to new AMI");
 		UI::Redirect("shared_roles.php");
 	}
-	   
+
+	$rinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($req_ami_id));
+	
 	// Filter by our accountid
 	$DescribeImagesType = new DescribeImagesType();
 	$DescribeImagesType->ownersSet = array("item" => array("owner" => CONFIG::$AWS_ACCOUNTID));
 
 
-	$AmazonEC2 = new AmazonEC2(
-            APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-            APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", true);
+	$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($rinfo['region'])); 
+	$AmazonEC2->SetAuthKeys(
+		APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
+		APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", 
+		true
+	);
+	
 	// Rows
 	$response = $AmazonEC2->describeImages($DescribeImagesType);
 	$rowz = $response->imagesSet->item;

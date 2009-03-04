@@ -43,13 +43,21 @@
             {
             	$Client = Client::Load($queue_item['clientid']);
 	        	
-	        	// Create AmazonEC2 cleint object
-			    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
-			    
+	        				    
 			    // Create Amazon s3 client object
 			    $AmazonS3 = new AmazonS3($Client->AWSAccessKeyID, $Client->AWSAccessKey);
 			    
 			    $data = unserialize($queue_item['data']);
+			    
+			    if ($data['region'])
+			    {
+				    // Create AmazonEC2 cleint object
+				    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($data['region']));
+			    }
+			    else
+			    	$AmazonEC2Client = AmazonEC2::GetInstance();
+			    	 
+			    $AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 			    
 			    // Remove keypairs
 			    foreach ($data['keypairs'] as $keypair)

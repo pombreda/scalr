@@ -4,18 +4,19 @@
 	if ($_SESSION["uid"] == 0)
 	   UI::Redirect("index.php");
 	
-	if (!$req_name || !stristr($req_name, CONFIG::$SECGROUP_PREFIX))
+	if (!$req_name || (!stristr($req_name, CONFIG::$SECGROUP_PREFIX) && !$_SESSION['sg_show_all']))
 	{
 	    $errmsg = "Please select security group from list";
-	    UI::Redirect("sec_group_view.php");
+	    UI::Redirect("sec_groups_view.php");
 	}
 	
 	
 	$display["title"] = "Security group&nbsp;&raquo;&nbsp;Edit";
 	
-	$display["group_name"] = $req_name;
+	$display["group_name"] = $req_name;	
 	
-	$AmazonEC2Client = new AmazonEC2($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
+	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
 	
 	// Rows
 	try
@@ -126,16 +127,47 @@
 		
 		try
 		{
-	        if ($new_rules_added)
+		try
+	        {
+				$role_name = str_replace(CONFIG::$SECGROUP_PREFIX, "", $req_name);
+				$db_master_instance = $db->GetRow("SELECT * FROM farm_instances WHERE role_name=? AND isdbmaster='1' AND farmid IN (SELECT id FROM farms WHERE clientid=?)", array(
+		        	$role_name, $_SESSION['uid']
+		        ));
+				if ($db_master_instance)
+				{
+			        $iinfo = $AmazonEC2Client->DescribeInstances($db_master_instance['instance_id']);
+			        $i = $iinfo->reservationSet->item;
+			        if ($i)
+			        {
+			        	foreach ($i->groupSet->item as $item)
+			        	{
+			        		if ($item->groupId != 'default' && $item->groupId != CONFIG::$MYSQL_STAT_SEC_GROUP)
+			        			$db_master_sec_group = $item->groupId;
+			        	}
+			        }
+				}
+	        }
+	        catch(Exception $e)
+	        {
+	        	$Logger->fatal("Edit sec group: ".$e->getMessage());
+	        }
+	        
+			if ($new_rules_added)
 	        {
 				// Set permissions for group
 		        $AmazonEC2Client->AuthorizeSecurityGroupIngress($_SESSION['aws_accountid'], $req_name, $IpPermissionSet);
+		        
+		        if ($db_master_sec_group)       	
+	        		$AmazonEC2Client->AuthorizeSecurityGroupIngress($_SESSION['aws_accountid'], $db_master_sec_group, $IpPermissionSet);
 	        }
 	        
 	        if ($remove_rules)
 	        {
 	        	// Remove removed rules
 	        	$AmazonEC2Client->RevokeSecurityGroupIngress($_SESSION['aws_accountid'], $req_name, $RevokeIpPermissionSet);
+	        	
+	        	if ($db_master_sec_group)
+	        		$AmazonEC2Client->RevokeSecurityGroupIngress($_SESSION['aws_accountid'], $db_master_sec_group, $RevokeIpPermissionSet);
 	        }
 	        
 			$okmsg = "Security group successfully updated";	        

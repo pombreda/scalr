@@ -9,8 +9,8 @@
         <param name="password" value="%appconfig{DB_PASS}%" />
         <param name="database" value="%appconfig{DB_NAME}%" />
         <param name="table" value="syslog" />
-        <param name="sql" value="INSERT INTO syslog SET dtadded='%d{Y-m-d H:i:s}', message=%m, severity='%p', dtadded_time=(NOW()+0)*100000, transactionid='%t', sub_transactionid='%s', backtrace=%b, caller='%c', path='%F:%L', farmid='%f'" />
-    </appender>
+        <param name="sql" value="INSERT DELAYED INTO syslog SET dtadded='%d{Y-m-d H:i:s}', message=%m, severity='%p', dtadded_time=(NOW()+0)*100000, transactionid='%t', sub_transactionid='%s', backtrace=%b, caller='%c', farmid='%f'" />
+    </appender>                                
         
     <root>
         <level value="DEBUG" />

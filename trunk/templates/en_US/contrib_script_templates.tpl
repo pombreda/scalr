@@ -21,7 +21,7 @@
 		<td class="Item" valign="top" nowrap="nowrap">{$rows[id].name}</td>
 		<td class="Item" valign="top">{$rows[id].description}</td>
 		<td class="Item" valign="top" align="center">{$rows[id].revision}</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].dtadded}</td>
+		<td class="Item" valign="top" nowrap>{$rows[id].dtcreated}</td>
 		<td class="Item" valign="top" align="center" nowrap>{if $rows[id].approval_state}{$rows[id].approval_state}{else}{t}Approved{/t}{/if}</td>
 		<td class="ItemEdit" valign="top" width="1">{if ($rows[id].clientid != 0 && $rows[id].clientid == $smarty.session.uid) || $smarty.session.uid == 0}<a id="control_{$rows[id].id}" href="javascript:void(0)">{t}Options{/t}</a>{/if}</td>
 	</tr>

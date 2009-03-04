@@ -165,7 +165,7 @@ class LoggerPatternParserScalr extends LoggerPatternParser {
                 $this->currentLiteral = '';
                 break;
             case 'f':
-                $pc = new LoggerBasicPatternConverterScalr($this->formattingInfo, LOG4PHP_LOGGER_PATTERN_PARSER_FARMID_CONVERTER);
+                $pc = new LoggerBasicPatternConverterScalr($this->formattingInfo, LOG4PHP_LOGGER_PATTERN_PARSER_FARMID_CONVERTER);                
                 LoggerLog::debug("LoggerPatternParser::finalizeConverter() FARMID converter.");
                 $this->currentLiteral = '';
                 break;

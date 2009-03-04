@@ -28,6 +28,7 @@
 				min_instances: 1,
 				max_instances: 2,
 				reboot_timeout: 300,
+				status_timeout: 20,
 				launch_timeout: (alias == 'mysql') ? 2400 : 300,
 				min_LA: 2,
 				max_LA: 5,

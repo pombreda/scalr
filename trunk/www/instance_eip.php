@@ -16,7 +16,8 @@
 	
 	$Client = Client::Load($farminfo['clientid']);
 	
-    $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 	
     if ($post_cancel)
     	UI::Redirect("instances_view.php?farmid={$farminfo['id']}");

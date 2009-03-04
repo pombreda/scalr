@@ -8,6 +8,7 @@
 			<th>Farm ID</th>
 			{if $smarty.session.uid == 0}<th>Client</th>{/if}
 			<th>Farm Name</th>
+			<th>Region</th>
 			<th>Added</th>
 			<th>Roles</th>
 			<th>Instances</th>
@@ -22,6 +23,7 @@
 		<td class="Item" valign="top">{$rows[id].id}</td>
 		{if $smarty.session.uid == 0}<td class="Item" valign="top"><a href="clients_view.php?clientid={$rows[id].client.id}">{$rows[id].client.email}</a></td>{/if}
 		<td class="Item" valign="top">{$rows[id].name}</td>
+		<td class="Item" valign="top">{$rows[id].region}</td>
 		<td class="Item" valign="top">{$rows[id].dtadded}</td>
 		<td class="Item" valign="top">{$rows[id].roles} [<a href="roles_view.php?farmid={$rows[id].id}">View</a>]</td>
 		<td class="Item" valign="top" nowrap>{$rows[id].instances} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
@@ -72,8 +74,8 @@
            	{if $rows[id].shortcuts|@count}
            		{literal}{type: 'separator'}{/literal},
            		{assign var=shortcuts value=$rows[id].shortcuts}
-           		{section name=id loop=$shortcuts}
-           			{literal}{href: 'execute_script.php?farmid='+id+'&task=execute&script={/literal}{$shortcuts[id].event_name}{literal}', innerHTML: "Execute {/literal}&laquo;{$shortcuts[id].name}&raquo;{literal}"}{/literal},	
+           		{section name=sid loop=$shortcuts}
+           			{literal}{href: 'execute_script.php?farmid='+id+'&task=execute&script={/literal}{$shortcuts[sid].event_name}{literal}', innerHTML: "Execute {/literal}&laquo;{$shortcuts[sid].name}&raquo;{literal}"}{/literal},	
            		{/section}
            	{/if}
            	
@@ -94,11 +96,11 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="{if $smarty.session.uid == 0}9{else}8{/if}" align="center">No farms found</td>
+		<td colspan="{if $smarty.session.uid == 0}10{else}9{/if}" align="center">No farms found</td>
 	</tr>
 	{/section}
 	<tr>
-		<td colspan="{if $smarty.session.uid == 0}8{else}7{/if}" align="center">&nbsp;</td>
+		<td colspan="{if $smarty.session.uid == 0}9{else}8{/if}" align="center">&nbsp;</td>
 		<td class="ItemEdit" valign="top">&nbsp;</td>
 	</tr>
 	</tbody>

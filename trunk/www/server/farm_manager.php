@@ -29,8 +29,9 @@
 	    
 	    $Client = Client::Load($uid);
 			    
-	    // Create new AmazonEC2 Client object
-		$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+	    // Create AmazonEC2 Client object
+		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['farm_builder_region'])); //TODO: region
+		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 
 		// Validate farm name
 		if (!$Validator->IsNotEmpty($farm_name))
@@ -86,8 +87,8 @@
 				
 			if ($role['options']['use_ebs'] && $role['options']['ebs_size'])
 			{
-				if ($role['options']['ebs_size'] < 1 || $role['options']['ebs_size'] > 1024)
-					throw new Exception(sprintf(_("EBS volume size for role '%s' must be between 1 and 1024 GB"), $rolename));
+				if ($role['options']['ebs_size'] < 1 || $role['options']['ebs_size'] > 1000)
+					throw new Exception(sprintf(_("EBS volume size for role '%s' must be between 1 and 1000 GB"), $rolename));
 			}
 				
 			if ($role['alias'] == ROLE_ALIAS::MYSQL)
@@ -154,7 +155,8 @@
 						mysql_bcp = ?,
 						mysql_bcp_every = ?,
 						mysql_rebundle_every = ?,
-						mysql_bundle = ?
+						mysql_bundle = ?,
+						region = ?
 					", array( 
 	                	trim($farm_name), 
 						$_SESSION['uid'], 
@@ -162,7 +164,8 @@
 						$farm_mysql_make_backup, 
 						$farm_mysql_make_backup_every, 
 						$farm_mysql_bundle_every,
-						$farm_mysql_bundle
+						$farm_mysql_bundle,
+						$_SESSION['farm_builder_region']
 	                ));
 	                
 	                $farm_id = $db->Insert_ID();
@@ -281,7 +284,8 @@
 							min_count=?, max_count=?, min_LA=?, max_LA=?,
                             avail_zone=?, instance_type=?, use_elastic_ips=?,
                             reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?
+                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, 
+                            status_timeout=?
                             WHERE farmid=? AND ami_id=?
                             ", array(
                     		$role['options']['min_instances'], 
@@ -298,6 +302,7 @@
                             ($role['options']['use_ebs'] && $role['options']['ebs_snapid'] != '') ? $role['options']['ebs_snapid'] : "",
                             (int)$role['options']['ebs_mount'],
                          	$role['options']['ebs_mountpoint'], 
+                         	(int)$role['options']['status_timeout'],
                             $farm_id, 
                             $ami_id
 						));
@@ -308,7 +313,7 @@
 							farmid=?, ami_id=?, min_count=?, max_count=?, 
                             min_LA=?, max_LA=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
                             reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?
+                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?
                             ", array( 
                         		$farm_id, 
                         		$ami_id, 
@@ -325,7 +330,8 @@
                             	($role['options']['use_ebs'] && $role['options']['ebs_size'] > 0) ? $role['options']['ebs_size'] : 0,
                             	($role['options']['use_ebs'] && $role['options']['ebs_snapid'] != '') ? $role['options']['ebs_snapid'] : "",
                          		(int)$role['options']['ebs_mount'],
-                         		$role['options']['ebs_mountpoint']
+                         		$role['options']['ebs_mountpoint'],
+                         		(int)$role['options']['status_timeout']
 						));
 					}
 					
@@ -394,7 +400,7 @@
 					$db->Execute("DELETE FROM farm_role_scripts WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
 					
 					if (count($role['scripts']) > 0)
-					{
+					{						
 						foreach ($role['scripts'] as $script => $params)
 						{							
 							if ($params === false)
@@ -405,6 +411,7 @@
 							$version = $params['version'];
 							$issync = $params['issync'];
 							$timeout = (int)$params['timeout'];
+							$order_index = (int)$params['order_index'];
 							if (!$timeout)
 								$timeout = CONFIG::$SYNCHRONOUS_SCRIPT_TIMEOUT;
 							
@@ -422,7 +429,8 @@
 									target		= ?,
 									version		= ?,
 									timeout		= ?,
-									issync		= ?
+									issync		= ?,
+									order_index = ?
 								", array(
 									$scriptid,
 									$farm_id,
@@ -432,7 +440,8 @@
 									$target,
 									$version,
 									$timeout,
-									$issync
+									$issync,
+									$order_index
 								));
 							}
 						}
@@ -467,7 +476,7 @@
 							
 							// Add allocated IP address to database
 							$db->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?",
-								array($farm_id, $roles[$ami_id]['name'], $address->publicIp, $uid)
+								array($farm_id, $instance['role_name'], $address->publicIp, $uid)
 							);
 							
 							$allocated_ips[] = $address->publicIp;
@@ -538,7 +547,9 @@
                     
                     if ($create_bucket)
                     {
-                       if ($AmazonS3->CreateBucket($bucket_name))
+                       $is_europe = ($_SESSION['farm_builder_region'] == 'eu-west-1') ? true : false;
+            
+			           if ($AmazonS3->CreateBucket($bucket_name, $is_europe))
 							$created_bucket = $bucket_name;
                     }
                 }
