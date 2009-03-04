@@ -225,27 +225,22 @@
 		// Send Trap
 		//
 		if (count($instances) > 0)
-		{
-			$SNMP = new SNMP();
-			
+		{			
 			foreach ($instances as $instance)
 			{
-				$SNMP->Connect($instance['external_ip'], null, $farminfo['hash']);
-				$trap = vsprintf(SNMP_TRAP::NOTIFY_EVENT, array(
+				$DBInstance = DBInstance::LoadByID($instance['id']);
+				$DBInstance->SendMessage(new EventNoticeScalrMessage(
 					"0.0.0.0",
 					$db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id'])),
 					$instance['role_name'],
 					$event_name
 				));
-		        
-				$res = $SNMP->SendTrap($trap);
-		        $Logger->info("[FarmID: {$farmid}] Sending SNMP Trap notifyEvent ({$trap}) to '{$instance['instance_id']}' ('{$instance['external_ip']}') complete ({$res})");
 			}
 		}
 		
 		if (count($err) == 0)
 		{
-			$okmsg = _("Script execution initialized");
+			$okmsg = _("Script execution request was successfully sent");
 			UI::Redirect("farms_view.php");
 		}
 	}

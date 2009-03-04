@@ -24,16 +24,18 @@
 	       $errmsg = _("Role not found");
 	}
 	
-	$AmazonEC2 = new AmazonEC2(
+	$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
+	$AmazonEC2->SetAuthKeys(
 		APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-		APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", true
+		APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", 
+		true
 	);
 	
 	//Paging
 	$paging = new SQLPaging();
 	$paging->ItemsOnPage = 20;
 	
-	$sql = "SELECT * FROM ami_roles WHERE roletype='".ROLE_TYPE::SHARED."'";
+	$sql = "SELECT * FROM ami_roles WHERE roletype='".ROLE_TYPE::SHARED."' AND clientid='0' AND region='".$_SESSION['aws_region']."'";
 		
 	$paging->SetSQLQuery($sql);
 	$paging->ApplyFilter($_POST["filter_q"], array("zone"));
@@ -65,6 +67,9 @@
 	{
 		if ($response && $response->imagesSet && $response->imagesSet->item)
 		{
+			if (!is_array($response->imagesSet->item))
+				$response->imagesSet->item = array($response->imagesSet->item);
+			
 			foreach($response->imagesSet->item as $item)
 			{
 				if ($item->imageId == $row["ami_id"])

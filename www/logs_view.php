@@ -24,6 +24,8 @@
 		$paging->AddURLFilter("farmid", $farmid);
 		$display["farmid"] = $farmid;
 		$sql  .= " AND farmid = '{$farmid}'";
+		
+		$display['hide_farm_column'] = true;
 	}
 	
 	if ($req_search)
@@ -79,6 +81,11 @@
 		$row["time"] = date("d-m-Y H:i:s", $row["time"]);
 		$row["servername"] = $row["serverid"];
 		$row["severity"] = $severities[$row["severity"]];
+		
+		if (!$farm_names[$row['farmid']])
+			$farm_names[$row['farmid']] = $db->GetOne("SELECT name FROM farms WHERE id=?", array($row['farmid']));
+		
+		$row['farm_name'] = $farm_names[$row['farmid']];
 	}
 	
 	if (!$_SESSION["uid"])

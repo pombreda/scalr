@@ -219,8 +219,8 @@
 	            			{
 	            				$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1'", array($req_FarmID));
 	            				
-	            				$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1'", 
-            						array($vhost_info['role_name'], $farminfo['clientid'])
+	            				$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1' AND region=?", 
+            						array($vhost_info['role_name'], $farminfo['clientid'], $farminfo['region'])
             					);
             					
             					if ($vhost_role_info['alias'] != ROLE_ALIAS::WWW && $vhost_info['role_name'] != $role_name)
@@ -273,8 +273,8 @@
 	            				case "http":
 	            					$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND name=?", array($req_FarmID, $virtual_host_name));
 	            					
-	            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1'", 
-	            						array($vhost_info['role_name'], $farminfo['clientid'])
+	            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1' AND region=?", 
+	            						array($vhost_info['role_name'], $farminfo['clientid'], $farminfo['region'])
 	            					);
             						
 	            					if ($vhost_role_info['alias'] != ROLE_ALIAS::WWW && $vhost_info['role_name'] != $role_name)
@@ -304,8 +304,8 @@
 	            				case "https":
 	            					$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1'", array($req_FarmID));
 	            					
-	            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1'", 
-	            						array($vhost_info['role_name'], $farminfo['clientid'])
+	            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1' AND region=?", 
+	            						array($vhost_info['role_name'], $farminfo['clientid'], $farminfo['region'])
 	            					);
             						
 	            					if ($vhost_role_info['alias'] != ROLE_ALIAS::WWW && $vhost_info['role_name'] != $role_name)
@@ -334,11 +334,11 @@
 	            					
 	            				case "list":
 	            					
-	            					$vhosts = $db->GetAll("SELECT name FROM vhosts WHERE farmid=?", array($req_FarmID));
+	            					$vhosts = $db->GetAll("SELECT * FROM vhosts WHERE farmid=?", array($req_FarmID));
 	            					foreach ($vhosts as $vhost)
 	            					{
-		            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1'", 
-		            						array($vhost['role_name'], $farminfo['clientid'])
+		            					$vhost_role_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND (clientid=? OR clientid='0') AND iscompleted='1' AND region=?", 
+		            						array($vhost['role_name'], $farminfo['clientid'], $farminfo['region'])
 		            					);
 	            						
 		            					if ($vhost_role_info['alias'] != ROLE_ALIAS::WWW && $vhost['role_name'] != $role_name)

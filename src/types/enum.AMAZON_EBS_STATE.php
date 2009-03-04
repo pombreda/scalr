@@ -7,5 +7,6 @@
 		const AVAILABLE 	= 'available';
 		const CREATING 		= 'creating';
 		const DETACHING		= 'detaching';
+		const BUSY			= 'busy';
 	}
 ?>

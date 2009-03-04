@@ -286,4 +286,10 @@
     //
 	Scalr::AttachObserver(new MailEventObserver(), true);
 	Scalr::AttachObserver(new RESTEventObserver(), true);
+	
+	//
+	// Select AWS regions
+	//
+	
+	$display['regions'] = AWSRegions::GetList();
 ?>

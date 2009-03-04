@@ -8,7 +8,7 @@
         	$this->UnitTestCase('Application tests');
         }
 		
-        function testTaskQueue()
+        function _testTaskQueue()
         {
         	// Attach to queue
         	$Queue = TaskQueue::Attach(QUEUE_NAME::DEFERRED_EVENTS);

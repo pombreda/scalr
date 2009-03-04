@@ -71,7 +71,8 @@
 		UI::Redirect("farms_view.php");
     }
 
-    
+    $display['farm_name'] = $farminfo['name'];
+    $display['farm_id'] = $farminfo['id'];
 	$display["title"] = _("Farms&nbsp;&raquo;&nbsp;Delete");
 	$display["farminfo"] = $farminfo;
 	$display["app_count"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$farminfo['id']}'");

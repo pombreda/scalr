@@ -86,8 +86,6 @@
             //
             // Collect information from database
             //
-            $this->Logger->info("[FarmID: {$farminfo['id']}] Begin polling...");
-
             $Client = Client::Load($farminfo['clientid']);
             
             $farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}'");
@@ -100,7 +98,8 @@
             	exit();
                         
             // Get AmazonEC2 Object
-            $AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
                         
             // Get instances from EC2
             $this->Logger->debug("[FarmID: {$farminfo['id']}] Receiving instances info from EC2...");
@@ -181,7 +180,7 @@
             //
             if ($db->GetOne("SELECT status FROM farms WHERE id=?", array($farminfo["id"])) != FARM_STATUS::RUNNING)
             {
-            	$this->Logger->warn("[FarmID: {$farminfo['id']}] Farm is not running.");
+            	$this->Logger->debug("[FarmID: {$farminfo['id']}] Farm is not running.");
             	return;
             }
             
@@ -224,9 +223,9 @@
                         
                         if ($sync_complete)
                         {
-                        	$this->Logger->info("[FarmID: {$farminfo['id']}] Role '{$role}' successfully synchronized.");
-
                         	$role_name = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$db_ami["replace_to_ami"]}'");
+                        	
+                        	$this->Logger->info("[FarmID: {$farminfo['id']}] Role '{$role_name}' successfully synchronized.");
                         	
                         	$db->Execute("UPDATE elastic_ips SET role_name=? WHERE farmid=? AND role_name=?",
                         		array($role_name, $farminfo['id'], $roleinfo['name'])
@@ -235,6 +234,12 @@
                         	$db->Execute("UPDATE farm_ebs SET role_name=? WHERE farmid=? AND role_name=?",
                         		array($role_name, $farminfo['id'], $roleinfo['name'])
                         	);
+                        	
+                        	$ebs = $db->GetAll("SELECT * FROM farm_ebs WHERE farmid=?", array($farminfo['id']));
+                        	
+                        	$db->Execute("UPDATE ebs_arrays SET role_name=? WHERE farmid=? AND role_name=?",
+	                        	array($role_name, $farminfo['id'], $roleinfo['name'])
+	                        );
                         	
                         	$db->Execute("UPDATE vhosts SET role_name=? WHERE farmid=? AND role_name=?",
                         		array($role_name, $farminfo['id'], $roleinfo['name'])
@@ -288,12 +293,21 @@
            					
             			    foreach ($old_instances as $old_instance)
             			    {            			    	
+            			    	if ($old_instance['isdbmaster'] == 1 && $ami_info['ismasterbundle'])
+            			    	{
+            			    		$db->Execute("UPDATE farm_instances SET ami_id=?, role_name=? WHERE id=?",
+            			    			array($db_ami["replace_to_ami"], $ami_info['name'], $old_instance['id'])
+            			    		);
+            			    		
+            			    		continue;
+            			    	}
+            			    	
             			    	// Start new instance with new AMI_ID
-            			        $res = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$ami_info["name"], $farminfo['id'], $ami_info["name"], $farminfo['hash'], $ami_info["ami_id"], false, true, $old_instance['avail_zone']);
+            			        $res = Scalr::RunInstance(CONFIG::$SECGROUP_PREFIX.$ami_info["name"], $farminfo['id'], $ami_info["name"], $farminfo['hash'], $ami_info["ami_id"], false, true, $old_instance['avail_zone'], $old_instance['index']);
                                 if ($res)
                                 {
                                     $this->Logger->warn(new FarmLogMessage($farminfo['id'], "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' will be terminated after instance '{$res}' will boot up."));
-                                    $db->Execute("UPDATE farm_instances SET replace_iid='{$old_instance['instance_id']}' WHERE instance_id='{$res}'");
+                                    $db->Execute("UPDATE farm_instances SET replace_iid='{$old_instance['instance_id']}', `index`='{$old_instance['index']}' WHERE instance_id='{$res}'");
                                 }
                                 else 
                                     $this->Logger->error("Cannot start new instance with new AMI. Analyse log for more information");
@@ -337,7 +351,7 @@
                                 
                                 if ($instance_dns)
                                 {
-        	                    	$SNMP->Connect($instance_dns, null, $community, null, null, true);
+        	                    	$SNMP->Connect($db_item_info['external_ip'], null, $community, null, null, true);
                                 	$res = $SNMP->Get(".1.3.6.1.4.1.2021.10.1.3.3");
                                 }
                                 else
@@ -345,13 +359,81 @@
                                 
                                 if (!$res)
                                 {
-                                    if ($db_item_info['isipchanged'] == 0)
-                                		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance did not respond on {$db_item_info['external_ip']}:161."));
-                                	else
+                                	//Check Manual change of IP address
+                                	$ip = @gethostbyname($instance_dns);
+                                	
+                                	if ($ip != $instance_dns && substr($ip, 0, 3) == '10.')
+                                    {
+                                    	preg_match("/([0-9]{2,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3})/si", $instance_dns, $matches);
+										$ip = str_replace("-", ".", $matches[1]);
+                                    }
+                                	
+                                	if ($ip && $ip != $instance_dns && $ip != $db_item_info['external_ip'])
                                 	{
-                                		$ip = @gethostbyname($instance_dns);
-                                		$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot retrieve LA. Instance did not respond on {$ip}.");
+                                		$old_ip = $db_item_info['external_ip'];
+                                		
+                                		try
+                                		{
+                                			$this->Logger->info(new FarmLogMessage(
+                                				$farminfo['id'], 
+                                				sprintf(_("Releasing old address '%s' from EC2"), $old_ip)
+                                			));
+                                			
+                                			$AmazonEC2Client->ReleaseAddress($old_ip);
+                                		}
+                                		catch(Exception $e)
+                                		{
+                                			$this->Logger->error(new FarmLogMessage(
+                                				$farminfo['id'], 
+                                				sprintf(_("Cannot release address '%s': %s"), $old_ip, $e->getMessage())
+                                			));
+                                		}
+                                		
+                                		$db->Execute("UPDATE elastic_ips SET ipaddress=? WHERE ipaddress=?",
+                                			array($ip, $old_ip)
+                                		);
+                                		
+                                		// Change IP
+                                		Scalr::FireEvent(
+                                    		$db_item_info['farmid'],
+                                    		new IPAddressChangedEvent($db_item_info, $ip) 
+                                    	);
+                                    	
+                                    	continue 2;		
                                 	}
+                                    else
+                                    {
+                                    	$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance did not respond on {$db_item_info['external_ip']}:161."));
+                                    	
+                                    	if ($db_ami['status_timeout'] != 0)
+                                    	{
+	                                    	if (!$db_item_info['dtlaststatusupdate'])
+	                                    		$db_item_info['dtlaststatusupdate'] = strtotime($db_item_info['dtadded'])+$db_ami['launch_timeout'];
+	                                    	
+	                                    	if ($db_item_info['dtlaststatusupdate']+$db_ami['status_timeout']*60 < time())
+	                                    	{
+		                                    	$this->Logger->error(new FarmLogMessage(
+		                                				$farminfo['id'], 
+		                                				sprintf(
+		                                					_("Failed to retrieve LA on instance %s for %s minutes. terminating instance. Try increasing 'Terminate instance if cannot retrieve it's status' setting on %s configuration tab."),
+		                                					$db_item_info['instance_id'],
+		                                					$db_ami['status_timeout'],
+		                                					$roleinfo['name']
+		                                				)
+		                                		));
+		                                		
+	                                    		try
+						                        {
+						                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending termination request for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}) "));
+						                        	$AmazonEC2Client->TerminateInstances(array($db_item_info["instance_id"]));
+						                        }
+						                        catch (Exception $e)
+						                        {
+						                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$db_item_info['instance_id']}': {$e->getMessage()}");
+						                        }
+	                                    	}
+                                    	}
+                                    }
                                 }
                                 else 
                                 {
@@ -359,7 +441,7 @@
                                     {
                                     	$ip = @gethostbyname($instance_dns);
                                     	
-                                    	if ($ip != $instance_dns && substr($ip, 0, 3) == '10.')
+                                   		if ($ip != $instance_dns && substr($ip, 0, 3) == '10.')
                                     	{
                                     		preg_match("/([0-9]{2,3}-[0-9]{1,3}-[0-9]{1,3}-[0-9]{1,3})/si", $instance_dns, $matches);
 											$ip = str_replace("-", ".", $matches[1]);
@@ -371,6 +453,8 @@
 	                                    		$db_item_info['farmid'],
 	                                    		new IPAddressChangedEvent($db_item_info, $ip) 
 	                                    	);
+	                                    	
+	                                    	continue 2;
                                 		}
                                     }
                                 	
@@ -390,7 +474,7 @@
 						            else
 						            	$bw_out_used[] = $bw_out/1024;
 						            
-						            $db->Execute("UPDATE farm_instances SET bwusage_in=?, bwusage_out=? WHERE id=?",
+						            $db->Execute("UPDATE farm_instances SET bwusage_in=?, bwusage_out=?, dtlaststatusupdate=UNIX_TIMESTAMP(NOW()) WHERE id=?",
 						            	array($bw_in, $bw_out, $db_item_info["id"])
 						            );
                                     
@@ -479,10 +563,9 @@
 								$scripting_event = EVENT_TYPE::HOST_UP;
                             }
 							
-							$scripting_timeout = (int)$db->GetOne("SELECT sum(timeout) FROM farm_role_scripts INNER JOIN 
-								scripts ON scripts.id = farm_role_scripts.scriptid  
-								WHERE farm_role_scripts.farmid=? AND farm_role_scripts.event_name=? AND 
-								farm_role_scripts.ami_id=? AND scripts.issync='1'",
+							$scripting_timeout = (int)$db->GetOne("SELECT sum(timeout) FROM farm_role_scripts  
+								WHERE farmid=? AND event_name=? AND 
+								ami_id=? AND issync='1'",
 								array($db_item_info['farmid'], $scripting_event, $db_item_info['ami_id'])
 							);
 							
@@ -495,7 +578,7 @@
                             {
                                                                     
                                 // Add entry to farm log
-                    			$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch. Considering it broken. Terminating instance."));
+                    			$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch (Try increasing timeouts in role settings). Considering it broken. Terminating instance."));
                                 
                                 try
                                 {
@@ -586,7 +669,7 @@
 	                        if ($response && $response->reservationSet->item)
 	                        {
                         		$launch_time = strtotime($response->reservationSet->item->instancesSet->item->launchTime);
-                        		$time = 3600 - (time() - $time) % 3600;
+                        		$time = 3600 - (time() - $launch_time) % 3600;
                         		
                         		// Terminate instance in < 10 minutes for full hour. 
                         		if ($time <= 600)
@@ -595,7 +678,10 @@
                         		{
                         			$timeout = round(($time - 600) / 60, 1);
                         			//
-                        			$this->Logger->info(new FarmLogMessage($farminfo['id'], "Farm {$farminfo['name']}, role {$instanceinfo['role_name']} scaling down. {$instanceinfo['instance_id']} will be terminated in {$timeout} minutes"));
+                        			
+                        			$cur_date = date("Y-m-d H:i:s");
+                        			
+                        			$this->Logger->info(new FarmLogMessage($farminfo['id'], "Farm {$farminfo['name']}, role {$instanceinfo['role_name']} scaling down. {$instanceinfo['instance_id']} will be terminated in {$timeout} minutes. Launch time: {$response->reservationSet->item->instancesSet->item->launchTime}, Current time: {$cur_date}"));
                         		}
 	                        }
 	                        //
@@ -663,7 +749,7 @@
                         }
                         else 
                         {
-                            $instance_id = Scalr::RunInstance($AmazonEC2Client, CONFIG::$SECGROUP_PREFIX.$role, $farminfo["id"], $role, $farminfo["hash"], $ami, false, true);
+                            $instance_id = Scalr::RunInstance(CONFIG::$SECGROUP_PREFIX.$role, $farminfo["id"], $role, $farminfo["hash"], $ami, false, true);
                             
                             if ($instance_id)
                             {
@@ -685,7 +771,7 @@
             //
             // Update statistics
             //
-			$this->Logger->info("Updating statistics for farm.");
+			$this->Logger->debug("Updating statistics for farm.");
                 
 			$current_stat = $db->GetRow("SELECT * FROM farm_stats WHERE farmid=? AND month=? AND year=?",
 				array($farminfo['id'], date("m"), date("Y"))

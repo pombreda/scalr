@@ -187,6 +187,11 @@
 	        							$record = new MXDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"], $record["rpriority"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
+
+	        					case "SRV":
+	        							$record = new SRVDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"], $record["rpriority"], $record["rweight"], $record["rport"]);
+	        							$this->Zone->AddRecord($record);
+	        						break;
 	        				}
 						}
 					}
@@ -210,7 +215,7 @@
 					{
 						if ($ns["host"]!='')
 						{
-						   $Bind = new RemoteBIND($ns["host"], 
+						   $Bind = new RemoteBIND(  $ns["ipaddress"], 
 													$ns["port"],
 													array("type" => "password", "login" => $ns["username"], "password" => $this->Crypto->Decrypt($ns["password"], $cpwd)),
 													$ns["rndc_path"],

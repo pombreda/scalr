@@ -5,7 +5,25 @@
     		/****************************** Basic Objects ***********************/
     		'Client'				=> SRCPATH.'/class.Client.php',
     		'Farm'					=> SRCPATH.'/class.Farm.php',
+    		'DBEBSVolume'			=> SRCPATH.'/class.DBEBSVolume.php',
+    		'DBEBSArray'			=> SRCPATH.'/class.DBEBSArray.php',
+    		'AWSRegions'			=> SRCPATH.'/class.AWSRegions.php',
+    		'DBInstance'			=> SRCPATH.'/class.DBInstance.php',
+    		'XMLMessageSerializer'	=> SRCPATH.'/class.XMLMessageSerializer.php',
     	
+    		/****************************** Messaging  ***************************/
+    		'ScalrMessage'						=> SRCPATH.'/messaging/messages/abstract.ScalrMessage.php',
+    		'EventNoticeScalrMessage'			=> SRCPATH.'/messaging/messages/class.EventNoticeScalrMessage.php',
+    		'HostDownScalrMessage'				=> SRCPATH.'/messaging/messages/class.HostDownScalrMessage.php',
+    		'HostInitScalrMessage'				=> SRCPATH.'/messaging/messages/class.HostInitScalrMessage.php',
+    		'HostUpScalrMessage'				=> SRCPATH.'/messaging/messages/class.HostUpScalrMessage.php',
+    		'MakeMySQLBackupScalrMessage'		=> SRCPATH.'/messaging/messages/class.MakeMySQLBackupScalrMessage.php',
+    		'MakeMySQLDataBundleScalrMessage'	=> SRCPATH.'/messaging/messages/class.MakeMySQLDataBundleScalrMessage.php',
+    		'MountPointsReconfigureScalrMessage'=> SRCPATH.'/messaging/messages/class.MountPointsReconfigureScalrMessage.php',
+    		'NewMySQLMasterUpScalrMessage'		=> SRCPATH.'/messaging/messages/class.NewMySQLMasterUpScalrMessage.php',
+    		'StartRebundleScalrMessage'			=> SRCPATH.'/messaging/messages/class.StartRebundleScalrMessage.php',
+    		'VhostReconfigureScalrMessage'		=> SRCPATH.'/messaging/messages/class.VhostReconfigureScalrMessage.php',
+    		'ScalarizrUpdateAvailableScalrMessage' => SRCPATH.'/messaging/messages/class.ScalarizrUpdateAvailableScalrMessage.php',
     	
     		/******************* Environment objects ****************************/
     		'ScalrEnvironmentFactory'	=> SRCPATH.'/class.ScalrEnvironmentFactory.php',
@@ -22,15 +40,16 @@
     		'IPAddressChangedEvent'	=> SRCPATH.'/events/class.IPAddressChangedEvent.php',
     		'LAOverMaximumEvent'	=> SRCPATH.'/events/class.LAOverMaximumEvent.php',
     		'LAUnderMinimumEvent'	=> SRCPATH.'/events/class.LAUnderMinimumEvent.php',
-    		'MysqlBackupCompleteEvent'	=> SRCPATH.'/events/class.MysqlBackupCompleteEvent.php',
-    		'MysqlBackupFailEvent'	=> SRCPATH.'/events/class.MysqlBackupFailEvent.php',
-    		'MySQLReplicationFailEvent'	=> SRCPATH.'/events/class.MySQLReplicationFailEvent.php',
-    		'MySQLReplicationRecoveredEvent'	=> SRCPATH.'/events/class.MySQLReplicationRecoveredEvent.php',
+    		'MysqlBackupCompleteEvent'		=> SRCPATH.'/events/class.MysqlBackupCompleteEvent.php',
+    		'MysqlBackupFailEvent'			=> SRCPATH.'/events/class.MysqlBackupFailEvent.php',
+    		'MySQLReplicationFailEvent'		=> SRCPATH.'/events/class.MySQLReplicationFailEvent.php',
+    		'MySQLReplicationRecoveredEvent'=> SRCPATH.'/events/class.MySQLReplicationRecoveredEvent.php',
     		'NewMysqlMasterUpEvent'	=> SRCPATH.'/events/class.NewMysqlMasterUpEvent.php',
     		'RebootBeginEvent'		=> SRCPATH.'/events/class.RebootBeginEvent.php',
     		'RebootCompleteEvent'	=> SRCPATH.'/events/class.RebootCompleteEvent.php',
     		'RebundleCompleteEvent'	=> SRCPATH.'/events/class.RebundleCompleteEvent.php',
     		'RebundleFailedEvent'	=> SRCPATH.'/events/class.RebundleFailedEvent.php',
+    		'EBSVolumeMountedEvent'	=> SRCPATH.'/events/class.EBSVolumeMountedEvent.php',
     	
     		/****************************** Structs ******************************/
     		'CONTEXTS'				=> SRCPATH."/structs/struct.CONTEXTS.php",
@@ -62,6 +81,8 @@
     		'APPROVAL_STATE'		=> SRCPATH."/types/enum.APPROVAL_STATE.php",
     		'SCRIPT_ORIGIN_TYPE'	=> SRCPATH."/types/enum.SCRIPT_ORIGIN_TYPE.php",
     		'COMMENTS_OBJECT_TYPE'	=> SRCPATH."/types/enum.COMMENTS_OBJECT_TYPE.php",
+    		'EBS_ARRAY_STATUS'		=> SRCPATH."/types/enum.EBS_ARRAY_STATUS.php",
+    		'EBS_ARRAY_SNAP_STATUS' => SRCPATH."/types/enum.EBS_ARRAY_SNAP_STATUS.php",
     	
     		/****************************** Observers ***************************/
 		    'EventObserver'			=> APPPATH.'/observers/abstract.EventObserver.php',

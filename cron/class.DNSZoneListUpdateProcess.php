@@ -26,7 +26,7 @@
 				{
 					if ($ns["host"]!='')
 					{
-					    $this->Nameservers[$ns["host"]] = new RemoteBIND($ns["host"], 
+					    $this->Nameservers[$ns["host"]] = new RemoteBIND($ns["ipaddress"], 
 							$ns["port"],
 							array("type" => "password", "login" => $ns["username"], "password" => $this->Crypto->Decrypt($ns["password"], $cpwd)),
 							$ns["rndc_path"],

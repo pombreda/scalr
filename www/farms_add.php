@@ -1,13 +1,13 @@
 <? 
 	require("src/prepend.inc.php"); 
-	$display["title"] = _("Edit farm");
+	
     
 	set_time_limit(360);
 		
+	$req_farmid = ($req_farmid) ? $req_farmid : $req_id;
+	
 	if ($_SESSION['uid'] == 0)
     {
-        $req_farmid = ($req_farmid) ? $req_farmid : $req_id;
-        
         if (!$req_farmid)   
             UI::Redirect("farms_view.php");
         else 
@@ -32,9 +32,32 @@
     if ($avail_slots <= 5)
     	$display["warnmsg"] = sprintf(_("You have %s spare instances available on your account."), $avail_slots);
     
-	
+    if ($req_farmid)
+	{
+		$region = $db->GetOne("SELECT region FROM farms WHERE id=?", array($req_farmid));
+		
+		$display["title"] = _("Edit farm");
+	}
+    else
+    {	
+		$display["title"] = _("Farm builder");
+    	
+    	if (!$req_region)
+	    {			
+			$Smarty->assign($display);
+			$Smarty->display("region_information_step.tpl");
+			exit();
+	    }
+	    else
+	    	$region = $req_region;
+    }
+
+    $display['region'] = $region;
+    $_SESSION['farm_builder_region'] = $region;
+        
     $Client = Client::Load($uid);    
-	$AmazonEC2Client = new AmazonEC2($Client->AWSPrivateKey, $Client->AWSCertificate);
+	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
+	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
                     
     // Get Avail zones
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
@@ -90,12 +113,16 @@
 			$scripts_object = new stdClass();
 			foreach ($scripts as $script)
 			{
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"} = new stdClass();
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->config = unserialize($script['params']);
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->target = $script['target'];
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->version = $script['version'];
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->issync = $script['issync'];
-				$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->timeout = $script['timeout'];
+				if (substr($script['event_name'], 0, 11) != 'CustomEvent')
+				{
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"} = new stdClass();
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->config = unserialize($script['params']);
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->target = $script['target'];
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->version = $script['version'];
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->issync = $script['issync'];
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->timeout = $script['timeout'];
+					$scripts_object->{"{$script['event_name']}_{$script['scriptid']}"}->order_index = $script['order_index'];
+				}
 			}
         	
 	        if ($ami_info['roletype'] == ROLE_TYPE::SHARED && $ami_info['clientid'] != 0)
@@ -122,6 +149,7 @@
         			'max_LA'			=> $row['max_LA'],
         			'reboot_timeout'	=> $row['reboot_timeout'],
         			'launch_timeout'	=> $row['launch_timeout'],
+        			'status_timeout'	=> $row['status_timeout'],
         			'placement'			=> ($row['avail_zone']) ? $row['avail_zone'] : "",
         			'i_type'			=> $row['instance_type'],
         			'use_elastic_ips'	=> ($row['use_elastic_ips'] == 1) ? true : false,

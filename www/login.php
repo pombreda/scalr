@@ -98,37 +98,56 @@
 			    	$err[] = "Your account has been stopped by service administrator. Please <a href='mailto:".CONFIG::$EMAIL_ADDRESS."'>contact us</a> for more information";
 			    else
 			    {
-					if ($user["password"] == $Crypto->Hash($post_pass) || $valid_admin)
-				    {
-	                    $sault = $Crypto->Sault();
-	        			$_SESSION["sault"] = $sault;
-	        			$_SESSION["hash"] = $Crypto->Hash("{$user['email']}:{$user["password"]}:{$sault}");
-	        			$_SESSION["uid"] = $user["id"];
-	        			$_SESSION["cpwd"] = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-	        			$_SESSION["aws_accesskey"] = $Crypto->Decrypt($user["aws_accesskey"], $_SESSION["cpwd"]);
-	        			$_SESSION["aws_accesskeyid"] = $Crypto->Decrypt($user["aws_accesskeyid"], $_SESSION["cpwd"]);
-	        			$_SESSION["aws_accountid"] = $user["aws_accountid"];
-	        			
-	        			if ($user["aws_private_key_enc"])
-	        				$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
-	        				
-	        			if ($user["aws_certificate_enc"])
-	        				$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
-	        			
-	        			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
-	        			unset($_SESSION["REQUEST_URI"]);
-	        			
-	        			$errmsg = false;
-	        			$err = false;
-	        			
-	        			UI::Redirect("{$rpath}");
-				    }
-				    else 
-	                    $err[] = "Incorrect login or password";
+			    	$bruteforce = false;
+			    	if ($user['login_attempts'] >= 3 && strtotime($user['dtlastloginattempt'])+600 > time())
+					{
+						$err[] = _("Bruteforce Protection!<br>You must wait 10 minutes before trying again.");
+						$bruteforce = true;
+					}
+			    	elseif ($user['login_attempts'] >= 3)
+			    	{
+				    	$db->Execute("UPDATE clients SET login_attempts='0' WHERE id=?", array($user["id"]));
+			    	}
+
+			    	if (!$bruteforce)
+			    	{
+			    		if ($user["password"] == $Crypto->Hash($post_pass) || $valid_admin)
+					    {
+		                    $sault = $Crypto->Sault();
+		        			$_SESSION["sault"] = $sault;
+		        			$_SESSION["hash"] = $Crypto->Hash("{$user['email']}:{$user["password"]}:{$sault}");
+		        			$_SESSION["uid"] = $user["id"];
+		        			$_SESSION["cpwd"] = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
+		        			$_SESSION["aws_accesskey"] = $Crypto->Decrypt($user["aws_accesskey"], $_SESSION["cpwd"]);
+		        			$_SESSION["aws_accesskeyid"] = $Crypto->Decrypt($user["aws_accesskeyid"], $_SESSION["cpwd"]);
+		        			$_SESSION["aws_accountid"] = $user["aws_accountid"];
+		        			
+		        			if ($user["aws_private_key_enc"])
+		        				$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
+		        				
+		        			if ($user["aws_certificate_enc"])
+		        				$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
+		        			
+		        			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "index.php";
+		        			unset($_SESSION["REQUEST_URI"]);
+		        			
+		        			$errmsg = false;
+		        			$err = false;
+	
+		        			$db->Execute("UPDATE clients SET `login_attempts`=0, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
+		        			
+		        			UI::Redirect("{$rpath}");
+					    }
+					    else
+					    { 
+		                    $db->Execute("UPDATE clients SET `login_attempts`=`login_attempts` + 1, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
+					    	$err[] = _("Incorrect login or password");
+					    }
+			    	}
 			    }
 			}
 			else 
-                $err[] = "Incorrect login or password";
+                $err[] = _("Incorrect login or password");
 		}
 	}
 	

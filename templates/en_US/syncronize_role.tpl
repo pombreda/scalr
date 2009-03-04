@@ -1,14 +1,5 @@
 {include file="inc/header.tpl"}
 	{include file="inc/table_header.tpl"}
-		{if $show_dbmaster_warning}
-		{include file="inc/intable_header.tpl" header="Confirmation" color="Gray"}
-    	<tr>
-    		<td colspan="2" align="left">
-   		   	{t}All running services (including MySQL server) on this instance will be stopped during rebundle, thus it is not recommended to run synchronization on <b>master</b>{/t}.
-    		</td>
-    	</tr>
-        {include file="inc/intable_footer.tpl" color="Gray"}
-		{/if}
 		{include file="inc/intable_header.tpl" header="Synchronize role" color="Gray"}
     	<tr>
     		<td colspan="2" align="left">
