@@ -1,5 +1,5 @@
 #summary Upgrading Scalr from Version 1.0 RC2 to 1.0 RC3
-#labels Phase-Deploy
+#labels Phase-Deploy,Deprecated
 
 = Update source code =
 
