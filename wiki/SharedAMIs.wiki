@@ -5,7 +5,7 @@
 
 === Region: us-east-1 ===
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
-|| mysql || mysql64 || ami-2cf21645 || ami-e8c62281 || MySQL server ||
+|| ~~mysql~~ || ~~mysql64~~ || ~~ami-2cf21645~~ || ~~ami-e8c62281~~ || ~~MySQL server~~ ||
 || app || app64 || ami-bac420d3 || ami-0ac62263 || Application server (Apache2 + mod_php + PHP 5.2.4) ||
 || www || www64 || ami-72f2161b || ami-01ca2e68 || Frontend load balancer and HTTP server ||
 || base || base64 || ami-51f21638 || ami-03ca2e6a || The clean image for building custom roles ||
@@ -19,7 +19,7 @@
 === Region: eu-west-1 ===
 
 || *32bit role name* || *64bit role name* || *32bit AMI ID* || *64bit AMI ID* || *Purpose* ||
-|| mysql || mysql64 || ami-221c3456 || ami-201c3454 || MySQL server ||
+|| ~~mysql~~ || ~~mysql64~~ || ~~ami-221c3456~~ || ~~ami-201c3454~~ || ~~MySQL server~~ ||
 || app || app64 || ami-3c1c3448 || ami-481c343c || Application server (Apache2 + mod_php + PHP 5.2.4) ||
 || www || www64 || ami-441c3430 || ami-5a1c342e || Frontend load balancer and HTTP server ||
 || base || base64 || ami-4c1c3438 || ami-401c3434 || The clean image for building custom roles ||
@@ -28,3 +28,7 @@
 || memcached || || ami-421c3436 || || Memcached server ||
 || app-tomcat || || ami-341c3440 || || Application server (Apache Tomcat 5.5) ||
 || || app-tomcat6 || || ami-4a1c343e || Application server (Apache Tomcat 6.0) ||
+
+
+<br>
+_~~Striked~~ roles are deprecated_
