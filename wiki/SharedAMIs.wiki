@@ -31,4 +31,4 @@
 
 
 <br>
-_~~Striked~~ roles are deprecated_
+_~~Crossed~~ roles are deprecated_
