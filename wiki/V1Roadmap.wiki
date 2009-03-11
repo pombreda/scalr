@@ -7,7 +7,7 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 = Future Releases = 
 
 == Scalarizr == 
-
+Scalr agent that will allow you to use any `*`nix AMI with Scalr.
 
 == Optimization of MySQL Role == 
 Making snapshot and promoting new master takes a long time. We have a few ideas about how to make this process faster.
