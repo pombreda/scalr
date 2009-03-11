@@ -19,7 +19,7 @@ With one-click sorting and other cool goodies.
 Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
 
 == Misc ==
-  * Bye SNMP+REST, hello messaging (ActiveMQ).
+  * Bye SNMP+REST, hello messaging (Amazon SQS).
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
