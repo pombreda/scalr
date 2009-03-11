@@ -4,21 +4,42 @@
 _This page lists features that Scalr team is currently working on and planning to release soon.
 It should not be considered "final" and can be (and will be) re-arranged along the way._
 <br />
-= February 2009 =
+= Future Releases = 
 
-== EBS for MySQL role ==
+== Scalarizr == 
 
-A single EBS volume is used as datadir on master and to deliver latest data to slaves (via snapshots).
-
-== Elastic IPs re-assigning to a same instance within a role==
-If you enable elastic IPs inside a role settings, IP #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts. 
-In MySQL role, 1st IP always gets attached to MySQL master.
-
-== Cloudfront support == 
-Select a bucket, select Application, enter subdomain name, done.
 
 == Optimization of MySQL Role == 
 Making snapshot and promoting new master takes a long time. We have a few ideas about how to make this process faster.
+
+== New extJS-based interface ==
+With one-click sorting and other cool goodies. 
+
+== yourfarm.scalr.ws ==
+Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
+
+== Misc ==
+  * Bye SNMP+REST, hello messaging (ActiveMQ).
+  * SSH is no more required on instances
+  * Base Windows Role.
+  * Diff view  for scripts
+
+<br>
+= <strike>February 2009</strike> =
+
+== <strike>EBS for MySQL role</strike> ==
+
+<strike>A single EBS volume is used as datadir on master and to deliver latest data to slaves (via snapshots).</strike>
+
+== <strike>Elastic IPs re-assigning to a same instance within a role</strike> ==
+<strike>If you enable elastic IPs inside a role settings, IP #1 always gets attached to an instance that is launched 1st, Volume 2 to a second one and so on. Association persists between farm restarts. 
+In MySQL role, 1st IP always gets attached to MySQL master.
+</strike>
+== <strike>Cloudfront support</strike> == 
+<strike>Select a bucket, select Application, enter subdomain name, done.</strike>
+
+== <strike>Misc</strike> ==
+<strike>* New Scripting events:  beforeHostTerminate, beforeInstanceLaunch, OnEBSVolumeMounted</strike>
 
 <br />
 = <strike>January 2009</strike> = 
@@ -44,17 +65,3 @@ Auto-EBS, manual EBS, EBS arrays - all support this feature.</strike>
 <strike>Set the size and push the button. Volumes always get attached and mounted whenever instance boots up.</strike>
 
 <br />
-= Future Releases = 
-
-== New extJS-based interface ==
-With one-click sorting and other cool goodies. 
-
-== yourfarm.scalr.ws ==
-Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
-
-== Misc ==
-  * Bye SNMP+REST, hello messaging (ActiveMQ).
-  * SSH is no more required on instances
-  * Base Windows Role.
-  * Diff view  for scripts
-  * New Scripting events:  beforeHostTerminate, beforeInstanceLaunch, <strike>OnEBSVolumeMounted</strike>
