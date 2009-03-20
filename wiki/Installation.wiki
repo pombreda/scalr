@@ -32,6 +32,7 @@ Scalr requires a web server and can run on any POSIX-compatible (Linux, BSD etc.
   * [http://php.net/dom DOM]
   * [http://php.net/Soap SOAP]
   * [http://php.net/SNMP SNMP]
+  * [http://pecl.php.net/package/pecl_http pecl_http]
 
 
 == Installation ==
