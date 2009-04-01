@@ -23,6 +23,7 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
+  * Scaling based on bandwidth usage
 
 <br>
 = <strike>February 2009</strike> =
