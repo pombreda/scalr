@@ -6,7 +6,7 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 <br />
 = Future Releases = 
 
-== New scaling algoritms ==
+== New scaling algorithms ==
  * Scaling based on bandwidth usage
  * Scaling based on SQS queue size
  * Scaling based on Memory usage
