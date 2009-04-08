@@ -6,6 +6,10 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 <br />
 = Future Releases = 
 
+== New scaling algoritms ==
+* Scaling based on bandwidth usage
+* Scaling based on SQS queue size
+
 == Scalarizr == 
 Scalr agent that will allow you to use any `*`nix AMI with Scalr.
 
@@ -23,7 +27,7 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
-  * Scaling based on bandwidth usage
+  * Support for reserved instances.
 
 <br>
 = <strike>February 2009</strike> =
