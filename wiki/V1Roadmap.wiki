@@ -9,6 +9,7 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 == New scaling algoritms ==
  * Scaling based on bandwidth usage
  * Scaling based on SQS queue size
+ * Scaling based on Memory usage
 
 == Scalarizr == 
 Scalr agent that will allow you to use any `*`nix AMI with Scalr.
