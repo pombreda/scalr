@@ -1,4 +1,5 @@
 #summary Introduction to mysqllvm role
+#labels mysql,mysqllvm
 
 * This is a draft
 
@@ -55,3 +56,11 @@ Average init time: 10 minutes
 Total space available for data storage: ~750GB
 
 Average init time: 20 minutes
+
+= Migrating  from non-lvm mysql role =
+  # Launch /usr/local/aws/scripts/mysql-data-bundle.sh on master to save the latest data snaphot  on S3
+  # Disable old mysql role (untick in Farm Builder)
+  # Enable the new mysqllvm role. (tick in Farm Builder)
+
+Be warned that mysql is unavailable in the timespan  between #2 and #3 above.
+I 
