@@ -58,8 +58,12 @@ Total space available for data storage: ~750GB
 Average init time: 20 minutes
 
 = Migrating  from non-lvm mysql role =
-  # Launch /usr/local/aws/scripts/mysql-data-bundle.sh on master to save the latest data snaphot  on S3
+Go to Farms -> View all, locate your farm in the list and Open Options->  Backup/Bundle MySQL data
+  #   Locate your MySQL master instance on the farm map. 
+  #   Click on options and then "Backup/bundle MySQL data". Then click "Bundle MySQL data now button.
+This will save the latest data snaphot  on S3.
   # Disable old mysql role (untick in Farm Builder)
-  # Enable the new mysqllvm role. (tick in Farm Builder)
+  # Enable the new mysqllvm role. (tick in Farm Builder).
 
-Be warned that mysql is unavailable in the timespan  between #2 and #3 above.
+Be warned that mysql is unavailable in the timespan  between #3 and #4 above.
+You may also want to restart a farm after all.
