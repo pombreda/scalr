@@ -63,4 +63,3 @@ Average init time: 20 minutes
   # Enable the new mysqllvm role. (tick in Farm Builder)
 
 Be warned that mysql is unavailable in the timespan  between #2 and #3 above.
-I 
