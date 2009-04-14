@@ -61,7 +61,7 @@ Average init time: 20 minutes
 Go to Farms -> View all, locate your farm in the list and Open Options->  Backup/Bundle MySQL data
   #   Locate your MySQL master instance on the farm map. 
   #   Click on options and then "Backup/bundle MySQL data". Then click "Bundle MySQL data now button.
-This will save the latest data snaphot  on S3.
+This will save the latest data snaphot on S3. Wait until this operation will complete.
   # Disable old mysql role (untick in Farm Builder)
   # Enable the new mysqllvm role. (tick in Farm Builder).
 
