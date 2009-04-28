@@ -1,0 +1,18 @@
+#summary EBS Arrays
+#labels new,EBS
+= What is a Scalr EBS Array? =
+
+EBS Array is a set of EBS volumes, joined into a single storage device and formatted as ext3. It can be mounted to an instance just like any storage device. 
+
+
+
+= Advantages and limitations = 
+ 
+  * Currently  the maximum size of a single array is limited to 10 volumes of 100 GB each, which is *10 TB in total*.
+
+
+  *. Arrays is a semi-manual thing due to a  long time that filesystem creation takes. Thus, unlike single-volume  EBS  management in Scalr, which can be automated  in few clicks of a mouse, 
+Array can only be assigned to a single instance, not a role.
+
+= Usage  = 
+You can create array and attach  it to an instance  on Farms->EBS-> Arrays page.
