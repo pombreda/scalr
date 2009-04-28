@@ -1,5 +1,7 @@
-#summary EBS Arrays
+#summary What is EBS Array and how it  can help
 #labels new,EBS,Array,Storage
+
+
 = What is a Scalr EBS Array? =
 
 EBS Array is a set of EBS volumes, joined into a single storage device and formatted as ext3. It can be mounted to an instance just like a regular  storage device. 
