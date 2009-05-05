@@ -11,6 +11,8 @@
     		'DBInstance'			=> SRCPATH.'/class.DBInstance.php',
     		'XMLMessageSerializer'	=> SRCPATH.'/class.XMLMessageSerializer.php',
     	
+    		/****************************** LIB **********************************/
+    	
     		/****************************** Messaging  ***************************/
     		'ScalrMessage'						=> SRCPATH.'/messaging/messages/abstract.ScalrMessage.php',
     		'EventNoticeScalrMessage'			=> SRCPATH.'/messaging/messages/class.EventNoticeScalrMessage.php',
@@ -27,7 +29,9 @@
     	
     		/******************* Environment objects ****************************/
     		'ScalrEnvironmentFactory'	=> SRCPATH.'/class.ScalrEnvironmentFactory.php',
-    		'ScalrEnvironment'			=> SRCPATH.'/class.ScalrEnvironment.php',    	
+    		'ScalrEnvironment'			=> SRCPATH.'/class.ScalrEnvironment.php',
+    		'ScalrRESTService'			=> SRCPATH.'/class.ScalrRESTService.php',
+    		'ScalarizrCallbackService'  => SRCPATH.'/class.ScalarizrCallbackService.php',
     	
     		/****************************** Events ******************************/
     		'Event'					=> SRCPATH.'/events/abstract.Event.php',
@@ -50,6 +54,8 @@
     		'RebundleCompleteEvent'	=> SRCPATH.'/events/class.RebundleCompleteEvent.php',
     		'RebundleFailedEvent'	=> SRCPATH.'/events/class.RebundleFailedEvent.php',
     		'EBSVolumeMountedEvent'	=> SRCPATH.'/events/class.EBSVolumeMountedEvent.php',
+    		'BeforeInstanceLaunchEvent'		=> SRCPATH.'/events/class.BeforeInstanceLaunchEvent.php',
+    		'BeforeHostTerminateEvent'		=> SRCPATH.'/events/class.BeforeHostTerminateEvent.php',
     	
     		/****************************** Structs ******************************/
     		'CONTEXTS'				=> SRCPATH."/structs/struct.CONTEXTS.php",
@@ -83,6 +89,7 @@
     		'COMMENTS_OBJECT_TYPE'	=> SRCPATH."/types/enum.COMMENTS_OBJECT_TYPE.php",
     		'EBS_ARRAY_STATUS'		=> SRCPATH."/types/enum.EBS_ARRAY_STATUS.php",
     		'EBS_ARRAY_SNAP_STATUS' => SRCPATH."/types/enum.EBS_ARRAY_SNAP_STATUS.php",
+    		'MYSQL_STORAGE_ENGINE'	=> SRCPATH."/types/enum.MYSQL_STORAGE_ENGINE.php",
     	
     		/****************************** Observers ***************************/
 		    'EventObserver'			=> APPPATH.'/observers/abstract.EventObserver.php',
@@ -94,6 +101,7 @@
 		    'EC2EventObserver'		=> APPPATH.'/observers/class.EC2EventObserver.php',
 		    'SSHWorker'				=> APPPATH.'/observers/class.SSHWorker.php',
 		    'ElasticIPsEventObserver'	=> APPPATH.'/observers/class.ElasticIPsEventObserver.php',
+    		'ScalarizrEventObserver'	=> APPPATH.'/observers/class.ScalarizrEventObserver.php',
     		
     		// Deferred observers
     		'MailEventObserver'		=> APPPATH.'/observers/class.MailEventObserver.php',

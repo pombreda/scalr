@@ -102,7 +102,7 @@
 				$key = realpath($key);
 				try
 				{
-					$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
+					$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL(AWSRegions::US_EAST_1)); 
 					$AmazonEC2->SetAuthKeys(
 						$keys[0], 
 						str_replace("pk-", "cert-", $key), 

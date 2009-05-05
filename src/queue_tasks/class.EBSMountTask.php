@@ -9,6 +9,10 @@
 		{
 			$DB = Core::GetDBInstance();
 			
+			LoggerManager::getLogger(__CLASS__)->info(
+				sprintf(_("EBSMountTask: %s"), $this->VolumeID)
+			);
+			
 			try
 			{
 				$DBEBSVolume = DBEBSVolume::Load($this->VolumeID);
@@ -38,6 +42,10 @@
 					$response = $EC2Client->DescribeVolumes($DBEBSVolume->VolumeID);
 					$volume = $response->volumeSet->item;
 					
+					LoggerManager::getLogger(__CLASS__)->info(
+						sprintf(_("Volume status: %s (%s)"), $volume->status, $volume->attachmentSet->item->status)
+					);
+					
 					if ($volume->status == AMAZON_EBS_STATE::IN_USE)
 					{
 						if ($volume->attachmentSet->item->status == 'attached')
@@ -50,7 +58,7 @@
 							$DBInstance = DBInstance::LoadByID($instanceinfo['id']);
 							$DBInstance->SendMessage(new MountPointsReconfigureScalrMessage(
 								$DBEBSVolume->Device, 
-								$farm_role_info['ebs_mountpoint'], 
+								($DBEBSVolume->IsManual == 1) ? $DBEBSVolume->MountPoint : $farm_role_info['ebs_mountpoint'], 
 								$createfs
 							));
 							
@@ -65,6 +73,21 @@
 					elseif ($volume->status == AMAZON_EBS_STATE::ATTACHING)
 					{
 						return false;
+					}
+					elseif ($volume->status == AMAZON_EBS_STATE::AVAILABLE)
+					{
+						try
+						{
+							Scalr::AttachEBS2Instance($EC2Client, $instanceinfo, $farminfo, $DBEBSVolume);
+							return true;
+						}
+						catch(Exception $e)
+						{
+							LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
+								sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
+							));
+							return false;
+						}
 					}
 					else
 					{

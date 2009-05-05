@@ -11,14 +11,33 @@
     /*
      * Date: 2008-12-16
      * Added /list-ebs-mountpoints method
+     * Added /get-latest-version method
      */
     require(dirname(__FILE__)."/../src/class.ScalrEnvironment20081216.php");
 
+    /*
+     * Date: 2009-03-05
+     * Improved /list-role-params method (Added mysql options)
+     */
+    require(dirname(__FILE__)."/../src/class.ScalrEnvironment20090305.php");
     
     
     /**
      * ***************************************************************************************
      */
+    if (!$req_version)
+    	die();
+    
+    $args = "";
+    foreach ($_REQUEST as $k => $v)
+    {
+    	$args .= "{$k} = {$v}, ";
+    }
+    	
+    $args = trim($args, ",");
+    	
+    Logger::getLogger('query-env')->info("Received request. Args: {$args}");
+    	
     try
     {
    	 	$EnvironmentObject = ScalrEnvironmentFactory::CreateEnvironment($req_version);
@@ -32,6 +51,9 @@
     }
     
     header("Content-Type: text/xml");
+    
+    Logger::getLogger('query-env')->info("Response:");
+    Logger::getLogger('query-env')->info($response);
     print $response;
     exit();
 ?>

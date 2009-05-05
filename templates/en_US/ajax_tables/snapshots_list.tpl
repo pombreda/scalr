@@ -17,8 +17,9 @@
 				<div style="clear:both;font-size:1px;"></div>
 			</td>
 			<td class="Item" valign="top">{$snaps[id]->comment}</td>
-		<td class="Item" valign="top" width="1"><a id="control_{$snaps[id]->snapshotId}" href="javascript:void(0)">{t}Options{/t}</a></td>
+		<td class="Item" valign="top" width="1">{if !$snaps[id]->is_array_snapshot}<a id="control_{$snaps[id]->snapshotId}" href="javascript:void(0)">{t}Options{/t}</a>{/if}</td>
 	</tr>
+	{if !$snaps[id]->is_array_snapshot}
 	<script language="Javascript" type="text/javascript">
 		var sid = '{$snaps[id]->snapshotId}';
 	    	
@@ -33,6 +34,7 @@
 		control.attach('control_'+sid);
 		{/literal}
 	</script>
+	{/if}
 	{sectionelse}
 	<tr>
 		<td colspan="10" align="center">{t}No snapshots found{/t}</td>

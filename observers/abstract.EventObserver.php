@@ -87,5 +87,9 @@
 		public function OnMySQLReplicationRecovered(MySQLReplicationRecoveredEvent $event) {}
 		
 		public function OnEBSVolumeMounted(EBSVolumeMountedEvent $event) {}
+		
+		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event) {}
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event) {}
 	}
 ?>

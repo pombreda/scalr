@@ -215,7 +215,6 @@
     		else
     			$region = $_SESSION['aws_region'];
     		
-    		
     		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
 			$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
     		
@@ -232,9 +231,12 @@
 				$pv->startTime = date("Y-m-d H:i:s", strtotime($pv->startTime));
 				$item = $pv;	
 				
-				$item->comment = $db->GetOne("SELECT comment FROM ebs_snaps_info WHERE snapid=?", array(
+				$info = $db->GetRow("SELECT * FROM ebs_snaps_info WHERE snapid=?", array(
 					$item->snapshotId
 				));
+				
+				$item->comment = $info['comment'];
+				$item->is_array_snapshot = ($info['arraysnapshotid'] > 0) ? true : false;
 				
 				$item->progress = (int)preg_replace("/[^0-9]+/", "", $item->progress);
 				

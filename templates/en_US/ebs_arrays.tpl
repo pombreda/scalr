@@ -83,7 +83,7 @@
 	</script>
 	{sectionelse}
 	<tr>
-		<td colspan="11" align="center">No EBS array found</td>
+		<td colspan="11" align="center">No arrays found</td>
 	</tr>
 	{/section}
 	<tr>

@@ -14,7 +14,7 @@
 			parent::__construct();
 			
 			$this->RoleAlias = $role_alias;
-			$this->InternalIP = $internal_ip;
+			$this->InternalIP = ($internal_ip) ? $internal_ip : "0.0.0.0";
 			$this->RoleName = $role_name;
 			$this->EventName = $event_name;
 		}

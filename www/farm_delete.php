@@ -34,6 +34,7 @@
 	    		$db->Execute("DELETE FROM logentries WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM events WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM farm_ebs WHERE farmid=?", array($farminfo['id']));
 	    		
 	    		$db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farminfo['id']));

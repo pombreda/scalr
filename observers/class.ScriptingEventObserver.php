@@ -14,12 +14,8 @@
 		{
 			if ($event->InstanceInfo['isrebootlaunched'] == 1)
 				return;
-				
-			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
-				array($event->InstanceInfo['id'])
-			);
-						
-			$this->SendExecTrap($instanceinfo, EVENT_TYPE::HOST_DOWN);
+										
+			$this->SendExecTrap($event->InstanceInfo, EVENT_TYPE::HOST_DOWN);
 		}
 		
 		public function OnHostUp(HostUpEvent $event)
@@ -79,6 +75,24 @@
 			$this->SendExecTrap($instanceinfo, EVENT_TYPE::EBS_VOLUME_MOUNTED);
 		}
 		
+		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event)
+		{			
+			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
+				array($event->InstanceInfo['id'])
+			);
+				
+			$this->SendExecTrap($instanceinfo, EVENT_TYPE::BEFORE_INSTANCE_LAUNCH);
+		}
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
+		{			
+			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
+				array($event->InstanceInfo['id'])
+			);
+				
+			$this->SendExecTrap($instanceinfo, EVENT_TYPE::BEFORE_HOST_TERMINATE);
+		}
+		
 		private function SendExecTrap($instanceinfo, $event_name)
 		{			
 			// Try to send trap to all instances
@@ -93,18 +107,18 @@
 			
 			foreach ($instances as $instance)
 			{
-				// For INSTANCE_IP_ADDRESS_CHANGED we must sent trap to all instances include instance where ip adress changed.
+				// For some events we must sent trap to all instances include instance where ip adress changed.
 				// For other events we must exclude instance that fired event from trap list.
 				if ($instanceinfo['id'] == $instance['id'])
 				{
-					if (!in_array($event_name, array(EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED, EVENT_TYPE::EBS_VOLUME_MOUNTED))) 
+					if (!in_array($event_name, array(
+						EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED, 
+						EVENT_TYPE::EBS_VOLUME_MOUNTED, 
+						EVENT_TYPE::BEFORE_INSTANCE_LAUNCH,
+						EVENT_TYPE::BEFORE_HOST_TERMINATE
+						))) 
 					{
 						continue;
-					}
-					else
-					{
-						//TODO: Remove this ugly hack and think about better solution.
-						$instanceinfo['internal_ip'] = '127.0.0.1';
 					}
 				}
 

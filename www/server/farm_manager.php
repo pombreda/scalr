@@ -12,10 +12,13 @@
     $farm_name = $req_farm_name;
     $roles = @file_get_contents("php://input");
 	$roles = json_decode($roles, true);
-		
+			
     try
     {
-		$uid = 0;
+		if ($farm_id && !$_SESSION['farm_builder_region'])
+			throw new Exception(_("Session expired. Please login again."));
+    	
+    	$uid = 0;
     	// Get User ID
     	if ($_SESSION['uid'] == 0)
 	    {
@@ -85,6 +88,12 @@
 			if ($role['options']['use_ebs'] && $role['options']['placement'] == "")
 				throw new Exception(sprintf(_("EBS cannot be enabled if Placement is set to 'Choose randomly'. Please select a different option for 'Placement' parameter for role '%s'."), $rolename));
 				
+			if ($role['options']['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
+			{
+				if ($role['options']['placement'] == "" || $role['options']['placement'] == "x-scalr-diff")
+					throw new Exception(sprintf(_("If you want to use EBS as MySQL data storage, you should select specific 'Placement' parameter for role '%s'."), $rolename));
+			}
+				
 			if ($role['options']['use_ebs'] && $role['options']['ebs_size'])
 			{
 				if ($role['options']['ebs_size'] < 1 || $role['options']['ebs_size'] > 1000)
@@ -111,6 +120,8 @@
 				$farm_mysql_make_backup_every = $role['options']['mysql_make_backup_every'];
 				$farm_mysql_make_backup = (int)$role['options']['mysql_make_backup'];
 				
+				$farm_mysql_data_storage_engine = $role['options']['mysql_data_storage_engine']; 
+				$farm_mysql_ebs_size = (int)$role['options']['mysql_ebs_size'];
 			}
         }
         
@@ -156,6 +167,8 @@
 						mysql_bcp_every = ?,
 						mysql_rebundle_every = ?,
 						mysql_bundle = ?,
+						mysql_data_storage_engine = ?,
+						mysql_ebs_size = ?,
 						region = ?
 					", array( 
 	                	trim($farm_name), 
@@ -165,6 +178,8 @@
 						$farm_mysql_make_backup_every, 
 						$farm_mysql_bundle_every,
 						$farm_mysql_bundle,
+						$farm_mysql_data_storage_engine,
+						$farm_mysql_ebs_size,
 						$_SESSION['farm_builder_region']
 	                ));
 	                
@@ -198,14 +213,18 @@
 						mysql_bcp = ?,
 						mysql_bcp_every = ?,
 						mysql_rebundle_every = ?,
-						mysql_bundle = ?
+						mysql_bundle = ?,
+						mysql_data_storage_engine = ?,
+						mysql_ebs_size = ?
 						WHERE id=?", 
 					array(  
 						trim($farm_name), 
 						$farm_mysql_make_backup, 
 						$farm_mysql_make_backup_every, 
 						$farm_mysql_bundle_every,
-						$farm_mysql_bundle, 
+						$farm_mysql_bundle,
+						$farm_mysql_data_storage_engine,
+						$farm_mysql_ebs_size, 
 						$farm_id
 					));
 				}
@@ -475,8 +494,8 @@
 							$address = $AmazonEC2Client->AllocateAddress();
 							
 							// Add allocated IP address to database
-							$db->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?",
-								array($farm_id, $instance['role_name'], $address->publicIp, $uid)
+							$db->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
+								array($farm_id, $instance['role_name'], $address->publicIp, $uid, $instance['index'])
 							);
 							
 							$allocated_ips[] = $address->publicIp;

@@ -48,6 +48,10 @@
 									$DBEBSVolume->AvailZone = $instanceinfo['avail_zone'];
 									$DBEBSVolume->InstanceIndex = $instanceinfo['index'];
 									$DBEBSVolume->Region = $instanceinfo['region'];
+									
+									$DBEBSVolume->Mount = ($post_mount == 1) ? 1 : 0;
+									$DBEBSVolume->Mountpoint = $post_mountpoint;
+									
 									$DBEBSVolume->IsManual = 1;
 									$DBEBSVolume->Save();
 								}
@@ -351,31 +355,59 @@
 		
 		if ($item->Scalr->FarmID)
 		{
-			$item->Scalr->FarmName = $db->GetOne("SELECT name FROM farms WHERE id=?",
-				array($item->Scalr->FarmID)
-			);
+			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", $item->Scalr->FarmID);
+			$item->Scalr->FarmName = $farminfo['name'];
+			
+			$item->Scalr->MySQLMasterVolume = ($farminfo['mysql_master_ebs_volume_id'] == $item->volumeId) ? true : false;
+		}
+		else
+		{
+			$farminfo = $db->GetRow("SELECT * FROM farms WHERE mysql_master_ebs_volume_id=?", $item->volumeId);
+			if ($farminfo && $farminfo['clientid'] == $_SESSION["uid"])
+			{
+				$item->Scalr->FarmID = $farminfo['id'];
+				$item->Scalr->FarmName = $farminfo['name'];
+				$item->Scalr->MySQLMasterVolume = true;
+			}
 		}
 		
 		$item->Scalr->AutoSnapshoting = ($db->GetOne("SELECT id FROM autosnap_settings WHERE volumeid=?", array($item->volumeId))) ? true : false;
 		
+		///
+		/// Generate sort key
+		///
+		if ($item->Scalr->ArrayID)
+			$sort_key = "{$item->Scalr->ArrayID}_{$item->Scalr->ArrayName}_{$item->Scalr->ArrayPartNo}";
+		elseif ($item->Scalr->FarmID)
+			$sort_key = "{$item->Scalr->FarmID}_{$item->Scalr->RoleName}_{$item->volumeId}";
+		else
+			$sort_key = "{$item->volumeId}";
+		
+		//////////////////////
 		
 		if ($req_farmid)
 		{
 			if ($req_farmid == $item->Scalr->FarmID)
-				$vols[] = $item;
+			{
+				$vols[$sort_key] = $item;
+			}
 		}
 		elseif ($req_arrayid)
 		{
 			if ($req_arrayid == $item->Scalr->ArrayID)
-				$vols[] = $item;
+			{
+				$vols[$sort_key] = $item;
+			}
 		}
 		elseif (!$req_volume_id || $req_volume_id == $item->volumeId)
 		{
-			$vols[] = $item;
+			$vols[$sort_key] = $item;
 		}
 	}
 	
-	$display["vols"] = $vols;
+	ksort($vols);
+
+	$display["vols"] = array_values($vols);
 	
 	$Smarty->assign(array("table_title_text" => _("Snapshots"), "reload_action" => "ReloadPage();"));
 	$display["snaps_filter"] = $Smarty->fetch("inc/table_title.tpl");

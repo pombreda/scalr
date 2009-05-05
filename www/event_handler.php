@@ -157,7 +157,7 @@
 						break;
 		
 					case "mysqlBckComplete":
-							$event = new MysqlBackupCompleteEvent($instanceinfo, $data["operation"]);
+							$event = new MysqlBackupCompleteEvent($instanceinfo, $data["operation"], $data['snapinfo']);
 						break;
 		
 					case "mysqlBckFail":

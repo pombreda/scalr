@@ -9,7 +9,7 @@
 	        $farm_id = (int)$req_FarmID;
 	        $hash = preg_replace("/[^A-Za-z0-9]+/", "", $req_Hash);
 	        
-	        $Logger->debug("Instance={$req_InstanceID} from FarmID={$farm_id} with Hash={$hash} trying to view option '{$req_option}'");
+	        $Logger->info("Instance={$req_InstanceID} from FarmID={$farm_id} with Hash={$hash} trying to view option '{$req_option}'");
 	                
 	        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND hash=?", array($farm_id, $hash));
 	        $instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($req_InstanceID));
@@ -453,7 +453,7 @@
 	        $contents = ob_get_contents();
 	        ob_end_clean();
 	        
-	        $Logger->debug("config_opts.php output: {$contents}");
+	        $Logger->info("config_opts.php output: {$contents}");
 	        
 	        print $contents;
 	        

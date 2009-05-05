@@ -22,6 +22,7 @@
 			$db->Execute("UPDATE farm_amis SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 			$db->Execute("UPDATE zones SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 			$db->Execute("UPDATE farm_role_scripts SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE farm_role_options SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 		}
 		catch(Exception $e)
 		{

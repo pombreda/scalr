@@ -155,6 +155,35 @@
            			$db->Execute("DELETE from zones WHERE id=?", array($zone['id']));
    					$db->Execute("DELETE from records WHERE zoneid=?", array($zone['id']));
    					$db->Execute("DELETE from vhosts WHERE name=?", array($zone['zone']));
+   					
+            		try
+    				{
+						$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($zone['farmid']));
+						$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
+							array($zone['farmid'], INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
+						);
+						foreach ((array)$instances as $instance)
+						{
+							$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+							if ($alias != ROLE_ALIAS::APP && $alias != ROLE_ALIAS::WWW)
+								continue;
+							
+							$DBInstance = DBInstance::LoadByID($instance['id']);
+							$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
+								$zone['zone'], 
+								1
+							));
+							
+							$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
+								$zone['zone'], 
+								0
+							));
+						}
+    				}
+    				catch(Exception $e)
+    				{
+    					$Logger->fatal("Cannot remove virtualhost: {$e->getMessage()}");
+    				}
             	}
             	else
             		TaskQueue::Attach(QUEUE_NAME::DELETE_DNS_ZONE)->AppendTask($Task);

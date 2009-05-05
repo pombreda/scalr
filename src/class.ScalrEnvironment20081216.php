@@ -5,7 +5,7 @@
     	protected function GetLatestVersion()
     	{
     		$ResponseDOMDocument = $this->CreateResponse();
-    		$VersionDOMNode = $ResponseDOMDocument->createElement("version", "2008-12-16");
+    		$VersionDOMNode = $ResponseDOMDocument->createElement("version", ScalrEnvironment::LATEST_VERSION);
     		$ResponseDOMDocument->documentElement->appendChild($VersionDOMNode);
     		
     		return $ResponseDOMDocument;
@@ -69,17 +69,20 @@
 				}
 				else
 				{
-					$mountpoint = "";
+					$mountpoint = ($volume['mount']) ? $volume['mountpoint'] : "";
 					$createfs = 0;
 				}
     			
-    			$mountpoints[] = array(
-					'name'		=> $volume['volumeid'],
-					'dir'		=> $mountpoint,
-    				'createfs' 	=> $createfs,
-    				'volumes'	=> array($volume),
-    				'isarray'	=> 0
-				);
+				if ($mountpoint)
+				{
+	    			$mountpoints[] = array(
+						'name'		=> $volume['volumeid'],
+						'dir'		=> $mountpoint,
+	    				'createfs' 	=> $createfs,
+	    				'volumes'	=> array($volume),
+	    				'isarray'	=> 0
+					);
+				}
     		}
     		
     		//

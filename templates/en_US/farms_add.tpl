@@ -62,6 +62,7 @@
 	                            	/*
 	                            	Init variables
 	                            	*/
+										                            	
 	                            	var i_types = new Array();
 	                            	i_types['i386'] = new Array();
 	                            	{section name=id loop=$32bit_types}
@@ -76,7 +77,7 @@
 	                                var MANAGER_ACTION = '{if $id}edit{else}create{/if}';
 	                                var FARM_ID		   = '{$id}';
 	                                var REGION		   = '{$region}';
-	                                                                
+	                                var FARM_MYSQL_ROLE = '{$farm_mysql_role}';                                
 									
 									{if $roles}
 	                                var l_roles = {$roles};
@@ -86,6 +87,23 @@
 	                                Setup initial observer
 	                                */
 									{literal}
+
+									var iscompleted = new Array;
+									window.iscompleted['init'] = false;
+									window.iscompleted['roles'] = false;
+									window.iscompleted['events'] = false;
+	                                
+									function IsPageLoaded()
+									{
+										if (window.iscompleted['init'] && window.iscompleted['roles'])
+										{
+											$('AttachLoader').style.display = 'none';
+											return true;
+										}
+										else
+											window.setTimeout("IsPageLoaded()", 1000);
+									}
+									
 									Event.observe(window, 'load', function(){
 										window.RoleTabObject = new RoleTab();
 										window.popup = new NewPopup('role_info_popup', {target: '', width: 270, height: 120, selecters: new Array()});
@@ -100,6 +118,10 @@
 			                                	window.RoleTabObject.AddRoleToFarm(null, Object.clone(f));
 			                                }); 
 			                            }
+
+										window.iscompleted['init'] = true;
+
+										window.setTimeout("IsPageLoaded()", 1000);
 									});
 	                            	{/literal}
 									
@@ -127,7 +149,7 @@
 		            	                {literal}
 		            	                tree.OnXMLLoaded = function()
 		            	                {
-		            	                	$('AttachLoader').style.display = 'none';
+		            	                	window.iscompleted['roles'] = true;
 		            	                }
 		            	                            	                         	    
 		            	                var selectTreeItem = function(itemId, markitem)
@@ -148,7 +170,16 @@
 												tree.selTimeout = window.setTimeout('selectTreeItem("'+itemId+'", 1)', 200);
 												return;
 		            	                	}
-		            	                	            	                			                					
+
+											if (tree._globalIdStorageFind(itemId).label == 'mysql' || tree._globalIdStorageFind(itemId).label == 'mysql64')
+											{
+												$('mysql_dep_warning').style.display = '';
+											}
+											else
+											{
+												$('mysql_dep_warning').style.display = 'none';
+											}
+	            	                	            	                			                					
 		                					if (markitem)
 		                						tree._markItem(tree._globalIdStorageFind(itemId));
 		                						
@@ -218,9 +249,9 @@
 		                                events_tree.setXMLAutoLoading("role_scripts_xml.php?farmid={$id}");
 		                                events_tree.setDragHandler(ScriptsDragHandler);
 		            	                events_tree.loadXML("role_scripts_xml.php?farmid={$id}");
-												   		            	     
-			            	            {literal}
 
+		            	                									   		            	     
+			            	            {literal}		            	            
 			            	            events_tree.onDragEnd = function(itemId)
 										{
 											if (RoleTabObject.CurrentRoleObject && RoleTabObject.CurrentRoleObject)
@@ -475,6 +506,13 @@
                         <td style="padding:0px;margin:0px;padding-top:10px;">
                            {include file="inc/table_header.tpl" nofilter=1 tabs=1}
 								{include intable_tabs=0 intable_classname="tab_contents" intableid="tab_contents_general" visible="" file="inc/intable_header.tpl" header="Farm information" color="Gray"}
+                           		<tr id="mysql_dep_warning" style="display:none;">
+                           				<td colspan="2">
+                           					<div class="Webta_ExperimentalMsg" style="margin-bottom:15px;">
+												'mysql' and 'mysql64' roles are deprecated. Please use 'mysqllvm' and 'mysqllvm64' instead.
+											</div>
+                           				</td>
+                           			</tr>
                            		<tr>
                             		<td width="20%">Name:</td>
                             		<td><input type="text" class="text" name="farm_name" id="farm_name" value="{$farminfo.name}" /></td>
@@ -544,6 +582,42 @@
 	                            	<tr>
 	                            		<td colspan="2"><input style="vertical-align:middle;" type="checkbox" {if $farminfo.mysql_bcp == 1}checked{/if} name="mysql_bcp" id="mysql_bcp" value="1"> Periodically backup databases every: <input type="text" size="3" class="text" id="mysql_bcp_every" name="mysql_bcp_every" value="{if $farminfo.mysql_bcp_every}{$farminfo.mysql_bcp_every}{else}180{/if}" /> minutes</td>
 	                            	</tr>
+	                            	<tr>
+	                            		<td colspan="2">&nbsp;</td>
+	                            	</tr>
+	                            	<tr>
+	                            		<td>Storage engine:</td>
+	                            		<td>
+	                            			<select onchange="CheckEBSSize(this.value);" id="mysql_data_storage_engine" name="mysql_data_storage_engine" class="text">
+	                            				<option value="eph">Ephemeral device</option>
+	                            				<option value="lvm">LVM</option>
+	                            				<option value="ebs">EBS</option>
+	                            			</select>
+	                            		</td>
+	                            	</tr>
+	                            	<tr id="mysql_ebs_size_tr">
+	                            		<td>EBS size (max. 1000 GB):</td>
+	                            		<td>
+	                            			<input type="text" size="5" class="text" id="mysql_ebs_size" name="mysql_ebs_size" value="100" /> GB
+	                            		</td>
+	                            	</tr>
+	                            	<script language="Javascript">
+	                            	{literal}
+									function CheckEBSSize(storage_engine)
+									{
+										if (storage_engine == 'ebs')
+										{
+											$('mysql_ebs_size_tr').style.display = '';
+										}
+										else
+										{
+											$('mysql_ebs_size_tr').style.display = 'none';
+										}
+									}
+	                            	
+	                            	CheckEBSSize($('mysql_data_storage_engine').value);
+	                            	{/literal}
+	                            	</script>
 	                           		</tbody>
 	                            	
 	                            	<tbody id="itab_contents_scaling" class="itab_contents" style="display:none">

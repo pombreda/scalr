@@ -16,6 +16,8 @@
 		public $IsManual = 0;
 		public $EBSArrayPart = 1;
 		public $Region = 'us-east-1';
+		public $Mount;
+		public $MountPoint;
 		
 		private $DB;
 		
@@ -33,7 +35,9 @@
 			'ebs_arrayid'	=> 'EBSArrayID',
 			'ismanual'		=> 'IsManual',
 			'ebs_array_part'=> 'EBSArrayPart',
-			'region'		=> 'Region'
+			'region'		=> 'Region',
+			'mount'			=> 'Mount',
+			'mountpoint'	=> 'Mountpoint'
 		);
 		
 		/**

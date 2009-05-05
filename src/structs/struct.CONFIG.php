@@ -119,7 +119,7 @@
 		public static $ASYNCHRONOUS_SCRIPT_TIMEOUT = 1200; // seconds
 		
 		public static $SCRIPT_BUILTIN_VARIABLES = array(
-			"external_ip", "internal_ip", "instance_id", "ami_id", "role_name", "isdbmaster"
+			"external_ip", "internal_ip", "instance_id", "ami_id", "role_name", "isdbmaster", "instance_index", "region", "avail_zone"
 		);
 		
 		/**

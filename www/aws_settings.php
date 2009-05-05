@@ -19,19 +19,19 @@
 		
 		// Validate input data            
         if (!$Validator->IsNotEmpty($post_aws_accesskeyid))
-            $err[] = _("AWS key ID required");
+            $err[] = _("AWS Key ID required");
         
         if (!$Validator->IsNotEmpty($post_aws_accesskey))
-            $err[] = _("AWS key required");
+            $err[] = _("AWS Secret Access Key required");
                 
         if (!$Validator->IsNumeric($post_aws_accountid) || strlen($post_aws_accountid) != 12)
-            $err[] = _("AWS numeric account ID required (See <a href='/faq'>FAQ</a> for info on where to get it). ");
+            $err[] = _("AWS numeric account ID required (See <a href='/faq.html'>FAQ</a> for info on where to get it). ");
 
         if (!$clientinfo['aws_certificate_enc'] && !$_FILES['cert_file']["tmp_name"])
-        	$err[] = _("Certificate file must be specified");
+        	$err[] = _("X.509 Certificate file must be specified");
         	
         if (!$clientinfo['aws_private_key_enc'] && !$_FILES['pk_file']["tmp_name"])
-            $err[] = _("Private key file must be specified");
+            $err[] = _("X.509 Private key file must be specified");
 	              
         // Try to validate certificates and keys //
         if ($_FILES['cert_file']['tmp_name'] || $_FILES['pk_file']['tmp_name'])

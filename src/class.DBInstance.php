@@ -2,6 +2,8 @@
 	
 	class DBInstance
 	{
+		const PROPERTY_SCALARIZR_PACKAGE_VERSION = 'scalarizr_pkg_version';
+		
 		public 
 			$ID,
 			$FarmID,
@@ -36,7 +38,7 @@
 			'avail_zone'	=> 'AvailZone',
 			'index'			=> 'Index',
 			'Region'		=> 'Region',
-			'scalarizr_pkg_version'	=> 'ScalarizrPackageVersion'
+			self::PROPERTY_SCALARIZR_PACKAGE_VERSION => 'ScalarizrPackageVersion'
 		);
 		
 		/**
@@ -95,6 +97,20 @@
 		}
 		
 		/**
+		 * Update specified property
+		 * @param string $prop
+		 * @param string $value
+		 * @return bool
+		 */
+		public function UpdateProperty($prop, $value)
+		{
+			if (!self::$FieldPropertyMap[$prop])
+				throw new Exception(sprintf(_("Invalid property name: %s"), $prop));
+				
+			return $this->DB->Execute("UPDATE farm_instances SET `{$prop}`=? WHERE id=?", array($value, $this->ID));
+		}
+		
+		/**
 		 * Return information about scalarizr version installed on instance
 		 * @return array
 		 */
@@ -102,6 +118,49 @@
 		{
 			preg_match("/^([0-9]+)\.([0-9]+)-([0-9]+)$/", $this->ScalarizrPackageVersion, $matches);
 			return array("major" => $matches[1], "minor" => $matches[2], "revision" => $matches[3]);
+		}
+		
+		public function IsSupported($v)
+		{
+			preg_match("/^([0-9]+)\.([0-9]+)\-([0-9]+)$/si", $v, $matches);
+			
+			$version = $this->GetScalarizrVersion();
+			
+			if ($version['major'] > $matches[1])
+				return true;
+			elseif ($version['major'] == $matches[1] && $version['minor'] > $matches[2])
+				return true;
+			elseif ($version['major'] == $matches[1] && $version['minor'] == $matches[2] && $version['revision'] >= $matches[3])
+				return true;
+				
+			return false;
+		}
+		
+		public function GetScalarizrConfig()
+		{
+			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+			$Client = Client::Load($farminfo['clientid']);
+			
+			$config = "<config>
+			  <aws>
+			   <account-id>{$Client->AWSAccountID}</account-id>
+			   <access>
+			     <key>{$Client->AWSAccessKey}</key>
+			     <key-id>{$Client->AWSAccessKeyID}</key-id>
+			   </access>
+			   <keypair>
+			     <cert>{$Client->AWSCertificate}</cert>
+			     <pkey>{$Client->AWSPrivateKey}</pkey>
+			   </keypair>
+			 </aws>
+			 <scalr>
+			   <access>
+			     <key>{$Client->GetScalrAPIKey()}</key>
+			     <key-id>{$Client->ScalrKeyID}</key-id>
+			   </access>
+			   <callback-service-url>".CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/cb_service.php</callback-service-url>
+			 </scalr>
+			</config>";
 		}
 		
 		/**
@@ -127,17 +186,30 @@
 				XMLMessageSerializer::Serialize($message) 
 			));
 			
-			if ($this->ExternalIP)
+			if ($this->IsSupported("0.5-1"))
 			{
-				$community = $this->DB->GetOne("SELECT hash FROM farms WHERE id=?", array($this->FarmID));
+				$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+				$Client = Client::Load($farminfo['clientid']);
 				
-				$SNMP = new SNMP();
-				$SNMP->Connect($this->ExternalIP, null, $community, null, null, true);
+				$AmazonSQS = AmazonSQS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+				$messageID = $AmazonSQS->SendMessage("queue-{$this->InstanceID}", XMLMessageSerializer::Serialize($message));
 				
-				$trap = $message->GetSNMPTrap();
-				$res = $SNMP->SendTrap($trap);
-				
-				$this->Logger->info("[FarmID: {$this->FarmID}] Sending message ".get_class($message)." via SNMP ({$trap}) to '{$this->InstanceID}' ('{$this->ExternalIP}') complete ({$res})");
+				$this->Logger->info("[FarmID: {$this->FarmID}] SQSMessage sent. MessageID: {$messageID}");
+			}
+			else
+			{
+				if ($this->ExternalIP)
+				{
+					$community = $this->DB->GetOne("SELECT hash FROM farms WHERE id=?", array($this->FarmID));
+					
+					$SNMP = new SNMP();
+					$SNMP->Connect($this->ExternalIP, null, $community, null, null, true);
+					
+					$trap = $message->GetSNMPTrap();
+					$res = $SNMP->SendTrap($trap);
+					
+					$this->Logger->info("[FarmID: {$this->FarmID}] Sending message ".get_class($message)." via SNMP ({$trap}) to '{$this->InstanceID}' ('{$this->ExternalIP}') complete ({$res})");
+				}
 			}
 		}
 	}

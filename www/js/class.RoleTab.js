@@ -8,6 +8,7 @@ var RoleTab = Class.create();
                            		initialize:function()
                            		{
                            			this.Roles = new Array();
+                           			this.RolesArchive = new Array();
                            			this.CurrentRoleObject = null;
                            			this.CurrentRoleScript = null;
                            			
@@ -27,6 +28,9 @@ var RoleTab = Class.create();
                            				mysql_make_backup : $('mysql_bcp'),
                            				mysql_bundle : $('mysql_bundle'),
                            				mysql_make_backup_every : $('mysql_bcp_every'),
+                           				
+                           				mysql_data_storage_engine: $('mysql_data_storage_engine'),
+                           				mysql_ebs_size: $('mysql_ebs_size'),
                            				
                            				reboot_timeout: $('reboot_timeout'),
                            				launch_timeout: $('launch_timeout'),
@@ -49,7 +53,7 @@ var RoleTab = Class.create();
                            		},
                            		
                            		UpdateCurrentRoleObject: function()
-                           		{
+                           		{                           			
                            			if (!this.CurrentRoleObject)
                            				return;
                            			
@@ -61,6 +65,9 @@ var RoleTab = Class.create();
                            				
                            				this.CurrentRoleObject.options.mysql_make_backup = this.elements.mysql_make_backup.checked; 
                            				this.CurrentRoleObject.options.mysql_make_backup_every = this.elements.mysql_make_backup_every.value;
+                           				
+                           				this.CurrentRoleObject.options.mysql_data_storage_engine = this.elements.mysql_data_storage_engine.value; 
+                           				this.CurrentRoleObject.options.mysql_ebs_size = this.elements.mysql_ebs_size.value;
                            			}
                            				
                            			this.CurrentRoleObject.options.reboot_timeout = this.elements.reboot_timeout.value; 	
@@ -231,6 +238,22 @@ var RoleTab = Class.create();
 	                           					this.elements.mysql_make_backup.checked = this.CurrentRoleObject.options.mysql_make_backup;
 	                           					this.elements.mysql_make_backup_every.value = this.CurrentRoleObject.options.mysql_make_backup_every;
 	                           					
+	                           					this.elements.mysql_data_storage_engine.value = this.CurrentRoleObject.options.mysql_data_storage_engine; 
+	                               				this.elements.mysql_ebs_size.value = this.CurrentRoleObject.options.mysql_ebs_size;
+	                           					
+	                               				if (FARM_MYSQL_ROLE == ami_id)
+	                               				{
+	                               					this.elements.mysql_ebs_size.disabled = true;
+	                               					this.elements.mysql_data_storage_engine.disabled = true;
+	                               				}
+	                               				else
+	                               				{
+	                               					this.elements.mysql_ebs_size.disabled = false;
+	                               					this.elements.mysql_data_storage_engine.disabled = false;
+	                               				}
+	                               				
+	                               				CheckEBSSize(this.elements.mysql_data_storage_engine.value);
+	                               				
 	                           					$('itab_mysql').style.display = '';
 	                           				}
 	                           				else
@@ -311,20 +334,24 @@ var RoleTab = Class.create();
 	                           					{
 	                           						events_tree.setCheck(key, 1);
 	                           						
-	                           						//moveNode: Node
-	                           						var mn_n = events_tree._globalIdStorageFind(key);
-	                           						var pid =  events_tree.getParentId(key);
-	                           						var mn_t = events_tree._globalIdStorageFind(pid);
-	                           						
-	                           						var indexItem = events_tree.getItemIdByIndex(pid, this.CurrentRoleObject.scripts[key].order_index);
-	                           						
-	                           						var mn_b = events_tree._globalIdStorageFind(indexItem);
-	                           						
-	                           						events_tree._moveNodeTo(mn_n, mn_t, mn_b);
-	                           						
-	                           						//_moveNodeTo=function(itemObject,targetObject,beforeNode)
-	                           						
-	                           						events_tree.openItem(pid);
+	                           						try
+	                           						{
+		                           						//moveNode: Node
+		                           						var mn_n = events_tree._globalIdStorageFind(key);
+		                           						var pid =  events_tree.getParentId(key);
+		                           						var mn_t = events_tree._globalIdStorageFind(pid);
+		                           						
+		                           						var indexItem = events_tree.getItemIdByIndex(pid, this.CurrentRoleObject.scripts[key].order_index);
+		                           						
+		                           						var mn_b = events_tree._globalIdStorageFind(indexItem);
+		                           						
+		                           						events_tree._moveNodeTo(mn_n, mn_t, mn_b);
+		                           						
+		                           						//_moveNodeTo=function(itemObject,targetObject,beforeNode)
+		                           						
+		                           						events_tree.openItem(pid);
+	                           						}
+	                           						catch(e) {}
 	                           					}
 	                           				}
 	                           				/******************/
@@ -371,6 +398,22 @@ var RoleTab = Class.create();
 	                           					this.elements.mysql_make_backup.checked = this.CurrentRoleObject.options.mysql_make_backup;
 	                           					this.elements.mysql_make_backup_every.value = this.CurrentRoleObject.options.mysql_make_backup_every;
 	                           					
+	                           					this.elements.mysql_data_storage_engine.value = this.CurrentRoleObject.options.mysql_data_storage_engine; 
+	                               				this.elements.mysql_ebs_size.value = this.CurrentRoleObject.options.mysql_ebs_size;
+	                           					
+	                               				if (FARM_MYSQL_ROLE == ami_id)
+	                               				{
+	                               					this.elements.mysql_ebs_size.disabled = true;
+	                               					this.elements.mysql_data_storage_engine.disabled = true;
+	                               				}
+	                               				else
+	                               				{
+	                               					this.elements.mysql_ebs_size.disabled = false;
+	                               					this.elements.mysql_data_storage_engine.disabled = false;
+	                               				}
+	                               				
+	                               				CheckEBSSize(this.elements.mysql_data_storage_engine.value);
+	                               				
 	                           					$('itab_mysql').style.display = '';
 	                           				}
 	                           				else
@@ -567,7 +610,12 @@ var RoleTab = Class.create();
 									if (!this.Roles[ami_id])
 									{		
 										if (ami_id != null)
-											this.Roles[ami_id] = GetRoleObjectFromTree(ami_id);
+										{
+											if (!this.RolesArchive[ami_id])
+												this.Roles[ami_id] = GetRoleObjectFromTree(ami_id);
+											else
+												this.Roles[ami_id] = this.RolesArchive[ami_id];
+										}
 										else
 											this.Roles[role_object.ami_id] = role_object;
 									}
@@ -583,7 +631,8 @@ var RoleTab = Class.create();
 									{		
 										if (this.CurrentRoleObject && this.CurrentRoleObject.ami_id == ami_id)
 											this.CurrentRoleObject = false;
-										
+
+										this.RolesArchive[ami_id] = this.Roles[ami_id];
 										this.Roles[ami_id] = false;
 									}
 									else

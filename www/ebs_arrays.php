@@ -95,6 +95,8 @@
 	    		$DBEBSArray->Status = EBS_ARRAY_STATUS::PENDING_DELETE;
 	    		$DBEBSArray->Save();
 	    		
+	    		$db->Execute("DELETE FROM autosnap_settings WHERE arrayid=?", array($DBEBSArray->ID));
+	    		
 	    		if (count($err) == 0 && !$errmsg)
 		    	{
 		    		$okmsg = _("EBS Array removal initialized");

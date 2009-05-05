@@ -57,12 +57,17 @@
 
 					if ($old_instance)
 					{
+						$this->Logger->info(new FarmLogMessage($old_instance["farmid"], "Scheduled termination for instance '{$old_instance["instance_id"]}' ({$old_instance["external_ip"]}). It will be terminated in 3 minutes."));
+						Scalr::FireEvent($old_instance["farmid"], new BeforeHostTerminateEvent($old_instance));
+						
+						/*
 						// Terminate old instance
 						$res = $EC2Client->TerminateInstances(array($old_instance["instance_id"]));
 						if ($res instanceof SoapFault)
 							$this->Logger->fatal("Cannot terminate instance '{$old_instance["instance_id"]}' ({$res->faultString}). Please do it manualy.");
 						else
 							$this->Logger->warn("Instance '{$old_instance["instance_id"]}' has been swapped with the instance {$event->InstanceInfo['instance_id']}");
+						*/
 					}
 				}
 			}
@@ -117,9 +122,7 @@
 			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
-    			{    				
-    				$this->Logger->info("Terminating '{$event->InstanceInfo["instance_id"]}' instance.");
-    				
+    			{    				    				
     				$response = $EC2Client->TerminateInstances(array($event->InstanceInfo["instance_id"]));
     					
     				if ($response instanceof SoapFault)
