@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menu>
+	<item href="index.php">Home</item>
+	
+	<node title="Clients">
+		<item href="clients_add.php">Add new</item>
+		<item href="clients_view.php" search="SELECT COUNT(*) FROM clients WHERE email LIKE '%s' OR aws_accountid LIKE '%s' OR fullname LIKE '%s'">View all</item>		
+	</node>
+	
+	<node title="Farms">
+		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s'">View all</item>
+	</node>	
+
+	<node title="Applications">
+		<item href="sites_view.php" search="SELECT COUNT(*) FROM zones WHERE zone LIKE '%s'">View all</item>
+	</node>
+
+	<node title="Logs">
+		<item href="syslogs_view.php">System log</item>
+		<item href="logs_view.php">Event log</item>
+		<item href="scripting_logs_view.php">Scripting log</item>
+	</node>
+
+	<node title="Roles">
+		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s'">View all</item>		
+	</node>
+
+	<node title="Scripts">
+		<item href="script_templates.php">View all</item>		
+	</node>
+
+	<node title="Settings">
+		<node title="Nameservers">
+			<item href="ns_add.php">Add new</item>
+			<item href="ns_view.php">View all</item>			
+		</node>
+		<item href="default_records.php">Default DNS records</item>
+		<separator />
+		<item href="shared_roles.php">Shared roles</item>
+		<separator />
+		<item href="settings_core.php">Core settings</item>
+		<separator />
+		<item href="templates_manager.php">Manage templates</item>
+		<separator />
+		<node title="Security">
+			<node title="IP whitelist">
+				<item href="ipaccess_add.php">Add new IP</item>
+				<item href="ipaccess_view.php">View all IPs</item>			
+			</node>		
+		</node>
+	</node>
+	
+</menu>

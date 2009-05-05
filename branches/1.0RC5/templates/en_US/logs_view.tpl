@@ -1,0 +1,64 @@
+{include file="inc/header.tpl"}
+	{include file="inc/table_header.tpl" filter=0 paging=""}
+    {include file="inc/intable_header.tpl" header="Search" color="Gray"}
+        <tr>
+			<td nowrap="nowrap">Search string:</td>
+			<td><input type="text" name="search" class="text" id="search" value="{$search}" size="20" /></td>
+		</tr>
+		<tr valign="top">
+			<td nowrap="nowrap">Show only:</td>
+			<td>
+				<div style="width:600px;">
+				{foreach item=item key=key from=$severities}
+				    <div style="float:left;word-wrap:pre;width:200px;"><input name="severity[]" style="vertical-align:middle;" type="checkbox" {if $checked_severities[$key]}checked{/if} value="{$key}"> {$item}</div>
+				{/foreach}
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td nowrap="nowrap">Farm:</td>
+			<td>
+				<select name="farmid">
+					<option></option>
+					{section name=id loop=$farms}
+					<option {if $farmid == $farms[id].id}selected{/if} value="{$farms[id].id}">{$farms[id].name}</option>
+					{/section}
+				</select>
+			</td>
+		</tr>
+    {include file="inc/intable_footer.tpl" color="Gray"}
+    {include file="inc/table_footer.tpl" colspan=9 button2=1 button2_name="Search"}
+    <br>
+    {include file="inc/table_header.tpl"}
+    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
+	<thead>
+		<tr>
+			<th>Time</th>
+			<th>Severity</th>
+			{if !$hide_farm_column}<th>Farm</th>{/if}
+			<th>Caller</th>
+			<th>Message</th>
+		</tr>
+	</thead>
+	<tbody>
+	{section name=id loop=$rows}
+	<tr id='tr_{$smarty.section.id.iteration}' {if $rows[id].severity == 'FATAL' || $rows[id].severity == 'ERROR'}style="background-color:pink;"{/if}>
+		<td class="Item" valign="top" nowrap>{$rows[id].time}</td>
+		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
+		{if !$hide_farm_column}<td class="Item" valign="top" nowrap><a href="farms_view.php?id={$rows[id].farmid}">{$rows[id].farm_name}</a></td>{/if}
+		<td class="Item" valign="top" nowrap>{if $rows[id].servername}<a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a>/{$rows[id].source}{else}{$rows[id].source}{/if}</td>
+		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
+	</tr>
+	{sectionelse}
+	<tr>
+		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">No log entries found</td>
+	</tr>
+	{/section}
+	<tr>
+		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">&nbsp;</td>
+		<!--<td class="ItemDelete" valign="top">&nbsp;</td>-->
+	</tr>
+	</tbody>
+	</table>
+	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}	
+		{include file="inc/footer.tpl"}

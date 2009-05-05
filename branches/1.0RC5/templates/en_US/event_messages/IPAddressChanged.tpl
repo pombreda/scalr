@@ -1,0 +1,1 @@
+IP address for instance {$event->InstanceInfo.instance_id} changed to {$event->NewIPAddress} 
