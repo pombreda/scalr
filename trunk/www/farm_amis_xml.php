@@ -72,6 +72,9 @@
         		continue;
         }
     	
+        if (($ami['name'] == 'mysql' || $ami['name'] == 'mysql64') && (!$used_on_farm || !$farminfo))
+        	continue;
+        
     	$open_parent = false;
         
     	$idomNode = $tree->createElement("item");

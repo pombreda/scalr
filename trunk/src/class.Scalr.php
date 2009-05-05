@@ -278,15 +278,7 @@
 				$DBEBSVolume->Device = $AttachVolumeType->device;
 				$DBEBSVolume->InstanceID = $instanceinfo['instance_id'];
 				
-				if ($DBEBSVolume->IsManual == 1)
-				{
-					$DBEBSVolume->State = FARM_EBS_STATE::ATTACHED;
-				    $DBEBSVolume->Save();
-				    
-				    return true;
-				}
-				else
-					$DBEBSVolume->Save();
+				$DBEBSVolume->Save();
 								
 				// Check volume status
 				$response = $AmazonEC2Client->DescribeVolumes($DBEBSVolume->VolumeID);
@@ -294,7 +286,7 @@
 				if ($volume->status == AMAZON_EBS_STATE::ATTACHING || $volume->status == AMAZON_EBS_STATE::IN_USE)
 				{					
 					Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-						sprintf(_("Volume %s status: %s"), $DBEBSVolume->VolumeID, $volume->status)
+						sprintf(_("Volume %s status: %s (%s)"), $DBEBSVolume->VolumeID, $volume->status, $volume->attachmentSet->item->status)
 					));
 					
 					$farm_role_info = $DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?) AND farmid=?",
@@ -302,7 +294,7 @@
 					);
 					
 					Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-						sprintf(_("Need mount: %s"), $farm_role_info['ebs_mount'])
+						sprintf(_("Need mount: %s, %s"), $farm_role_info['ebs_mount'], $DBEBSVolume->Mount)
 					));
 					
 					if ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->status == 'attached')
@@ -311,7 +303,7 @@
 							sprintf(_("Volume %s successfully attached to instance %s"), $DBEBSVolume->VolumeID, $instanceinfo['instance_id'])
 						));
 						
-						if ($farm_role_info['ebs_mount'] == 1)
+						if ($farm_role_info['ebs_mount'] == 1 || $DBEBSVolume->Mount == 1)
 						{
 							$createfs = ($farm_role_info['ebs_snapid'] || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
 							
@@ -344,8 +336,12 @@
 					}
 					elseif ($volume->status == AMAZON_EBS_STATE::ATTACHING || $volume->status == AMAZON_EBS_STATE::IN_USE)
 					{
-						if ($farm_role_info['ebs_mount'] == 1)
+						if ($farm_role_info['ebs_mount'] == 1 || $DBEBSVolume->Mount == 1)
 						{
+							Logger::getLogger(__CLASS__)->info(
+								sprintf(_("Added EBSMount task for volume: %s"), $DBEBSVolume->VolumeID)
+							);
+							
 							// Add task to queue for EBS volume mount
 							TaskQueue::Attach(QUEUE_NAME::EBS_MOUNT)->AppendTask(new EBSMountTask($DBEBSVolume->VolumeID));	
 						}
@@ -361,6 +357,19 @@
 			}
 			else
 				throw new Exception(_("Cannot attach volume now. Please try again later."));
+		}
+		
+		public static function GenerateInitToken()
+		{
+			$fp = fopen("/dev/random", "r");
+		    $rnd = fread($fp, 64);
+		    fclose($fp);
+			$key = base64_encode($rnd);
+			
+			$sault = abs(crc32($key));
+			$token = base64_encode(dechex($sault)."/".dechex(microtime()*10000));
+			
+			return $token;
 		}
 		
 		/**
@@ -522,7 +531,7 @@
         	//
         	if (!$index)
         	{
-	        	$indexes = $DB->GetAll("SELECT `index` FROM farm_instances WHERE farmid=? AND (ami_id=? OR ami_id=?)",
+	        	$indexes = $DB->GetAll("SELECT `index` FROM farm_instances WHERE farmid=? AND (ami_id=? OR ami_id=?) AND state != 'Pending terminate'",
 	        		array($farmid, $farm_role_info['ami_id'], $farm_role_info['replace_to_ami'])
 	        	);
 	        	$used_indexes = array();
@@ -541,7 +550,7 @@
 	        	}
         	}
         	else
-        		$instance_index = $index; 
+        		$instance_index = $index;
         	//
         	// * End
         	//
@@ -592,6 +601,7 @@
 	        $RunInstancesType->additionalInfo = "";
 	        $RunInstancesType->keyName = "FARM-{$farmid}";
 	        
+	        // User data for all versions of scalr-ami-tools
 	        $user_data = array(
 	        	"farmid" 			=> $farmid,
 	        	"role"				=> $alias,
@@ -602,6 +612,12 @@
 	        	"httpproto"			=> CONFIG::$HTTP_PROTO,
 	        	"region"			=> $farminfo['region']
 	        );
+	        
+	        // User data for scalarizer ( >= 0.5-1).
+	        $user_data["callbackserviceurl"] = CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/cb_service.php";
+	        $user_data["inittoken"]			 = self::GenerateInitToken();
+	        $user_data["scalrcert"]			 = $farminfo['scalarizr_cert'];
+	        
 	        
 	        foreach ($user_data as $k=>$v)
 	        	$u_data .= "{$k}={$v};";
@@ -659,7 +675,24 @@
         	  		`avail_zone` = ?,
         	  		`index` = ?,
         	  		`region` = ?
-         		", array($farmid, $instace_id, $ami, $isdbmaster, $isactive, $role_name, $avail_zone, $instance_index, $farminfo['region']));
+         		", array(
+		        	$farmid, 
+		        	$instace_id, 
+		        	$ami, 
+		        	$isdbmaster, 
+		        	$isactive, 
+		        	$role_name, 
+		        	$avail_zone, 
+		        	$instance_index, 
+		        	$farminfo['region']
+		        ));
+		        
+		        $DB->Execute("INSERT INTO init_tokens SET instance_id=?, token=?, dtadded=NOW()", 
+		        	array($instace_id, $user_data["inittoken"])
+		        );
+		        
+		        $instance_info = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instace_id));
+		        Scalr::FireEvent($farmid, new BeforeInstanceLaunchEvent($instance_info));
 	        }
 	        else 
 	        {

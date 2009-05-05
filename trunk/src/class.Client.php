@@ -13,6 +13,9 @@
 		public $AWSCertificate;
 		public $FarmsLimit = 0;
 		
+		public $ScalrKeyID;
+		private $ScalrKey;
+		
 		private $DB;
 		
 		private static $ClientsCache = array();
@@ -23,7 +26,9 @@
 			'email'			=> 'Email',
 			'fullname'		=> 'Fullname',
 			'aws_accountid' => 'AWSAccountID',
-			'farms_limit'	=> 'FarmsLimit'
+			'farms_limit'	=> 'FarmsLimit',
+			'scalr_api_keyid' => 'ScalrKeyID',
+			'scalr_api_key' => 'ScalrKey',
 		);
 		
 		/**
@@ -35,6 +40,27 @@
 			$this->Password = $password;
 			
 			$this->DB = Core::GetDBInstance();
+		}
+		
+		public function GetScalrAPIKey()
+		{
+			return $this->ScalrKey;
+		}
+		
+		public static function GenerateScalrAPIKeys()
+		{
+			$fp = fopen("/dev/random", "r");
+		    $rnd = fread($fp, 128);
+		    fclose($fp);
+			$key = base64_encode($rnd);
+			
+			$sault = abs(crc32($key));
+			$keyid = dechex($sault).dechex(time());
+			
+			$this->ScalrKey = $key;
+			$this->ScalrKeyID = $keyid;
+			
+			return array("id" => $this->ScalrKeyID, "key" => $this->ScalrKey);
 		}
 		
 		/**
@@ -85,6 +111,22 @@
 			}
 
 			return self::$ClientsCache[$id];
+		}
+		
+		/**
+		 * Load Client Object by API key ID
+		 * @param string $keyid
+		 * @return Client
+		 */
+		public static function LoadByScalrKeyID($keyid)
+		{
+			$db = Core::GetDBInstance();
+			
+			$clientid = $db->GetOne("SELECT id FROM clients WHERE scalr_api_keyid=?", array($keyid));
+			if (!$clientid)
+				throw new Exception(sprintf(_("KeyID=%s not found in database"), $keyid));
+				
+			return self::Load($clientid);
 		}
 		
 		/**

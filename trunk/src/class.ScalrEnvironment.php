@@ -1,51 +1,14 @@
 <?
-	abstract class ScalrEnvironment
-    {
-		/**
-		 * Arguments
-		 * @var array
-		 */
-    	private $Args;
-    	protected $DB;
-    	
-    	public function __construct()
-    	{
-    		$this->DB = Core::GetDBInstance();
-    	}
-    	
-    	/**
-    	 * Verify Calling Instance
-    	 */
-    	private function VerifyCallingInstance()
-    	{
-    		$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array(
-    			$this->GetArg('farmid')
-    		));
-    		
-    		$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array(
-    			$this->GetArg('instanceid')
-    		));
-    		
-    		if (!$instanceinfo || !$farminfo)
-    			return false;
-    		
-    		if (!$farminfo || $farminfo['hash'] != $this->GetArg('authhash') || $instanceinfo['farmid'] != $farminfo['id'])
-    		{
-    			throw new Exception(sprintf(_("Cannot verify the instance you are making request from. Make sure that farmid (%s), instance-id (%s) and auth-hash (%s) pamaters are valid."),
-    				$this->GetArg('farmid'), $this->GetArg('instanceid'), $this->GetArg('authhash')
-    			));
-    		}
-    		
-    		return true;
-    	}
+	abstract class ScalrEnvironment extends ScalrRESTService
+    {    	   	
+    	const LATEST_VERSION = '2009-03-05';
     	
     	/**
     	 * Query Environment object and return result;
     	 */
     	public function Query($operation, array $args)
 		{
-			// Set Args array
-			$this->Args = array_change_key_case($args, CASE_LOWER);				
+			$this->SetRequest($args);	
     	  	
 			// Get Method name by operation
 			$method_name = str_replace(" ", "", ucwords(str_replace("-", " ", $operation)));
@@ -58,7 +21,7 @@
 				//
 				if (!$this->VerifyCallingInstance())
 					return false;
-				
+
 				// Call method
 				try
 				{
@@ -84,12 +47,7 @@
 			else
 				throw new Exception(sprintf(_("Operation '%s' not supported"), $operation));
 		}
-    	  
-		protected function GetArg($name)
-		{
-			return $this->Args[strtolower($name)];
-		}
-		
+    	  		
 		/**
 		 * Create Base DOMDocument for response
 		 * @return DOMDocument

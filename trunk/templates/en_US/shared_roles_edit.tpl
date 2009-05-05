@@ -1,5 +1,5 @@
 {include file="inc/header.tpl"}
-    <script language="Javascript" src="/js/class.DataFormField.js">
+    <script language="Javascript" src="/js/class.DataFormField.js"></script>
     <script language="Javascript">
     
     {literal}

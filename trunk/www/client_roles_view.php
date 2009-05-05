@@ -1,6 +1,8 @@
 <?
 	require_once('src/prepend.inc.php');
 
+	set_time_limit(3600);
+	
 	if ($req_task == 'abort')
 	{
 		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($req_id));
@@ -93,38 +95,104 @@
 	// Post actions
 	if ($_POST && $post_actionsubmit)
 	{
-		if ($post_action == "delete")
-		{
-			// Delete users
-			$i = 0;			
-			foreach ((array)$post_delete as $k=>$v)
+		if ($post_action == "delete" && count($post_delete) != 0)
+		{			
+			if (!$post_confirm)
 			{
-				if ($_SESSION["uid"] != 0)
-					$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v));
-			    else 
-					$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($v));
-			     
-			    if ($roleinfo && $roleinfo["iscompleted"] != 0)
-			    {
-    			    $info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($roleinfo["ami_id"]));
-    			    if (!$info)
-    			    {
-    			        $i++;
-        				$db->Execute("DELETE FROM ami_roles WHERE id=?", array($v));	
-        				
-    			    }
-    			    else
-    			    {
-                        $farm = $db->GetRow("SELECT * FROM farms WHERE id='{$info['farmid']}'");
-    			        $err[] = sprintf(_("Cannot delete role %s. It's being used on farm '%s'."), $roleinfo['name'], $farm['name']);
-    			    }
-			    }
+				foreach($post_delete as $roleid)
+				{
+					$info = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid=?", array($roleid, $_SESSION['uid']));
+					$display['roles'][$info['ami_id']] = $info;
+				}
+				$display['title'] = 'Roles removal confirmation';
+				
+				$Smarty->assign($display);
+				$Smarty->display("client_role_delete_confirmation.tpl");
+				exit();
 			}
-			
-			if (count($err) == 0)
+			else
 			{
-			     $okmsg = sprintf(_("%s client roles deleted"), $i);
-			     UI::Redirect("client_roles_view.php");
+				// Delete users
+				$i = 0;			
+				foreach ((array)$post_delete as $k=>$v)
+				{
+					if ($_SESSION["uid"] != 0)
+						$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v));
+				    else 
+						$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($v));
+				     
+				    if ($roleinfo && $roleinfo["iscompleted"] != 0)
+				    {
+	    			    $Client = Client::Load($roleinfo['clientid']);
+					    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($roleinfo['region'])); 
+						$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+				    	
+				    	$info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($roleinfo["ami_id"]));
+	    			    if (!$info)
+	    			    {
+	    			        if ($post_remove_image[$roleinfo['ami_id']] || $post_dereg_ami[$roleinfo['ami_id']])
+	    			        {
+		    			    	try
+		    			    	{
+		    			        	$DescribeImagesType = new DescribeImagesType();
+			    			        $DescribeImagesType->imagesSet->item[] = array("imageId" => $roleinfo['ami_id']);
+			    			    	$amazon_role_info = $AmazonEC2Client->DescribeImages($DescribeImagesType);
+		    			    	}
+		    			    	catch(Exception $e){}
+		    			    	
+		    			    	$image_path = $amazon_role_info->imagesSet->item->imageLocation;
+		    			    	
+		    			    	$chunks = explode("/", $image_path);
+		    			    	
+		    			    	$bucket_name = $chunks[0];
+		    			    	if (count($chunks) == 3)
+		    			    		$prefix = $chunks[1];
+		    			    	else
+		    			    		$prefix = str_replace(".manifest.xml", "", $chunks[1]);
+		    			    	
+		    			    	try
+		    			    	{
+		    			    		$bucket_not_exists = false;
+		    			    		$S3Client = new AmazonS3($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+		    			    		$objects = $S3Client->ListBucket($bucket_name, $prefix);
+		    			    	}
+		    			    	catch(Exception $e)
+		    			    	{
+		    			    		if (stristr($e->getMessage(), "The specified bucket does not exist"))
+		    			    			$bucket_not_exists = true;
+		    			    	}	
+		    			    			    			    	
+		    			    	if ($amazon_role_info)
+		    			    	{
+		    			    		if (!$bucket_not_exists && $post_remove_image[$roleinfo['ami_id']])
+			    			    	{
+			    			    		foreach ($objects as $object)
+			    			    			$S3Client->DeleteObject($object->Key, $bucket_name);
+			    			    	}
+		    			    		
+		    			    		if ($post_dereg_ami[$roleinfo['ami_id']] || $bucket_not_exists)
+			    			    	{
+			    			    		$AmazonEC2Client->DeregisterImage($roleinfo['ami_id']);
+			    			    	}
+		    			    	}
+	    			        }
+	    			        
+	        				$db->Execute("DELETE FROM ami_roles WHERE id=?", array($v));
+	        				$i++;	
+	    			    }
+	    			    else
+	    			    {
+	                        $farm = $db->GetRow("SELECT * FROM farms WHERE id='{$info['farmid']}'");
+	    			        $err[] = sprintf(_("Cannot delete role %s. It's being used on farm '%s'."), $roleinfo['name'], $farm['name']);
+	    			    }
+				    }
+				}
+				
+				if (count($err) == 0)
+				{
+				     $okmsg = sprintf(_("%s client roles deleted"), $i);
+				     UI::Redirect("client_roles_view.php");
+				}
 			}
 		}
 	}

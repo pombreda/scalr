@@ -46,7 +46,12 @@
     	</tr>
     	<tr>
     		<td colspan="2">
-    			<input type="checkbox" style="vertical-align:middle;" name="attach_on_boot" value="1"> Always attach volume <span id="volid" style="font-weight:bold;">{$volumeId}</span>&nbsp;to this instance upon startup
+    			<input type="checkbox" onclick="{literal}if (this.checked){ $('mount_settings').style.display = ''; }else{ $('mount_settings').style.display = 'none'; }{/literal}" style="vertical-align:middle;" name="attach_on_boot" value="1"> Always attach volume <span id="volid" style="font-weight:bold;">{$volumeId}</span>&nbsp;to this instance upon startup
+    		</td>
+    	</tr>
+    	<tr id='mount_settings' style='display:none;'>
+    		<td colspan="2">
+    			<input type="checkbox" style="vertical-align:middle;" name="mount" style='vertical-align:middle;' value="1"> Automaticaly mount volume to <input style='vertical-align:middle;' type='text' name='mountpoint' value='/mnt/storage' class='text' />
     		</td>
     	</tr>
     	{include file="inc/intable_footer.tpl" color="Gray"}

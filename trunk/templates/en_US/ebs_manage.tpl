@@ -36,6 +36,8 @@
 				{t}Farm{/t}: <a href="farms_view.php?id={$vols[id]->Scalr->FarmID}" title="Farm {$vols[id]->Scalr->FarmName}">{$vols[id]->Scalr->FarmName}</a>
 				{if $vols[id]->Scalr->RoleName}
 					&nbsp;&rarr;&nbsp;<a href="roles_view.php?farmid={$vols[id]->Scalr->FarmID}" title="Role {$vols[id]->Scalr->RoleName}">{$vols[id]->Scalr->RoleName}</a>
+				{elseif $vols[id]->Scalr->MySQLMasterVolume}
+					&nbsp;&rarr;&nbsp;MySQL master volume
 				{/if}
 			{elseif $vols[id]->Scalr && $vols[id]->Scalr->ArrayID}
 				{t}Array{/t}: <a href="ebs_arrays.php?id={$vols[id]->Scalr->ArrayID}">{$vols[id]->Scalr->ArrayName}</a>
@@ -76,11 +78,13 @@
 			var region = '{$smarty.session.aws_region}';
 	    	
 	    	var menu = [
-	            
-	            {if $vols[id]->attachmentSet->instanceId}
-	            	{literal}{href: 'ebs_manage.php?task=detach&volumeId='+vid, innerHTML: 'Detach'},{/literal}
-	            {else}
-	            	{literal}{href: 'ebs_manage.php?task=attach&volumeId='+vid, innerHTML: 'Attach'},{/literal}
+
+	    	    {if !$vols[id]->Scalr->MySQLMasterVolume}
+		            {if $vols[id]->attachmentSet->instanceId}
+		            	{literal}{href: 'ebs_manage.php?task=detach&volumeId='+vid, innerHTML: 'Detach'},{/literal}
+		            {else}
+		            	{literal}{href: 'ebs_manage.php?task=attach&volumeId='+vid, innerHTML: 'Attach'},{/literal}
+		            {/if}
 	            {/if}
 
 	            {literal}{type: 'separator'}{/literal},

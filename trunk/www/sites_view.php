@@ -22,7 +22,7 @@
 					
 				    if ($zone)
 					{
-	    				$ZoneControler->Delete($zone["id"]);	    				
+	    				$ZoneControler->Delete($zone["id"]);
 	    				$i++;
 					}
 				}

@@ -20,9 +20,22 @@
 					array(time(), $this->FarmID)
 				);
 			elseif ($event->Operation == MYSQL_BACKUP_TYPE::BUNDLE)
+			{
 				$this->DB->Execute("UPDATE farms SET dtlastrebundle=?, isbundlerunning='0' WHERE id=?",
 					array(time(), $this->FarmID)
 				);
+				
+				$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", 
+					array($this->FarmID)
+				);
+				
+				if ($farminfo['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
+				{
+					$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0'",
+						array($event->SnapshotInfo, _('MySQL Master volume snapshot'), $farminfo['region'])
+					);
+				}
+			}
 		}
 		
 		/**
@@ -276,7 +289,7 @@
 		 */
 		public function OnFarmTerminated(FarmTerminatedEvent $event)
 		{
-			$sync_instances = $this->DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state=? AND farmid=?",
+			$sync_instances = $this->DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state=? AND farmid=? AND dtshutdownscheduled IS NULL",
 				array(INSTANCE_STATE::PENDING_TERMINATE, $this->FarmID)
 			);
 			
@@ -411,6 +424,16 @@
 			$this->DB->Execute("UPDATE farm_instances SET external_ip=?, isipchanged='0', isactive='1' WHERE id=?",
 				array($event->NewIPAddress, $event->InstanceInfo["id"])
 			);
+		}
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
+		{
+			if ($event->InstanceInfo["state"] != INSTANCE_STATE::PENDING_TERMINATE)
+			{ 
+				$this->DB->Execute("UPDATE farm_instances SET dtshutdownscheduled=NOW(), state=? WHERE id=?",
+					array(INSTANCE_STATE::PENDING_TERMINATE, $event->InstanceInfo["id"])
+				);
+			}
 		}
 	}
 ?>

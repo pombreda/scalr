@@ -220,7 +220,7 @@
 					break;
 			}
 		}
-			
+		
 		//
 		// Send Trap
 		//
@@ -230,7 +230,7 @@
 			{
 				$DBInstance = DBInstance::LoadByID($instance['id']);
 				$DBInstance->SendMessage(new EventNoticeScalrMessage(
-					"0.0.0.0",
+					$instance['internal_ip'],
 					$db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id'])),
 					$instance['role_name'],
 					$event_name

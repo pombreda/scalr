@@ -91,6 +91,7 @@
 	require_once(SRCPATH."/queue_tasks/class.CheckEBSVolumeStateTask.php");
 	require_once(SRCPATH."/queue_tasks/class.EBSMountTask.php");
 	require_once(SRCPATH."/queue_tasks/class.EBSDeleteTask.php");
+	require_once(SRCPATH."/queue_tasks/class.MigrateRoleTask.php");
 	
 	require_once(SRCPATH."/queue_tasks/class.FireDeferredEventTask.php");
 	require_once(SRCPATH."/queue_tasks/class.CreateDNSZoneTask.php");
@@ -111,7 +112,7 @@
 	Core::Load("Data/DB/ADODB/adodb-exceptions.inc.php", LIBPATH);
 	Core::Load("Data/DB/ADODB/adodb.inc.php", LIBPATH);
 	Core::Load("UI/Smarty/Smarty.class.php", LIBPATH);
-	Core::Load("UI/Smarty/Smarty_Compiler.class.php", LIBPATH);
+	Core::Load("UI/Smarty/Smarty_Compiler.class.php", LIBPATH);		
 	Core::Load("NET/Mail/PHPMailer");
 	Core::Load("NET/Mail/PHPSmartyMailer");
 	Core::Load("Data/Formater/Formater");
@@ -124,6 +125,8 @@
 	Core::Load("NET/SSH");
 	Core::Load("NET/API/AWS/AmazonEC2");
 	Core::Load("NET/API/AWS/AmazonS3");
+	Core::Load("NET/API/AWS/AmazonSQS");
+	Core::Load("NET/API/AWS/AmazonCloudFront");
 	Core::Load("NET/SNMP");
 	
 	Core::Load("DNSZoneController", SRCPATH);
@@ -277,10 +280,11 @@
 	Scalr::AttachObserver(new EC2EventObserver());
 	Scalr::AttachObserver(new ScriptingEventObserver());
 	Scalr::AttachObserver(new EBSEventObserver());
+	Scalr::AttachObserver(new ScalarizrEventObserver());
 	Scalr::AttachObserver(new SNMPInformer());
 	Scalr::AttachObserver(new ElasticIPsEventObserver());
 	Scalr::AttachObserver(new DNSEventObserver());
-			    
+				    
     //
     // Attach deferred event observers
     //

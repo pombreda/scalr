@@ -40,6 +40,8 @@
 				array($instance_info['ami_id'], $instance_info['ami_id'])
 			);
 
+			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->GetArg("farmid")));
+			
 			if ($custom_event_name)
 			{
 				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND event_name=? ORDER BY order_index ASC",
@@ -48,11 +50,11 @@
 			}
 			else
 			{
-	            // Check context and get list of scripts
+				// Check context and get list of scripts
 	    		if (!$this->GetArg("target_ip"))
 	            {      	
 	            	//
-	            	// Build a list of scripts to be executed on that particular instance
+	            	// Build a list of scripts to be executed on that particular instance 
 	            	//
 	            	
 	            	if ($event_name == EVENT_TYPE::HOST_INIT)
@@ -66,17 +68,46 @@
 						array($this->GetArg("farmid"), $farm_ami_info['ami_id'], $farm_ami_info['replace_to_ami'], $event_name)
 					);
 	            }
+	            elseif ($event_name == EVENT_TYPE::HOST_DOWN)
+	            {
+	            	$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND ami_id=? 
+	            		AND event_name=? AND (target = ? OR (target = ? AND ami_id=?)) GROUP BY scriptid ORDER BY order_index ASC",
+						array(
+							$this->GetArg("farmid"), 
+							$this->DB->GetOne("SELECT ami_id FROM ami_roles WHERE (clientid='0' OR clientid=?) AND name=?", array($farminfo['clientid'], $this->GetArg("target_role_name"))), 
+							$event_name, 
+							SCRIPTING_TARGET::FARM, 
+							SCRIPTING_TARGET::ROLE,
+							$instance_info['ami_id']
+						)
+					);
+	            }
 	            else
 	            {
-	            	//
-	            	// Build a list of scripts to be executed upon event from another instance.
-	            	//
+	            	if ($event_name == EVENT_TYPE::HOST_INIT && $this->GetArg("target_ip") == $this->GetArg('local_ip'))
+	            	{
+	            		$instance_info['internal_ip'] = $this->GetArg('local_ip');
+	            		$instance_info['external_ip'] = $_SERVER['REMOTE_ADDR'];
+	            		
+	            		//
+		            	// Build a list of scripts to be executed upon event from another instance.
+		            	//
+		            	$target_instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND farmid=?",
+		            		array($this->GetArg("instanceid"), $this->GetArg("farmid"))
+		            	);
+	            	}
+	            	else
+	            	{
+		            	//
+		            	// Build a list of scripts to be executed upon event from another instance.
+		            	//
+		            	$target_instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE internal_ip=? AND farmid=?",
+		            		array($this->GetArg("target_ip"), $this->GetArg("farmid"))
+		            	);		
+	            	}
 	            	
-	            	$target_instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE internal_ip=? AND farmid=?",
-	            		array($this->GetArg("target_ip"), $this->GetArg("farmid"))
-	            	);		
 	            	if (!$target_instance_info)
-	            		exit();
+		            	exit();
 	            		
 	            	$target_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=? OR replace_to_ami=?",
 						array($target_instance_info['ami_id'], $target_instance_info['ami_id'])
@@ -84,12 +115,13 @@
 					$target_role_name = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_ami_info['ami_id']));
 					
 					$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (ami_id=? OR ami_id=?) 
-	            		AND event_name=? AND (target = ? OR (target = ? AND ami_id=?)) ORDER BY order_index ASC",
+	            		AND event_name=? AND (target = ? OR target = ? OR (target = ? AND ami_id=?)) ORDER BY order_index ASC",
 						array(
 							$this->GetArg("farmid"), 
 							$target_ami_info['ami_id'], 
 							$target_ami_info['replace_to_ami'], 
 							$event_name, 
+							SCRIPTING_TARGET::INSTANCE,
 							SCRIPTING_TARGET::FARM, 
 							SCRIPTING_TARGET::ROLE,
 							$instance_info['ami_id']
@@ -104,6 +136,12 @@
     		{
 	    		foreach ($scripts as $script)
 	            {
+	            	if ($script['target'] == SCRIPTING_TARGET::INSTANCE && $target_instance_info)
+	            	{
+	            		if ($target_instance_info['instance_id'] != $instance_info['instance_id'])
+	            			continue;
+	            	}
+	            	
 	            	if ($script['version'] == 'latest')
 					{
 						$version = (int)$this->DB->GetOne("SELECT MAX(revision) FROM script_revisions WHERE scriptid=?",
@@ -126,6 +164,8 @@
 					
 					if ($template)
 					{
+						$instance_info['instance_index'] = $instance_info['index'];
+												
 						$params = array_merge($instance_info, (array)unserialize($script['params']));
 						
 						// Prepare keys array and array with values for replacement in script
@@ -176,8 +216,8 @@
     		
     		$VhostsDOMNode = $ResponseDOMDocument->createElement("vhosts");
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?",
-    			array($this->GetArg("instanceid"))
+    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
+    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
     		);
     		
     		$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?)", 
@@ -201,7 +241,7 @@
     			}
     			
     			//Filter by name
-    			if ($this->GetArg("name") && $this->GetArg("name") != $virtualhost['name'])
+    			if ($this->GetArg("name") !== null && $this->GetArg("name") != $virtualhost['name'])
     				continue;
     				
     			// Filter by https
@@ -265,8 +305,8 @@
     	{
     		$ResponseDOMDocument = $this->CreateResponse();
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?",
-    			array($this->GetArg("instanceid"))
+    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
+    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
     		);
     		
     		$sql_query = "SELECT * FROM farm_role_options WHERE farmid=? AND ami_id=?";
@@ -310,8 +350,8 @@
     	{
     		$ResponseDOMDocument = $this->CreateResponse();
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?",
-    			array($this->GetArg("instanceid"))
+    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
+    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
     		);
     		
     		$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?) AND farmid=?",
@@ -393,6 +433,7 @@
     					$HostDOMNode = $ResponseDOMDocument->createElement("host");
     					$HostDOMNode->setAttribute('internal-ip', $instance['internal_ip']);
     					$HostDOMNode->setAttribute('external-ip', $instance['external_ip']);
+    					$HostDOMNode->setAttribute('index', $instance['index']);
     					if ($role_info['alias'] == ROLE_ALIAS::MYSQL)
     						$HostDOMNode->setAttribute('replication-master', $instance['isdbmaster']);
     						

@@ -48,5 +48,7 @@
 	
 	<node title="Tools">
 		<item href="garbage.php">Delete unused objects</item>
+		<separator />
+		<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
 	</node>
 </menu>

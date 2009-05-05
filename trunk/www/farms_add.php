@@ -161,10 +161,15 @@
         	));
         	if ($ami_info["alias"] == ROLE_ALIAS::MYSQL)
         	{
+        		$display['farm_mysql_role'] = $ami_info['ami_id'];
+        		
         		$role['options']['mysql_bundle_every'] = $display["farminfo"]['mysql_rebundle_every'] ? $display["farminfo"]['mysql_rebundle_every'] : 48;
 				$role['options']['mysql_make_backup_every'] = $display["farminfo"]['mysql_bcp_every'] ? $display["farminfo"]['mysql_bcp_every'] : 180;
 				$role['options']['mysql_make_backup'] = ($display["farminfo"]['mysql_bcp'] == 1) ? true : false;
 				$role['options']['mysql_bundle'] = ($display["farminfo"]['mysql_bundle'] == 1) ? true : false;
+				
+				$role['options']['mysql_data_storage_engine'] = $display["farminfo"]['mysql_data_storage_engine'] ? $display["farminfo"]['mysql_data_storage_engine'] : 'lvm';
+				$role['options']['mysql_ebs_size'] = $display["farminfo"]['mysql_ebs_size'] ? $display["farminfo"]['mysql_ebs_size'] : 100;
         	}
         	array_push($display['roles'], $role);
         }

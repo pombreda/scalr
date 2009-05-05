@@ -67,10 +67,32 @@
 				}
 			}
 		}
+		elseif (count($rule->ipRanges->item) > 1)
+		{
+			foreach ($rule->ipRanges->item as &$ipRange)
+			{
+				if ($ipRange)
+				{
+					$r = clone $rule;
+					
+					$r->ip = $ipRange->cidrIp;
+					$r->rule = "{$r->ipProtocol}:{$r->fromPort}:{$r->toPort}:{$ipRange->cidrIp}";
+					
+					$r->id = md5($r->rule);
+					
+					if (!$display['rules'][$r->id])
+					{
+						$display['rules'][$r->id] = $r;
+						$group_rules[$r->id] = $r;
+					}
+				}
+			}	
+		}
 		else
 		{
 			$rule->ip = $rule->ipRanges->item->cidrIp;
 			$rule->rule = "{$rule->ipProtocol}:{$rule->fromPort}:{$rule->toPort}:{$rule->ip}";
+			
 			$rule->id = md5($rule->rule);
 			
 			$display['rules'][$rule->id] = $rule;

@@ -25,11 +25,15 @@
   				mysql_make_backup: false,
   				mysql_bundle: true,
   				mysql_make_backup_every: 180,
+  				
+  				mysql_data_storage_engine: 'lvm',
+  				mysql_ebs_size: 100,
+  				
 				min_instances: 1,
 				max_instances: 2,
 				reboot_timeout: 300,
 				status_timeout: 20,
-				launch_timeout: (alias == 'mysql') ? 2400 : 300,
+				launch_timeout: (alias == 'mysql') ? 2400 : 600,
 				min_LA: 2,
 				max_LA: 5,
 				placement: "",

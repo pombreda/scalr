@@ -173,6 +173,15 @@
                     $farm_instance['isrebootlaunched'] = 0;
                 	Scalr::FireEvent($farminfo['id'], new HostDownEvent($farm_instance));
                 }
+                
+                if ($farm_instance['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+                {
+                	if ($farm_instance['dtshutdownscheduled'] && strtotime($farm_instance['dtshutdownscheduled'])+60*3 < time())
+                	{
+						$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Terminating instance '{$farm_instance["instance_id"]}'..."));
+                		$AmazonEC2Client->TerminateInstances(array($farm_instance['instance_id']));
+                	}
+                }
             }
 
         	//
@@ -252,6 +261,7 @@
                         		
                         		// Update ami in role scripts
                         		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
+                        		$db->Execute("UPDATE farm_role_options SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
                         	}
                         	else
                         	{
@@ -260,6 +270,7 @@
                         		
                         		// Update ami in role scripts
                         		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
+                        		$db->Execute("UPDATE farm_role_options SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
                         	}
                         	
                         	$db->Execute("UPDATE ami_roles SET `replace`='' WHERE ami_id='{$db_ami["replace_to_ami"]}'");
@@ -276,12 +287,19 @@
                             continue;
                         }
                         
+                   		$chk = $db->GetRow("SELECT * FROM farm_instances WHERE state = ? AND ami_id='{$ami}' AND farmid='{$farminfo['id']}'", array(INSTANCE_STATE::PENDING_TERMINATE));
+                        if ($chk)
+                        {
+                            $this->Logger->info("There is an instance scheduled for termination. Waiting...");
+                            continue;
+                        }
+                        
                         $this->Logger->info("No pending instances with new AMI found.");
                         
                         // Terminate old instance
                         try 
             			{            
-           					$old_instances = $db->GetAll("SELECT * FROM farm_instances WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}' ORDER BY id ASC");
+           					$old_instances = $db->GetAll("SELECT * FROM farm_instances WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}' AND state != ? ORDER BY id ASC", array(INSTANCE_STATE::PENDING_TERMINATE));
            					
            					$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$db_ami["replace_to_ami"]}'");
             				if (!$ami_info)
@@ -333,12 +351,15 @@
                 
                 $items = $ec2_items[$role];
                 
-                foreach ($items as $item)
+                foreach ((array)$items as $item)
                 {                	
                 	$db_item_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND farmid=?", array($item->instanceId, $farminfo["id"]));                        
                     if ($db_item_info)
                     {
-                        $role_instance_ids[$item->instanceId] = $item;
+                        if ($db_item_info['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+                        	continue;
+                    	
+                    	$role_instance_ids[$item->instanceId] = $item;
                         $this->Logger->info("[FarmID: {$farminfo['id']}] Checking '{$item->instanceId}' instance...");
                         
                         // IF instance on EC2 - running AND db state of instance - running
@@ -424,8 +445,9 @@
 		                                		
 	                                    		try
 						                        {
-						                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending termination request for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}) "));
-						                        	$AmazonEC2Client->TerminateInstances(array($db_item_info["instance_id"]));
+						                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
+						                        	
+						                            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($db_item_info));
 						                        }
 						                        catch (Exception $e)
 						                        {
@@ -502,9 +524,8 @@
                                     
                                     try
                                     {
-                                        $res = $AmazonEC2Client->TerminateInstances(array($db_item_info["instance_id"]));
-                                        if ($res instanceof SoapFault)
-                                            $this->Logger->fatal($res->faultString);
+                                        $this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
+						                Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($db_item_info));
                                     }
                                     catch (Exception $err)
                                     {
@@ -582,9 +603,8 @@
                                 
                                 try
                                 {
-                                    $res = $AmazonEC2Client->TerminateInstances(array($db_item_info["instance_id"]));
-                                    if ($res instanceof SoapFault)
-                                        $this->Logger->fatal($res->faultString);
+                                    $this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
+						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($db_item_info));
                                 }
                                 catch (Exception $err)
                                 {
@@ -690,12 +710,12 @@
                         	{                       
 		                        try
 		                        {
-		                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending termination request for instance '{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}) "));
-		                        	$AmazonEC2Client->TerminateInstances(array($instanceinfo["instance_id"]));
+		                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$instanceinfo["instance_id"]}' ({$instanceinfo["external_ip"]}). It will be terminated in 3 minutes."));
+						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($instanceinfo));
 		                        }
 		                        catch (Exception $e)
 		                        {
-		                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$item->instanceId}': {$e->getMessage()}");
+		                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$instanceinfo['instance_id']}': {$e->getMessage()}");
 		                        }
                         	}
                         }

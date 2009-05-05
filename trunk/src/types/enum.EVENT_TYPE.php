@@ -28,6 +28,8 @@
 		const MYSQL_REPLICATION_RECOVERED = "MySQLReplicationRecovered";
 		
 		const EBS_VOLUME_MOUNTED = "EBSVolumeMounted";
+		const BEFORE_INSTANCE_LAUNCH = "BeforeInstanceLaunch";
+		const BEFORE_HOST_TERMINATE = "BeforeHostTerminate";
 		
 		public static function GetEventDescription($event_type)
 		{
@@ -50,7 +52,9 @@
 				self::INSTANCE_IP_ADDRESS_CHANGED 	=> _("Public IP address of the instance was changed upon reboot or within Elastic IP assignments."),
 				self::MYSQL_REPLICATION_FAIL 		=> _("MySQL replication failure."),
 				self::MYSQL_REPLICATION_RECOVERED 	=> _("MySQL replication recovered after failure."),
-				self::EBS_VOLUME_MOUNTED			=> _("Single EBS volume or array of EBS volumes attached and mounted to instance.")
+				self::EBS_VOLUME_MOUNTED			=> _("Single EBS volume or array of EBS volumes attached and mounted to instance."),
+				self::BEFORE_INSTANCE_LAUNCH		=> _("New instance will be launched in a few minutes"),
+				self::BEFORE_HOST_TERMINATE			=> _("Instance will be terminated in 3 minutes")
 			);
 			
 			return $descriptions[$event_type];

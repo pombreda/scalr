@@ -116,7 +116,7 @@
 				return;
 			
 			// Check for already allocated and free elastic IP in database
-			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND ((state = '0' AND role_name=?) OR instance_id = ?)",
+			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND ((role_name=? AND instance_index='{$event->InstanceInfo['index']}') OR instance_id = ?)",
 				array($this->FarmID, $farm_role_info['name'], $event->InstanceInfo["instance_id"])
 			);
 			
@@ -178,8 +178,8 @@
 						}
 						
 						// Add allocated IP address to database
-						$this->DB->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?",
-							array($this->FarmID, $farm_role_info['name'], $address->publicIp, $farminfo['clientid'])
+						$this->DB->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
+							array($this->FarmID, $farm_role_info['name'], $address->publicIp, $farminfo['clientid'], $event->InstanceInfo['index'])
 						);
 						
 						$ip['ipaddress'] = $address->publicIp;
@@ -294,26 +294,29 @@
 				// If number of allocated IPs more than 'Max instances' option for role, we must release elastic IP
 				if ($alocated_ips > $farm_role_info['max_count'])
 				{
-					$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE state='0' AND farmid=? AND role_name=?", array($this->FarmID, $farm_role_info['name']));
+					$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE instance_index=? AND farmid=? AND role_name=?", array($event->InstanceInfo['index'], $this->FarmID, $farm_role_info['name']));
 					
-					try
+					if ($ip['state'] == 0)
 					{
-						$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
-						$EC2Client->ReleaseAddress($ip['ipaddress']);
-						
-						$this->DB->Execute("DELETE FROM elastic_ips WHERE ipaddress=?", array($ip['ipaddress']));
-						
-						$this->Logger->warn(sprintf(_("Unused elastic IP address: %s released."), $ip['ipaddress']));
-					}
-					catch(Exception $e)
-					{
-						$this->Logger->error(new FarmLogMessage(
-							$this->FarmID, 
-							sprintf(_("Cannot release unused elastic ip: %s"),
-								$e->getMessage()
-							)
-						));
-						return;
+						try
+						{
+							$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+							$EC2Client->ReleaseAddress($ip['ipaddress']);
+							
+							$this->DB->Execute("DELETE FROM elastic_ips WHERE ipaddress=?", array($ip['ipaddress']));
+							
+							$this->Logger->warn(sprintf(_("Unused elastic IP address: %s released."), $ip['ipaddress']));
+						}
+						catch(Exception $e)
+						{
+							$this->Logger->error(new FarmLogMessage(
+								$this->FarmID, 
+								sprintf(_("Cannot release unused elastic ip: %s"),
+									$e->getMessage()
+								)
+							));
+							return;
+						}
 					}
 				}
 			}

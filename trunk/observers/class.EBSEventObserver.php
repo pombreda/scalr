@@ -29,6 +29,50 @@
 			return $AmazonEC2Client;
 		}
 		
+		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event)
+		{			
+			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
+				array($event->InstanceInfo['id'])
+			);
+
+			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+			$ami_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+			
+			$AmazonEC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+			
+			$this->Logger->info(sprintf("EBSEventObserver::OnBeforeInstanceLaunch(instance_id = %s, ami_id = %s, alias = %s, engine = %s, volumeid = %s, size = %s, isdbmaster = %s)",
+				$instanceinfo['instance_id'],
+				$instanceinfo['ami_id'],
+				$ami_info['alias'],
+				$farminfo['mysql_data_storage_engine'],
+				$farminfo['mysql_master_ebs_volume_id'],
+				$farminfo['mysql_ebs_size'],
+				$instanceinfo['isdbmaster']
+			));
+						
+			if ($ami_info['alias'] == ROLE_ALIAS::MYSQL && $farminfo['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
+			{
+				if (!$farminfo['mysql_master_ebs_volume_id'])
+				{
+					$this->Logger->info(sprintf("There is no master EBS volume. Creating new one... Size = %s GB", $farminfo['mysql_ebs_size']));
+					
+					$CreateVolumeType = new CreateVolumeType();
+    				$CreateVolumeType->availabilityZone = $instanceinfo['avail_zone'];
+    				$CreateVolumeType->size = $farminfo['mysql_ebs_size'];
+					
+					$res = $AmazonEC2Client->CreateVolume($CreateVolumeType);
+				    if ($res->volumeId)
+				    {
+				    	$this->Logger->info(sprintf("Master EBS volume created, VolumeID = %s", $res->volumeId));
+				    	
+				    	$this->DB->Execute("UPDATE farms SET mysql_master_ebs_volume_id=? WHERE id=?", 
+				    		array($res->volumeId, $this->FarmID)
+				    	);
+				    }
+				}
+			}
+		}
+		
 		/**
 		 * 
 		 *

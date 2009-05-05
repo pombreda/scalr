@@ -22,6 +22,13 @@
 		 */
 		public function OnHostInit(HostInitEvent $event)
 		{			
+			$DBInstance = DBInstance::LoadByIID($event->InstanceInfo['instance_id']);
+			if ($DBInstance->IsSupported("0.5-1"))
+			{
+				$this->Logger->info("Scalarizr instance. Skipping SSH observer...");
+				return true;
+			}
+			
 			// Get farm info and client info from database;
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			

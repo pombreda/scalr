@@ -31,16 +31,8 @@
 					}
 					else
 					{
-						$supported_version = false;
-						if ($version['major'] > 0)
-							$supported_version = true;
-						elseif ($version['major'] == 0 && $version['minor'] > 2)
-							$supported_version = true;
-						elseif ($version['major'] == 0 && $version['minor'] == 2 && $version['revision'] >= 68)
-							$supported_version = true;
-						
 						// Only 0.2-68 or greater version support this feature.
-						if ($supported_version)
+						if ($DBInstance->IsSupported("0.2-68"))
 						{					
 							$msg = XMLMessageSerializer::Unserialize($message['message']);
 							$DBInstance->SendMessage($msg);

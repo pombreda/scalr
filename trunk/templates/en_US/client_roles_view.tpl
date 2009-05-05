@@ -71,13 +71,13 @@
 		    		{if $rows[id].iscompleted == 1 && !$rows[id].isreplaced}
 		    			,{literal}{type:'separator'}{/literal},
 		    			{literal}{href: 'client_role_edit.php?id='+id, innerHTML: 'Edit'},{/literal}
-		    				    		
-			    		{if $rows[id].roletype == 'CUSTOM'}
-			    			{literal}{type:'separator'},{/literal}
-			    			{literal}{href: 'client_role_edit.php?task=share&id='+id, innerHTML: 'Share this role'},{/literal}
-			    		{/if}
-			    		
+		    			{literal}{type:'separator'},{/literal}
+		    			{literal}{href: 'client_role_edit.php?task=share&id='+id, innerHTML: 'Share this role'},{/literal}			    		
 			    		{literal}{type:'separator'},{/literal}
+						/*
+				    	{literal}{href: 'client_role_clone.php?id='+id, innerHTML: 'Clone this role to another region'},{/literal}			    		
+			    		{literal}{type:'separator'},{/literal}
+				    	*/
 		    		{/if}
 	            {else}
 	            	{if $rows[id].iscompleted == 1 && !$rows[id].isreplaced}
