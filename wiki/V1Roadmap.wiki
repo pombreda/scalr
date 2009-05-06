@@ -7,8 +7,8 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 = Future Releases = 
 
 == New scaling algorithms ==
- * Scaling based on bandwidth usage
- * Scaling based on SQS queue size
+ * <strike>Scaling based on bandwidth usage</strike>
+ * <strike>Scaling based on SQS queue size</strike>
  * Scaling based on Memory usage
 
 == Scalarizr == 
@@ -17,8 +17,8 @@ Scalr agent that will allow you to use any `*`nix AMI with Scalr.
 == Optimization of MySQL Role == 
 Making snapshot and promoting new master takes a long time. We have a few ideas about how to make this process faster.
 
-== New extJS-based interface ==
-With one-click sorting and other cool goodies. 
+== <strike>New extJS-based interface</strike> ==
+<strike>With one-click sorting and other cool goodies. </strike>
 
 == yourfarm.scalr.ws ==
 Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
@@ -28,7 +28,7 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
   * SSH is no more required on instances
   * Base Windows Role.
   * Diff view  for scripts
-  * Support for reserved instances.
+  * <strike>Support for reserved instances.</strike>
 
 <br>
 = <strike>February 2009</strike> =
