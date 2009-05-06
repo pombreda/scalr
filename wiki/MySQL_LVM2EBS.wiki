@@ -1,4 +1,5 @@
 #summary MySQL LVM to EBS storage engine migration manual
+#labels Deprecated
 
 = Introduction =
 
