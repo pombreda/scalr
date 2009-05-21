@@ -857,3 +857,11 @@ CREATE TABLE `zones` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 /*Data for the table `zones` */
+
+CREATE TABLE `init_tokens` (
+  `id` int(11) NOT NULL auto_increment,
+  `instance_id` varchar(255) default NULL,
+  `token` varchar(255) default NULL,
+  `dtadded` datetime default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
