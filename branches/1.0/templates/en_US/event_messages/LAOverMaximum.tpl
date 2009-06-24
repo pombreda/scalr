@@ -1,0 +1,1 @@
+Load averages for role {$event->RoleInfo.name} (AMI: {$event->RoleInfo.ami_id}) {$event->LA} is over maximum {$event->MaxLA}

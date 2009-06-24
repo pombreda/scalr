@@ -1,0 +1,1 @@
+LA for {$event->RoleInfo.name} is over maximum
