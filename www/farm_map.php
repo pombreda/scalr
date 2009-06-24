@@ -18,7 +18,7 @@
 	
 	$ReflectState = new ReflectionClass("INSTANCE_STATE"); 
 	
-	$display["roles"] = $db->GetAll("SELECT *, ami_roles.name, ami_roles.alias, ami_roles.alias as icon FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
+	$display["roles"] = $db->GetAll("SELECT farm_amis.*, farm_amis.id as id, ami_roles.name, ami_roles.alias, ami_roles.alias as icon FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
 	foreach ($display["roles"] as &$role)
 	{
 		// Default icon for nonexistent aias
@@ -28,12 +28,13 @@
 			 $role["icon"] = "default";
 		}
 	
+		$DBFarmRole = DBFarmRole::LoadByID($role['id']);
 		
 		$role["instances"] = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?",
 			array($farminfo['id'], $role['ami_id'])
 		);
 		
-		$role["empty_instances"] = array_fill(0, $role["max_count"]-count($role["instances"]), "empty");
+		$role["empty_instances"] = array_fill(0, $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES)-count($role["instances"]), "empty");
 		
 		$role_LA = 0;
 		

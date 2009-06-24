@@ -1,61 +1,122 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
-<script type="text/javascript" src="js/class.SelectControl.js"></script>
-	{include file="inc/table_header.tpl"}
-	<table class="Webta_Items" rules="groups" frame="box" width="100%" cellpadding="2" id="Webta_Items">
-	<thead>
-	<tr>
-		<th>{t}Application{/t}</th>
-		<th>{t}Farm{/t}</th>
-		<th>{t}Role{/t}</th>
-		<th width="180">{t}DNS Zone status{/t}</th>
-		<th width="1">{t}Options{/t}</th>
-		<th nowrap width="1%"><input type="checkbox" name="checkbox" value="checkbox" onClick="checkall()"></th>
-	</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-		<td class="Item" valign="top">{$rows[id].zone}</td>
-		<td class="Item" valign="top"><a href="farms_view.php?farmid={$rows[id].farm.id}">{$rows[id].farm.name}</a></td>
-		<td class="Item" valign="top"><a href="roles_view.php?farmid={$rows[id].farm.id}&ami_id={$rows[id].role.ami_id}">{$rows[id].role.name}</a></td>
-		<td class="Item" valign="top">{$rows[id].string_status}</td>
-		<td class="ItemEdit" valign="top" width="1">{if $rows[id].status == 0}<a id="control_{$rows[id].zone}" href="javascript:void(0)">{t}Options{/t}</a>{/if}</td>
-		<td class="ItemDelete">
-			<span>
-				<input type="checkbox" id="delete[]" {if $rows[id].status > 1}disabled{/if} name="delete[]" value="{$rows[id].id}">
-			</span>
-		</td>
-	</tr>
-	{if $rows[id].status == 0}
-	<script language="Javascript" type="text/javascript">
-    	var zone = '{$rows[id].zone}';
-    	
-    	var menu = [
-            {literal}{href: 'sites_add.php?ezone='+zone, innerHTML: '{/literal}{t}Edit DNS zone{/t}{literal}'},{/literal}
-            {literal}{type:'separator'},{/literal}
-            {literal}{href: 'app_switch.php?application='+zone, innerHTML: '{/literal}{t}Switch application to another farm / role{/t}{literal}'}{/literal}
-            {if $rows[id].role_alias == 'app' || $rows[id].role_alias == 'www'},{literal}{href: 'vhost.php?name='+zone, innerHTML: 'Configure apache virtual host'}{/literal}{/if}
-        ];
-        
-        {literal}			
-        var control = new SelectControl({menu: menu});
-        control.attach('control_'+zone);
-        {/literal}
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
+{literal}
+Ext.onReady(function () {
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'id',
+	        remoteSort: true,
 	
-	</script>
-	{/if}
-	{sectionelse}
-	<tr>
-		<td colspan="8" align="center">{t}No applications found{/t}</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="4" align="center">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-		<td class="ItemDelete" valign="top">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9}
+	        fields: [
+				{name: 'id', type: 'int'},
+				{name: 'clientid', type: 'int'},
+	            'zone', 'string_status', 'status', 'role_alias', 'role_name', 'farmid', 'farm_name', 'ami_id'
+	        ]
+    	}),
+		url: '/server/grids/apps_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+	
+    function renderStatus (value, p, record) {
+    	var className;
+    	if (record.data.status == 0) {
+    		className = "status-ok";
+    	} else if (record.data.status == 3) {
+    		className = "status-ok-pending"
+    	} else {
+    		className = "status-fail";
+    	}
+
+    	p.css += " "+className;
+    	return value;
+    }
+
+	function farmRenderer(value, p, record) {
+		return '<a href="/farms_view.php?farmid='+record.data.farmid+'">'+record.data.farm_name+'</a>';
+	}
+
+	function roleRenderer(value, p, record) {
+		return '<a href="/roles_view.php?farmid='+record.data.farmid+'&ami_id='+record.data.ami_id+'">'+record.data.role_name+'</a>';
+	}
+    	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 500,
+        title: "Applications",
+        id: 'apps_list',
+        store: store,
+        maximize: true,
+        viewConfig: { 
+        	emptyText: "No applications found"
+        },
+
+        // Columns
+        columns:[
+			{header: "Domain name", width: 100, dataIndex: 'zone', sortable: true},
+			{header: "Farm", width: 100, dataIndex: 'farm_name', renderer:farmRenderer, sortable: false},
+			{header: "Role", width: 100, dataIndex: 'role_name', renderer:roleRenderer, sortable: true},
+			{header: "DNS Zone status", width: 50, dataIndex: 'string_status', renderer: renderStatus, sortable: false}
+		],
+
+		//TODO: Hide option for non-active rows
+		
+    	// Row menu
+    	rowOptionsMenu: [
+			{id: "option.edit", 		text:'Edit DNS Zone', 			  	href: "/sites_add.php?ezone={zone}"},
+			new Ext.menu.Separator({id: "option.editSep"}),
+			{id: "option.switch", 	text: 'Switch application to another farm / role', 	href: "/app_switch.php?application={zone}"},
+			{id: "option.configureVhost", 	text: 'Configure apache virtual host', 	href: "/vhost.php?name={zone}"}
+     	],
+
+     	getRowOptionVisibility: function (item, record) {
+			var data = record.data;
+
+			if (data.status != 0)
+			{
+				if (item.id != 'option.switch' || data.status != 1)
+					return false;
+				else
+					return true;
+			}
+			else
+			{
+				if (item.id == 'option.configureVhost')
+				{
+					if (data.role_alias == 'app' || data.role_alias == 'www')
+						return true;
+					else
+						return false;
+				}
+				else
+					return true;
+			}
+		},
+
+		getRowMenuVisibility: function (record) {
+			return (record.data.status == 0 || record.data.status == 1);
+		},
+		// With selected options
+		withSelected: {
+			menu: [
+				{text: "Delete", value: "delete"}
+			],
+			hiddens: {with_selected : 1},
+			action: "act"
+		}
+    });
+    grid.render();
+    store.load();
+
+	return;
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

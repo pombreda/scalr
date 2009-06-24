@@ -96,7 +96,11 @@
 				}
 				catch(Exception $e)
 				{
-					LoggerManager::getLogger(__CLASS__)->fatal(sprintf(_("Cannot check EBS status: %s"), $e->getMessage()));
+					if (!stristr($e->getMessage(), "DTD are not"))
+						LoggerManager::getLogger(__CLASS__)->fatal(sprintf(_("Cannot check EBS status: %s"), $e->getMessage()));
+					else
+						LoggerManager::getLogger(__CLASS__)->warn(sprintf(_("Cannot check EBS status: %s"), $e->getMessage()));
+						
 					return false;
 				}
 			}

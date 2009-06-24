@@ -1,109 +1,174 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
-<script type="text/javascript" src="js/class.SelectControl.js"></script>
-    {include file="inc/table_header.tpl"}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Farm ID</th>
-			{if $smarty.session.uid == 0}<th>Client</th>{/if}
-			<th>Farm Name</th>
-			<th>Region</th>
-			<th>Added</th>
-			<th>Roles</th>
-			<th>Instances</th>
-			<th>Applications</th>
-			<th>Status</th>
-			<th width="1%">Options</th>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-		<td class="Item" valign="top">{$rows[id].id}</td>
-		{if $smarty.session.uid == 0}<td class="Item" valign="top"><a href="clients_view.php?clientid={$rows[id].client.id}">{$rows[id].client.email}</a></td>{/if}
-		<td class="Item" valign="top">{$rows[id].name}</td>
-		<td class="Item" valign="top">{$rows[id].region}</td>
-		<td class="Item" valign="top">{$rows[id].dtadded}</td>
-		<td class="Item" valign="top">{$rows[id].roles} [<a href="roles_view.php?farmid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].instances} [<a href="instances_view.php?farmid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].sites} [<a href="sites_view.php?farmid={$rows[id].id}">View</a>] {if $smarty.session.uid != 0}[<a href="sites_add.php?farmid={$rows[id].id}">Add</a>]{/if}</td>
-		<td class="Item" valign="top" nowrap>
-			<span style="color:{if $rows[id].status == 1}green{else}red{/if};">
-			{$rows[id].status_txt}
-			</span>
-		</td>		
-		<td class="ItemEdit" valign="top"><a id="control_{$rows[id].id}" href="javascript:void(0)">Options</a></td>
-	</tr>
-	<script language="Javascript" type="text/javascript">
-    	var id = '{$rows[id].id}';
-    	var name = '{$rows[id].name}';
-    	var control_action= '{if $rows[id].status == 1}Terminate{elseif $rows[id].status == 3}Forcefully terminate{else}Launch{/if}';
-    	
-    	var menu = [
-    	
-    		{if $rows[id].status == 1}
-            	{literal}{href: 'farm_map.php?id='+id, innerHTML: 'View map'}{/literal},
-            	{literal}{type: 'separator'}{/literal},
-            {/if}
-    	
-            {literal}{href: '/storage/keys/'+id+'/'+name+'.pem', innerHTML: 'Download Private key'}{/literal},
-            {literal}{type: 'separator'}{/literal},
-            {literal}{href: 'farms_control.php?farmid='+id, innerHTML: control_action}{/literal},
-            {literal}{type: 'separator'}{/literal},
-            {literal}{href: 'farm_usage_stats.php?farmid='+id, innerHTML: 'Usage statistics'}{/literal},
-            
-            {if $rows[id].status == 1}
-            {literal}{href: 'farm_stats.php?farmid='+id, innerHTML: 'Load statistics'}{/literal},
-            {/if}
-            
-            {literal}{href: 'ebs_manage.php?farmid='+id, innerHTML: 'EBS usage'}{/literal},
-            {literal}{href: 'elastic_ips.php?farmid='+id, innerHTML: 'Elastic IPs usage'}{/literal},
-            {literal}{href: 'events_view.php?farmid='+id, innerHTML: 'Events & Notifications'}{/literal},
-                                               	
-           	{if $rows[id].status == 1}
-           		{literal}{type: 'separator'}{/literal},
-
-           		{if $rows[id].havemysqlrole}
-	            	{literal}{href: 'farm_mysql_info.php?farmid='+id, innerHTML: 'MySQL status'}{/literal},
-	            {/if}
-           	
-            	{literal}{href: 'execute_script.php?farmid='+id, innerHTML: 'Execute script'}{/literal},
-            {/if}
-           	
-           	{if $rows[id].shortcuts|@count}
-           		{literal}{type: 'separator'}{/literal},
-           		{assign var=shortcuts value=$rows[id].shortcuts}
-           		{section name=sid loop=$shortcuts}
-           			{literal}{href: 'execute_script.php?farmid='+id+'&task=execute&script={/literal}{$shortcuts[sid].event_name}{literal}', innerHTML: "Execute {/literal}&laquo;{$shortcuts[sid].name}&raquo;{literal}"}{/literal},	
-           		{/section}
-           	{/if}
-           	
-           	{literal}{type: 'separator'}{/literal},
-           	{literal}{href: 'logs_view.php?farmid='+id, innerHTML: 'View log'}{/literal},
-           	
-            {literal}{type: 'separator'}{/literal},
-            {literal}{href: 'farms_add.php?id='+id, innerHTML: 'Edit'}{/literal},
-            {literal}{href: 'farm_delete.php?id='+id, innerHTML: 'Delete'}{/literal}
-        ];
-        
-        
-        {literal}			
-        var control = new SelectControl({menu: menu});
-        control.attach('control_'+id);
-        {/literal}
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
+{literal}
+Ext.onReady(function () {
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'id',
+	        remoteSort: true,
+	        fields: [
+				{name: 'id', type: 'int'},
+				{name: 'clientid', type: 'int'},
+	            {name: 'dtadded', type: 'date'},
+	            'name', 'status', 'region', 'instances', 'roles', 'sites','client_email','havemysqlrole'
+	        ]
+	    }),
+		url: '/server/grids/farms_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
 	
-	</script>
-	{sectionelse}
-	<tr>
-		<td colspan="{if $smarty.session.uid == 0}10{else}9{/if}" align="center">No farms found</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="{if $smarty.session.uid == 0}9{else}8{/if}" align="center">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
+    function renderStatus (value, p, record) {
+    	var titles = {
+			1: "Running",
+    		0: "Terminated",	
+    		2: "Terminating",
+    		3: "Synchronizing"
+    	};
+    	var className;
+    	if (value == 1) {
+    		className = "status-ok";
+    	} else if (value == 3) {
+    		className = "status-ok-pending"
+    	} else {
+    		className = "status-fail";
+    	}
+    	
+    	var title = titles[value] || value;
+    	p.css += " "+className;
+    	return title;
+    }
+
+	function rolesRenderer(value, p, record) {
+		return value + ' [<a href="/roles_view.php?farmid='+record.data.id+'">View</a>]';
+	}
+
+	function instancesRenderer(value, p, record) {
+		return value + ' [<a href="/instances_view.php?farmid='+record.data.id+'">View</a>]';
+	}
+
+	function sitesRenderer(value, p, record) {
+		return value + ' [<a href="/sites_view.php?farmid='+record.data.id+'">View</a>]';
+	}
+
+	function clientsRenderer(value, p, record) {
+		return '<a href="/clients_view.php?clientid='+record.data.clientid+'">'+record.data.client_email+'</a>';
+	}
+	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 500,
+        title: "Farms",
+        id: 'farms_list',
+        store: store,
+        maximize: true,
+        viewConfig: { 
+        	emptyText: "No farms found"
+        },
+
+        // Columns
+        columns:[
+			{header: "Farm ID", width: 25, dataIndex: 'id', sortable: true},
+			{/literal}
+				{if $smarty.session.uid == 0}
+					{literal}
+					{header: "Client", width: 50, dataIndex: 'client', renderer: clientsRenderer, sortable: false},
+					{/literal}
+				{/if}
+			{literal}
+			{header: "Farm Name", width: 50, dataIndex: 'name', sortable: true},
+			{header: "Region", width: 30, dataIndex: 'region', sortable: true},
+			{header: "Added", width: 50, dataIndex: 'dtadded', renderer: renderers.dateMjY, sortable: true}, 
+			{header: "Roles", width: 30, dataIndex: 'roles', renderer: rolesRenderer, sortable: false},
+			{header: "Instances", width: 30, dataIndex: 'instances', renderer: instancesRenderer, sortable: false},
+			{header: "Applications", width: 30, dataIndex: 'sites', renderer: sitesRenderer, sortable: false},
+			{header: "Status", width: 30, dataIndex: 'status', renderer: renderStatus, sortable: true}
+		],
+		
+    	// Row menu
+    	rowOptionsMenu: [
+			{id: "option.viewMap", 		text:'View map', 			  	href: "/farm_map.php?id={id}"},
+			new Ext.menu.Separator({id: "option.viewMapSep"}),
+			
+			{id: "option.privateKey", 	text: 'Download Private key', 	href: "/storage/keys/{id}/{name}.pem"},
+			new Ext.menu.Separator({id: "option.privateKeySep"}),
+			{id: "option.launchFarm", 	text: 'Launch', 				href: "/farms_control.php?farmid={id}"},
+			{id: "option.terminateFarm",text: 'Terminate', 				href: "/farms_control.php?farmid={id}"},
+			new Ext.menu.Separator({id: "option.controlSep"}),
+			{id: "option.usageStats",	text: 'Usage statistics', 		href: "/farm_usage_stats.php?farmid={id}"},
+			{id: "option.loadStats",	text: 'Load statistics', 		href: "/farm_stats.php?farmid={id}"},
+			
+			{id: "option.ebs",			text: 'EBS usage', 				href: "/ebs_manage.php?farmid={id}"},
+			{id: "option.eip",			text: 'Elastic IPs usage', 		href: "/elastic_ips.php?farmid={id}"},
+			{id: "option.events",		text: 'Events & Notifications', href: "/events_view.php?farmid={id}"},
+
+			new Ext.menu.Separator({id: "option.mysqlSep"}),
+
+			{id: "option.mysql",		text: 'MySQL status', 			href: "/farm_mysql_info.php?farmid={id}"},
+			{id: "option.script",		text: 'Execute script', 		href: "/execute_script.php?farmid={id}"},
+
+			{/literal}
+			{if $rows[id].shortcuts|@count}
+		   		{literal}
+		   		new Ext.menu.Separator({id: "option.shortcutsSep"}),
+		   		{/literal}
+		   		{assign var=shortcuts value=$rows[id].shortcuts}
+		   		{section name=sid loop=$shortcuts}
+		   			{literal}
+		   			{id: "option."+(Math.random()*100000),		text: 'Execute {/literal}&laquo;{$shortcuts[sid].name}&raquo;{literal}', href: "execute_script.php?farmid={id}&task=execute&script={/literal}{$shortcuts[sid].event_name}{literal}"},
+		   			{/literal}
+		   		{/section}
+		   	{/if}
+			{literal}
+			new Ext.menu.Separator({id: "option.logsSep"}),
+			{id: "option.logs",			text: 'View log', 				href: "/logs_view.php?farmid={id}"},
+			new Ext.menu.Separator({id: "option.editSep"}),
+			{id: "option.edit",			text: 'Edit', 					href: "/farms_add.php?id={id}"},
+			{id: "option.delete",		text: 'Delete', 				href: "/farm_delete.php?id={id}"}
+     	],
+     	getRowOptionVisibility: function (item, record) {
+			var data = record.data;
+
+			if (item.id == "option.launchFarm")
+				return (data.status == 0);
+
+			if (item.id == "option.terminateFarm")
+				return (data.status == 1);
+			
+			if (item.id == "option.viewMap" || 
+					item.id == "option.viewMapSep" || 
+					item.id == "option.loadStats" || 
+					item.id == "option.mysqlSep" ||
+					item.id == "option.mysql" ||
+					item.id == "option.script"
+				) {
+
+				if (data.status == 0)
+					return false;
+				else
+				{
+					if (item.id != "option.mysql")
+						return true;
+					else
+						return data.havemysqlrole;
+				}
+			}
+			else
+				return true;
+		}
+    });
+    grid.render();
+    store.load();
+
+	return;
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

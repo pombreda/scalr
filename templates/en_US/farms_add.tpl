@@ -9,7 +9,56 @@
 
     	</div>
 	</div>
-    <link rel="STYLESHEET" type="text/css" href="/css/dhtmlXTree.css">
+	{literal}
+	<style>
+
+	#variantList {
+		background:white;
+		font: normal 1.3em Arial;
+		line-height:18px;
+		zoom:1;
+	}
+	
+	#variantList .var-item {
+		padding:10px 10px;
+		border-bottom:1px solid #D6E4E1;
+	    margin: 0 1px;
+		zoom:1;
+	}
+	
+	#variantList .x-view-selected {
+		background:#D9E8FB;
+	}
+	
+	
+	div.x-dataview-drag-insert-below {
+	 	 border-bottom:1px dotted #3366cc !important;
+	}
+	div.x-dataview-drag-insert-above {
+		 border-top:1px dotted #3366cc;
+	}
+	
+	.x-tree-node-anchor
+	{
+		font-size:14px;
+	}
+	
+	.x-tree-node-icon
+	{
+		background-image:URL('/images/dhtmlxtree/csh_vista/icon_hardware.gif');
+	}
+	
+	.x-tree-node-el
+	{	
+		CURSOR: pointer;	
+		LINE-HEIGHT: 18px;
+		padding-top:4px;
+		padding-bottom:4px;
+		border-bottom:1px solid #F9F9F9;
+	}
+	</style>
+	{/literal}
+    <link rel="STYLESHEET" type="text/css" href="/css/dhtmlXTree.css" />
     <link href="css/popup.css" rel="stylesheet" type="text/css" />
     <script language="javascript" type="text/javascript" src="/js/dhtmlxtree/dhtmlXTree.js"></script>
     <script language="javascript" type="text/javascript" src="/js/dhtmlxtree/dhtmlXCommon.js"></script>
@@ -24,8 +73,8 @@
 	<script type="text/javascript" src="/js/class.RoleTab.js"></script>
 	<script type="text/javascript" src="/js/class.FarmRole.js"></script>
 	<script type="text/javascript" src="/js/farm_manager.inc.js"></script>
-	<link rel="stylesheet" href="/js/highlight/styles/default.css">
-	<link rel="stylesheet" href="/js/highlight/styles/sunburst.css">
+	<link rel="stylesheet" href="/js/highlight/styles/default.css" />
+	<link rel="stylesheet" href="/js/highlight/styles/sunburst.css" />
     <br />
     <style>
 	{literal}												
@@ -43,25 +92,23 @@
 		}
 	{/literal}
 	</style>
-    
-    <table width="100%" cellpadding="10" cellspacing="0" border="0" style="height:100%">
+	
+    <div style="padding-left:5px;padding-right:5px;height:100%;" id="main_page_cont">
+    <table width="100%" cellpadding="10" cellspacing="5" border="0" style="height:100%;">
         <tr valign="top">
             <td width="250" valign="top">
                 {include file="inc/table_header.tpl" nofilter=1}
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-left:10px;">
                 	<tr valign="top">
                 		<td>
                 			<div style="position:relative;top:0px;left:0px;width:250px;height:500px;">
-	                			<div id="AttachLoader" style="display:;text-align:center;padding-top:240px;background-color:#f4f4f4;position:absolute;top:0px;left:0px;width:250px;height:260px;z-index:999999;">
-	                		      <img src="/images/snake-loader.gif" style="vertical-align:middle;display:;"> Loading...
-	                		    </div>
 	                		    <div style="position:absolute;top:0px;left:0px;z-index:1;">
 	                		      <div id="inventory_tree" style="width:250px;height:500px;"></div>
 	                		    </div>                            
 	                            <script language="Javascript" type="text/javascript">
 	                            	/*
 	                            	Init variables
-	                            	*/
+	                            	*/								                            	
 										                            	
 	                            	var i_types = new Array();
 	                            	i_types['i386'] = new Array();
@@ -77,155 +124,28 @@
 	                                var MANAGER_ACTION = '{if $id}edit{else}create{/if}';
 	                                var FARM_ID		   = '{$id}';
 	                                var REGION		   = '{$region}';
-	                                var FARM_MYSQL_ROLE = '{$farm_mysql_role}';                                
+	                                var FARM_MYSQL_ROLE = '{$farm_mysql_role}'; 
+	                                var FARM_ROLES_LAUNCH_ORDER = '{if $farminfo}{$farminfo.farm_roles_launch_order}{else}0{/if}';
+	                                var SELECTED_AMI_ID = '{$ami_id}';                          
+
+	                                var tree = null;
+	                                var events_tree = null;
+									var LoadMask = null;
 									
 									{if $roles}
 	                                var l_roles = {$roles};
 	                                {/if}
+
+	                                {if $default_scaling_algos}
+		                            var default_scaling_algos = {$default_scaling_algos};
+		                            {/if}
 	                                
 	                                /*
 	                                Setup initial observer
 	                                */
 									{literal}
-
-									var iscompleted = new Array;
-									window.iscompleted['init'] = false;
-									window.iscompleted['roles'] = false;
-									window.iscompleted['events'] = false;
-	                                
-									function IsPageLoaded()
-									{
-										if (window.iscompleted['init'] && window.iscompleted['roles'])
-										{
-											$('AttachLoader').style.display = 'none';
-											return true;
-										}
-										else
-											window.setTimeout("IsPageLoaded()", 1000);
-									}
 									
-									Event.observe(window, 'load', function(){
-										window.RoleTabObject = new RoleTab();
-										window.popup = new NewPopup('role_info_popup', {target: '', width: 270, height: 120, selecters: new Array()});
-										
-										window.popup_help = new NewPopup('popup_help', {target: '', width: 370, height: 120, selecters: new Array()});
-										
-										if (l_roles)
-	                                	{
-			                                l_roles.each(function(item){
-			                                	var f = new FarmRole(null, null, null, null, null, null);
-			                                	Object.extend(f, item);
-			                                	window.RoleTabObject.AddRoleToFarm(null, Object.clone(f));
-			                                }); 
-			                            }
-
-										window.iscompleted['init'] = true;
-
-										window.setTimeout("IsPageLoaded()", 1000);
-									});
-	                            	{/literal}
-									
-									 hljs.initHighlightingOnLoad.apply(null, hljs.ALL_LANGUAGES);
-									 
-									 var tree = new dhtmlXTreeObject($('inventory_tree'),"100%","100%",0);
-									 
-									 {literal} 
-									 Event.observe(window, 'load', function(){
-		                            	 /*
-		                            	 Setup role tree
-		                            	 */
-		                                tree.setImagePath("images/dhtmlxtree/csh_vista/");
-		                                tree.enableCheckBoxes(true);
-		                                tree.enableThreeStateCheckboxes(true);
-		                                
-		                                sid = '{$sid}';
-		                                stype = '{$stype}';
-		                                
-		                                tree.enableDragAndDrop(false);
-		                                {/literal} 
-		                                tree.setXMLAutoLoading("farm_amis.xml?farmid={$id}&ami_id={$ami_id}&region="+REGION);
-		            	                tree.loadXML("farm_amis.xml?farmid={$id}&ami_id={$ami_id}&region="+REGION);
-		            	                
-		            	                {literal}
-		            	                tree.OnXMLLoaded = function()
-		            	                {
-		            	                	window.iscompleted['roles'] = true;
-		            	                }
-		            	                            	                         	    
-		            	                var selectTreeItem = function(itemId, markitem)
-		            	                {		            	                	
-		            	                	if (tree.getUserData(itemId,"isFolder") == 1)
-		            	                	{
-		                						var state=tree._getOpenState(tree._globalIdStorageFind(itemId));
-		                						if (state == -1)
-		                							tree.openItem(itemId);
-		                						else
-		                							tree.closeItem(itemId);
-		                						
-		                						return false;
-		                					}
-		            	                	
-		            	                	if (typeof(tree.getUserData(itemId,"alias")) == 'undefined')
-		            	                	{
-												tree.selTimeout = window.setTimeout('selectTreeItem("'+itemId+'", 1)', 200);
-												return;
-		            	                	}
-
-											if (tree._globalIdStorageFind(itemId).label == 'mysql' || tree._globalIdStorageFind(itemId).label == 'mysql64')
-											{
-												$('mysql_dep_warning').style.display = '';
-											}
-											else
-											{
-												$('mysql_dep_warning').style.display = 'none';
-											}
-	            	                	            	                			                					
-		                					if (markitem)
-		                						tree._markItem(tree._globalIdStorageFind(itemId));
-		                						
-		                					$('event_script_info').style.display = 'none';
-		                					$('script_source_div').style.display = 'none';
-		                						
-		                					if (tree.isItemChecked(itemId) != 1)
-		            	                	{
-												RoleTabObject.SetCurrentRoleObject(itemId, false);
-		            	                		return true;
-		            	                	}
-		            	                	else
-		            	                	{	
-		            	                		RoleTabObject.SetCurrentRoleObject(itemId, true);
-		            	                		return true;
-		            	                	}
-		            	                }
-		            	                            
-		            	                tree.setOnSelectStateChange(selectTreeItem);
-		            	                            	                
-		            	                tree.attachEvent("onCheck", function(itemId, state)
-		            	                {            	                               	                               	                    
-		            	                    tree.setCheck(itemId,state);
-		                					    
-		            					    //Get Top level item
-		            					    var item = tree._globalIdStorageFind(itemId);
-		            	                    while (tree.getLevel(item.id) > 1)
-		            	                        item = tree._globalIdStorageFind(tree.getParentId(item.id));
-		                        
-		            	                    if (tree.getUserData(itemId,"isFolder") == 1)
-		                					{
-		                					    var childs = tree.getAllSubItems(itemId).split(',');
-		                					    
-		                					    for (key in childs)
-		                					    {
-		                					        if (typeof(childs[key]) == "string")
-		                					        {
-		                                                if (tree.getUserData(childs[key],"isFolder") != 1)
-		                                                    ManageTable(childs[key], state)
-		                					        }
-		                					    }
-		                					}
-		                					else
-		                					    ManageTable(itemId, state);
-		            	                });
-	            	                });
+									hljs.initHighlightingOnLoad.apply(null, hljs.ALL_LANGUAGES);								 
 	            	                            	                
 	            	                /*
 	            	                Setup script events tree
@@ -236,262 +156,51 @@
 										'<div style="clear:both;"></div>'+
 										'</div>'
 									); 
-	            	                
-	            	                Event.observe(window, 'load', function(){
-	            	                {/literal}
-	            	                
-		            	                events_tree = new dhtmlXTreeObject($('scripts_tree'),"100%","100%",0);
-		                                events_tree.setImagePath("images/dhtmlxtree/csh_vista/");
-		                                events_tree.enableCheckBoxes(true);
-		                                events_tree.enableThreeStateCheckboxes(true);
-		                                
-		                                events_tree.enableDragAndDrop(true);
-		                                events_tree.setXMLAutoLoading("role_scripts_xml.php?farmid={$id}");
-		                                events_tree.setDragHandler(ScriptsDragHandler);
-		            	                events_tree.loadXML("role_scripts_xml.php?farmid={$id}");
 
-		            	                									   		            	     
-			            	            {literal}		            	            
-			            	            events_tree.onDragEnd = function(itemId)
-										{
-											if (RoleTabObject.CurrentRoleObject && RoleTabObject.CurrentRoleObject)
-											{
-												for (var key in RoleTabObject.CurrentRoleObject.scripts)
-												{
-													if (typeof(key) == 'string')
-													{
-			            	            				RoleTabObject.CurrentRoleObject.scripts[key].order_index = events_tree.getIndexById(key);
-													}
-												}
-											}
-										}
+	            	                Ext.onReady(function(){
+
+	            	                	var gridCt = Ext.get(document.body);
+	            	        	   		var bodyEl = Ext.get(document.body);
+	            	        	    	//bodyEl.setStyle("overflow", "hidden");
+	            	        	    	gridCt.setWidth(Ext.lib.Dom.getViewWidth() - gridCt.getPadding("lr") - gridCt.getBorderWidth("lr"));
+	            	        	    	gridCt.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - gridCt.getY() - gridCt.getPadding("tb") - gridCt.getBorderWidth("tb")));
+
+										
+	            	                	window.LoadMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait..."});
+	            	                	window.LoadMask.show();
 			            	            
-			            	            function ScriptsDragHandler(idFrom,idTo)
-		            	                {
-			            	            	var pid = events_tree.getParentId(idFrom);
+		            	            	var Tree = Ext.tree;
+		            	            	    
+	            	            	    window.RolesOrderTree = new Tree.TreePanel({
+	            	            	        el:'roles_order_panel',
+	            	            	        useArrows:false,
+	            	            	        lines: false,
+	            	            	        title:'Drag & drop items to set roles launch order.',
+	            	            	        autoScroll:true,
+	            	            	        animate:true,
+	            	            	        height:300,
+	            	            	        style:'width:100%',
+	            	            	        itemCls:'test-class',
+	            	            	        enableDD:true,
+	            	            	        containerScroll: true,
+											rootVisible:false,
+	            	            	        
+	            	            	        root: {
+	            	            	            text: 'Roles',
+	            	            	            draggable:false,
+	            	            	            id:'source'
+	            	            	        }
+	            	            	    });
 
-			            	            	//_print(events_tree.getIndexById(idFrom));
-			            	            	
-											if (pid == idTo)
-												return true;
-											else
-			            	                    return false;
-		            	                }
-					            	            	            	            
-			            	            events_tree.setOnSelectStateChange(function(itemId)
-		            	                {
-		            	                	if (events_tree.getUserData(itemId,"isFolder") == 1)
-		            	                	{
-		                						var state=events_tree._getOpenState(events_tree._globalIdStorageFind(itemId));
-		                						if (state == -1)
-		                							events_tree.openItem(itemId);
-		                						else
-		                							events_tree.closeItem(itemId);
-		                						
-		                						return false;
-		                					}
-		                						
-		                					if (events_tree.getUserData(itemId,"description"))
-		                						$('event_script_config_form_description').innerHTML = events_tree.getUserData(itemId,"description");
-		                					else
-		                						$('event_script_config_form_description').innerHTML = "";
-		                						
-		                					RoleTabObject.UpdateCurrentRoleScript();
-		                						
-		                					$('event_script_config_container').innerHTML = '';
-		                						
-		                					var show_config_title = false;
-		                					
-		                					var event_name = events_tree.getParentId(itemId);
-		            	                    var script_id = itemId.replace(event_name+"_", "");
-		            	                	
-		            	                	var descr = events_tree.getUserData(event_name,"eventDescription");
-		            	                	$('event_script_edescr').innerHTML = descr;
-		                					
-		                					$('event_script_info').style.display = '';
-		                							    
-		                					$('event_script_version').style.display = 'none';
-		                					
-		                					$('event_script_config_title').style.display = 'none';
-											$('script_source_div').style.display = 'none';
-											$('event_script_target').style.display = 'none';
-		                					
-		                					HideSource();
-		                							                						
-		                					if (events_tree.isItemChecked(itemId) != 1)
-		            	                	{
-												//TODO: not checked
-												
-												$('event_script_config_title').style.display = 'none';	
-		            	                	}
-		            	                	else
-		            	                	{	
-		            	                    	$('script_source_div').style.display = '';
-		            	                    	
-		            	                    	var vobj = $('script_version');
-		            	                    	vobj.innerHTML = "";
-		            	                    	
-												var opt = document.createElement("OPTION");
-												opt.value = "latest";
-												opt.innerHTML = "Latest";
-												opt.selected = true;
-												
-												vobj.appendChild(opt);
-	
-		            	                    	eval("var versions = "+events_tree.getUserData(itemId,"versions")+";");
-		            	                    	for(var key in versions)
-		            	                    	{
-		            	                    		if (typeof(versions[key]) == 'object')
-		            	                    		{
-														if (versions[key].revision != '')
-														{
-															var opt = document.createElement("OPTION");
-															opt.value = versions[key].revision;
-															opt.innerHTML = versions[key].revision;
-															
-															vobj.appendChild(opt);
-														}
-		            	                    		}
-		            	                    	}
-		            	                    	
-		            	                    	$('event_script_version').style.display = '';
-		            	                    	$('event_script_target').style.display = '';
-		            	                    			            	                	
-			            	                	RoleTabObject.SetCurrentRoleScript(script_id, event_name, versions);
-		            	                	}
-		            	                			            	                			            	                		
-		            	                	return true;
-		            	                });
-		            	                            	                
-		            	                events_tree.attachEvent("onCheck", function(itemId, state)
-		            	                {            	                               	                               	                    
-		            	                    events_tree.setCheck(itemId,state);
-		                					                            
-		            	                    if (state == 1)
-		            	                    {
-		            	                    	var event_name = events_tree.getParentId(itemId);
-		            	                    	var script_id = itemId.replace(event_name+"_", "");
-		            	                    	var timeout = events_tree.getUserData(itemId, "timeout")
-		            	                    	
-		            	                    	RoleTabObject.AddEventScript(script_id, event_name, timeout);
-		            	                    	
-		            	                    	events_tree._unselectItems();
-		            	                    	events_tree._selectItem(events_tree._globalIdStorageFind(itemId), true);
-		            	                    	$('script_source_div').style.display = '';
-		            	                    	$('event_script_target').style.display = '';
-		            	                    }
-		            	                    else
-		            	                    {
-		            	                    	if (events_tree.getSelectedItemId() == itemId)
-												{
-													$('event_script_config_container').innerHTML = '';
-													$('script_source_div').style.display = 'none';
-																									
-													events_tree._unselectItems();
-												}
-												
-												$('event_script_config_title').style.display = 'none';
-												$('script_source_div').style.display = 'none';
-												$('event_script_target').style.display = 'none';
-												
-												var event_name = events_tree.getParentId(itemId);
-		            	                    	var script_id = itemId.replace(event_name+"_", "");
-												
-												RoleTabObject.RemoveEventScript(script_id, event_name);
-		            	                    }
-		            	                });
-		            	            
+	            	            	    	            	            	    
+	            	            	    // render the tree
+	            	            	    window.RolesOrderTree.render();            	            	    
+	            	            	    window.RolesOrderTree.getRootNode().expand();
+
+	            	            	    MainLoader(1);
+										MainLoader(2);
 		            	            });
 		            	            
-		            	            function ShowEBSOptions(ctype)
-		            	            {
-		            	            	if (ctype == 1)
-		            	            	{
-		            	            		$('ebs_mount_options').style.display = 'none';
-		            	            		$('ebs_size').disabled = true;
-		            	            		$('ebs_snapid').disabled = true;
-		            	            	}
-		            	            	else if (ctype == 2)
-		            	            	{
-		            	            		$('ebs_mount_options').style.display = '';
-		            	            		$('ebs_size').disabled = false;
-		            	            		$('ebs_snapid').disabled = true;
-		            	            	}
-		            	            	else if (ctype == 3)
-		            	            	{
-		            	            		$('ebs_mount_options').style.display = '';
-		            	            		$('ebs_size').disabled = true;
-		            	            		$('ebs_snapid').disabled = false;
-		            	            	}
-		            	            }
-		            	            
-		            	            function ViewTemplateSource()
-		            	            {
-		            	            	var version = $('script_version').value;
-		            	            	var scriptid = RoleTabObject.CurrentRoleScript;
-		            	            	
-		            	            	var scriptid = scriptid.replace(/[A-Za-z0-9]+_/gi, ""); 
-		            	            	
-		            	            	$('source_link').innerHTML = "Hide source";
-		            	            	$('source_img').src = '/images/dhtmlxtree/csh_vista/script_source_open.gif';
-		            	            	$('view_source_link').onclick = function()
-		            	            	{
-		            	            		HideSource();
-		            	            	};
-		            	            	
-		            	            	$('script_source_container').innerHTML = '<img src="/images/snake-loader.gif" style="vertical-align:middle;"> Loading source. Please wait...';
-		            	            	$('script_source_container').style.display = '';
-		            	            	
-		            	            	var url = '/server/server.php?_cmd=get_script_template_source&version='+version+"&scriptid="+scriptid;
-		            	            	new Ajax.Request(url,
-										{ 
-											method: 'get',
-											contaner_name: 'script_source_container', 
-											onSuccess: function(transport)
-											{ 
-												try
-												{
-													var content = transport.responseText.replace(/&/gm, '&amp;').replace(/</gm, '&lt;').replace(/>/gm, '&gt;');
-													$(transport.request.options.contaner_name).innerHTML = '<pre style="margin:0px;"><code>'+content+'</code></pre>';
-													
-													window.setTimeout('window.HighLight()', 200);
-												}
-												catch(e)
-												{
-													alert(e.message);
-												}					 
-											} 
-										});
-		            	            }
-		            	            
-		            	            function SetVersion(version)
-		            	            {
-		            	            	HideSource();
-		            	            	RoleTabObject.SetupConfigForm(version);
-		            	            }
-		            	            
-		            	            function HideSource()
-		            	            {
-		            	            	$('script_source_container').innerHTML = '';
-		            	            	$('script_source_container').style.display = 'none';
-		            	            	
-		            	            	$('source_img').src = '/images/dhtmlxtree/csh_vista/script_source_closed.gif';
-		            	            	$('source_link').innerHTML = "View source";
-		            	            	$('view_source_link').onclick = function()
-		            	            	{
-		            	            		ViewTemplateSource();
-		            	            	};
-		            	            }
-		            	            
-		            	            function HighLight()
-		            	            {
-		            	            	hljs.highlightBlock(document.getElementById('script_source_container').firstChild.firstChild);
-		            	            }
-		            	            
-		            	            function OnTabChanged_i(id)
-		            	            {
-										
-		            	            }
 	            	                {/literal}
 	                            </script>
 	                        </div>
@@ -523,6 +232,26 @@
                             			{$region}
                             		</td>
                             	</tr>
+                            	<tr>
+                            		<td colspan='2'>
+                            			&nbsp;
+                            		</td>
+                            	</tr>
+                            	<tr>
+                            		<td colspan='2'>
+                            			<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("0");' id='roles_launch_order_0' name="roles_launch_order" checked="checked" style='vertical-align:middle;'> Launch roles simultaneously
+                            			<br/>
+                            			<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("1");' id='roles_launch_order_1' name="roles_launch_order" style='vertical-align:middle;'> Launch roles one-by-one in the order I set (slower)
+                            		</td>
+                            	</tr>
+                           		{include file="inc/intable_footer.tpl" color="Gray"}
+                           		
+                           		{include intable_tabs=0 intable_classname="tab_contents" intableid="tab_contents_rso" visible="none" file="inc/intable_header.tpl" header="Roles startup order" color="Gray"}
+	                            	<tr>
+	                            		<td colspan='2' style='width:100%;'>
+	                            		<div id='roles_order_panel'></div>
+	                            		</td>
+	                            	</tr>
                            		{include file="inc/intable_footer.tpl" color="Gray"}
                            		
                            		<div id="tab_contents_roles" class="tab_contents" style="display:none;">
@@ -605,12 +334,10 @@
 	                            	{literal}
 									function CheckEBSSize(storage_engine)
 									{
-										if (storage_engine == 'ebs')
-										{
+										if (storage_engine == 'ebs') {
 											$('mysql_ebs_size_tr').style.display = '';
 										}
-										else
-										{
+										else {
 											$('mysql_ebs_size_tr').style.display = 'none';
 										}
 									}
@@ -623,20 +350,35 @@
 	                            	<tbody id="itab_contents_scaling" class="itab_contents" style="display:none">
                            			<tr>
 	                            		<td>Minimum instances <img style="vertical-align:middle;cursor:pointer;" title="Help" onclick="ShowHelp(event, 'mini_help', this);" src="/images/icon_shelp.gif">:</td>
-	                            		<td><input type="text" size="2" class="text" id="minCount" name="minCount[{$servers[id].id}]" value="{$servers[id].min_count}"></td>
+	                            		<td><input type="text" size="2" class="role_settings text" id="scaling.min_instances" name="scaling.min_instances" value=""></td>
 	                            	</tr>
 	                            	<tr>
 	                            		<td>Maximum instances <img style="vertical-align:middle;cursor:pointer;" title="Help" onclick="ShowHelp(event, 'maxi_help', this);" src="/images/icon_shelp.gif">:</td>
-	                            		<td><input type="text" size="2" class="text" id="maxCount" name="maxCount[{$servers[id].id}]" value="{$servers[id].max_count}"></td>
+	                            		<td><input type="text" size="2" class="role_settings text" id="scaling.max_instances" name="scaling.max_instances" value=""></td>
+	                            	</tr>
+	                            	<tr>
+	                            		<td>Polling interval (every):</td>
+	                            		<td><input type="text" size="2" class="role_settings text" id="scaling.polling_interval" name="scaling.polling_interval" value="1" /> minute(s)</td>
 	                            	</tr>
 	                            	<tr valign="middle">
-	                            		<td>Scaling load averages <img style="vertical-align:middle;cursor:pointer;" title="Help" onclick="ShowHelp(event, 'scaler_help', this);" src="/images/icon_shelp.gif">:</td>
-	                            		<td style="padding-left:10px;">
-	                            			<div id="scaling_trackbar">
-
-											</div>
-											<input type='hidden' id='minLA_{$servers[id].id}' name='minLA[{$servers[id].id}]' value='{$servers[id].min_LA}'>
-											<input type='hidden' id='maxLA_{$servers[id].id}' name='maxLA[{$servers[id].id}]' value='{$servers[id].max_LA}'>
+	                            		<td colspan="2">
+	                            			<br />
+	                            			{foreach item=scaling_algo key=name from=$scaling_algos}
+	                            			<div style="{$name}_based_scaling_container" style='padding:0px;'>
+	                            				<div>
+	                            					<input type='checkbox' onClick='RoleTabObject.SetScaling("{$name}", this.checked)' class='scaling_options' name='scaling.{$name}.enabled' id='scaling.{$name}.enabled' value="1" />
+	                            					Enable scaling based on {$scaling_algo.based_on}
+	                            				</div>
+	                            				<div id="{$name}_scaling_options" style='display:none;border-bottom:1px solid #cccccc;margin-left:4px;margin-top:5px;background-color:#F9F9F9;margin-bottom:12px;padding:10px;'>
+	                            					<div>
+	                            						<table>
+	                            						{assign var="scaling_algo_data_form" value=$scaling_algo.settings}
+	                            						{include file="inc/scaling_algo_settings.tpl" DataForm=$scaling_algo_data_form}
+	                            						</table>
+	                            					</div>
+	                            				</div>
+	                            			</div>
+	                            			{/foreach}
 	                            		</td>
 	                            	</tr>
                            			</tbody>
@@ -764,10 +506,19 @@
 									</tr>
 									</tbody>
 									
+									<tbody id="itab_contents_dns" class="itab_contents" style="display:none">
+                           			<tr>
+                           				<td colspan="2">
+	                                    	<input type="checkbox" id="dns.exclude_role" class="role_settings" name="dns.exclude_role" value="1" style="vertical-align:middle;" />
+	                                    	Exclude role from DNS zone
+                           				</td>
+                           			</tr>
+									</tbody>
+																		
 									<tbody id="itab_contents_scripts" class="itab_contents" style="display:none;">
                            			<tr>
 										<td colspan="2">
-											<div style="float:left;margin-left:-10px;width:100%;margin-top:-20px;position:relative;">
+											<div style="float:left;margin-left:-10px;width:100%;margin-top:0px;position:relative;">
 											<table width="100%" border="0">
 												<tr valign="top">
 													<td>
@@ -886,7 +637,7 @@
             </td>
         </tr>
     </table>
-        
+    </div>
     <script language="Javascript">
     $('button_js').style.display='';
 	var NoCloseButton = false;

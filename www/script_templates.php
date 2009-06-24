@@ -1,5 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
+	$display['load_extjs'] = true;
 	
 	$display["title"] = _("Script templates");
 	$display["help"] = _("Scalr can execute scripts on instances upon various events. Your script templates along with parameters, will appear on farm/role configuration page under Scripting tab.");
@@ -374,62 +375,6 @@
 			$Smarty->display('script_template_create.tpl');
 		exit();
 	}
-	
-	$paging = new SQLPaging();
-	
-	if ($_SESSION['uid'] != 0)
-	{
-		$filter_sql .= " AND ("; 
-			// Show shared roles
-			$filter_sql .= " origin='".SCRIPT_ORIGIN_TYPE::SHARED."'";
-		
-			// Show custom roles
-			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='{$_SESSION['uid']}')";
-			
-			//Show approved contributed roles
-			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='{$_SESSION['uid']}'))";
-		$filter_sql .= ")";
-	}
-	
-    $sql = "select scripts.*, MAX(script_revisions.dtcreated) as dtupdated from scripts INNER JOIN script_revisions 
-    	ON script_revisions.scriptid = scripts.id WHERE 1=1 {$filter_sql}";
-
-    if (isset($req_origin))
-    {
-    	$origin = preg_replace("/[^A-Za-z0-9-]+/", "", $req_origin);
-    	$filter_sql .= " AND origin='{$origin}'";
-    	$paging->AddURLFilter("origin", $origin);
-    }
-    
-    if (isset($req_approval_state))
-    {
-    	$approval_state = preg_replace("/[^A-Za-z0-9-]+/", "", $req_approval_state);
-    	$filter_sql .= " AND scripts.approval_state='{$approval_state}'";
-    	$paging->AddURLFilter("approval_state", $approval_state);
-    }
-    
-	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "GROUP BY script_revisions.scriptid ORDER BY dtupdated DESC";
-	$paging->ApplyFilter($_POST["filter_q"], array("name", "description"));	
-	$paging->ApplySQLPaging();
-	$paging->ParseHTML();
-	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
-	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-	
-	// Rows
-	$display["rows"] = $db->GetAll($paging->SQL);	
-	foreach ($display["rows"] as &$row)
-	{
-		if ($row['clientid'] != 0)
-			$row["client"] = $db->GetRow("SELECT * FROM clients WHERE id = ?", array($row['clientid']));
-			
-		$row['version'] = $db->GetOne("SELECT MAX(revision) FROM script_revisions WHERE scriptid=?",
-			array($row['id'])
-		);
-	}
-	
-	$display["page_data_options"] = array();
-	$display["page_data_options_add"] = true;
 		
 	require("src/append.inc.php");
 ?>

@@ -1,21 +1,25 @@
 <?
-    require("../src/prepend.inc.php");
-    
-    set_time_limit(360);
-    
-    $Validator = new Validator();
-    
-    //
-    // Prepare input data
-    //
-    $farm_id = (int)$req_farm_id;
-    $farm_name = $req_farm_name;
-    $roles = @file_get_contents("php://input");
-	$roles = json_decode($roles, true);
-			
+    $context = 6;
+    			
     try
     {
-		if ($farm_id && !$_SESSION['farm_builder_region'])
+		$enable_json = true;
+		require("../src/prepend.inc.php");
+		    
+	    set_time_limit(360);
+	    
+	    $Validator = new Validator();
+	    
+	    //
+	    // Prepare input data
+	    //
+	    $farm_id = (int)$req_farm_id;
+	    $farm_name = $req_farm_name;
+	    $farm_roles_launch_order = $req_launch_order_type;
+	    $roles = @file_get_contents("php://input");
+		$roles = json_decode($roles, true);
+    	
+    	if ($farm_id && !$_SESSION['farm_builder_region'])
 			throw new Exception(_("Session expired. Please login again."));
     	
     	$uid = 0;
@@ -41,11 +45,11 @@
 			throw new Exception(_("Farm name required"));
 		
 		// Instances limit
-		$client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $uid));
+		$client_max_instances = $Client->GetSettingValue(CLIENT_SETTINGS::MAX_INSTANCES_LIMIT);
     	$i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
 
     	// EIPs limit
-    	$client_max_eips = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_eips', $uid));
+    	$client_max_eips = $Client->GetSettingValue(CLIENT_SETTINGS::MAX_EIPS_LIMIT);
 		$eips_limit = $client_max_eips ? $client_max_eips : CONFIG::$CLIENT_MAX_EIPS;
     	
 		// Prepare role information
@@ -57,34 +61,37 @@
 		{
 			if (!$role)
 				continue;
-			
+				
 			$rolename = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($role['ami_id']));
             $farm_amis[$role['ami_id']] = $role;
 			
-			$minCount = (int)$role['options']['min_instances'];
+            // Create empty DBFarmRole object (Only for validation)
+            $DBFarmRole = new DBFarmRole(0);
+            $DBFarmRole->AMIID = $role['ami_id'];
+            
+            /* Validate scaling */
+            $minCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MIN_INSTANCES];
 			if ($minCount <=0 || $minCount > 99)
 				throw new Exception(sprintf(_("Min instances for '%s' must be a number between 1 and 99"), $rolename));
                    
-			$maxCount = (int)$role['options']['max_instances'];
+			$maxCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MAX_INSTANCES];
 			if ($maxCount < 1 || $maxCount > 99)
 				throw new Exception(sprintf(_("Max instances for '%s' must be a number between 1 and 99"), $rolename));
-                   
+
+			$polling_interval = (int)$role['settings'][DBFarmRole::SETTING_SCALING_POLLING_INTERVAL];
+			if ($polling_interval < 1 || $polling_interval > 50)
+				throw new Exception(sprintf(_("Polling interval for role '%s' must be a number between 1 and 50"), $rolename));
+				
 			$total_max_count = $total_max_count+$maxCount;
                    
 			if ($role['options']['use_elastic_ips'])
                 $need_elastic_ips_for_farm += $maxCount;
-                
-			$minLA = (float)$role['options']['min_LA'];
-			if ($minLA <=0 || $minLA > 50)
-				throw new Exception(sprintf(_("Min LA for '%s' must be a number between 0.1 and 50"), $rolename));
-                   
-            $maxLA = (float)$role['options']['max_LA'];
-			if ($maxLA <=0 || $maxLA > 50)
-				throw new Exception(sprintf(_("Max LA for '%s' must be a number between 0.01 and 50"), $rolename));
-                   
-            if ($maxLA <= $minLA)
-				throw new Exception(sprintf(_("Maximum LA for '%s' must be greather than minimum LA"), $rolename));				                
-                   
+            
+
+			/** Validate BW based scaling **/
+            foreach (RoleScalingManager::$ScalingAlgos as $Algo)
+            	$Algo->ValidateConfiguration($role['options']['scaling_algos'], $DBFarmRole);
+            	
 			if ($role['options']['use_ebs'] && $role['options']['placement'] == "")
 				throw new Exception(sprintf(_("EBS cannot be enabled if Placement is set to 'Choose randomly'. Please select a different option for 'Placement' parameter for role '%s'."), $rolename));
 				
@@ -126,8 +133,12 @@
         }
         
         // Check limits
-        $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=? AND id != ?)", array($uid, $farm_id));
-		if ($used_slots+$total_max_count > $i_limit)
+        $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
+	        AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?) AND farmid != ?)",
+	        array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $uid, $farm_id)
+	    );
+        
+        if ($used_slots+$total_max_count > $i_limit)
 			throw new Exception(sprintf(_("You cannot launch more than %s instances on your account. Please adjust Max Instances setting."), $i_limit));
 		
 		$used_ips = $db->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE clientid=? AND farmid != ?", array($uid, $farm_id));
@@ -137,6 +148,7 @@
 			);
 			
 		$db->BeginTrans();
+		$transaction_started = true;
 			
 	    switch($req_action)
 	    {            
@@ -169,7 +181,8 @@
 						mysql_bundle = ?,
 						mysql_data_storage_engine = ?,
 						mysql_ebs_size = ?,
-						region = ?
+						region = ?,
+						farm_roles_launch_order = ?
 					", array( 
 	                	trim($farm_name), 
 						$_SESSION['uid'], 
@@ -180,7 +193,8 @@
 						$farm_mysql_bundle,
 						$farm_mysql_data_storage_engine,
 						$farm_mysql_ebs_size,
-						$_SESSION['farm_builder_region']
+						$_SESSION['farm_builder_region'],
+						$farm_roles_launch_order
 	                ));
 	                
 	                $farm_id = $db->Insert_ID();
@@ -215,7 +229,8 @@
 						mysql_rebundle_every = ?,
 						mysql_bundle = ?,
 						mysql_data_storage_engine = ?,
-						mysql_ebs_size = ?
+						mysql_ebs_size = ?,
+						farm_roles_launch_order = ?
 						WHERE id=?", 
 					array(  
 						trim($farm_name), 
@@ -225,6 +240,7 @@
 						$farm_mysql_bundle,
 						$farm_mysql_data_storage_engine,
 						$farm_mysql_ebs_size, 
+						$farm_roles_launch_order,
 						$farm_id
 					));
 				}
@@ -249,29 +265,27 @@
                     {
                         if (0 == $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id=? AND farmid=?", array($farm_ami["ami_id"], $farm_id)))
                         {
-                           $db->Execute("DELETE FROM farm_amis WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
-                           
-                           // Clear farm role options & scripts
-                           $db->Execute("DELETE FROM farm_role_options WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
-                           $db->Execute("DELETE FROM farm_role_scripts WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
-                           
-                           $instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
-                           foreach ($instances as $instance)
-                           {
+							$DBFarmRole = DBFarmRole::Load($farm_id, $farm_ami["ami_id"]);
+                           	$DBFarmRole->Delete();
+                           	$DBFarmRole = null;
+                       
+							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
+                           	foreach ($instances as $instance)
+                           	{
                                if ($instance["instance_id"])
                                {
-	                           	   try
-	                               {
-	                                   $res = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
-	                                   if ($res instanceof SoapFault )
-	                                       $Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString));
-	                               }
-	                               catch (Exception $e)
-	                               {
-	                                   $Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage()));
-	                               }
+									try
+                               		{
+                                   		$res = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
+                                   		if ($res instanceof SoapFault )
+                                       		$Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString));
+                               		}
+                               		catch (Exception $e)
+                               		{
+                                   		$Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage()));
+                               		}
                                }
-                           }
+							}
                         }
                         else
                         {
@@ -300,17 +314,12 @@
                     		$assign_elastic_ips[$info['id']] = $info['ami_id'];
                     	
                     	$db->Execute("UPDATE farm_amis SET 
-							min_count=?, max_count=?, min_LA=?, max_LA=?,
                             avail_zone=?, instance_type=?, use_elastic_ips=?,
                             reboot_timeout=?, launch_timeout=?, use_ebs =?,
                             ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, 
-                            status_timeout=?
+                            status_timeout=?, launch_index=?
                             WHERE farmid=? AND ami_id=?
                             ", array(
-                    		$role['options']['min_instances'], 
-                    		$role['options']['max_instances'], 
-                    		$role['options']['min_LA'],
-                            $role['options']['max_LA'], 
                             $role['options']['placement'], 
                             $role['options']['i_type'],
                             (int)$role['options']['use_elastic_ips'],
@@ -322,24 +331,22 @@
                             (int)$role['options']['ebs_mount'],
                          	$role['options']['ebs_mountpoint'], 
                          	(int)$role['options']['status_timeout'],
+                         	(int)$role['launch_index'],
                             $farm_id, 
                             $ami_id
 						));
+						
+						$DBFarmRole = DBFarmRole::Load($farm_id, $ami_id);
                     }
     	            else 
     	            {
                         $db->Execute("INSERT INTO farm_amis SET 
-							farmid=?, ami_id=?, min_count=?, max_count=?, 
-                            min_LA=?, max_LA=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
+							farmid=?, ami_id=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
                             reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?
+                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?, launch_index = ?
                             ", array( 
                         		$farm_id, 
                         		$ami_id, 
-                        		$role['options']['min_instances'], 
-	                    		$role['options']['max_instances'], 
-	                    		$role['options']['min_LA'],
-	                            $role['options']['max_LA'], 
 	                            $role['options']['placement'], 
 	                            $role['options']['i_type'],
 	                            (int)$role['options']['use_elastic_ips'],
@@ -350,9 +357,25 @@
                             	($role['options']['use_ebs'] && $role['options']['ebs_snapid'] != '') ? $role['options']['ebs_snapid'] : "",
                          		(int)$role['options']['ebs_mount'],
                          		$role['options']['ebs_mountpoint'],
-                         		(int)$role['options']['status_timeout']
+                         		(int)$role['options']['status_timeout'],
+                         		(int)$role['launch_index']
 						));
+						
+						$farm_role_id = $db->Insert_ID();
+						
+						/**
+						 * We need to init object manually (DB transaction not closed at this point)
+						 */
+						$DBFarmRole = new DBFarmRole($farm_role_id);
+						$DBFarmRole->FarmID = $farm_id;
+						$DBFarmRole->AMIID = $ami_id; 
 					}
+					
+					foreach ($role['options']['scaling_algos'] as $k=>$v)
+						$DBFarmRole->SetSetting($k, $v);
+					
+					foreach ($role['settings'] as $k=>$v)
+						$DBFarmRole->SetSetting($k, $v);
 					
 					/* Update role params */
 					$db->Execute("DELETE FROM farm_role_options WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
@@ -616,7 +639,8 @@
     	exit();
     }
     
-    $db->CommitTrans();
+    if ($transaction_started)
+    	$db->CommitTrans();
     
     print json_encode(array("result" => "ok", "data" => $farm_id));
     exit();

@@ -30,7 +30,7 @@
 					$err = array_merge($GLOBALS['warnings'], $err);
 				}
 				else
-					$db->Execute("UPDATE default_records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=? WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"], $k));
+					$db->Execute("UPDATE default_records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=? WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"], $k));
 			}
 			else
 				$db->Execute("DELETE FROM default_records WHERE id=? AND clientid='{$_SESSION['uid']}'", array($k));
@@ -58,7 +58,7 @@
 				if ($c->__toString() == "")
 					$err = array_merge($GLOBALS['warnings'], $err);
 				else
-					$db->Execute("INSERT INTO default_records SET clientid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?", array($_SESSION['uid'], $v["rtype"], $v["ttl"], $v["rpriority"], $v["rvalue"], $v["rkey"]));
+					$db->Execute("INSERT INTO default_records SET clientid=?, `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?", array($_SESSION['uid'], $v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"]));
 			}
 		}
 		

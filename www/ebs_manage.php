@@ -1,6 +1,7 @@
 <?
 	require_once('src/prepend.inc.php');
-    	    
+    $display['load_extjs'] = true;	    
+	
 	if ($_SESSION["uid"] == 0)
 	{
 		$errmsg = _("Requested page cannot be viewed from admin account");
@@ -294,130 +295,19 @@
 				break;
 		}
 	}
-    
+
+	$display['warnmsg'] = _("You should never manually re-assign EBS volumes, auto-assinged by Scalr");
+	
 	if ($req_farmid)
-		$req_view = false;
-	
-	if ($req_view)
-		$display["view"] = $req_view;
-		
-	// Rows
-	$response = $AmazonEC2Client->DescribeVolumes();
-	
-	$rowz = $response->volumeSet->item;
-	
-	if ($rowz instanceof stdClass)
-		$rowz = array($rowz);
-			
-	foreach ($rowz as $pk=>$pv)
-	{
-		if ($pv->attachmentSet && $pv->attachmentSet->item)
-			$pv->attachmentSet = $pv->attachmentSet->item;
-		
-		$item = $pv;
-		
-		try
-		{
-			$DBEBSVolume = DBEBSVolume::Load($item->volumeId);
-			
-			if ($DBEBSVolume->FarmID)
-			{
-				$item->Scalr->FarmID = $DBEBSVolume->FarmID;
-			}
-				
-			if ($DBEBSVolume->RoleName)
-				$item->Scalr->RoleName = $DBEBSVolume->RoleName;
-				
-			if ($DBEBSVolume->EBSArrayID)
-			{
-				$item->Scalr->ArrayID = $DBEBSVolume->EBSArrayID;
-				$item->Scalr->ArrayPartNo = $DBEBSVolume->EBSArrayPart;
-			}
-		}
-		catch (Exception $e)
-		{
-			
-		}	
+		$display['grid_query_string'] .= "&farmid={$req_farmid}";
 
-		if (!$item->Scalr->FarmID)
-		{
-			$item->Scalr->FarmID = $db->GetOne("SELECT farmid FROM farm_instances WHERE instance_id=?", 
-				array($pv->attachmentSet->instanceId)
-			);
-		}
+	if ($req_arrayid)
+		$display['grid_query_string'] .= "&arrayid={$req_arrayid}";
 		
-		if ($item->Scalr->ArrayID)
-		{
-			$item->Scalr->ArrayName = $db->GetOne("SELECT name FROM ebs_arrays WHERE id=?",
-				array($item->Scalr->ArrayID)
-			); 
-		}
-		
-		if ($item->Scalr->FarmID)
-		{
-			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", $item->Scalr->FarmID);
-			$item->Scalr->FarmName = $farminfo['name'];
-			
-			$item->Scalr->MySQLMasterVolume = ($farminfo['mysql_master_ebs_volume_id'] == $item->volumeId) ? true : false;
-		}
-		else
-		{
-			$farminfo = $db->GetRow("SELECT * FROM farms WHERE mysql_master_ebs_volume_id=?", $item->volumeId);
-			if ($farminfo && $farminfo['clientid'] == $_SESSION["uid"])
-			{
-				$item->Scalr->FarmID = $farminfo['id'];
-				$item->Scalr->FarmName = $farminfo['name'];
-				$item->Scalr->MySQLMasterVolume = true;
-			}
-		}
-		
-		$item->Scalr->AutoSnapshoting = ($db->GetOne("SELECT id FROM autosnap_settings WHERE volumeid=?", array($item->volumeId))) ? true : false;
-		
-		///
-		/// Generate sort key
-		///
-		if ($item->Scalr->ArrayID)
-			$sort_key = "{$item->Scalr->ArrayID}_{$item->Scalr->ArrayName}_{$item->Scalr->ArrayPartNo}";
-		elseif ($item->Scalr->FarmID)
-			$sort_key = "{$item->Scalr->FarmID}_{$item->Scalr->RoleName}_{$item->volumeId}";
-		else
-			$sort_key = "{$item->volumeId}";
-		
-		//////////////////////
-		
-		if ($req_farmid)
-		{
-			if ($req_farmid == $item->Scalr->FarmID)
-			{
-				$vols[$sort_key] = $item;
-			}
-		}
-		elseif ($req_arrayid)
-		{
-			if ($req_arrayid == $item->Scalr->ArrayID)
-			{
-				$vols[$sort_key] = $item;
-			}
-		}
-		elseif (!$req_volume_id || $req_volume_id == $item->volumeId)
-		{
-			$vols[$sort_key] = $item;
-		}
-	}
-	
-	ksort($vols);
-
-	$display["vols"] = array_values($vols);
-	
-	$Smarty->assign(array("table_title_text" => _("Snapshots"), "reload_action" => "ReloadPage();"));
-	$display["snaps_filter"] = $Smarty->fetch("inc/table_title.tpl");
-	$display["snaps_paging"] = $Smarty->fetch("inc/table_reload_icon.tpl");
+	if ($req_volume_id)
+		$display['grid_query_string'] .= "&volume_id={$req_volume_id}";
 	
 	$display["title"] = _("Elastic Block Storage > Manage");
-	$display["farmid"] = $req_farmid;
-	
-	$display["page_data_options"] = array();
-	$display["page_data_options_add"] = true;
 	
 	require_once ("src/append.inc.php");
 ?>

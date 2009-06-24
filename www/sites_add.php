@@ -265,9 +265,13 @@
     		foreach ($instances as $instance)
     		{
     		    $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
-    		        			
-    		    $instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
-    		    $records = array_merge($records, $instance_records);
+
+    		    $DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+    		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+    		    {
+    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
+    		    	$records = array_merge($records, $instance_records);
+    		    }
     		}
     		    
     		$records = array_merge($records, (array)$post_add);
@@ -487,9 +491,13 @@
     		foreach ($instances as $instance)
     		{
     			$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
-    			$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
     			
-    			$records = array_merge($records, $instance_records);
+    			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+    		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+    		    {    			
+    				$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
+    				$records = array_merge($records, $instance_records);
+    		    }
     		}
     		    
             $nss = $db->GetAll("SELECT * FROM nameservers WHERE isbackup='0'");

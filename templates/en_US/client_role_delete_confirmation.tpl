@@ -15,7 +15,7 @@
 			Deregister AMI
 		</td>
 	</tr>
-	<input type="hidden" name="delete[]" value="{$item.id}">
+	<input type="hidden" name="id[]" value="{$item.id}">
 	{include file="inc/intable_footer.tpl" color="Gray"}
 	{/foreach}
 	<input type="hidden" name="confirm" value="1">

@@ -1,6 +1,7 @@
 <?
     declare(ticks = 1);
 	define("NO_TEMPLATES", true);
+	define("NO_SESSIONS", true);
 	require_once(dirname(__FILE__)."/../src/prepend.inc.php");    
 
 	CONTEXTS::$APPCONTEXT = APPCONTEXT::CRONJOB;

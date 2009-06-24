@@ -1,99 +1,39 @@
 <? 
 	require("src/prepend.inc.php"); 
 	$display["title"] = _("Event log&nbsp;&raquo;&nbsp;View");
+	$display['load_extjs'] = true;
     
-	if ($_SESSION["uid"] != 0)
-		$auth_sql = " AND (SELECT clientid FROM farms WHERE id = logentries.farmid) = '{$_SESSION["uid"]}'";
-	
-	$sql = "SELECT * from logentries WHERE id > 0 {$auth_sql}";
-
-	$paging = new SQLPaging();
-	
-	if ($get_iid)
-	{
-		$iid = preg_replace("/[^A-Za-z0-9-]+/si", "", $get_iid);
-		
-		$paging->AddURLFilter("iid", $iid);
-		$display["iid"] = $iid;
-		$sql  .= " AND serverid = '{$iid}'";
-	}
-	
 	if ($req_farmid)
 	{
 		$farmid = (int)$_REQUEST["farmid"];
-		$paging->AddURLFilter("farmid", $farmid);
-		$display["farmid"] = $farmid;
-		$sql  .= " AND farmid = '{$farmid}'";
-		
-		$display['hide_farm_column'] = true;
+		$display["grid_query_string"] = "&farmid={$farmid}";
 	}
 	
-	if ($req_search)
-	{
-		$search = $db->qstr("%{$_REQUEST["search"]}%");
-		$paging->AddURLFilter("search", $req_search);
-		$display["search"] = $req_search;
-		$sql  .= " AND (message LIKE {$search} OR source LIKE {$search} OR serverid LIKE {$search})";
-	}
+	$display["table_title_text"] = sprintf(_("Current time: %s"), date("M j, Y H:i:s"));
 	
-	if ($req_severity)
-	{
-		foreach ($req_severity as &$s)
-		{
-			$s = (int)$s;
-			
-			$paging->AddURLFilter("severity[]", $s);
-			$display["checked_severities"][$s] = true;
-		}
-			
-		$severities = implode(",", array_values($req_severity));
-		$sql  .= " AND severity IN ($severities)";
-	}
-	else
-	{
-		$display["checked_severities"] = array(0 => false, 2 => true, 3 => true, 4 => true, 5 => true);
-		$sql  .= " AND severity IN (2,3,4,5)";
-	}
+	$severities = array(
+		array('hideLabel' => true, 'boxLabel'=> 'Fatal error', 'name' => 'severity[]', 'inputValue' => 5, 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Error', 'name' => 'severity[]','inputValue'=> 4, 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Warning', 'name' => 'severity[]', 'inputValue'=> 3, 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Information','name' => 'severity[]', 'inputValue'=> 2, 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Debug', 'name' => 'severity[]', 'inputValue'=> 0, 'checked'=> false)
+	);
+	$display["severities"] = json_encode($severities);
 	
-	$display["table_title_text"] = sprintf(_("Current time: %s"), date("d-m-Y H:i:s"));
-	
-	//
-	//Paging
-	//
-	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "ORDER BY time DESC";
-	$paging->ApplySQLPaging();
-	$paging->ParseHTML();
-	$display["filter"] = $paging->GetFilterHTML("inc/table_title.tpl", $display);
-	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-
 	$severities = array(0 => "DEBUG", 2 => "INFO", 3 => "WARN", 4 => "ERROR", 5 => "FATAL");
-	
-	$display["severities"] = $severities;
 		
-	
-	//
-	// Rows
-	//
-	$display["rows"] = $db->GetAll($paging->SQL);
-	foreach ($display["rows"] as &$row)
-	{
-		$row["time"] = date("d-m-Y H:i:s", $row["time"]);
-		$row["servername"] = $row["serverid"];
-		$row["severity"] = $severities[$row["severity"]];
-		
-		if (!$farm_names[$row['farmid']])
-			$farm_names[$row['farmid']] = $db->GetOne("SELECT name FROM farms WHERE id=?", array($row['farmid']));
-		
-		$row['farm_name'] = $farm_names[$row['farmid']];
-	}
-	
 	if (!$_SESSION["uid"])
-		$display["farms"] = $db->GetAll("SELECT * FROM farms");
+		$farms = $db->GetAll("SELECT id, name FROM farms");
 	else
-		$display["farms"] = $db->GetAll("SELECT * FROM farms WHERE clientid='{$_SESSION['uid']}'");
+		$farms = $db->GetAll("SELECT id, name FROM farms WHERE clientid='{$_SESSION['uid']}'");
 	
-	$display["page_data_options_add"] = false;
+	$disp_farms = array(array('',''));
+	foreach ($farms as $farm)
+	{
+		$disp_farms[] = array($farm['id'], $farm['name']);
+	}
+		
+	$display['farms'] = json_encode($disp_farms);
 	
 	require("src/append.inc.php"); 
 	

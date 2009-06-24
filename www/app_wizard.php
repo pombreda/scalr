@@ -80,28 +80,43 @@
 	            
 	            $itype = ($roleinfo["architecture"] == INSTANCE_ARCHITECTURE::I386) ? I386_TYPE::M1_SMALL : X86_64_TYPE::M1_LARGE;
 	            
-	            
-	            $db->Execute("INSERT INTO 
-	                                       farm_amis 
-	                                  SET 
-	                                       farmid=?, 
-	                                       ami_id=?, 
-	                                       min_count=?, 
-	                                       max_count=?, 
-	                                       min_LA=?, 
-	                                       max_LA=?,
-	                                       instance_type = ?,
-	                                       avail_zone = ''
-	                         ", array( $farmid, 
-	                                   $ami_id, 
-	                                   1, 
-	                                   2,
-	                                   ($roleinfo["default_minLA"] ? $roleinfo["default_minLA"] : 5),
-	                                   ($roleinfo["default_maxLA"] ? $roleinfo["default_maxLA"] : 10),
-	                                   $itype
-	                                 )
-	                         );
-	                         
+	            $db->Execute("INSERT INTO farm_amis SET 
+							farmid=?, ami_id=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
+                            reboot_timeout=?, launch_timeout=?, use_ebs =?,
+                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?
+                            ", array( 
+                        		$farmid, 
+                        		$ami_id, 
+	                            "", 
+	                            $itype,
+	                            0,
+	                            300,
+                            	2400,
+                            	0,
+                            	0,
+                            	"",
+                         		0,
+                         		"",
+                         		20
+						));
+
+				$roleid = $db->Insert_ID();
+				
+				$DBFarmRole = new DBFarmRole($roleid);
+				$DBFarmRole->FarmID = $farmid;
+				$DBFarmRole->AMIID = $ami_id;
+						
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, 1);
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, 1);
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_POLLING_INTERVAL, 2);
+				
+				if ($roleinfo['default_minLA'])
+					$DBFarmRole->SetSetting(LAScalingAlgo::PROPERTY_MIN_LA, $roleinfo['default_minLA']);
+					
+				if ($roleinfo['default_maxLA'])
+					$DBFarmRole->SetSetting(LAScalingAlgo::PROPERTY_MAX_LA, $roleinfo['default_maxLA']);
+				
+				
 				if ($roleinfo['alias'] == ROLE_ALIAS::MYSQL)
 					$db->Execute("UPDATE farms SET mysql_rebundle_every='48', mysql_bcp_every='180', mysql_bcp='0' WHERE id=?", array($farmid));
 	        }
@@ -262,18 +277,17 @@
 	    }
 	    else 
 	    {
-	        $total_max_count = count($post_amis)*2; 	    
-            $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
-            
-            $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", 
-            	array('client_max_instances', $_SESSION['uid'])
-            );
+	        $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
+	        	AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
+	        	array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $_SESSION["uid"])
+	        );
+	    	
+	    	$total_max_count = count($post_amis)*2;
+            $client_max_instances = $Client->GetSettingValue(CLIENT_SETTINGS::MAX_INSTANCES_LIMIT);
             $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
             
             if ($used_slots+$total_max_count > $i_limit)
-            {
                 $err[] = sprintf(_("You cannot launch more than %s instances on your account. Please adjust Max Instances setting."), $i_limit);
-            }
 	        else 
 	        {
     	        $_SESSION["wizard"]["amis"] = $post_amis;

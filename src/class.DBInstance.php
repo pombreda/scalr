@@ -7,6 +7,7 @@
 		public 
 			$ID,
 			$FarmID,
+			$ClientID,
 			$InstanceID,
 			$State,
 			$AMIID,
@@ -188,13 +189,25 @@
 			
 			if ($this->IsSupported("0.5-1"))
 			{
-				$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-				$Client = Client::Load($farminfo['clientid']);
+				if (!$this->ClientID)
+					$this->ClientID = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
+
+				$Client = Client::Load($this->ClientID);
 				
 				$AmazonSQS = AmazonSQS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+				
+				try
+				{
+					$AmazonSQS->CreateQueue("queue-{$this->InstanceID}", 30);
+				}
+				catch(Exception $e)
+				{
+					$this->Logger->warn("Cannot create queue: {$e->getMessage()}");	
+				}
+				
 				$messageID = $AmazonSQS->SendMessage("queue-{$this->InstanceID}", XMLMessageSerializer::Serialize($message));
 				
-				$this->Logger->info("[FarmID: {$this->FarmID}] SQSMessage sent. MessageID: {$messageID}");
+				$this->Logger->info("SQSMessage sent. MessageID: {$messageID}");
 			}
 			else
 			{

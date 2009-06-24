@@ -2,7 +2,7 @@
 Dear {$client.fullname},
 
 Welcome to Scalr!
-Use the information below to log in to scalr:
+Use the information below to log in to Control Panel:
 
 {$site_url}
 Email: {$client.email}

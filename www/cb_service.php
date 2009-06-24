@@ -1,7 +1,9 @@
 <?
 	define("NO_AUTH", true);
     include("src/prepend.inc.php");  
-
+	
+    session_destroy();
+    
     header("Content-type: text/xml");
     
     /*
@@ -16,7 +18,7 @@
     try
     {
 		$ScalarizrCallbackService = new ScalarizrCallbackService20090205($_REQUEST['Version']);
-   	 	$ScalarizrCallbackService->SetRequest($_REQUEST);
+   	 	$ScalarizrCallbackService->SetRequest(array_merge($_POST, $_GET));
     	
     	$ScalarizrCallbackService->ExecuteRequest();    	
     }

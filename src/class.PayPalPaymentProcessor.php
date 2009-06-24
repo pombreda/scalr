@@ -198,23 +198,30 @@
 			
 			// open socket
 			$host = ($this->Config->GetFieldByName("isdemo")->Value == 1) ? "www.sandbox.paypal.com" : "www.paypal.com";
-			$fp = @fsockopen($host, 80, $errno, $errstr, 30);
-						
-			if (!$fp)
-				return false;
-			else 
+			
+			for($i = 1; $i < 4; $i++)
 			{
-				//Push response
-				@fputs($fp, $header . $req);
-				// Read response from server
-				while (!feof($fp)) 
-					$res = @fgets($fp, 128);
-				
-				// Close pointer
-				@fclose ($fp);
-				
-				return $res;
+				$fp = @fsockopen($host, 80, $errno, $errstr, 30);
+							
+				if ($fp)
+				{
+					//Push response
+					@fputs($fp, $header . $req);
+					// Read response from server
+					while (!feof($fp)) 
+						$res = @fgets($fp, 128);
+					
+					// Close pointer
+					@fclose ($fp);
+					
+					if ($res)
+						return $res;
+				}
+
+				sleep(3);
 			}
+			
+			return false;
 		}
 		
 		/**

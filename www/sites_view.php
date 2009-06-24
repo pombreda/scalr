@@ -1,15 +1,16 @@
 <? 
 	require("src/prepend.inc.php"); 
+	$display['load_extjs'] = true;
 	
 	$display["title"] = "Applications&nbsp;&raquo;&nbsp;View";
 	
-	if ($_POST && $post_actionsubmit)
+	if ($_POST && $post_with_selected)
 	{
 		if ($post_action == "delete")
 		{
 			$ZoneControler = new DNSZoneControler();
 		    
-		    foreach ((array)$_POST["delete"] as $dd)
+		    foreach ((array)$_POST["id"] as $dd)
 			{	
 				$db->BeginTrans();
 				 
@@ -32,8 +33,6 @@
 		    		$Logger->fatal("Exception thrown during application delete: {$e->getMessage()}");
 		    		$err[] = "Cannot delete application '{$zone['name']}'. Please try again later.";
 				}
-				
-				
 			}
 			
 			if (count($err) == 0)
@@ -46,66 +45,21 @@
 		}
 	};
 	
-	$paging = new SQLPaging();
-	
-	if ($_SESSION["uid"] == 0)
-	   $sql = "select * from zones WHERE 1=1";
-	else
-	   $sql = "select * from zones WHERE clientid='{$_SESSION['uid']}'";
-
 	if ($req_farmid)
 	{
 	    $id = (int)$req_farmid;
-	    $sql .= " AND farmid='{$id}'";
-	    $paging->AddURLFilter("farmid", $id);
+	    $display['grid_query_string'] .= "&farmid={$id}";
+	}
+	
+	if ($req_clientid)
+	{
+	    $id = (int)$req_clientid;
+	    $display['grid_query_string'] .= "&clientid={$id}";
 	}
 	
 	if ($req_ami_id)
-	{
-	    $ami_id = $db->qstr($req_ami_id);
-	    
-	    $sql .= " AND ami_id={$ami_id}";
-	    $paging->AddURLFilter("ami_id", $id);
-	}
-	//Paging
-	
-	$paging->SetSQLQuery($sql);
-	$paging->ApplyFilter($_POST["filter_q"], array("zone"));
-	$paging->ApplySQLPaging();
-	$paging->ParseHTML();
-	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
-	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-
-	// Rows
-	$display["rows"] = $db->GetAll($paging->SQL);	
-	foreach ($display["rows"] as &$row)
-	{
-	    if ($row["ami_id"])
-			$row["role"] = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
-			
-	    $row["farm"] = $db->GetRow("SELECT * FROM farms WHERE id=?", $row["farmid"]);
-	    
-	    $row['role_alias'] = $row["role"]['alias'];
-	    
-	    switch($row["status"])
-	    {
-	    	case ZONE_STATUS::ACTIVE:
-	    		$row["string_status"] = "Active";
-	    		break;
-	    	case ZONE_STATUS::DELETED:
-	    		$row["string_status"] = "Pending delete";
-	    		break;
-	    	case ZONE_STATUS::PENDING:
-	    		$row["string_status"] = "Pending create";
-	    		break;
-	    	case ZONE_STATUS::INACTIVE:
-	    		$row["string_status"] = "Inactive";
-	    		break;
-	    }
-	}
-	
-	$display["page_data_options"] = array(array("name" => "Delete", "action" => "delete"));
-	
+	    $display['grid_query_string'] .= "&ami_id={$req_ami_id}";
+		
 	$display["help"] = "This page lists your applications<br /><br />
 	<b>Role:</b> Instances of this role are creating domain A records in application DNS zone.<br />
 	<b>DNS Zone status</b> can be:<br />

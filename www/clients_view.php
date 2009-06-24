@@ -1,11 +1,12 @@
 <?
 	require_once('src/prepend.inc.php');
-
+	$display['load_extjs'] = true;
+	
 	if ($_SESSION["uid"] != 0)
 	   UI::Redirect("index.php");
 	
 	// Post actions
-	if ($_POST && $post_actionsubmit)
+	if ($_POST && $post_with_selected)
 	{
 		switch($post_action)
 		{
@@ -15,7 +16,7 @@
 				$flag = ($post_action == "activate") ? '1' : '0';
 				
 				$i = 0;			
-				foreach ((array)$post_delete as $clientid)
+				foreach ((array)$post_id as $clientid)
 				{
 					$db->Execute("UPDATE clients SET isactive=? WHERE id=?", array($flag, $clientid));
 					$i++;
@@ -30,7 +31,7 @@
 				
 				// Delete users
 				$i = 0;			
-				foreach ((array)$post_delete as $clientid)
+				foreach ((array)$post_id as $clientid)
 				{
 					$i++;
 					$db->Execute("DELETE FROM clients WHERE id='{$clientid}'");
@@ -58,56 +59,23 @@
 		}
 	}
 
-
-	$sql = "SELECT * from clients WHERE id > 0";
-	
-	$paging = new SQLPaging();
-	//
-	// If specified user id
-	//
 	if ($get_clientid)
 	{
 		$clientid = (int)$get_clientid;
-		$sql .= " AND id='{$clientid}'";
+		$display['grid_query_string'] .= "&clientid={$clientid}";
 	}
 
 	if (isset($req_isactive))
 	{
 		$isactive = (int)$req_isactive;
-		$sql .= " AND isactive='{$isactive}'";
-		$paging->AddURLFilter('isactive', $isactive);
+		$display['grid_query_string'] .= "&isactive={$isactive}";
 	}
 	
-	//
-	//Paging
-	//
-	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "ORDER BY email ASC";
-	$paging->ApplyFilter($_POST["filter_q"], array("aws_accountid", "email", "fullname"));
-	$paging->ApplySQLPaging();
-	$paging->ParseHTML();
-	$display["filter"] = $paging->GetFilterHTML("inc/table_filter.tpl");
-	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-
-
-	$display["rows"] = $db->GetAll($paging->SQL);
-	//
-	// Rows
-	//
-	foreach ($display["rows"] as &$row)
+	if (isset($req_overdue))
 	{
-		$row["farms"] = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$row['id']}'");
-		$row["instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$row['id']}')");
-		$row["amis"] = $db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE clientid='{$row['id']}'");
+		$display['grid_query_string'] .= "&overdue=1";
 	}
-
-	$display["title"] = _("Clients > Manage");
 	
-	$display["page_data_options_add"] = true;
-	$display["page_data_options"] = array(
-		array("name" => "Activate", "action" => "activate"),
-		array("name" => "Deactivate", "action" => "deactivate"),
-		array("name" => "Delete", "action" => "delete")
-	);
+	$display["title"] = _("Clients > Manage");
 	require_once ("src/append.inc.php");
 ?>

@@ -1,8 +1,26 @@
 <?
     require("../src/prepend.inc.php");
     
-    switch($_GET["_cmd"])
+    switch($_REQUEST["_cmd"])
     {            
+    	case "purchaseReservedOffering":
+    
+	    	try
+	    	{
+    			$Client = Client::Load($_SESSION['uid']);
+	    		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region));
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
+				$response = $AmazonEC2Client->PurchaseReservedInstancesOffering($req_offeringID);
+				exit();
+	    	}
+	    	catch(Exception $e)
+	    	{
+	    		die(sprintf(_("Cannot purchase reserved instances offering: %s"), $e->getMessage()));
+	    	}
+    		
+    		break;
+    	
     	case "get_script_args":
     		
     		$scriptid = (int)$req_scriptid;
@@ -185,220 +203,7 @@
     		exit();
     		
     		break;
-    	
-    	case "get_array_snapshots":
-    		
-    		$snaps = $db->GetAll("SELECT * FROM ebs_array_snaps WHERE clientid=? ORDER BY id DESC", array($_SESSION['uid']));
-    		
-    		$Smarty->assign(array("snaps" => $snaps, "error" => $error));
-            $content = $Smarty->fetch("ajax_tables/ebs_array_snaps_list.tpl");
-			
-            print $content;
-            exit();
-    		
-    		break;
-    		
-    	case "get_snapshots_list":
-			
-    		if ($req_volumeid)
-    		{
-    			try
-    			{
-	    			$DBEBSVolume = DBEBSVolume::Load($req_volumeid);    			
-	    			$region = $DBEBSVolume->Region;
-    			}
-    			catch(Exception $e)
-    			{
-    				$region = $_SESSION['aws_region'];
-    			}
-    		}
-    		else
-    			$region = $_SESSION['aws_region'];
-    		
-    		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
-			$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
-    		
-    		// Rows
-			$response = $AmazonEC2Client->DescribeSnapshots();
-		
-			$rowz = $response->snapshotSet->item;
-			
-			if ($rowz instanceof stdClass)
-				$rowz = array($rowz);
-					
-			foreach ($rowz as $pk=>$pv)
-			{		
-				$pv->startTime = date("Y-m-d H:i:s", strtotime($pv->startTime));
-				$item = $pv;	
-				
-				$info = $db->GetRow("SELECT * FROM ebs_snaps_info WHERE snapid=?", array(
-					$item->snapshotId
-				));
-				
-				$item->comment = $info['comment'];
-				$item->is_array_snapshot = ($info['arraysnapshotid'] > 0) ? true : false;
-				
-				$item->progress = (int)preg_replace("/[^0-9]+/", "", $item->progress);
-				
-				$item->free = 100 - $item->progress;
-				
-				$item->bar_begin = ($item->progress == 0) ? "empty" : "filled";
-		    	$item->bar_end = ($item->free != 0) ? "empty" : "filled";
-		    	
-		    	$item->used_percent_width = round(120/100*$item->progress, 2);
-		    	$item->free_percent_width = round(120/100*$item->free, 2);
-		
-		    	if ($req_volumeid)
-		    	{
-		    		if ($req_volumeid == $item->volumeId)
-		    		{
-		    			$snaps[] = $item;
-		    		}
-		    		
-		    		$display["snaps_header"] = sprintf(_("Snapshots for %s"), $item->volumeId); 
-		    	}
-		    	elseif (!$req_snapid || $req_snapid == $item->snapshotId)
-		    	{
-		    		$snaps[] = $item;
-		    	}
-			}
-			
-			$Smarty->assign(array("snaps" => $snaps, "error" => $error));
-            $content = $Smarty->fetch("ajax_tables/snapshots_list.tpl");
-			
-            print $content;
-            exit();
-            
-    		break;
-    		
-    	case "get_instance_process_list":
-    		
-    		Core::Load("NET/SNMP");
-			$SNMP = new SNMP();
-			
-			// Check cache
-		    $plist_cache = CACHEPATH."/ajax_plist.{$get_iid}.cache";
-		    if (file_exists($plist_cache))
-		    {
-		        clearstatcache();
-		        $time = filemtime($plist_cache);
-		        
-		        if ($time > time()-CONFIG::$AJAX_PROCESSLIST_CACHE_LIFETIME) //TODO: Move to config
-		        {
-		        	readfile($plist_cache);
-		        	exit();
-		        }
-		    }
-			
-			try
-			{
-				$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($get_iid));
-	            if (!$instanceinfo)
-	            	throw new Exception(_("Instance not found in database."));
-				
-	            $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
-	            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
-	            	throw new Exception("Instance not found in database.");
-	            	
-	            $SNMP->Connect($instanceinfo['external_ip'], null, $farminfo['hash'], null, null, true);
-	            	
-	            $res = $SNMP->GetFullTree(".1.3.6.1.2.1.25.4.2");
-		
-				foreach ((array)$res as $k=>$v)
-				{
-					if (stristr($k, "HOST-RESOURCES-MIB::hrSWRunIndex"))
-					{
-						//
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunName"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunName.([0-9]+)/si", $k, $matches);
-						$processes[$matches[1]]["hrSWRunName"] = $v;
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunPath"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunPath.([0-9]+)/si", $k, $matches);
-						$processes[$matches[1]]["hrSWRunPath"] = $v;
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunParameters"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunParameters.([0-9]+)/si", $k, $matches);
-						$processes[$matches[1]]["hrSWRunParameters"] = trim($v);
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunType"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunType.([0-9]+)/si", $k, $matches);
-						
-						switch(trim($v))
-						{
-							case 1:
-									$processes[$matches[1]]["hrSWRunType"] = "unknown";
-								break;
-							case 2:
-									$processes[$matches[1]]["hrSWRunType"] = "operatingSystem";
-								break;
-							case 3:
-									$processes[$matches[1]]["hrSWRunType"] = "deviceDriver";
-								break;
-							case 4:
-									$processes[$matches[1]]["hrSWRunType"] = "application";
-								break;
-						}
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunStatus"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunStatus.([0-9]+)/si", $k, $matches);
-						
-						switch(trim($v))
-						{
-							case 1:
-									$processes[$matches[1]]["hrSWRunStatus"] = "running";
-								break;
-							case 2:
-									$processes[$matches[1]]["hrSWRunStatus"] = "runnable";
-								break;
-							case 3:
-									$processes[$matches[1]]["hrSWRunStatus"] = "notRunnable";
-								break;
-							case 4:
-									$processes[$matches[1]]["hrSWRunStatus"] = "invalid";
-								break;
-						}						
-					}
-				}   
-			            
-			    $res = $SNMP->GetFullTree(".1.3.6.1.2.1.25.5.1");
-				foreach ((array)$res as $k=>$v)
-				{
-					if (stristr($k, "hrSWRunPerfCPU"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunPerfCPU.([0-9]+)/si", $k, $matches);
-						$processes[$matches[1]]["hrSWRunPerfCPU"] = trim($v);
-					}
-					elseif (stristr($k, "HOST-RESOURCES-MIB::hrSWRunPerfMem"))
-					{
-						preg_match("/HOST-RESOURCES-MIB::hrSWRunPerfMem.([0-9]+)/si", $k, $matches);
-						$processes[$matches[1]]["hrSWRunPerfMem"] = Formater::Bytes2String(((int)trim($v))*1024);
-					} 
-				}    
-			            
-			    sort($processes);
-			}
-			catch(Exception $e)
-			{
-				$error = $e->getMessage();
-			}
-			
-		    $Smarty->assign(array("processes" => $processes, "error" => $error));
-            $content = $Smarty->fetch("ajax_tables/process_list.tpl");
-		    
-            @file_put_contents($plist_cache, $content);
-            
-            print $content;
-            exit();
-            
-    		break;
-    	
+    	    		    		    	
     	case "get_instance_info":
             
         	Core::Load("NET/SNMP");

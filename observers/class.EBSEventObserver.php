@@ -353,7 +353,7 @@
 				return;
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$farm_role_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND (ami_id=? OR replace_to_ami=?)", 
+			$farm_role_info = $this->DB->GetRow("SELECT id FROM farm_amis WHERE farmid=? AND (ami_id=? OR replace_to_ami=?)", 
 				array($this->FarmID, $event->InstanceInfo["ami_id"], $event->InstanceInfo["ami_id"])
 			);
 			
@@ -370,15 +370,14 @@
 			// If role exists in farm roles list
 			if ($farm_role_info)
 			{
-				// Get role name
-				$farm_role_info['name'] = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_role_info['ami_id']));
-
+				$DBFarmRole = DBFarmRole::LoadByID($farm_role_info['id']);
+				
 				$this->Logger->info(sprintf(_("Role: %s, EBS: %s"), 
-					$farm_role_info['name'],
-					$farm_role_info['use_ebs']
+					$DBFarmRole->GetRoleName(),
+					$DBFarmRole->IsAutoEBSEnabled
 				));
 				
-				if (!$farm_role_info['use_ebs'])				
+				if (!$DBFarmRole->IsAutoEBSEnabled)				
 					return;
 									
 				// Get EBS attached to terminated instance
@@ -392,7 +391,7 @@
 						array($this->FarmID, FARM_EBS_STATE::DETACHING, $ebs_volumes[0]['role_name'])
 					);
 					
-					if ($farm_ebs > $farm_role_info['max_count'])
+					if ($farm_ebs > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
 						$need_delete = true;
 				}
 				

@@ -59,8 +59,60 @@
 	{include file="inc/table_header.tpl" nofilter=1 table_header_text="Events timeline"}
     	<div id="my-timeline" style="height: 250px; border: 1px solid #aaa"></div>
 	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
-	<br>
-    {include file="inc/table_header.tpl"}
+	<br />
+	<link rel="stylesheet" href="css/grids.css" type="text/css" />
+	<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+	<script type="text/javascript">
+	var uid = '{$smarty.session.uid}';	
+	{literal}
+	Ext.onReady(function () {
+		// create the Data Store
+	    var store = new Ext.ux.scalr.Store({
+	    	reader: new Ext.ux.scalr.JsonReader({
+		        root: 'data',
+		        successProperty: 'success',
+		        errorProperty: 'error',
+		        totalProperty: 'total',
+		        id: 'id',
+		        remoteSort: true,
+		
+		        fields: [
+					'id','dtadded', 'type', 'message'
+		        ]
+	    	}),
+			url: '/server/grids/farm_events_list.php?a=1{/literal}{$grid_query_string}{literal}',
+			listeners: { dataexception: Ext.ux.dataExceptionReporter }
+	    });
+				
+	    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+		var grid = new Ext.ux.scalr.GridViewer({
+	        renderTo: "maingrid-ct",
+	        height: 500,
+	        title: "Events list",
+	        id: 'farm_events_list',
+	        store: store,
+	        maximize: true,
+	        viewConfig: { 
+	        	emptyText: "No events found"
+	        },
+	        			
+	        // Columns
+	        columns:[
+				{header: "Date", width: 80, dataIndex: 'dtadded', sortable: false},
+				{header: "Event", width: 50, dataIndex: 'type', sortable: false},
+				{header: "Description", width: 300, dataIndex: 'message', sortable: false}
+			]
+	    });
+	    
+	    grid.render();
+	    store.load();
+	
+		return;
+	});
+	{/literal}
+	</script>
+	
+    <!-- 
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
 	<thead>
 		<tr>
@@ -87,5 +139,6 @@
 	</tr>
 	</tbody>
 	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}	
+	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
+	 -->	
 {include file="inc/footer.tpl"}

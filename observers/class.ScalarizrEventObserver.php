@@ -49,6 +49,7 @@
 			   </access>
 			   <callback-service-url>".CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/cb_service.php</callback-service-url>
 			   <queryenv-service-url>".CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/query-env</queryenv-service-url>
+			   <clientid>{$Client->ID}</clientid>
 			 </scalr>
 			</config>
 			";

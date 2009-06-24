@@ -1,6 +1,7 @@
 <?
 	require_once('src/prepend.inc.php');
-    	    
+    $display['load_extjs'] = true;	    
+	
 	if ($_SESSION["uid"] == 0)
 	{
 		$errmsg = _("Requested page cannot be viewed from admin account");
@@ -171,46 +172,8 @@
 	    	}
     	}
     }
-		
-		
+			
 	$display["title"] = _("Elastic Block Storage > Arrays");
-	
-	$sql = "SELECT * from ebs_arrays WHERE clientid='{$_SESSION['uid']}'";
-
-	if ($req_id)
-	{
-		$id = (int)$req_id;
-		$sql .= " AND id='{$id}'";
-	}
-	
-	$paging = new SQLPaging();
-	
-	//
-	//Paging
-	//
-	$paging->SetSQLQuery($sql);
-	$paging->AdditionalSQL = "ORDER BY name DESC";
-	$paging->ApplyFilter($_POST["filter_q"], array("name"));
-	$paging->ApplySQLPaging();
-	$paging->ParseHTML();
-	$display["filter"] = $paging->GetPagerHTML("inc/table_filter.tpl");;
-	$display["paging"] = $paging->GetPagerHTML("inc/paging.tpl");
-	
-	$Smarty->assign(array("table_title_text" => _("Snapshots"), "reload_action" => "ReloadPage();"));
-	$display["snaps_filter"] = $Smarty->fetch("inc/table_title.tpl");
-	$display["snaps_paging"] = $Smarty->fetch("inc/table_reload_icon.tpl");
-	
-	//
-	// Rows
-	//
-	$display["rows"] = $db->GetAll($paging->SQL);
-	foreach ($display['rows'] as &$row)
-	{
-		$row['autosnapshoting'] = $db->GetOne("SELECT id FROM autosnap_settings WHERE arrayid=?", array($row['id']));
-	}
-	
-	$display["page_data_options"] = array();
-	$display["page_data_options_add"] = true;
-	
+		
 	require_once ("src/append.inc.php");
 ?>

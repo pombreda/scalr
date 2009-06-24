@@ -1,179 +1,252 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
-<script type="text/javascript" src="js/class.SelectControl.js"></script>
-<script type="text/javascript" src="js/class.TableLoader.js"></script>
-	{if !$view || $view == 'volumes'}
-		<br>
-		{include file="inc/table_header.tpl" nofilter=1}
-	    	{include file="inc/intable_header.tpl" header="Actions" color="Gray"}
-	    	<tr>
-	    	   <td colspan="2"><img src="/images/add.png" style="vertical-align:middle;">&nbsp;<a href="ebs_manage.php?task=create_volume">Create new volume</a></td>
-	    	</tr>
-	    	{include file="inc/intable_footer.tpl" color="Gray"}
-		{include file="inc/table_footer.tpl" disable_footer_line=1}
-		<br>
-	    {include file="inc/table_header.tpl" show_region_filter=1 show_region_filter_title="Volumes in"}
-	    <table class="Webta_Items Webta_Items_Multiple_Tables No_Resize" rules="groups" frame="box" cellpadding="4" id="Webta_Items_1" no_resize="1">
-		<thead>
-			<tr>
-				<th>{t}Used by{/t}</th>
-				<th>{t}Volume ID{/t}</th>
-				<th>{t}Size{/t} ({t}GB{/t})</th>
-				<th>{t}Snapshot ID{/t}</th>
-				<th>{t}Placement{/t}</th>
-				<th>{t}Status{/t}</th>
-				<th>{t}Instance ID{/t}</th>
-				<th>{t}Device{/t}</th>
-				<th>{t}Auto-snaphots{/t}</th>
-				<th width="1">{t}Options{/t}</th>
-			</tr>
-		</thead>
-		<tbody>
-		{section name=id loop=$vols}
-		<tr id='tr_{$smarty.section.id.iteration}'>
-			<td class="Item" valign="top">
-			{if $vols[id]->Scalr->FarmID && !$vols[id]->Scalr->ArrayID}
-				{t}Farm{/t}: <a href="farms_view.php?id={$vols[id]->Scalr->FarmID}" title="Farm {$vols[id]->Scalr->FarmName}">{$vols[id]->Scalr->FarmName}</a>
-				{if $vols[id]->Scalr->RoleName}
-					&nbsp;&rarr;&nbsp;<a href="roles_view.php?farmid={$vols[id]->Scalr->FarmID}" title="Role {$vols[id]->Scalr->RoleName}">{$vols[id]->Scalr->RoleName}</a>
-				{elseif $vols[id]->Scalr->MySQLMasterVolume}
-					&nbsp;&rarr;&nbsp;MySQL master volume
-				{/if}
-			{elseif $vols[id]->Scalr && $vols[id]->Scalr->ArrayID}
-				{t}Array{/t}: <a href="ebs_arrays.php?id={$vols[id]->Scalr->ArrayID}">{$vols[id]->Scalr->ArrayName}</a>
-				&nbsp;&rarr;&nbsp;{t}Part{/t} #{$vols[id]->Scalr->ArrayPartNo}
-			{else}
-				<img src="/images/false.gif" />
-			{/if}
-			</td>
-			<td class="Item" valign="top">{$vols[id]->volumeId}</td>
-			<td class="Item" valign="top">{$vols[id]->size}</td>
-			<td class="Item" valign="top"><a href="javascript:void(0);" onclick="FilterSnapshots('{$vols[id]->snapshotId}', 0);">{$vols[id]->snapshotId}</a></td>
-			<td class="Item" valign="top">{$vols[id]->availabilityZone}</td>
-			<td class="Item" valign="top">{$vols[id]->status|@ucfirst}{if $vols[id]->attachmentSet->status} / {$vols[id]->attachmentSet->status|@ucfirst}{/if}</td>
-			<td class="Item" valign="top">
-				{if $vols[id]->Scalr && $vols[id]->Scalr->FarmID}
-					<a href="instances_view.php?farmid={$vols[id]->Scalr->FarmID}&iid={$vols[id]->attachmentSet->instanceId}">{$vols[id]->attachmentSet->instanceId}</a>
-				{else}
-					{$vols[id]->attachmentSet->instanceId}
-				{/if}
-			</td>
-			<td class="Item" valign="top">{$vols[id]->attachmentSet->device}</td>
-			<td class="Item" valign="top" align="center">
-				{if $vols[id]->Scalr->AutoSnapshoting}
-					<img alt="Enabled" src="/images/true.gif">
-				{else}
-					<img alt="Disabled" src="/images/false.gif">
-				{/if}
-			</td>
-			<td class="Item" valign="top">
-				{if !$vols[id]->Scalr->ArrayID}
-					<a id="control_{$vols[id]->volumeId}" href="javascript:void(0)">{t}Options{/t}</a>
-				{/if}
-			</td>
-		</tr>
-		{if !$vols[id]->Scalr->ArrayID}
-		<script language="Javascript" type="text/javascript">
-	    	var vid = '{$vols[id]->volumeId}';
-			var region = '{$smarty.session.aws_region}';
-	    	
-	    	var menu = [
+<br />
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<br>
+<div id="maingrid-ct2" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
 
-	    	    {if !$vols[id]->Scalr->MySQLMasterVolume}
-		            {if $vols[id]->attachmentSet->instanceId}
-		            	{literal}{href: 'ebs_manage.php?task=detach&volumeId='+vid, innerHTML: 'Detach'},{/literal}
-		            {else}
-		            	{literal}{href: 'ebs_manage.php?task=attach&volumeId='+vid, innerHTML: 'Attach'},{/literal}
-		            {/if}
-	            {/if}
+var uid = '{$smarty.session.uid}';
+var regions = [
+{section name=id loop=$regions}
+	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
+{/section}
+];
+var region = '{$smarty.session.aws_region}';
 
-	            {literal}{type: 'separator'}{/literal},
-            	{literal}{href: 'ebs_autosnaps.php?task=settings&volumeId='+vid+"&region="+region, innerHTML: 'Auto-snapshot settings'},{/literal}
-	            
-	            {literal}{type: 'separator'}{/literal},
-	            {literal}{href: 'ebs_manage.php?task=snap_create&volumeId='+vid, innerHTML: 'Create snapshot'},{/literal}
-	            {literal}{href: 'javascript:FilterSnapshots(0, "'+vid+'");', innerHTML: 'View snapshots'},{/literal}
-	            {literal}{type: 'separator'}{/literal},
-	            {literal}{href: 'ebs_manage.php?task=delete_volume&volumeId='+vid, innerHTML: 'Delete volume'}{/literal}
-	        ];
-	       
-	        {literal}			
-	        var control = new SelectControl({menu: menu});
-	        control.attach('control_'+vid);
-	        {/literal}
-		</script>
-		{/if}
-		{sectionelse}
-		<tr>
-			<td colspan="12" align="center">{t}No volumes found{/t}</td>
-		</tr>
-		{/section}
-		<tr>
-			<td colspan="12" align="center">&nbsp;</td>
-		</tr>
-		</tbody>
-		</table>
-		{include file="inc/table_footer.tpl" colspan=9 page_data_options_add_text="Create new volume" page_data_options_add_querystring="?task=create_volume"}
-	{/if}
-	
-	<script language="Javascript">
-	{literal}	
-	var tb = new TableLoader();
-	
-	Event.observe(window, 'load', function(){
-		tb.Load('table_body_list','_cmd=get_snapshots_list');
 
-		{/literal}
-		$('table_title_text').innerHTML = "Snapshots in {$smarty.session.aws_region} region";
-		{literal}
-	});
+{literal}
+Ext.onReady(function () {
+
+	Ext.QuickTips.init();
 	
-	function ReloadPage() {
-		tb.Load('table_body_list','_cmd=get_snapshots_list');
-		
-		{/literal}
-		$('table_title_text').innerHTML = "Snapshots in {$smarty.session.aws_region} region";
-		{literal}
-	};
+	// create the Data Store for EBS
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'volume_id',
+	        remoteSort: true,
 	
-	function FilterSnapshots(snapid, volumeid)
-	{
-		if (volumeid != 0)
-		{
-			$('table_title_text').innerHTML = "Snapshots for: "+volumeid;
-		}
+	        fields: [
+				'farmid','arrayid', 'farm_name', 'role_name', 'mysql_master_volume', 'array_name','array_part_no',
+				'volume_id', 'size', 'snapshot_id', 'avail_zone', 'status', 'attachment_status', 'device', 'instance_id'
+	        ]
+    	}),
+		url: '/server/grids/ebs_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+
+    var snapsStore = new Ext.ux.scalr.Store({
+        reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'snap_id',
+	        remoteSort: true,
+	
+	        fields: [
+				'snap_id', 'volume_id', 'status', 'time', 'comment', 'is_array_snapshot', 'progress'
+	        ]
+        }),
+		url: '/server/grids/ebs_snaps_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+	
+	function statusRenderer(value, p, record) {
+		var data = record.data;
+
+		var retval = data.status;
+
+		if (data.attachment_status)
+			retval += ' / '+data.attachment_status
+
+		return retval;
+	}
+
+	function autosnapRenderer(value, p, record) {
+		if (value)
+			return "<img src='/images/true.gif' />";
 		else
-		{
-			{/literal}
-			$('table_title_text').innerHTML = "Snapshots in {$smarty.session.aws_region} region";
-			{literal}
-		}
-		
-		tb.Load('table_body_list','_cmd=get_snapshots_list&snapid='+snapid+"&volumeid="+volumeid);
+			return "<img src='/images/false.gif' />";
+	}
+
+	function snapProgressRenderer(value, p, record)
+	{
+		return value+"%";
 	}
 	
-	</script>
-	{/literal}
-    {include filter=$snaps_filter paging=$snaps_paging file="inc/table_header.tpl"}
-    <table class="Webta_Items Webta_Items_Multiple_Tables No_Resize" rules="groups" frame="box" cellpadding="4" id="Webta_Items_2" no_resize="1">
-	<thead>
-		<tr>
-			<th>{t}Snapshot ID{/t}</th>
-			<th>{t}Created on{/t}</th>
-			<th>{t}Status{/t}</th>
-			<th>{t}Local start time{/t}</th>
-			<th>{t}Completed{/t}</th>
-			<th>{t}Comment{/t}</th>
-			<th width="1"></th>
-		</tr>
-	</thead>
-	<tbody id="table_body_list">
-		<tr id="table_loader">
-			<td colspan="30" align="center">
-				<img style="vertical-align:middle;" src="/images/snake-loader.gif"> {t}Loading snapshots list. Please wait...{/t}
-			</td>
-		</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
+	function usedRenderer(value, p, record) {
+		var data = record.data;
+
+		var retval = "";
+		if (data.farmid && !data.arrayid)
+		{
+			retval += 'Farm: <a href="farms_view.php?id='+data.farmid+'" title="Farm '+data.farm_name+'">'+data.farm_name+'</a>';
+			if (data.role_name)
+			{
+				retval += '&nbsp;&rarr;&nbsp;<a href="roles_view.php?farmid='+data.farmid+'" title="Role '+data.role_name+'">'+data.role_name+'</a>';
+			}
+			else if (data.mysql_master_volume)
+			{
+				retval += '&nbsp;&rarr;&nbsp;MySQL master volume';
+			}
+		}
+		else if (data.arrayid)
+		{
+			retval += 'Array: <a href="ebs_arrays.php?id='+data.arrayid+'">'+data.array_name+'</a>&nbsp;&rarr;&nbsp;Part #'+data.array_part_no;
+		}
+		else
+			retval += '<img src="/images/false.gif" />';
+
+		return retval;
+	}
+	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 350,
+        title: "EBS volumes",
+        id: 'ebs_volumes_list',
+        store: store,
+        maximize: false,
+        viewConfig: { 
+        	emptyText: "No volumes found"
+        },
+
+        enableFilter: false,
+        
+		tbar: [{text: 'Region:'}, new Ext.form.ComboBox({
+			allowBlank: false,
+			editable: false, 
+	        store: regions,
+	        value: region,
+	        displayField:'state',
+	        typeAhead: false,
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:false,
+	        width:100,
+	        listeners:{select:function(combo, record, index){
+	        	store.baseParams.region = record.data.value; 
+	        	store.load();
+	        }}
+	    }), '-', {
+	        icon: '/images/add.png', // icons can also be specified inline
+	        cls: 'x-btn-icon',
+	        tooltip: 'Create a new EBS volume',
+	        handler: function()
+	        {
+				document.location.href = '/ebs_manage.php?task=create_volume';
+	        }
+	    }],
+		
+        // Columns
+        columns:[
+			{header: "Used by", width: 70, dataIndex: 'id', renderer:usedRenderer, sortable: false},
+			{header: "Volume ID", width: 35, dataIndex: 'volume_id', sortable: false},
+			{header: "Size (GB)", width: 20, dataIndex: 'size', sortable: false},
+			{header: "Snapshot ID", width: 35, dataIndex: 'snapshot_id', sortable: false, hidden:true},
+			{header: "Placement", width: 30, dataIndex: 'avail_zone', sortable: false},
+			{header: "Status", width: 30, dataIndex: 'status', renderer:statusRenderer, sortable: false},
+			{header: "Instance ID", width: 30, dataIndex: 'instance_id', sortable: false},
+			{header: "Device", width: 30, dataIndex: 'device', sortable: false},
+			{header: "Auto-snapshots", width: 30, dataIndex: 'auto_snap', renderer:autosnapRenderer, sortable: false, align:'center'}
+		],
+		
+    	// Row menu
+    	rowOptionsMenu: [    	          	             	
+			{id: "option.attach", 		text:'Attach', 			  	href: "/ebs_manage.php?task=attach&volumeId={volume_id}"},
+			{id: "option.detach", 		text:'Detach', 			  	href: "/ebs_manage.php?task=detach&volumeId={volume_id}"},
+			new Ext.menu.Separator({id: "option.attachSep"}),
+			{id: "option.autosnap", 	text:'Auto-snapshot settings', 	href: "/ebs_autosnaps.php?task=settings&volumeId={volume_id}&region="+region},
+			new Ext.menu.Separator({id: "option.snapSep"}),
+			{id: "option.createSnap", 	text:'Create snapshot', 	href: "/ebs_manage.php?task=snap_create&volumeId={volume_id}"},
+			{id: "option.viewSnaps", 	text:'View snapshots', 		handler: function(menuItem){
+
+				snapsStore.baseParams.volumeid = menuItem.parentMenu.record.data.volume_id; 
+				snapsStore.load();
+				
+			}}, 
+			new Ext.menu.Separator({id: "option.vsnapSep"}),
+			{id: "option.delete", 	text:'Delete volume', 		href: "/ebs_manage.php?task=delete_volume&volumeId={volume_id}"}
+     	],
+     	getRowOptionVisibility: function (item, record) {
+
+			if (item.id == 'option.attach' || item.id == 'option.detach' || item.id == 'option.attachSep')
+			{
+				if (!record.data.mysql_master_volume)
+				{
+					if (item.id == 'option.attachSep')
+						return true;
+
+					if (item.id == 'option.detach' && record.data.instance_id)
+						return true;
+
+					if (item.id == 'option.attach' && !record.data.instance_id)
+						return true;
+				}
+
+				return false;
+			}
+        	
+			return true;
+		},
+		listeners: {
+			beforeshowoptions: function (grid, record, romenu, ev) {
+				romenu.record = record;
+			}
+		}
+    });
+    
+    grid.render();
+    store.load();
+
+    var snaps_grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct2",
+        height: 350,
+        title: "EBS snapshots",
+        id: 'ebs_snaps_list2',
+        store: snapsStore,
+        maximize: false,
+        viewConfig: { 
+        	emptyText: "No snapshots found"
+        },
+
+        enableFilter: false,
+        
+		//tbar: [],
+		
+        // Columns
+        columns:[
+			{header: "Snapshot ID", width: 40, dataIndex: 'snap_id', sortable: false},
+			{header: "Created on", width: 35, dataIndex: 'volume_id', sortable: false},
+			{header: "Status", width: 25, dataIndex: 'status', sortable: false},
+			{header: "Local start time", width: 45, dataIndex: 'time', sortable: false},
+			{header: "Completed", width: 25, dataIndex: 'progress', renderer:snapProgressRenderer, sortable: false, align:'center'},
+			{header: "Comment", width: 120, dataIndex: 'comment', sortable: false}
+		],
+		
+    	// Row menu
+    	rowOptionsMenu: [    	          	             	
+			{id: "option.create", 	text:'Create new volume based on this snapshot', 		href: "/ebs_manage.php?task=create_volume&snapid={snap_id}"},
+			new Ext.menu.Separator({id: "option.Sep"}),
+			{id: "option.delete", 	text:'Delete snapshot', 		href: "/ebs_manage.php?task=snap_delete&snapshotId={snap_id}"}
+     	],
+     	getRowOptionVisibility: function (item, record) {
+        	
+			return true;
+		}
+    });
+
+    snaps_grid.render();
+    snapsStore.load();
+    
+	return;
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

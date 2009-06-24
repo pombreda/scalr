@@ -10,11 +10,11 @@
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;System";
 	
 	$client_settings = array(
-		"client_max_instances" => "int", 
-		"client_max_eips" => "int",
-		"rss_login" => "string",
-		"rss_password" => "string",
-		"sync_timeout" => "int"
+		CLIENT_SETTINGS::MAX_INSTANCES_LIMIT => "int", 
+		CLIENT_SETTINGS::MAX_EIPS_LIMIT => "int",
+		CLIENT_SETTINGS::RSS_LOGIN => "string",
+		CLIENT_SETTINGS::RSS_PASSWORD => "string",
+		CLIENT_SETTINGS::SYNC_TIMEOUT => "int"
 	);
 	
 	$Validator = new Validator();
@@ -68,8 +68,8 @@
 	$display["sync_timeout"] = $sync_timeout ? $sync_timeout : CONFIG::$SYNC_TIMEOUT;
 	
 	
-	$display["rss_login"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('rss_login', $_SESSION['uid']));
-	$display["rss_password"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('rss_password', $_SESSION['uid']));	
+	$display["rss_login"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array(CLIENT_SETTINGS::RSS_LOGIN, $_SESSION['uid']));
+	$display["rss_password"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array(CLIENT_SETTINGS::RSS_PASSWORD, $_SESSION['uid']));	
 		
 	$display["help"] = "By default, every AWS account can allocate maximum 5 Elastic IPs. If you're already using Elastic IPs outside Scalr, make sure to substract this amount, otherwise IPs will be reassigned to Scalr instances without any prompt.";
 	

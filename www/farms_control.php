@@ -111,10 +111,10 @@
 			    			ami_roles (
 			    				`ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, 
 			    				`replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, 
-			    				`architecture`, `dtbuildstarted`, `rebundle_trap_received`) 
+			    				`architecture`, `dtbuildstarted`, `rebundle_trap_received`, `region`) 
 			    			SELECT 
 			    				'', ?, ?, ?, ?, '0', ?, default_minLA, default_maxLA, 
-			    				alias, instance_type, architecture, NOW(), '0' FROM ami_roles WHERE ami_id=?", 
+			    				alias, instance_type, architecture, NOW(), '0', region FROM ami_roles WHERE ami_id=?", 
 			    			array($rolename, ROLE_TYPE::CUSTOM, $farminfo['clientid'], $instance['instance_id'], $ami_id, $ami_id)
 			    		);
 			    		
@@ -132,6 +132,7 @@
 		    		{
 		    			$db->RollbackTrans();
 						$Logger->fatal(new FarmLogMessage($farminfo["id"], "Exception thrown during role synchronization: {$e->getMessage()}"));
+						$err[] = _("Cannot terminate farm. Please try again later."); 
 		    		}
 		    	}
 		    	
@@ -158,7 +159,6 @@
     {
         $display["action"] = "Launch";
         $display["show_dns"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid=?", $farminfo['id']);
-        $display["num"] = $db->GetOne("SELECT SUM(min_count) FROM farm_amis WHERE farmid=?", $farminfo['id']);
     }
     else
     { 
