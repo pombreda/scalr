@@ -10,8 +10,27 @@
     		'AWSRegions'			=> SRCPATH.'/class.AWSRegions.php',
     		'DBInstance'			=> SRCPATH.'/class.DBInstance.php',
     		'XMLMessageSerializer'	=> SRCPATH.'/class.XMLMessageSerializer.php',
+    		'DBFarmRole'			=> SRCPATH.'/class.DBFarmRole.php',
     	
     		/****************************** LIB **********************************/
+    	
+    		
+    		/***************************** Scaling *******************************/
+    		'IScalingAlgo'			=> SRCPATH.'/scaling/interface.IScalingAlgo.php',
+    		'IScalingSensor'		=> SRCPATH.'/scaling/interface.IScalingSensor.php',
+    	
+    		'LAScalingAlgo'			=> SRCPATH.'/scaling/class.LAScalingAlgo.php',
+    		'BWScalingAlgo'			=> SRCPATH.'/scaling/class.BWScalingAlgo.php',
+    		'SQSScalingAlgo'		=> SRCPATH.'/scaling/class.SQSScalingAlgo.php',
+    	
+    		'LAScalingSensor'		=> SRCPATH.'/scaling/class.LAScalingSensor.php',
+    		'BWScalingSensor'		=> SRCPATH.'/scaling/class.BWScalingSensor.php',
+    		'SQSScalingSensor'		=> SRCPATH.'/scaling/class.SQSScalingSensor.php',
+    	
+    		'ScalingAlgo'			=> SRCPATH.'/scaling/class.ScalingAlgo.php',
+    		'SensorFactory'			=> SRCPATH.'/scaling/class.SensorFactory.php',
+    	
+    		'RoleScalingManager'	=> SRCPATH.'/scaling/class.RoleScalingManager.php',
     	
     		/****************************** Messaging  ***************************/
     		'ScalrMessage'						=> SRCPATH.'/messaging/messages/abstract.ScalrMessage.php',
@@ -90,6 +109,7 @@
     		'EBS_ARRAY_STATUS'		=> SRCPATH."/types/enum.EBS_ARRAY_STATUS.php",
     		'EBS_ARRAY_SNAP_STATUS' => SRCPATH."/types/enum.EBS_ARRAY_SNAP_STATUS.php",
     		'MYSQL_STORAGE_ENGINE'	=> SRCPATH."/types/enum.MYSQL_STORAGE_ENGINE.php",
+    		'CLIENT_SETTINGS'		=> SRCPATH."/types/enum.CLIENT_SETTINGS.php",
     	
     		/****************************** Observers ***************************/
 		    'EventObserver'			=> APPPATH.'/observers/abstract.EventObserver.php',

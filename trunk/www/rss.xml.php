@@ -7,6 +7,15 @@
     else 
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
 
+    try
+    {
+    	$Client = Client::Load($farminfo['clientid']);
+    }
+    catch(Exception $e)
+    {
+		die();    	
+    }
+        
     //
     // Auth user
     //
@@ -18,13 +27,8 @@
     }
     else
     {
-    	$valid_login = $db->GetOne("SELECT value FROM client_settings WHERE `key`=? AND clientid=?",
-    		array('rss_login', $farminfo['clientid'])
-    	);
-    	
-    	$valid_password = $db->GetOne("SELECT value FROM client_settings WHERE `key`=? AND clientid=?",
-    		array('rss_password', $farminfo['clientid'])
-    	);
+    	$valid_login = $Client->GetSettingValue(CLIENT_SETTINGS::RSS_LOGIN);
+    	$valid_password = $Client->GetSettingValue(CLIENT_SETTINGS::RSS_PASSWORD);
     	    	
     	if ($_SERVER['PHP_AUTH_USER'] != $valid_login ||
     		$_SERVER['PHP_AUTH_PW'] != $valid_password)

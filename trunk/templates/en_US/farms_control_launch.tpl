@@ -1,7 +1,7 @@
 {include file="inc/intable_header.tpl" header="Confirmation" color="Gray"}
 	<tr>
 		<td colspan="2">
-			{if $new}Farm succesfully built. {/if}Would you like to launch '{$farminfo.name}' now? {if $num > 0}This will launch <b>{$num}</b> new instance(s).{/if}
+			{if $new}Farm succesfully built. {/if}Would you like to launch '{$farminfo.name}' now?
 		</td>
 	</tr>
 {include file="inc/intable_footer.tpl" color="Gray"}

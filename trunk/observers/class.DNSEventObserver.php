@@ -27,6 +27,10 @@
 			if ($instanceinfo['isactive'] != 1)
 				return;
 			
+			$DBFarmRole = DBFarmRole::Load($this->FarmID, $instanceinfo['ami_id']);
+			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+				return;
+				
 			try
 			{
 				$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid='{$this->FarmID}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
@@ -97,8 +101,9 @@
 			if ($farminfo['status'] != 1)
 				return;
 				
-			// Update zones
-			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+			$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+				$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
 		}
 		
 		/**
@@ -157,8 +162,11 @@
 		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-						
-			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+
+			$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+			
+			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+				$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
 		}
 		
 		/**
@@ -172,7 +180,7 @@
 			// Remove terminated instance from DNS records
 			//
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			if ($farminfo['status'] != 1)
+			if ($farminfo['status'] != FARM_STATUS::RUNNING)
 				return;
 				
 			try
@@ -191,6 +199,9 @@
 						(rvalue=? OR rvalue=?)",
 						array($zoneinfo['id'], $event->InstanceInfo['external_ip'], $event->InstanceInfo['internal_ip'])
 					);
+					
+					//TODO: Check affected rows.
+					
 					if (!$this->DNSZoneController->Update($zoneinfo["id"]))
 						$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot remove terminated instance '{$event->InstanceInfo['instance_id']}' ({$event->InstanceInfo['external_ip']}) from DNS zone '{$zoneinfo['zone']}'");
 					else

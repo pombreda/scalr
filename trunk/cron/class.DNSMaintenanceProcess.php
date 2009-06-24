@@ -67,12 +67,27 @@
 		            foreach ($records as $record)
 		            {
 		            	$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE id='{$record['zoneid']}'");
-		            	
-		            	if (!$db->GetOne("SELECT id FROM farm_instances 
+
+		            	$exclude = false;
+	            		$instance = $db->GetRow("SELECT * FROM farm_instances 
 		            		WHERE farmid='{$farminfo['id']}' AND 
 		            		(external_ip = '{$record['rvalue']}' OR 
-		            		internal_ip = '{$record['rvalue']}') AND isactive='1'")
-		            	) {
+		            		internal_ip = '{$record['rvalue']}') AND isactive='1'");
+	            		if ($instance)
+	            		{
+		            		try
+		            		{
+		            			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+		            			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) == 1)
+		            				$exclude = true;
+		            		}
+		            		catch(Exception $e)
+		            		{
+		            			$this->Logger->warn(sprintf("DNSMaintenance: %s", $e->getMessage()));
+		            		}
+	            		}
+	            		
+		            	if (!$instance || $exclude) {
 		            		$this->Logger->warn("[FarmID: {$farminfo['id']}] Found zomby record: '{$record['rkey']} {$record['ttl']} IN A {$record['rvalue']}'");
 		            		$malformed_zones[$record['zoneid']] = 1;
 		            		$db->Execute("DELETE FROM records WHERE id='{$record['id']}'");
@@ -118,6 +133,18 @@
 	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($farminfo['id'], INSTANCE_STATE::RUNNING));
 	            	foreach ($instances as $instance)
 	            	{
+	            		try
+	            		{
+	            			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+	            			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) == 1)
+	            				continue;
+	            		}
+	            		catch(Exception $e)
+	            		{
+	            			$this->Logger->warn(sprintf("DNSMaintenance: %s", $e->getMessage()));
+	            			continue;
+	            		}
+	            		
 	            		$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instance['ami_id']}'");
 	            		
 	            		if ($instance["role_name"] == $zone["role_name"])

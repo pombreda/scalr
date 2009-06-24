@@ -8,6 +8,7 @@
 		description: null,
 		options: null,
 		author: null,
+		settings: null,
 		
 		initialize: function(name, ami_id, alias, arch, description, type, author) 
 		{
@@ -18,9 +19,18 @@
 			this.type = type;
 			this.author = author;
 			this.description = description;
+			this.launch_index = 0;
 			this.scripts = {};
 			this.params = {};
-			this.options = {
+			this.settings = {
+					'scaling.min_instances': 1,
+					'scaling.max_instances': 2,
+					'scaling.polling_interval': 1,
+					'dns.exclude_role':0
+			};
+			
+			/* DEPRACATED */
+			this.options = { 
 				mysql_bundle_every: 48,
   				mysql_make_backup: false,
   				mysql_bundle: true,
@@ -29,13 +39,10 @@
   				mysql_data_storage_engine: 'lvm',
   				mysql_ebs_size: 100,
   				
-				min_instances: 1,
-				max_instances: 2,
 				reboot_timeout: 300,
 				status_timeout: 20,
 				launch_timeout: (alias == 'mysql') ? 2400 : 600,
-				min_LA: 2,
-				max_LA: 5,
+						
 				placement: "",
 				i_type: "",
 				use_elastic_ips: false,
@@ -43,7 +50,8 @@
 				ebs_size: 0,
 				ebs_snapid: '',
 				ebs_mount: false,
-				ebs_mountpoint: '/mnt/storage'
+				ebs_mountpoint: '/mnt/storage',
+				scaling_algos: {}
 			};
 	  	}
 	};

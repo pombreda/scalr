@@ -29,7 +29,14 @@
  			{
  				// Log exception
  				if (class_exists("LoggerManager"))
-					LoggerManager::getLogger('Exception')->fatal($message);
+ 				{
+					if (!stristr($message, "Could not connect to host") && 
+						!stristr($message, "Error Fetching http headers") &&
+						!stristr($message, "DTD are not supported by SOAP"))
+ 						LoggerManager::getLogger('Exception')->fatal($message);
+ 					else
+ 						LoggerManager::getLogger('Exception')->warn($message);
+ 				}
  			}
 
 		 	// Display

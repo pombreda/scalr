@@ -5,7 +5,7 @@
 	
 	<node title="Clients">
 		<item href="clients_add.php">Add new</item>
-		<item href="clients_view.php" search="SELECT COUNT(*) FROM clients WHERE email LIKE '%s' OR aws_accountid LIKE '%s' OR fullname LIKE '%s'">View all</item>		
+		<item href="clients_view.php" search="SELECT COUNT(*) FROM clients WHERE email LIKE '%s' OR aws_accountid LIKE '%s' OR fullname LIKE '%s'">View all</item>
 	</node>
 	
 	<node title="Farms">

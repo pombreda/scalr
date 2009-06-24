@@ -49,6 +49,10 @@
 	<node title="Tools">
 		<item href="garbage.php">Delete unused objects</item>
 		<separator />
-		<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
+		<node title="Amazon Web Services">
+			<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
+			<item href="ec2_reserved_instances.php">List reserved instances</item>
+			<item href="ec2_reserved_offerings.php">List reserved instances offerings</item>
+		</node>
 	</node>
 </menu>

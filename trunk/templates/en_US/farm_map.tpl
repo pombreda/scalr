@@ -109,12 +109,12 @@
 				<div class="map_role_headline">
 					<div style="margin-left:-9px;height:21px;width:9px;float:left;background: url('/images/map_icons/header_lt.png') no-repeat;">&nbsp;</div>
 					<div style="width:auto; float:left;margin-left:5px; margin-right:15px;">
-						<div style="float:left; font-weight:normal;color:#000000;width:240px;">
+						<div style="float:left; font-weight:normal;color:#000000;width:auto;min-width:240px;">
 						{if $item.roletype == 'CUSTOM'}<img alt="Custom role" title="Custom role" style="vertical-align:middle;" src="/images/map_icons/custom_role.png">{/if}	{$item.name} ({$item.ami_id})
 						</div>
 						<div style="float:left;">
 							<div class="map_bull" style="margin-left:10px;margin-right:2px;">&nbsp;</div>
-							<div style="float:left;">{$item.architecture}</div>
+							{if $item.architecture}<div style="float:left;">{$item.architecture}</div>{/if}
 							<div class="map_bull" style="margin-left:8px;margin-right:2px;">&nbsp;</div>
 							<div style="float:left;">{$item.instance_type}</div>
 						</div>
@@ -158,6 +158,11 @@
 							<div style="background: url('/images/map_icons/instance_state_{$item.instances[id].state_image}.png') no-repeat;float:right;margin-bottom:4px;width:17px;margin-right:6px;" title="{$item.instances[id].state}">
 								&nbsp;
 							</div>
+							{if $item.instances[id].mysql_type}
+							<div style="float:right; font-size:10px;margin-right:5px;">
+								({$item.instances[id].mysql_type})
+							</div>
+							{/if}
 						</div>
 						<div style="margin-left:2px;">
 							<a id="control_{$item.instances[id].instance_id}" href="javascript:void(0)">Options</a>

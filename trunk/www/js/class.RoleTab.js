@@ -35,12 +35,8 @@ var RoleTab = Class.create();
                            				reboot_timeout: $('reboot_timeout'),
                            				launch_timeout: $('launch_timeout'),
                            				status_timeout: $('status_timeout'),
-                           				
-                           				scal_min_instances : $('minCount'),
-                           				scal_max_instances : $('maxCount'),
-										scaling : 0,
-										                            				
-                           				pt_placement: $('availZone'),
+                           														
+										pt_placement: $('availZone'),
                            				pt_type	: $('iType'),
                            				
                            				elastic_ips : $('use_elastic_ips'),
@@ -69,15 +65,75 @@ var RoleTab = Class.create();
                            				this.CurrentRoleObject.options.mysql_data_storage_engine = this.elements.mysql_data_storage_engine.value; 
                            				this.CurrentRoleObject.options.mysql_ebs_size = this.elements.mysql_ebs_size.value;
                            			}
-                           				
+                           			
+                           			/** Timeouts **/
+                           			
                            			this.CurrentRoleObject.options.reboot_timeout = this.elements.reboot_timeout.value; 	
                            			this.CurrentRoleObject.options.status_timeout = this.elements.status_timeout.value;
-                           			
                            			this.CurrentRoleObject.options.launch_timeout = this.elements.launch_timeout.value;
-                           				
-                           			this.CurrentRoleObject.options.min_instances = this.elements.scal_min_instances.value; 	
-                           			this.CurrentRoleObject.options.max_instances = this.elements.scal_max_instances.value;
-                           				                             				
+
+                           			/** New setting subsystem **/
+                           			var container = $('tab_contents_roles');
+                           			var elems = container.select('.role_settings');
+                           			
+                           			this.CurrentRoleObject.settings = {};
+                           			
+                           			for(k in elems)
+                        			{
+                        				if (typeof elems[k] != 'object')
+                        					continue;
+                        				
+                        				var item = elems[k];
+                        				
+                        				if (item.id)
+                        				{
+                        					if (item.tagName == 'INPUT' && (item.type == 'text' || item.type == 'hidden'))
+                        					{
+                        						this.CurrentRoleObject.settings[item.id] = item.value;
+                        					}
+	                        				else if (item.tagName == 'INPUT' && item.type == 'checkbox')
+	                        				{
+	                        					this.CurrentRoleObject.settings[item.id] = (item.checked) ? 1 : 0;
+	                        				}
+	                        				else if (item.tagName == 'SELECT')
+	                        				{
+	                        					this.CurrentRoleObject.settings[item.id] = item.value;
+	                        				}
+                        				}
+                        			}                          			
+                           			
+                           			/** Scaling **/                           			
+                           			var container = $('itab_contents_scaling');
+                        			
+                           			this.CurrentRoleObject.options.scaling_algos = {};
+                           			
+                        			var elems = container.select('.scaling_options');
+                        			for(k in elems)
+                        			{
+                        				if (typeof elems[k] != 'object')
+                        					continue;
+                        				
+                        				var item = elems[k];
+                        				
+                        				if (item.id)
+                        				{
+                        					if (item.tagName == 'INPUT' && (item.type == 'text' || item.type == 'hidden'))
+                        					{
+                        						this.CurrentRoleObject.options.scaling_algos[item.id] = item.value;
+                        					}
+	                        				else if (item.tagName == 'INPUT' && item.type == 'checkbox')
+	                        				{
+	                        					this.CurrentRoleObject.options.scaling_algos[item.id] = (item.checked) ? 1 : 0;
+	                        				}
+	                        				else if (item.tagName == 'SELECT')
+	                        				{
+	                        					this.CurrentRoleObject.options.scaling_algos[item.id] = item.value;
+	                        				}
+                        				}
+                        			}
+                        			
+                           			/** Options **/
+                           			
                            			this.CurrentRoleObject.options.placement = this.elements.pt_placement.value; 
                            			this.CurrentRoleObject.options.i_type = this.elements.pt_type.value;
                            				
@@ -134,6 +190,49 @@ var RoleTab = Class.create();
                            			/********************/
                            			
                          			/* Finish*/
+                           		},
+                           		
+                           		SetScaling: function (scaling_type, isenabled)
+                           		{
+                           			$('scaling.'+scaling_type+'.enabled').checked = isenabled;
+                           			
+                           			if (isenabled)
+                           			{
+                           				$(scaling_type+'_scaling_options').style.display = '';
+                           			}
+                           			else
+                           			{
+                           				$(scaling_type+'_scaling_options').style.display = 'none';
+                           			}
+                           		},
+                           		
+                           		SetRolesLaunchOrder: function (order)
+                           		{
+                           			var rootNode = window.RolesOrderTree.getRootNode();
+                       				while (rootNode.firstChild) {
+                       					rootNode.removeChild(rootNode.firstChild);
+                       				}
+                           		
+                           			if (order == 1)
+                           			{
+                           				$('tab_rso').style.display = '';
+                           				
+                           				for(var ami_id in this.Roles)
+                           				{
+                           					if (typeof(this.Roles[ami_id]) == 'object')
+                           					{
+                           						window.RolesOrderTree.getRootNode().appendChild({
+                           							text:this.Roles[ami_id].name, 
+                           							id:ami_id, 
+                           							leaf:true,
+                           							icon:'/images/dhtmlxtree/csh_vista/icon_hardware.gif',
+                           							itemCls:'order-tree-item-cls'
+                           						});
+                           					}
+                           				}
+                           			}
+                           			else                          				
+                           				$('tab_rso').style.display = 'none';
                            		},
                            		
                            		SetCurrentRoleObject: function(ami_id, add_to_farm)
@@ -425,18 +524,80 @@ var RoleTab = Class.create();
 	                           				this.elements.launch_timeout.value = this.CurrentRoleObject.options.launch_timeout;
 	                           				this.elements.status_timeout.value = this.CurrentRoleObject.options.status_timeout;
 	                           				
-	                           				this.elements.scal_min_instances.value = this.CurrentRoleObject.options.min_instances;
-	                           				this.elements.scal_max_instances.value = this.CurrentRoleObject.options.max_instances;
+	                           			
+	                           				/** New setting subsystem **/
+	                               			var container = $('tab_contents_roles');
+	                               			var elems = container.select('.role_settings');
+	                               			for(k in elems)
+	                            			{
+	                            				if (typeof elems[k] != 'object')
+	                            					continue;
+	                            				
+	                            				var item = elems[k];
+	                            				
+	                            				if (item.id)
+	                            				{
+	                            					if (item.tagName == 'SELECT' || (item.tagName == 'INPUT' && (item.type == 'text' || item.type == 'hidden')))
+	                            					{
+	                            						item.value = this.CurrentRoleObject.settings[item.id];
+	                            					}
+	    	                        				else if (item.tagName == 'INPUT' && item.type == 'checkbox')
+	    	                        				{
+	    	                        					item.checked = (this.CurrentRoleObject.settings[item.id] == 1) ? true : false;
+	    	                        				}
+	    	                        				else if (item.tagName == 'SELECT')
+	    	                        				{
+	    	                        					item.value = this.CurrentRoleObject.settings[item.id];
+	    	                        				}
+	                            				}
+	                            			}
 	                           				
-	                           				trackbar.getObject('scaling_trackbar', true).init({
-												leftValue: parseFloat(this.CurrentRoleObject.options.min_LA),
-												rightValue: parseFloat(this.CurrentRoleObject.options.max_LA),
+	                           				
+	                           				/** Scaling **/
+	                           				
+	                           				for(key in this.CurrentRoleObject.options.scaling_algos)
+	                           				{
+	                           					if (typeof key == 'string')
+	                           					{
+		                           					var obj = $(key);
+		                           					if (obj)
+		                           					{
+			                           					if (obj.tagName == 'SELECT' || (obj.tagName == 'INPUT' && (obj.type == 'text' || obj.type == 'hidden')))
+			                           					{
+			                           						if (this.CurrentRoleObject.options.scaling_algos[key])
+			                           							obj.value = this.CurrentRoleObject.options.scaling_algos[key];
+			                           						else
+			                           							obj.value = window.default_scaling_algos[key];
+			                           					}
+			                           					else if (obj.tagName == 'INPUT' && obj.type == 'checkbox')
+			                           					{
+			                           						if (this.CurrentRoleObject.options.scaling_algos[key])
+			                           						{
+				                           						obj.checked = (this.CurrentRoleObject.options.scaling_algos[key] == 1) ? true : false;
+			                           						}
+			                           						else
+			                           							obj.checked = (window.default_scaling_algos[key] == 1) ? true : false;
+			                           							
+		                           							if (key.endsWith("enabled"))
+			                           						{
+			                           							var algo_name = key.replace("scaling.", "").replace(".enabled", "");
+			                           							this.SetScaling(algo_name, obj.checked);
+			                           						}
+			                           					}
+		                           					}
+	                           					}
+	                           				}
+	                           					                           				
+	                               			trackbar.getObject('scaling.la', true).init({
+												leftValue:  parseFloat($('scaling.la.min').value),
+												rightValue: parseFloat($('scaling.la.max').value),
 												onMove: function ()
 												{
-													window.RoleTabObject.OnLAChanged(this.leftValue, this.rightValue);
+													$('scaling.la.min').value = this.leftValue;
+													$('scaling.la.max').value = this.rightValue;
 												} 
-											}, 'scaling_trackbar');
-	                           				
+											}, 'scaling.la');
+											
 	                           				this.elements.pt_placement.value = this.CurrentRoleObject.options.placement;
 	                           				
 	                           				//TODO: Do this only if arch changed...
@@ -507,22 +668,6 @@ var RoleTab = Class.create();
 	                           			}
 	                           		}
                            		},
-                           		
-                           		OnLAChanged: function(leftValue, rightValue)
-								{
-									try
-									{
-										if (this.CurrentRoleObject)
-										{
-											this.CurrentRoleObject.options.min_LA = parseFloat(leftValue);
-											this.CurrentRoleObject.options.max_LA = parseFloat(rightValue);
-										}
-									}
-									catch(e)
-									{
-										alert(e);
-									}
-								},
 								
 								HidePageError: function()
 								{
@@ -549,8 +694,14 @@ var RoleTab = Class.create();
 								   	$('button_js').disabled = true;
 								   	$('btn_loader').style.display = '';
 								   
-								    var url = '/server/farm_manager.php?action='+MANAGER_ACTION+"&farm_name="+$('farm_name').value+"&farm_id="+FARM_ID; 
+								   	var launch_order_type = $('roles_launch_order_0').checked == true ? '0' : '1';
+								   	
+								    var url = '/server/farm_manager.php?action='+MANAGER_ACTION+"&farm_name="+$('farm_name').value+"&farm_id="+FARM_ID+"&launch_order_type="+launch_order_type; 
 									
+								    var o_tree_cn = window.RolesOrderTree.getRootNode().childNodes;
+								    for (var ii = 0; ii < o_tree_cn.length; ii++)
+								    	this.Roles[o_tree_cn[ii].id].launch_index = ii+1;								    
+								    
 									var postArray = [];
 									for (ami_id in this.Roles)
 									{
@@ -570,8 +721,8 @@ var RoleTab = Class.create();
 										postBody: postBody, 
 										onSuccess: function(transport)
 										{ 
-												try
-												{
+											try
+											{
  												var response = transport.responseText.evalJSON(true);
  												if (response.result == 'error')
  												{
@@ -584,10 +735,10 @@ var RoleTab = Class.create();
  													else
  														window.location.href = '/farms_view.php?code=1';
  												}
- 											}
+											}
  											catch(e)
  											{
- 												window.RoleTabObject.ShowPageError("Unexpected exception in javascript:" + e.message);
+ 												window.RoleTabObject.ShowPageError("Unexpected exception in javascript: " + e.message);
  											}	
 										},
 										
@@ -615,9 +766,24 @@ var RoleTab = Class.create();
 												this.Roles[ami_id] = GetRoleObjectFromTree(ami_id);
 											else
 												this.Roles[ami_id] = this.RolesArchive[ami_id];
+											
+											var role_object = this.Roles[ami_id];
 										}
 										else
+										{
 											this.Roles[role_object.ami_id] = role_object;
+										}
+										
+										if (window.RolesOrderTree && !window.RolesOrderTree.getRootNode().findChild('id', role_object.ami_id))
+										{
+											window.RolesOrderTree.getRootNode().appendChild({
+	                   							text:role_object.name, 
+	                   							id:role_object.ami_id, 
+	                   							leaf:true,
+                       							icon:'/images/dhtmlxtree/csh_vista/icon_hardware.gif',
+                       							itemCls:'order-tree-item-cls'
+	                   						});
+										}
 									}
 									else
 									{
@@ -634,6 +800,10 @@ var RoleTab = Class.create();
 
 										this.RolesArchive[ami_id] = this.Roles[ami_id];
 										this.Roles[ami_id] = false;
+										
+										var node = window.RolesOrderTree.getRootNode().findChild('id', ami_id);
+										window.RolesOrderTree.getRootNode().removeChild(node);
+										//console.log(node);
 									}
 									else
 									{

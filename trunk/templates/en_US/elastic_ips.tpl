@@ -1,75 +1,124 @@
 {include file="inc/header.tpl"}
-	<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
-	<script type="text/javascript" src="js/class.SelectControl.js"></script>
-    {include file="inc/table_header.tpl" show_region_filter=1}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Farm name</th>
-			<th>Role name</th>
-			<th>IP address</th>
-			<th>Used by role</th>
-			<th>Instance</th>
-			<th width="1%">Options</th>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-		<td class="Item" valign="top">
-		{if $rows[id]->dbInfo || $rows[id]->dbInstance}
-			<a href="farms_view.php?id={$rows[id]->farmId}">{$rows[id]->farmName}</a>
-		{else}
-			Not used by Scalr
-		{/if}
-		</td>
-		<td class="Item" valign="top">
-		{if $rows[id]->dbInfo}
-			<a href="roles_view.php?farmid={$rows[id]->farmId}">{$rows[id]->dbInfo.role_name}</a>
-		{elseif $rows[id]->dbInstance}
-			<a href="roles_view.php?farmid={$rows[id]->farmId}">{$rows[id]->dbInstance.role_name}</a>
-		{else}
-			Not used by Scalr
-		{/if}
-		</td>
-		<td class="Item" valign="top">{$rows[id]->publicIp}</td>
-		<td class="Item" valign="top">
-			{if $rows[id]->dbInfo}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}
-		</td>
-		<td class="Item" valign="top">
-		{if $rows[id]->dbInfo || $rows[id]->dbInstance}
-			<a href="instances_view.php?iid={$rows[id]->instanceId}&farmid={$rows[id]->farmId}">{$rows[id]->instanceId}</a>
-		{else}
-			{$rows[id]->instanceId}
-		{/if}
-		</td>
-		<td class="ItemEdit" valign="top"><a id="control_{$rows[id]->publicIp|@md5}" href="javascript:void(0)">Options</a></td>
-	</tr>
-	<script language="Javascript" type="text/javascript">
-    	var ip = '{$rows[id]->publicIp}';
-    	var ip_hash = '{$rows[id]->publicIp|@md5}';
+<br />
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
 
-    	var menu = [
-            {literal}{href: 'elastic_ips.php?task=release&ip='+ip, innerHTML: 'Release'}{/literal}
-        ];
-        
-        
-        {literal}			
-        var control = new SelectControl({menu: menu});
-        control.attach('control_'+ip_hash);
-        {/literal}
+var uid = '{$smarty.session.uid}';
+
+var regions = [
+{section name=id loop=$regions}
+	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
+{/section}
+];
+
+var region = '{$smarty.session.aws_region}';
+
+{literal}
+Ext.onReady(function () {
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'id',
+	        remoteSort: true,
 	
-	</script>
-	{sectionelse}
-	<tr>
-		<td colspan="6" align="center">No elastic IPs allocated</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="5" align="center">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}	
+	        fields: [
+				'ipaddress','instance_id', 'farmid', 'farm_name', 'role_name', 'indb'
+	        ]
+    	}),
+		url: '/server/grids/eips_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+	
+
+	function farmRenderer (value, p, record) {
+		if (record.data.farmid && record.data.farm_name)
+			return '<a href="farms_view.php?id='+record.data.farmid+'">'+record.data.farm_name+'</a>';
+		else
+			return "Not used by Scalr";		
+	}
+
+	function roleRenderer (value, p, record) {
+		if (record.data.role_name)
+			return '<a href="roles_view.php?farmid='+record.data.farmid+'">'+record.data.role_name+'</a>';
+		else
+			return 'Not used by Scalr';								
+	}
+
+	function indbRenderer (value, p, record) {
+		if (record.data.indb)
+			return '<img src="images/true.gif">';
+		else
+			return '<img src="images/false.gif">';								
+	}
+
+	function instanceRenderer(value, p, record) {
+		if (record.data.role_name)
+			return '<a href="instances_view.php?iid='+record.data.instance_id+'&farmid='+record.data.farmid+'">'+record.data.instance_id+'</a>';
+		else
+			return record.data.instance_id;
+	}
+	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 500,
+        title: "Elastic IPs",
+        id: 'eips_list',
+        store: store,
+        maximize: true,
+        viewConfig: { 
+        	emptyText: "No elastic IPs found"
+        },
+
+        enableFilter: false,
+        
+		tbar: [{text: 'Region:'}, new Ext.form.ComboBox({
+			allowBlank: false,
+			editable: false, 
+	        store: regions,
+	        value: region,
+	        displayField:'state',
+	        typeAhead: false,
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:false,
+	        width:100,
+	        listeners:{select:function(combo, record, index){
+	        	store.baseParams.region = record.data.value; 
+	        	store.load();
+	        }}
+	    })],
+		
+        // Columns
+        columns:[
+			{header: "Farm name", width: 70, dataIndex: 'farm_name', renderer:farmRenderer, sortable: true},
+			{header: "Role name", width: 50, dataIndex: 'role_name', renderer:roleRenderer, sortable: false},
+			{header: "IP address", width: 60, dataIndex: 'ipaddress', sortable: false},
+			{header: "Used by role", width: 40, dataIndex: 'role_name', renderer:indbRenderer, sortable: true, align:'center'},
+			{header: "Instance", width: 30, dataIndex: 'insatnce_id', renderer:instanceRenderer, sortable: true} 
+		],
+		
+    	// Row menu
+    	rowOptionsMenu: [
+      	             	
+			{id: "option.release", 		text:'Release', 			  	href: "/elastic_ips.php?task=release&ip={ipaddress}"}
+     	],
+     	getRowOptionVisibility: function (item, record) {
+
+			return true;
+		}
+    });
+    
+    grid.render();
+    store.load();
+
+	return;
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

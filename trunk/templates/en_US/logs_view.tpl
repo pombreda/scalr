@@ -1,64 +1,192 @@
 {include file="inc/header.tpl"}
-	{include file="inc/table_header.tpl" filter=0 paging=""}
-    {include file="inc/intable_header.tpl" header="Search" color="Gray"}
-        <tr>
-			<td nowrap="nowrap">Search string:</td>
-			<td><input type="text" name="search" class="text" id="search" value="{$search}" size="20" /></td>
-		</tr>
-		<tr valign="top">
-			<td nowrap="nowrap">Show only:</td>
-			<td>
-				<div style="width:600px;">
-				{foreach item=item key=key from=$severities}
-				    <div style="float:left;word-wrap:pre;width:200px;"><input name="severity[]" style="vertical-align:middle;" type="checkbox" {if $checked_severities[$key]}checked{/if} value="{$key}"> {$item}</div>
-				{/foreach}
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td nowrap="nowrap">Farm:</td>
-			<td>
-				<select name="farmid">
-					<option></option>
-					{section name=id loop=$farms}
-					<option {if $farmid == $farms[id].id}selected{/if} value="{$farms[id].id}">{$farms[id].name}</option>
-					{/section}
-				</select>
-			</td>
-		</tr>
-    {include file="inc/intable_footer.tpl" color="Gray"}
-    {include file="inc/table_footer.tpl" colspan=9 button2=1 button2_name="Search"}
-    <br>
-    {include file="inc/table_header.tpl"}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Time</th>
-			<th>Severity</th>
-			{if !$hide_farm_column}<th>Farm</th>{/if}
-			<th>Caller</th>
-			<th>Message</th>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}' {if $rows[id].severity == 'FATAL' || $rows[id].severity == 'ERROR'}style="background-color:pink;"{/if}>
-		<td class="Item" valign="top" nowrap>{$rows[id].time}</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].severity}</td>
-		{if !$hide_farm_column}<td class="Item" valign="top" nowrap><a href="farms_view.php?id={$rows[id].farmid}">{$rows[id].farm_name}</a></td>{/if}
-		<td class="Item" valign="top" nowrap>{if $rows[id].servername}<a href="/instances_view.php?iid={$rows[id].servername}&farmid={$rows[id].farmid}">{$rows[id].servername}</a>/{$rows[id].source}{else}{$rows[id].source}{/if}</td>
-		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
-	</tr>
-	{sectionelse}
-	<tr>
-		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">No log entries found</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="{if !$hide_farm_column}6{else}5{/if}" align="center">&nbsp;</td>
-		<!--<td class="ItemDelete" valign="top">&nbsp;</td>-->
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}	
-		{include file="inc/footer.tpl"}
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="search-ct"></div> 
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
+{literal}
+Ext.onReady(function () {
+
+	var farms_store = new Ext.data.SimpleStore({
+	    fields: ['value', 'text'],
+	    data : {/literal}{$farms}{literal}
+	});
+	
+	// ---- Init search form
+	var searchPanel = new Ext.FormPanel({
+		style: 'margin:5px 5px 15px 5px',
+		renderTo: document.body,
+        labelWidth: 150,
+        frame:true,
+        title: 'Search',
+        bodyStyle:'padding:5px 5px 0',
+        defaultType: 'textfield',	
+        
+		items: [{
+			width: 500,
+			name: 'query',
+			fieldLabel: 'Search string'
+		}, {
+			xtype: 'checkboxgroup',
+			width: 500,
+			fieldLabel: 'Severity',
+			columns: 3,
+            items: {/literal}{$severities}{literal},
+			listeners: {
+				render: {
+					fn: function (cmp) {
+						if (Ext.isIE) {
+							cmp.el.select('.x-form-element').setStyle('width', '166px');
+						}
+					},
+					delay: 20
+				}
+			}
+		}, new Ext.form.ComboBox({
+			id: 'farmid',
+			allowBlank: true,
+			editable: false, 
+			valueField:'value',
+			displayField:'text',
+	        store: farms_store,
+	        fieldLabel: 'Farm',
+	        typeAhead: true,
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:false
+	    })],
+		listeners: {
+			render: {
+				fn:	function () {
+					// XXX: Direct renderTo: search-ct doesn't works with FormPanel
+					Ext.get("search-ct").appendChild(this.el);
+				},
+				delay: Ext.isIE ? 20 : 0
+			}
+		},
+		buttons: [
+			{text: 'Filter', handler: doFilter}
+		]
+	});
+	
+	function doFilter () {
+		Ext.apply(store.baseParams, searchPanel.getForm().getValues(false));
+		var farmid = searchPanel.getForm().findField('farmid').value;	
+		store.baseParams.farmid = (farmid) ? farmid : '';
+
+		var farm_clm_index = grid.getColumnModel().findColumnIndex('farm_name');
+
+		if (farmid)
+			grid.getColumnModel().setHidden(farm_clm_index, true);
+		else
+			grid.getColumnModel().setHidden(farm_clm_index, false);
+		
+		store.load();
+	}
+	
+	// ---- Init grid
+	
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+        reader: new Ext.ux.scalr.JsonReader({
+            root: 'data',
+            successProperty: 'success',
+            errorProperty: 'error',
+            totalProperty: 'total',
+            id: 'id',
+            fields: [
+				'id','serverid','message','severity','time','source','farmid','servername','farm_name', 's_severity'
+            ]
+        }),
+        baseParams: {
+        	sort: 'id',
+        	dir: 'DESC'
+        },
+    	remoteSort: true,
+		url: 'server/grids/event_log_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+	Ext.apply(store.baseParams, Ext.ux.parseQueryString(window.location.href));
+	
+	function callerRenderer (value, p, record) {
+		if (record.data.servername)
+			return '<a href="/instances_view.php?iid='+record.data.servername+'&farmid='+record.data.farmid+'">'+record.data.servername+'</a>/'+record.data.source;
+		else
+			return value;				
+	}
+
+	function farmRenderer (value, p, record) {
+		return '<a href="farms_view.php?id='+record.data.farmid+'">'+value+'</a>';
+	}
+	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        //renderTo: "maingrid-ct",
+        id: "logs_list",
+        height: 500,
+        store: store,
+        maximize: false,
+        enableFilter: false,
+        sm: new Ext.grid.RowSelectionModel({singleSelect: true}),
+        viewConfig: { 
+        	emptyText: "No logs found",
+        	getRowClass: function (record, index) {
+        		if (record.data.severity > 3) {
+        			return 'ux-row-red';
+        		}
+
+        		return '';
+        	},
+        	forceFit: true
+        },
+        split: true,
+		region: 'north',
+                
+	    // Columns
+        columns:[
+			{header: "Time", width: 35, dataIndex: 'time', sortable: false},
+			{header: "Severity", width: 15, dataIndex: 's_severity', sortable: false, align:'center'},
+			{header: "Farm", width: 25, dataIndex: 'farm_name', renderer:farmRenderer, sortable: false},
+			{header: "Caller", width: 35, dataIndex: 'source', renderer:callerRenderer, sortable: false},
+			{header: "Message", width: 150, dataIndex: 'message', sortable: false}
+		]
+    });
+
+	var farm_clm_index = grid.getColumnModel().findColumnIndex('farm_name');
+	grid.getColumnModel().setHidden(farm_clm_index, false);
+	
+	// define a template to use for the detail view
+	var TplMarkup = [
+		'{message}'
+	];
+	var TplMessage = new Ext.Template(TplMarkup);
+
+	var ct = new Ext.Panel({
+		renderTo: 'maingrid-ct',
+		frame: true,
+		title: "Event Log {/literal}({$table_title_text}){literal}",
+		maximize: true,
+		height: 570,
+		layout: 'border',
+		items: [
+			grid,
+			{
+				id: 'detailPanel',
+				region: 'center',
+				bodyStyle: {
+					background: '#ffffff',
+					padding: '7px'
+				},
+				html: ''
+			}
+		]
+	})
+	grid.getSelectionModel().on('rowselect', function(sm, rowIdx, r) {
+		var detailPanel = Ext.getCmp('detailPanel');
+		TplMessage.overwrite(detailPanel.body, r.data);
+	});
+	
+    store.load();
+});
+{/literal}
+</script>
+{include file="inc/footer.tpl"}

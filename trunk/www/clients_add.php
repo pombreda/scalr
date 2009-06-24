@@ -48,6 +48,7 @@
 						address2	= ?,
 						phone		= ?,
 						fax			= ?,
+						comments	= ?,
 						dtadded		= NOW()
         			 ", array(
         		    	$post_email, 
@@ -65,7 +66,8 @@
 						$post_address1, 
 						$post_address2,
 						$post_phone,
-						$post_fax
+						$post_fax,
+						$post_comments
         		    ));
         		}
                 catch (Exception $e)
@@ -147,7 +149,8 @@
 							address1	= ?,
 							address2	= ?,
 							phone		= ?,
-							fax			= ?
+							fax			= ?,
+							comments	= ?
             			    	WHERE id = ?
             			    ", 
 							array(
@@ -166,6 +169,7 @@
 								$post_address2,
 								$post_phone,
 								$post_fax,
+								$post_comments,
 								$post_id
 						));
                     }

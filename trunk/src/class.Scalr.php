@@ -5,7 +5,7 @@
 		private static $EventObservers = array();
 		private static $DeferredEventObservers = array();
 		private static $ConfigsCache = array();
-		
+				
 		/**
 		 * Attach observer
 		 *
@@ -149,7 +149,7 @@
 				foreach (self::$EventObservers as $observer)
 				{
 					$observer->SetFarmID($farmid);					
-					Logger::getLogger(__CLASS__)->info(sprintf("Fire event: %s::%s", get_class($observer), "On{$event->GetName()}"));
+					Logger::getLogger(__CLASS__)->info(sprintf("Event %s. Observer: %s", "On{$event->GetName()}", get_class($observer)));
 					call_user_func(array($observer, "On{$event->GetName()}"), &$event);
 				}
 			}

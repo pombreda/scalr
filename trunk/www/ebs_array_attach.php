@@ -128,7 +128,7 @@
     					$DBEBSVolume->InstanceID = "";
     					$DBEBSVolume->Device = "";
     					
-    					$this->DB->Execute("UPDATE farm_ebs SET state=?, instance_id='', device='' WHERE volumeid=?", 
+    					$db->Execute("UPDATE farm_ebs SET state=?, instance_id='', device='' WHERE volumeid=?", 
 							array(FARM_EBS_STATE::AVAILABLE, $volumeid)
 						);
     				}

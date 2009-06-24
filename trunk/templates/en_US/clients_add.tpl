@@ -51,7 +51,15 @@
 	}
 	</script>
 	{/literal}
-	{include file="inc/table_header.tpl"}        
+	{include file="inc/table_header.tpl"}
+		{include file="inc/intable_header.tpl" header="Comments" color="Gray"}
+        <tr>
+    		<td colspan="2">
+    			<textarea class="text" rows="10" cols="80" name='comments' id='comments'>{$comments}</textarea>
+    		</td>
+    	</tr>
+        {include file="inc/intable_footer.tpl" color="Gray"}
+                
 		{include file="inc/intable_header.tpl" header="Account information" color="Gray"}
     	<tr>
     		<td width="20%">E-mail:</td>

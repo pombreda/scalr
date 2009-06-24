@@ -1,25 +1,35 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 <html>
 <head>
 	<title>Control Panel{if $title && $title != 'Control Panel'} - {$title|strip_tags}{/if}</title>
 	<meta http-equiv="Content-Language" content="en-us" />
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta name="robots" content="none" />
-
-	<link href="css/main.css" rel="stylesheet" type="text/css" />
-	<link href="css/style.css" rel="stylesheet" type="text/css" />
+	<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
 	
 	<script type="text/javascript">
 		var load_calendar = {$load_calendar|default:"0"};
 		var load_treemenu = {$load_treemenu|default:"0"};
 		var get_url = '{$get_url}';
 	</script>
-	<script type="text/javascript" src="/js/prototype-1.6.0.2.js"></script>
+	<script type="text/javascript" src="/js/prototype-1.6.0.3.js"></script>
 	<script type="text/javascript" src="/js/class.Tweaker.js"></script>
 	<script type="text/javascript" src="/js/class.LibWebta.js"></script>
 	<script type="text/javascript" src="/js/common.inc.js"></script>
 	<script type="text/javascript" src="/js/src/scriptaculous.js?effects"></script>
+
+	<link href="css/main.css" rel="stylesheet" type="text/css" />
+	<link href="css/style.css" rel="stylesheet" type="text/css" />
+	
+	{if $load_extjs}
+	<script type="text/javascript" src="/js/extjs/ext-prototype-adapter.js"></script>
+	<script type="text/javascript" src="/js/extjs/ext-all.js"></script>
+	<script type="text/javascript" src="/js/extjs/ext-ux.js"></script>
+	
+		{if !$no_extjs_style}
+			<link type="text/css" rel="stylesheet" href="/css/ext-all.css" />
+		{/if}
+	{/if}
 	
 	<script language="Javascript" type="text/javascript">
 	{literal}
@@ -42,8 +52,6 @@
 </head>
 
 <body onload="webtacp.afterload()" onresize="webtacp.setupTweaker()">
-
-
 <table border="0" cellpadding="0" cellspacing="0" class="Webta_Table" width="100%">
 <tr>
 	<td width="7"><div class="TableHeaderLeft"></div></td>
@@ -147,7 +155,7 @@
 					<tr>
 						<td bgcolor="#FFFFFF">
 							<span style="color: #FF0000">
-							The following errors have occured: <br>
+							{t}The following errors have occured:{/t}<br>
 							<br>
 							{foreach from=$err key=id item=field}
 								&bull;&nbsp;&nbsp;{$field}<br>
@@ -162,7 +170,7 @@
 					<tr>
 						<td bgcolor="#FFFFFF">
 							<span style="color: #FF0000">
-							Warnings: <br>
+							{t}Warnings: {/t}<br>
 							<br>
 							{foreach from=$warn key=id item=field}
 								&bull;&nbsp;&nbsp;{$field}<br>
@@ -172,11 +180,11 @@
 					</tr>
       			</table>
 			{/if}
-			{if !$noheader}
-				<form name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
-			{/if}
 			<a name="top"></a>
 			{if $help}
 				<p class="placeholder">{$help}</p>
 			{/if}
 		</div>
+		{if !$noheader}
+			<form name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
+		{/if}		

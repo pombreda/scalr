@@ -3,6 +3,7 @@
 	define("DEFAULT_LOCALE", "en_US");
 	
 	// Start session
+	if (!defined("NO_SESSIONS"))
 	session_start();
 	
 	// 	Attempt to normalize settings
@@ -258,7 +259,7 @@
     // cache lifetime
     CONFIG::$EVENTS_RSS_CACHE_LIFETIME = 300; // in seconds
     CONFIG::$EVENTS_TIMELINE_CACHE_LIFETIME = 300; // in seconds
-    CONFIG::$AJAX_PROCESSLIST_CACHE_LIFETIME = 60; // in seconds
+    CONFIG::$AJAX_PROCESSLIST_CACHE_LIFETIME = 120; // in seconds
     
     // Get control password
     $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
@@ -291,6 +292,13 @@
 	Scalr::AttachObserver(new MailEventObserver(), true);
 	Scalr::AttachObserver(new RESTEventObserver(), true);
 	
+	//
+    // Register scaling algos
+    //
+    RoleScalingManager::RegisterScalingAlgo(new BWScalingAlgo());
+    RoleScalingManager::RegisterScalingAlgo(new LAScalingAlgo());
+    RoleScalingManager::RegisterScalingAlgo(new SQSScalingAlgo());
+    	
 	//
 	// Select AWS regions
 	//

@@ -1,6 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
-	
+    $display['load_extjs'] = true;
+    //$display['no_extjs_style'] = true;
     
 	set_time_limit(360);
 		
@@ -20,12 +21,17 @@
         $uid = $_SESSION['uid'];
     }
 	
-    $used_slots = $db->GetOne("SELECT SUM(max_count) FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$uid}')");
+    $Client = Client::Load($uid);
     
-    $client_max_instances = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_instances', $uid));
+    $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
+        AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
+        array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $Client->ID)
+    );
+    
+    $client_max_instances = $Client->GetSettingValue(CLIENT_SETTINGS::MAX_INSTANCES_LIMIT);
     $i_limit = $client_max_instances ? $client_max_instances : CONFIG::$CLIENT_MAX_INSTANCES;
     
-    $client_max_eips = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array('client_max_eips', $uid));
+    $client_max_eips = $Client->GetSettingValue(CLIENT_SETTINGS::MAX_EIPS_LIMIT);
     $eips_limit = $client_max_eips ? $client_max_eips : CONFIG::$CLIENT_MAX_EIPS;
     
     $avail_slots = $i_limit - $used_slots;
@@ -68,7 +74,7 @@
     
     foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
     {
-    	if (stristr($zone->zoneState,'available')) //TODO:
+    	if (stristr($zone->zoneState,'available'))
     		array_push($display["avail_zones"], (string)$zone->zoneName);
     }
 	
@@ -86,6 +92,17 @@
 			$display['snapshots'][] = $pv->snapshotId;
 	}
     
+	//Get List of registered Scaling Algorithms
+	$display['scaling_algos'] = array();
+	foreach (RoleScalingManager::$ScalingAlgos as $Algo)
+	{
+        $algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));	
+        $display['scaling_algos'][$algo_name] = array(
+        	'based_on'	=> $Algo->GetAlgoDescription(),
+        	'settings'	=> $Algo->GetConfigurationForm($display["farminfo"]["clientid"])
+        );
+	}
+	
     if ($req_id)
     {
         $display["farminfo"] = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
@@ -99,7 +116,7 @@
             UI::Redirect("farms_view.php");
         }
         
-        $servers = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=?", array($req_id));
+        $servers = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=? ORDER BY launch_index ASC", array($req_id));
         $display['roles'] = array();
         foreach ($servers as &$row)
         {
@@ -133,7 +150,11 @@
 	        else
 	        	$author = false;
 			
-        	$role = array(
+	        $DBFarmRole = DBFarmRole::LoadByID($row['id']);
+
+	        $role_settings = $DBFarmRole->GetAllSettings();
+	        
+	        $role = array(
         		'name' 		=> $ami_info["name"],
         		'arch' 		=> $ami_info["architecture"],
         		'alias' 	=> $ami_info["alias"],
@@ -142,11 +163,9 @@
         		'description' => $ami_info["description"],
         		'scripts'	=> $scripts_object,
         		'author'	=> $author,
+        		'settings'		=> $role_settings,
+        		'launch_index'	=> (int)$row['launch_index'],
         		'options'	=> array(
-        			'min_instances' 	=> $row['min_count'],
-        			'max_instances' 	=> $row['max_count'],
-        			'min_LA'			=> $row['min_LA'],
-        			'max_LA'			=> $row['max_LA'],
         			'reboot_timeout'	=> $row['reboot_timeout'],
         			'launch_timeout'	=> $row['launch_timeout'],
         			'status_timeout'	=> $row['status_timeout'],
@@ -159,6 +178,19 @@
         			'ebs_mount'			=> ($row['ebs_mount'] == 1) ? true : false,
         			'ebs_mountpoint'	=> $row['ebs_mountpoint']
         	));
+        	
+        	$scaling_algo_props = array();
+        	$RoleScalingManager = new RoleScalingManager($DBFarmRole);
+        	foreach ($RoleScalingManager->GetRegisteredAlgos() as $Algo)
+        	{
+        		$scaling_algo_props = array_merge($scaling_algo_props, $Algo->GetProperties());
+        		
+        		$algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
+        		$scaling_algo_props["scaling.{$algo_name}.enabled"] = $RoleScalingManager->IsAlgoEnabled($algo_name);
+        	}
+        	
+        	$role['options']['scaling_algos'] = $scaling_algo_props;
+        	
         	if ($ami_info["alias"] == ROLE_ALIAS::MYSQL)
         	{
         		$display['farm_mysql_role'] = $ami_info['ami_id'];
@@ -176,6 +208,29 @@
             
         $display["id"] = $req_id;
     }
+    
+    //Defaults
+    $display["default_scaling_algos"] = array();
+    foreach (RoleScalingManager::$ScalingAlgos as $Algo)
+    {
+        $DataForm = $Algo->GetConfigurationForm();
+        foreach ($DataForm->ListFields() as $field)
+        {
+        	if ($field->FieldType != FORM_FIELD_TYPE::MIN_MAX_SLIDER)
+        		$display['default_scaling_algos'][$field->Name] = $field->DefaultValue;
+        	else
+        	{
+        		$s = explode(",", $field->DefaultValue);
+        		$display['default_scaling_algos'][$field->Name.".min"] = $s[0];
+        		$display['default_scaling_algos'][$field->Name.".max"] = $s[1];
+        	}
+        }
+        
+        $algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
+        $display['default_scaling_algos']["scaling.{$algo_name}.enabled"] = 0;
+	}
+        
+    $display['default_scaling_algos'] = json_encode($display['default_scaling_algos']);
     
     $display['roles'] = json_encode($display['roles']);
     
@@ -198,7 +253,8 @@
      */
     $display["tabs_list"] = array(
     	"general" => _("Settings"), 
-    	"roles" => _("Roles")
+    	"roles" => _("Roles"),
+    	"rso"	=> _("Roles startup order")
    	);
 
    	$display["intable_tabs"] = array(
@@ -208,6 +264,7 @@
    		array("id" => "placement", "name" => _("Placement and type"), "display" => ""),
    		array("id" => "eips", "name" => _("Elastic IPs"), "display" => ""),
    		array("id" => "ebs", "name" => _("EBS"), "display" => ""),
+   		array("id" => "dns", "name" => _("DNS"), "display" => ""),
    		array("id" => "timeouts", "name" => _("Timeouts"), "display" => ""),
    		array("id" => "scripts", "name" => _("Scripting"), "display" => ""),
    		array("id" => "params", "name" => _("Parameters"), "display" => "")

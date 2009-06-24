@@ -5,5 +5,6 @@
 		const PENDING 			= "Pending";
 		const INIT				= "Initializing";
 		const PENDING_TERMINATE = "Pending terminate";
+		const IMPORTING			= "Importing";
 	}
 ?>

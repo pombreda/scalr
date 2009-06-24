@@ -96,8 +96,8 @@
     		}
     		
     		//TODO: Remove this
-    		//$this->Logger->info($auth_key);
-    		//$this->Logger->info($string_to_sign);
+    		$this->Logger->info($auth_key);
+    		$this->Logger->info($string_to_sign);
     		
     		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, $string_to_sign, $auth_key, 1));    		
     		if ($valid_sign != $signature)

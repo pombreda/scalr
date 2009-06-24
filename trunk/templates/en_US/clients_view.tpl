@@ -1,50 +1,120 @@
 {include file="inc/header.tpl"}
-    {include file="inc/table_header.tpl"}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>E-mail</th>
-			<th>AWS Account Id</th>
-			<th>Farms</th>
-			<th>Instances</th>
-			<th>Custom roles</th>
-			<th>Farms limit</th>
-			<th>Active</th>
-			<th width="1%">Client CP</th>
-			<th width="1%">Edit</th>
-			<td width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="webtacp.checkall()"></td>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-		<td class="Item" valign="top">{$rows[id].email}</td>
-		<td class="Item" valign="top">{$rows[id].aws_accountid}</td>
-		<td class="Item" valign="top">{$rows[id].farms} [<a href="farms_view.php?clientid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top">{$rows[id].instances}</td>
-		<td class="Item" valign="top">{$rows[id].amis} [<a href="client_roles_view.php?clientid={$rows[id].id}">View</a>]</td>
-		<td class="Item" valign="top">{if $rows[id].farms_limit == 0}Unlimited{else}{$rows[id].farms_limit}{/if}</td>
-		<td class="Item" valign="top" align="center">{if $rows[id].isactive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
-		<td class="ItemEdit" valign="top"><img style="vertical-align:middle;" src="/images/key.png"> <a href="login.php?id={$rows[id].id}&isadmin=1">Login</a></td>
-		<td class="ItemEdit" valign="top"><a href="clients_add.php?id={$rows[id].id}">Edit</a></td>
-		<td class="ItemDelete" valign="top">
-			<span>
-				<input type="checkbox" id="delete[]" name="delete[]" value="{$rows[id].id}">
-			</span>
-		</td>
-	</tr>
-	{sectionelse}
-	<tr>
-		<td colspan="9" align="center">No clients found!</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="7" align="center">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-		<td class="ItemDelete" valign="top">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 add_new=1}	
+<br>
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
+{literal}
+Ext.onReady(function () {
+
+	Ext.QuickTips.init();
+	
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'id',
+	        remoteSort: true,
+	
+	        fields: [
+				{name: 'id', type: 'int'},
+				'email', 'aws_accountid', 'farms', 'roles', 'apps', 'payments', 'isactive', 'farms_limit','fullname', 'comments'
+	        ]
+    	}),
+		url: '/server/grids/clients_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+	
+	function farmRenderer(value, p, record) {
+		return record.data.farms+' [<a href="/farms_view.php?clientid='+record.data.id+'">View</a>]';
+	}
+
+	function commentRenderer(value, p, record)
+	{
+		if (value && value.length != 0)
+			return '<img ext:qtip="'+value.replace('"', '\"')+'" src=\'/images/comments.png\' />';
+		else
+			return '<img src=\'/images/false.gif\' />';
+	}
+	
+	function roleRenderer(value, p, record) {
+		return record.data.roles+' [<a href="/client_roles_view.php?clientid='+record.data.id+'">View</a>]';
+	}
+
+	function appRenderer(value, p, record) {
+		return record.data.apps+' [<a href="/sites_view.php?clientid='+record.data.id+'">View</a>]';
+	}
+
+	function isactiveRenderer(value, p, record) {
+		return (record.data.isactive == 1) ? '<img src=\'/images/true.gif\' />' : '<img src=\'/images/false.gif\' />';
+	}
+	
+	function limitRenderer(value, p, record) {
+		return (record.data.farms_limit == 0) ? 'Unlimited' : record.data.farms_limit;
+	}
+    	
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 500,
+        title: "Clients",
+        id: 'clients_list1',
+        store: store,
+        maximize: true,
+        viewConfig: { 
+        	emptyText: "No clients defined"
+        },
+
+        // Columns
+        columns:[
+			{header: "E-mail", width: 120, dataIndex: 'email', sortable: true},
+			{header: "Name", width: 120, dataIndex: 'fullname', sortable: true, hidden: true},
+			{header: "AWS Account ID", width: 100, dataIndex: 'aws_accountid', sortable: true},
+			{header: "Farms", width: 70, dataIndex: 'farms', renderer:farmRenderer, sortable: false},
+			{header: "Custom roles", width: 70, dataIndex: 'roles', renderer:roleRenderer, sortable: false},
+			{header: "Applications", width: 70, dataIndex: 'apps', renderer:appRenderer, sortable: false},
+			{header: "Farms limit", width: 70, dataIndex: 'farms_limit', renderer: limitRenderer, sortable: false, hidden:true},
+			{header: "Comment", width: 50, dataIndex: 'comments', renderer:commentRenderer, sortable: false, hidden:true, align:'center'},
+			{header: "Active", width: 70, dataIndex: 'isactive', renderer:isactiveRenderer, sortable: false, align:'center'}
+		],
+
+		//TODO: Hide option for non-active rows
+		
+    	// Row menu
+    	rowOptionsMenu: [
+			{id: "option.edit", 		text:'Edit', 			  	href: "/clients_add.php?id={id}"},
+			'-',
+			{id: "option.login", 		text: 'Log in to Client CP', 	href: "/login.php?id={id}&isadmin=1"}
+     	],
+
+     	getRowOptionVisibility: function (item, record) {
+			var data = record.data;
+
+			return true;
+		},
+
+		getRowMenuVisibility: function (record) {
+			return true;
+		},
+		// With selected options
+		withSelected: {
+			menu: [
+				{text: "Activate", value: "activate"},
+				{text: "Deactivate", value: "deactivate"},
+				'-',
+				{text: "Delete", value: "delete"}
+			],
+			hiddens: {with_selected : 1},
+			action: "act"
+		}
+    });
+    grid.render();
+    store.load();
+
+	return;
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

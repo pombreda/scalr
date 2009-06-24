@@ -575,9 +575,9 @@ function dhtmlXTreeObject(htmlObject, width, height, rootId)
  					dhtmlObject.onXLE(dhtmlObject,parentId);dhtmlObject.callEvent("onXLE",[dhtmlObject,parentId]);
  				}
  				
- 				if(window.tree && typeof(window.tree.OnXMLLoaded) == 'function')
+ 				if(typeof(dhtmlObject.OnXMLLoaded) == 'function')
  				{
- 					window.tree.OnXMLLoaded();
+ 					dhtmlObject.OnXMLLoaded();
  				}
  				
  			},1);

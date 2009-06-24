@@ -27,7 +27,7 @@
 					<tr>
 						<td width="240"><b>{t}Binary log position:{/t}</b></td>
 						<td style="color:red;">
-							{if $status.SlavePosition - $status.MasterPosition > 0 || !$status.SlavePosition}
+							{if $status.MasterPosition-$status.SlavePosition > 0 || $status.Seconds_Behind_Master != 0 || !$status.SlavePosition}
 								<span style="color:red;"><img src="images/del.gif"> {$status.SlavePosition}</span>
 							{else}
 								<span style="color:green;"><img src="images/true.gif"> {$status.SlavePosition}</span>

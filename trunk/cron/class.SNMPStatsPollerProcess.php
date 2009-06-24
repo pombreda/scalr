@@ -114,6 +114,9 @@
             			
             			$this->Logger->info("Retrieved data from {$ami_instance['external_ip']} ($watcher_name): ".implode(", ", $data));
             			
+            			 if ($data[0] === '' || $data[0] === false || $data[0] === null)
+            				break 3;
+            			
             			// Collect data
             			foreach($data as $k=>$v)
             			{
@@ -138,6 +141,9 @@
             		
             		$this->Logger->info("Data for role {$farm_ami["role_name"]} ($watcher_name): ".implode(", ", $data));
             			
+            		 if ($data[0] === '' || $data[0] === false || $data[0] === null)
+            			continue 1;
+            		
             		try
             		{
 	            		// Update RRD database for role
@@ -159,6 +165,9 @@
             		foreach ($data as &$ditem)
             			$ditem = round($ditem/$farm_icnt, 2);
             	}
+            	
+            	 if ($data[0] === '' || $data[0] === false || $data[0] === null)
+            		continue;
             	
             	$this->Logger->info("Data for farm ($watcher_name): ".implode(", ", $data));
             		

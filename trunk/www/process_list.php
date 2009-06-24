@@ -1,5 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
+	$display['load_extjs'] = true;
 	
 	if ($_SESSION["uid"] != 0)
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION["uid"]));

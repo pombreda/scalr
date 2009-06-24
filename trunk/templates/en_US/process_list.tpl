@@ -1,69 +1,81 @@
 {include file="inc/header.tpl"}
-	<script language="Javascript">
+<br />
+<link rel="stylesheet" href="css/grids.css" type="text/css" />
+<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<script type="text/javascript">
+
+var uid = '{$smarty.session.uid}';
+
+var regions = [
+{section name=id loop=$regions}
+	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
+{/section}
+];
+
+var region = '{$smarty.session.aws_region}';
+
+{literal}
+Ext.onReady(function () {
+	// create the Data Store
+    var store = new Ext.ux.scalr.Store({
+    	reader: new Ext.ux.scalr.JsonReader({
+	        root: 'data',
+	        successProperty: 'success',
+	        errorProperty: 'error',
+	        totalProperty: 'total',
+	        id: 'hrSWRunName',
+	        remoteSort: true,
 	
-	var instance_id = '{$iid}';
-	
-	{literal}
-	var TableLoader = Class.create();
-    TableLoader.prototype = {
-    	
-    	initialize:function()
-		{
+	        fields: [
+				'hrSWRunName',
+				'hrSWRunPath',
+				'hrSWRunParameters',
+				'hrSWRunType',
+				'hrSWRunStatus',
+				'hrSWRunPerfCPU',
+				'hrSWRunPerfMem'
+	       ]
+    	}),
+		url: '/server/grids/processes_list.php?a=1{/literal}{$grid_query_string}&iid={$iid}{literal}',
+		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+    });
+
+	function nameRenderer(value, p, record) {
+		return record.data.hrSWRunName+" "+record.data.hrSWRunParameters;
+	}
 		
-		},
-		
-		Load: function(contaner_name, uri)
-		{
-			var url = '/server/server.php?'+uri; 
-		
-			$('table_body_list').update(
-			'<tr id="table_loader">'+
-				'<td colspan="30" align="center">'+
-					'<img style="vertical-align:middle;" src="/images/snake-loader.gif"> Loading process list. Please wait...'+
-				'</td>'+
-			'</tr>'
-			);
-			
-			$('table_refresh_icon').style.display = 'none';
-		
-			$$('div.vrule').each(function(item){
-				item.parentNode.removeChild(item);
-			});
-		
-			new Ajax.Request(url,
-			{ 
-				method: 'get',
-				contaner_name: contaner_name, 
-				onSuccess: function(transport)
-				{ 
-					try
-					{
-						$(transport.request.options.contaner_name).update(transport.responseText);
-						$('table_refresh_icon').style.display = '';
-						
-						window.setTimeout('webtacp.reloadTables()', 200);
-					}
-					catch(e)
-					{
-						alert(e.message);
-					}					 
-				} 
-			});
-		}
-    };
+    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
+	var grid = new Ext.ux.scalr.GridViewer({
+        renderTo: "maingrid-ct",
+        height: 500,
+        title: "Process list",
+        id: 'process_list',
+        store: store,
+        maximize: true,
+        viewConfig: { 
+        	emptyText: "No processes found"
+        },
+
+        enableFilter: false,
+        enablePaging: false,
 	
-	var tb = new TableLoader();
-	
-	Event.observe(window, 'load', function(){
-		tb.Load('table_body_list','_cmd=get_instance_process_list&iid='+instance_id);
-	});
-	
-	function ReloadPage() {
-		tb.Load('table_body_list','_cmd=get_instance_process_list&iid='+instance_id);
-	};
-	
-	</script>
-	{/literal}
+        // Columns
+        columns:[
+			{header: "Process", width: 200, dataIndex: 'hrSWRunName', renderer:nameRenderer, sortable: false},
+			{header: "RAM Usage", width: 50, dataIndex: 'hrSWRunPerfMem', sortable: false},
+			{header: "Type", width: 60, dataIndex: 'hrSWRunType', sortable: false},
+			{header: "Status", width: 40, dataIndex: 'hrSWRunStatus', sortable: false}
+		]
+    });
+    
+    grid.render();
+    store.load();
+
+	return;
+});
+{/literal}
+</script>
+<!-- 
     {include file="inc/table_header.tpl" show_reload_icon=1 reload_action='ReloadPage();' nofilter=1}
     <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
 	<thead>
@@ -82,5 +94,6 @@
 		</tr>
 	</tbody>
 	</table>
-	{include file="inc/table_footer.tpl" disable_footer_line=1}	
+	{include file="inc/table_footer.tpl" disable_footer_line=1}
+ -->
 {include file="inc/footer.tpl"}

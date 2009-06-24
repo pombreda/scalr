@@ -7,5 +7,6 @@
 		const TEXTAREA 	= "textarea";
 		const DATE 		= "date";
 		const SEPARATOR = "separator";
+		const MIN_MAX_SLIDER = "min_max_slider";
 	}
 ?>

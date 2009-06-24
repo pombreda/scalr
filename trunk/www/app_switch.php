@@ -136,7 +136,7 @@
 	
 	$display['roles'] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
 
-	$display['farms'] = $db->GetAll("SELECT * FROM farms WHERE clientid=? AND status=?", array($farminfo['clientid'], FARM_STATUS::RUNNING));
+	$display['farms'] = $db->GetAll("SELECT * FROM farms WHERE clientid=? AND status IN(?,?)", array($farminfo['clientid'], FARM_STATUS::RUNNING, FARM_STATUS::TERMINATED));
 	foreach ($display['farms'] as &$farm)
 		$farm['roles'] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farm['id']));
 	

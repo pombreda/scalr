@@ -31,6 +31,11 @@
 		 */
 		const EVENT_HANDLER = 5;
 		
+		/**
+		 * Ajax request
+		 */
+		const AJAX_REQUEST = 6;
+		
 		public static function GetContextName($context)
 		{
 			switch($context)
@@ -62,6 +67,12 @@
 				case self::EVENT_HANDLER:
 					
 					return "Event handler";
+					
+					break;
+					
+				case self::AJAX_REQUEST:
+					
+					return "Ajax request";
 					
 					break;
 			}
