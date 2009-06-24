@@ -63,6 +63,7 @@ The following tasks must be sheduled:
 
 {{{
 * * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --Poller
+* * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --Scaling
 1 1 * * * /path/to/php -q /scalr_home_dir/cron/cron.php --RotateLogs
 */15 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --MySQLMaintenance
 */6 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --DNSMaintenance
@@ -73,6 +74,7 @@ The following tasks must be sheduled:
 */3 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --MessagingQueue
 */11 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --Cleaner
 */2 * * * * /path/to/php -q /scalr_home_dir/cron/cron.php --EBSQueue
+*/3 * * * *  /path/to/php -q /scalr_home_dir/cron/cron.php --UsageStatsPoller
 }}}
 
 === Configure primary AWS account ===
