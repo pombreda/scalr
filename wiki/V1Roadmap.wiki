@@ -6,10 +6,19 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 <br />
 = Future Releases = 
 
+== Support for Amazon CloudWatch ==
+
+== Support for Amazon Elastic MapReduce == 
+
+== Eucalyptus support ==
+
+== Support for Amazon Auto Scaling ==
+
 == New scaling algorithms ==
  * <strike>Scaling based on bandwidth usage</strike>
  * <strike>Scaling based on SQS queue size</strike>
  * Scaling based on Memory usage
+ * Scaling based on Date and Time
 
 == Scalarizr == 
 Scalr agent that will allow you to use any `*`nix AMI with Scalr.
@@ -29,6 +38,18 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
   * Base Windows Role.
   * Diff view  for scripts
   * <strike>Support for reserved instances.</strike>
+  * New event: OnDNSZoneUpdated
+
+<br>
+= June 2009 =
+
+== Scalr API == 
+Methods: TerminateFarm, LaunchFarm, ListRoles, GetFarmStats, ExecuteScript, ListFarms, ListScripts, ListApplications
+
+== Support for Elastic Load Balancer == 
+
+== Rotating EBS snapshots created on MySQL EBS Role ==
+
 
 <br>
 = <strike>February 2009</strike> =
