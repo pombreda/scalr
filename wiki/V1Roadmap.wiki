@@ -14,12 +14,6 @@ It should not be considered "final" and can be (and will be) re-arranged along t
 
 == Support for Amazon Auto Scaling ==
 
-== <strike>New scaling algorithms</strike> ==
- * <strike>Scaling based on bandwidth usage</strike>
- * <strike>Scaling based on SQS queue size</strike>
- * <strike>Scaling based on Memory usage</strike>
- * <strike>Scaling based on Date and Time</strike>
-
 == Scalarizr == 
 Scalr agent that will allow you to use any `*`nix AMI with Scalr.
 
@@ -50,6 +44,11 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
 
 == <strike>Rotating EBS snapshots created on MySQL EBS Role</strike> ==
 
+== <strike>New scaling algorithms</strike> ==
+ * <strike>Scaling based on bandwidth usage</strike>
+ * <strike>Scaling based on SQS queue size</strike>
+ * <strike>Scaling based on Memory usage</strike>
+ * <strike>Scaling based on Date and Time</strike>
 
 <br>
 = <strike>February 2009</strike> =
