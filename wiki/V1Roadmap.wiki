@@ -20,9 +20,6 @@ Scalr agent that will allow you to use any `*`nix AMI with Scalr.
 == Optimization of MySQL Role == 
 Making snapshot and promoting new master takes a long time. We have a few ideas about how to make this process faster.
 
-== <strike>New extJS-based interface</strike> ==
-<strike>With one-click sorting and other cool goodies. </strike>
-
 == yourfarm.scalr.ws ==
 Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to change nameservers, just add CNAME on your current ones. Useful for test farms.
 
@@ -49,6 +46,9 @@ Whenever you create a farm, yourfarm.scalr.ws is created for you. No need to cha
  * <strike>Scaling based on SQS queue size</strike>
  * <strike>Scaling based on Memory usage</strike>
  * <strike>Scaling based on Date and Time</strike>
+
+== <strike>New extJS-based interface</strike> ==
+<strike>With one-click sorting and other cool goodies. </strike>
 
 <br>
 = <strike>February 2009</strike> =
