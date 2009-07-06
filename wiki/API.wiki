@@ -1,4 +1,4 @@
 #summary Scalr.net API
+#labels Featured,API
 
-Current APIversion: 2009-05-07
-This version should be considered a RFC (request for comments) for scalr users.
+<a href="http://wiki.scalr.net/API_Documentation">http://wiki.scalr.net/API_Documentation</a>
