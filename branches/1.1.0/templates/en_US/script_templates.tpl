@@ -1,14 +1,5 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<br>
-{include file="inc/table_header.tpl" nofilter=1}
-    {include file="inc/intable_header.tpl" header="Actions" color="Gray"}
-    <tr>
-       <td colspan="2"><img src="/images/add.png" style="vertical-align:middle;">&nbsp;<a href="script_templates.php?task=create">Create new script template</a></td>
-    </tr>
-    {include file="inc/intable_footer.tpl" color="Gray"}
-{include file="inc/table_footer.tpl" disable_footer_line=1}
-<br>
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
 <script type="text/javascript">
 
@@ -16,6 +7,9 @@ var uid = {$smarty.session.uid};
 
 {literal}
 Ext.onReady(function () {
+
+	Ext.QuickTips.init();
+	
 	// create the Data Store
     var store = new Ext.ux.scalr.Store({
     	reader: new Ext.ux.scalr.JsonReader({
@@ -24,13 +18,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				'name', 'description', 'origin', 'clientid', 'approval_state', 'dtupdated', 'client_email', 'version', 'client_name'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/scripts_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -114,7 +108,14 @@ Ext.onReady(function () {
 	        	store.baseParams.origin = record.data.value; 
 	        	store.load();
 	        }}
-	    })],
+	    }), '-', {
+	        icon: '/images/add.png', // icons can also be specified inline
+	        cls: 'x-btn-icon',
+	        tooltip: 'Create new script template',
+	        handler: function()
+	        {
+				document.location.href = '/script_templates.php?task=create';
+	        }}],
 	    
         viewConfig: { 
         	emptyText: "No scripts defined"
@@ -145,9 +146,31 @@ Ext.onReady(function () {
 			new Ext.menu.Separator({id: "option.shareSep"}),
 
 			{id: "option.edit", 		text: 'Edit', 	href: "/script_templates.php?task=edit&id={id}"},
-			{id: "option.delete", 		text: 'Delete', 	href: "/script_templates.php?task=delete&id={id}"}
-     	],
+			{id: "option.delete", 		text: 'Delete', 	handler:function(menuItem){
 
+				var Item = menuItem.parentMenu.record.data;
+				SendRequestWithConfirmation(
+					{
+						action: 'RemoveScript', 
+						scriptID: Item.id
+					},
+					'Remove script?',
+					'Removing script. Please wait...',
+					'ext-mb-object-removing',
+					function(){
+						grid.autoSize();
+					},
+					function(){
+						store.load();
+					}
+				);
+			}}
+     	],
+		listeners: {
+			beforeshowoptions: function (grid, record, romenu, ev) {
+				romenu.record = record;
+			}
+		},
      	getRowOptionVisibility: function (item, record) {
 			var data = record.data;
 

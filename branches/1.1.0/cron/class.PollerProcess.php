@@ -94,6 +94,8 @@
             $farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
             $this->Logger->info("[FarmID: {$farminfo['id']}] Found ".count($farm_instances)." farm instances in database");
 
+            $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($farminfo['id']));
+            
             if ($farminfo['status'] == FARM_STATUS::TERMINATED && count($farm_instances) == 0)
             	exit();
                         
@@ -273,7 +275,17 @@
                         		
                         		// Update ami in role scripts
                         		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
-                        		$db->Execute("UPDATE farm_role_options SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}')");
+                        		
+                        		
+                        		$sfarms = $db->GetAll("SELECT id FROM farms WHERE clientid='{$farminfo['clientid']}'");
+                        		foreach ($sfarms as $sfarm)
+                        		{
+                        			try
+                        			{
+                        				$db->Execute("UPDATE farm_role_options SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid = '{$sfarm['id']}'");
+                        			}
+                        			catch(Exception $e){}
+                        		}
                         	}
                         	else
                         	{
@@ -282,6 +294,9 @@
                         		
                         		// Update ami in role scripts
                         		$db->Execute("UPDATE farm_role_scripts SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
+                        		
+                        		
+                        		
                         		$db->Execute("UPDATE farm_role_options SET ami_id='{$db_ami["replace_to_ami"]}' WHERE ami_id='{$ami}' AND farmid='{$farminfo['id']}'");
                         	}
                         	
@@ -365,9 +380,9 @@
                                     
                 $this->Logger->info("[FarmID: {$farminfo['id']}] Begin check '{$role}' role instances...");
                 
-                $items = $ec2_items[$role];
+                $items = (array)$ec2_items[$role];
                 
-                foreach ((array)$items as $item)
+                foreach ($items as $item)
                 {                	
                 	$db_item_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND farmid=?", array($item->instanceId, $farminfo["id"]));                        
                     if ($db_item_info)
@@ -488,15 +503,6 @@
                                     }
                                 }
                             }
-                                 
-                            $role_running_instances++;
-                            
-                            if ($role_instances_by_time[strtotime($item->launchTime)])
-                                $role_instances_by_time[strtotime($item->launchTime)+rand(10, 99)] = $item;
-                            else 
-                                $role_instances_by_time[strtotime($item->launchTime)] = $item;
-                                
-                            ksort($role_instances_by_time);
                         }
                         // IF instance on EC2 - not running AND db state of instance - running
                         elseif ($item->instanceState->name != 'running' && $db_item_info["state"] == INSTANCE_STATE::RUNNING)
@@ -514,11 +520,11 @@
 	                            
 	                        }
                             
-                            $role_terminated_instances++;
+                            //$role_terminated_instances++;
                         }
                         elseif ($item->instanceState->name == 'pending')
                         {
-                            $role_pending_instances++;
+                            //$role_pending_instances++;
                         }
                         elseif ($item->instanceState->name == 'running' && $db_item_info["state"] != INSTANCE_STATE::RUNNING)
                         {
@@ -568,71 +574,12 @@
                             }
                             //
                             //
-                            $role_pending_instances++; 
+                            //$role_pending_instances++; 
                         }
                     }
                     
                 } //for each items
-                	
-                $DBFarmRole = DBFarmRole::Load($farminfo['id'], $ami);
-                
-                //
-                // Checking if we need new instances launched
-                //
-                $need_new_instance = false;
-                if (count($role_instances_by_time) == 0)
-                {
-                    if ($role_pending_instances == 0)
-                    {
-	                	$need_new_instance = true; 
-	                    // Add entry to farm log
-	                    $this->Logger->warn(new FarmLogMessage($farminfo['id'], "Disaster: No instances running in role {$role}!"));
-                    }
-                }
-                elseif (count($role_instances_by_time) < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
-                {
-                    $this->Logger->warn("[FarmID: {$farminfo['id']}] Min count instances for role '{$role}' increased to '".$DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES)."'. Need more instances...");
-                    $need_new_instance = true;
-                }
-                
-                if ($farminfo['farm_roles_launch_order'] == 1 && $role_pending_instances > 0)
-                {
-                	$this->Logger->info("{$role_pending_instances} instances in pending state. Launch roles one-by-one. Waiting...");
-                	break;
-                }
-                    
-                if ($need_new_instance)
-                {
-                    if (count($role_instances_by_time) < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
-                    {
-                        if ($role_pending_instances > 0)
-                        {
-                            // Add entry to farm log
-                    		$this->Logger->debug(new FarmLogMessage($farminfo['id'], "{$role_pending_instances} instances in pending state. We don't need more instances at this time."));
-                        }
-                        else 
-                        {
-                            $instance_id = Scalr::RunInstance(CONFIG::$SECGROUP_PREFIX.$role, $farminfo["id"], $role, $farminfo["hash"], $ami, false, true);
-                            
-                            if ($instance_id)
-                            {
-                                $this->Logger->info(new FarmLogMessage($farminfo['id'], "Starting new instance. InstanceID = {$instance_id}."));
-                            	if ($farminfo['farm_roles_launch_order'] == 1)
-				                {
-				                	$this->Logger->info("Launch roles one-by-one. Waiting...");
-				                	break;
-				                }
-                            }
-                            else 
-                                $this->Logger->error("[FarmID: {$farminfo['id']}] Cannot run new instance! See system log for details.");
-                        }
-                    }
-                    else 
-                    {
-                        // Add entry to farm log
-                    	$this->Logger->info(new FarmLogMessage($farminfo['id'], "Role {$role} is full. MaxInstances (".$DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES).") = Instances count (".count($role_instances_by_time)."). Pending: {$role_pending_instances} instances"));
-                    }
-                }
+
             }
         }
     }

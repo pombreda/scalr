@@ -30,6 +30,7 @@ Ext.onReady(function () {
 				'ipaddress','instance_id', 'farmid', 'farm_name', 'role_name', 'indb'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/eips_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

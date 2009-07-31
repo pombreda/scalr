@@ -16,14 +16,14 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				'name', 'avail_zone', 'min_count', 'max_count', 'min_LA', 'max_LA', 'r_instances', 'sites','use_elastic_ips',
 				'use_ebs', 'ami_id', 'farmid'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/farm_roles_list.php?a=1{/literal}{$grid_query_string}&farmid={$farmid}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

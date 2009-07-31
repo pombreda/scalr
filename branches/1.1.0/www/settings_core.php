@@ -113,7 +113,7 @@
 		}
 		
 		
-		$okmsg = "Settings succesfully updated";
+		$okmsg = "Settings successfully updated";
 		UI::Redirect("settings_core.php");
 	}
 	

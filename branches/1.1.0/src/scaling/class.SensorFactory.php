@@ -4,6 +4,8 @@
 		const LA_SENSOR = 'LAScalingSensor';
 		const BW_SENSOR = 'BWScalingSensor';
 		const SQS_SENSOR = 'SQSScalingSensor';
+		const RAM_SENSOR = 'RAMScalingSensor';
+		const TIME_SENSOR = 'TimeScalingSensor';
 		
 		private static $SensorsCache = array();
 		

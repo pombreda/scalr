@@ -96,11 +96,15 @@
 	$display['scaling_algos'] = array();
 	foreach (RoleScalingManager::$ScalingAlgos as $Algo)
 	{
-        $algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));	
-        $display['scaling_algos'][$algo_name] = array(
-        	'based_on'	=> $Algo->GetAlgoDescription(),
-        	'settings'	=> $Algo->GetConfigurationForm($display["farminfo"]["clientid"])
-        );
+        $algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
+
+        if ($algo_name != 'base')
+        {
+	        $display['scaling_algos'][$algo_name] = array(
+	        	'based_on'	=> $Algo->GetAlgoDescription(),
+	        	'settings'	=> $Algo->GetConfigurationForm($display["farminfo"]["clientid"])
+	        );
+        }
 	}
 	
     if ($req_id)
@@ -186,7 +190,24 @@
         		$scaling_algo_props = array_merge($scaling_algo_props, $Algo->GetProperties());
         		
         		$algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
+        		
+        		if ($algo_name == 'base')
+        			continue;
+        		
         		$scaling_algo_props["scaling.{$algo_name}.enabled"] = $RoleScalingManager->IsAlgoEnabled($algo_name);
+        		if ($algo_name == 'time' && $scaling_algo_props["scaling.time.enabled"] == 1)
+        		{
+        			$periods = $db->GetAll("SELECT * FROM farm_role_scaling_times WHERE farm_roleid=?", array($DBFarmRole->ID));
+        			foreach ($periods as $period)
+        			{
+	        			$scaling_algo_props[TimeScalingAlgo::PROPERTY_TIME_PERIODS][] = implode(":", array(
+							$period['start_time'],
+							$period['end_time'],
+							$period['days_of_week'],
+							$period['instances_count']
+	        			));
+        			}
+        		}
         	}
         	
         	$role['options']['scaling_algos'] = $scaling_algo_props;
@@ -227,6 +248,10 @@
         }
         
         $algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
+        
+        if ($algo_name == 'base')
+        	continue;
+        
         $display['default_scaling_algos']["scaling.{$algo_name}.enabled"] = 0;
 	}
         
@@ -256,21 +281,6 @@
     	"roles" => _("Roles"),
     	"rso"	=> _("Roles startup order")
    	);
-
-   	$display["intable_tabs"] = array(
-   		array("id" => "info", "name" => _("About"), "display" => ""),
-   		array("id" => "scaling", "name" => _("Scaling"), "display" => ""),
-   		array("id" => "mysql", "name" => _("MySQL settings"), "display" => "none"),
-   		array("id" => "placement", "name" => _("Placement and type"), "display" => ""),
-   		array("id" => "eips", "name" => _("Elastic IPs"), "display" => ""),
-   		array("id" => "ebs", "name" => _("EBS"), "display" => ""),
-   		array("id" => "dns", "name" => _("DNS"), "display" => ""),
-   		array("id" => "timeouts", "name" => _("Timeouts"), "display" => ""),
-   		array("id" => "scripts", "name" => _("Scripting"), "display" => ""),
-   		array("id" => "params", "name" => _("Parameters"), "display" => "")
-   	);
-   	
-   	$display['intable_selected_tab'] = "info";
    	
    	$display["help"] = _("Tick the checkbox to add the role to your farm.<br> Click on the role name to customize it's behavior");
    	

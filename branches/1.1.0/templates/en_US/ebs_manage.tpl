@@ -28,13 +28,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'volume_id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'farmid','arrayid', 'farm_name', 'role_name', 'mysql_master_volume', 'array_name','array_part_no',
 				'volume_id', 'size', 'snapshot_id', 'avail_zone', 'status', 'attachment_status', 'device', 'instance_id'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/ebs_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -46,12 +46,12 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'snap_id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'snap_id', 'volume_id', 'status', 'time', 'comment', 'is_array_snapshot', 'progress'
 	        ]
         }),
+        remoteSort: true,
 		url: '/server/grids/ebs_snaps_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -119,7 +119,7 @@ Ext.onReady(function () {
 
         enableFilter: false,
         
-		tbar: [{text: 'Region:'}, new Ext.form.ComboBox({
+		tbar: ['Region:', new Ext.form.ComboBox({
 			allowBlank: false,
 			editable: false, 
 	        store: regions,

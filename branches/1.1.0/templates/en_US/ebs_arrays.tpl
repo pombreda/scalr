@@ -21,12 +21,12 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	        
+	        	        
 	        fields: [
 				'name','size','status','avail_zone','volumes','instance_id','farmid','autosnapshoting','id','region'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/ebs_arrays_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -39,12 +39,12 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'id', 'status', 'description', 'region', 'dtcreated', 'clientid', 'ebs_arrayid'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/ebs_array_snaps_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

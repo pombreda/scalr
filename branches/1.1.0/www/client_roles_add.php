@@ -33,11 +33,14 @@
 		if ($db->GetOne("SELECT id FROM ami_roles WHERE name=? AND (clientid='0' OR clientid='{$_SESSION['uid']}') AND id != ? AND iscompleted != 2", array($post_name, (int)$post_id)))
 			$err[] = sprintf(_("Role with name %s already exists"), $post_name);
 		
-	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA < 0)
+	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA <= 0)
 			$err[] = _("Invalid value for minimum LA");
 	    
-	    if (!$Validator->IsNumeric($post_default_maxLA) || $post_default_maxLA > 99)
+	    if (!$Validator->IsNumeric($post_default_maxLA) || $post_default_maxLA > 99 || $post_default_maxLA == 0)
 			$err[] = _("Invalid value for maximum LA");
+			
+		if ($post_default_maxLA < $post_default_minLA)
+			$err[] = _("Maximum LA mut be greater than Minimum LA");
 			
 		if (!$post_id)
 		{
@@ -121,7 +124,7 @@
 
 	if ($rowz instanceof stdClass)
 		$rowz = array($rowz);
-	
+			
 	// Custom properties
 	foreach ($rowz as $pk=>$pv)
 	{
@@ -138,7 +141,7 @@
 					$rowz[$pk]->RoleInfo = array('min' => $farm_role_info['min_LA'], 'max' => $farm_role_info['max_LA']);
 	       }
 	    	
-	       $rowz[$pk]->Role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($rowz[$pk]->instancesSet->item->imageId));
+	       $rowz[$pk]->Role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($instance_info['ami_id']));
 	       
 	       if ($rowz[$pk]->Role && !$db->GetOne("SELECT id FROM ami_roles WHERE iscompleted='0' AND prototype_iid='{$rowz[$pk]->instancesSet->item->instanceId}'"))
 	           $display["rows"][] = $rowz[$pk];

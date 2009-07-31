@@ -75,9 +75,14 @@
 		            		internal_ip = '{$record['rvalue']}') AND isactive='1'");
 	            		if ($instance)
 	            		{
-		            		try
+		            		$use_elb = false;
+	            			
+	            			try
 		            		{
 		            			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+		            			
+		            			$use_elb = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1);
+		            			
 		            			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) == 1)
 		            				$exclude = true;
 		            		}
@@ -92,6 +97,8 @@
 		            		$malformed_zones[$record['zoneid']] = 1;
 		            		$db->Execute("DELETE FROM records WHERE id='{$record['id']}'");
 		            	}
+		            	
+		            	
 		            	
 		            	if ($record["rkey"] == "@")
 		            	{
@@ -133,11 +140,21 @@
 	            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($farminfo['id'], INSTANCE_STATE::RUNNING));
 	            	foreach ($instances as $instance)
 	            	{
+	            		$use_elb = false;
+	            		
 	            		try
 	            		{
 	            			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+	            			
+	            			$use_elb = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1);
+							if ($use_elb)
+								$elb_hostname = $DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME);
+	            			
 	            			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) == 1)
+	            			{
+	            				$this->Logger->info("[FarmID: {$farminfo['id']}] Role excluded from DNS. Skipping instance {$instance['instance_id']}.");
 	            				continue;
+	            			}
 	            		}
 	            		catch(Exception $e)
 	            		{
@@ -147,6 +164,8 @@
 	            		
 	            		$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instance['ami_id']}'");
 	            		
+	            		$db->Execute("DELETE FROM records WHERE issystem='1' AND rtype='CNAME' AND zoneid=?", array($zone['id']));
+	            			            		
 	            		if ($instance["role_name"] == $zone["role_name"])
 	            		{
 	            			// Check A records for external IP

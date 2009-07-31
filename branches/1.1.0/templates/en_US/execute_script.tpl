@@ -192,7 +192,7 @@
 		{include file="inc/intable_header.tpl" header="Target" color="Gray"}
         <tr>
 			<td colspan="2"><input onclick="SetOptions(this.value);" type="radio" name="target" {if $target == 'farm'}checked{/if} value="farm" style="vertical-align:middle;"> 
-			On all instaces of this farm
+			On all instances of this farm
 			</td>
 		</tr>
 		<tr>

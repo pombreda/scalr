@@ -11,9 +11,11 @@
 		<item href="farms_add.php">Build new</item>
 		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
 		<separator />
+		<item href="aws_elb.php">Elastic Load balancers</item>
+		<separator />
 		<item href="elastic_ips.php">Elastic IPs</item>
 		<separator />
-		<node title="Elastick Block Storage">
+		<node title="Elastic Block Storage">
 			<item href="ebs_manage.php">Volumes &amp; Snapshots</item>
 			<item href="ebs_arrays.php">Arrays</item>
 		</node>
@@ -36,6 +38,7 @@
 	<node title="Logs">
 		<item href="logs_view.php">Event log</item>
 		<item href="scripting_logs_view.php">Scripting log</item>
+		<item href="api_logs_view.php">API log</item>
 	</node>
 	
 	<node title="Settings">

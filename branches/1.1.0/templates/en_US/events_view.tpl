@@ -74,12 +74,12 @@
 		        errorProperty: 'error',
 		        totalProperty: 'total',
 		        id: 'id',
-		        remoteSort: true,
-		
+		        		
 		        fields: [
 					'id','dtadded', 'type', 'message'
 		        ]
 	    	}),
+	    	remoteSort: true,
 			url: '/server/grids/farm_events_list.php?a=1{/literal}{$grid_query_string}{literal}',
 			listeners: { dataexception: Ext.ux.dataExceptionReporter }
 	    });

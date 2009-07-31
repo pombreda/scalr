@@ -13,7 +13,7 @@
 	</tr>
 	<tr>
 		<td>{t}Public IP:{/t}</td>
-		<td>{if $i.IsElastic}<span style="color:green;vertical-align:middle;">{/if}{$i.external_ip}{if $i.IsElastic}</span>&nbsp;<img src="/images/icon_shelp.gif" style="vertical-align:middle;" title="{t}Elastic IP{/t}">{/if}</td>
+		<td>{if $i.IsElastic}<span style="color:green;vertical-align:middle;">{/if}{$i.external_ip}{if $i.IsElastic}</span>&nbsp;<img src="/images/icon_shelp.png" style="vertical-align:middle;" title="{t}Elastic IP{/t}">{/if}</td>
 	</tr>
 	<tr>
 		<td>{t}Internal IP:{/t}</td>

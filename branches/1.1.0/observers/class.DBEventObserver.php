@@ -31,8 +31,17 @@
 				
 				if ($farminfo['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
 				{
-					$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0'",
-						array($event->SnapshotInfo, _('MySQL Master volume snapshot'), $farminfo['region'])
+					try
+					{
+						$DBfarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+						$farm_roleid = $DBfarmRole->ID;
+					}
+					catch(Exception $e) {
+						$farm_roleid = 0;
+					}
+					
+					$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0', is_autoebs_master_snap='1', farm_roleid=?",
+						array($event->SnapshotInfo, _('MySQL Master volume snapshot'), $farminfo['region'], $farm_roleid)
 					);
 				}
 			}

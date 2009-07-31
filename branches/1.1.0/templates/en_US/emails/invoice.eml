@@ -1,0 +1,29 @@
+[subject]Scalr.net - Invoice ({$id})[/subject]
+This is your invoice for the period extending {$start_date} to {$end_date}. Thank you for using Scalr.net.
+
+Invoice ID: {$id}
+Invoice amount: ${$amount}
+Invoice to: {$client.email}
+
+==============================
+==============================
+
+INVOICE  [{$id}]
+
+Quantity     Description                            Price
+------------------------------------------------------------
+1 month      Scalr.net Basic Subscription           ${$amount}
+                  From {$start_date} to {$end_date}               
+                                       			  ----------
+                                       Amount PAID: ${$amount}
+
+==============================
+==============================
+
+
+Thank you for your business
+http://intridea.com
+
+
+NEED TO CANCEL?
+If you wish to cancel your Scalr.net account, log in to http://paypal.com and cancel subscription {$subscription_id}.

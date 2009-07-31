@@ -4,7 +4,9 @@
 		const UPSCALE = 'UpScalingNeeded';
 		const DOWNSCALE = 'DownScalingNeeded';
 		const NOOP = 'NoActionNeeded';
-				
+		const TIME_SCALING = 'TimeScaling';
+		const STOP_SCALING = 'StopScaling';
+						
 		protected $Properties = array();
 		
 		function __construct()

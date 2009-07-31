@@ -28,7 +28,7 @@
 		private static $FieldPropertyMap = array(
 			'id' 			=> 'ID',
 			'farmid'		=> 'FarmID',
-			'instance_id'	=> 'Email',
+			'instance_id'	=> 'InstanceID',
 			'state'			=> 'State',
 			'ami_id' 		=> 'AMIID',
 			'internal_ip'	=> 'InternalIP',
@@ -95,6 +95,16 @@
 				throw new Exception(sprintf(_("Instance Amazon ID#%s not found in database"), $iid));
 			
 			return self::LoadByID($id);
+		}
+		
+		/**
+		 * 
+		 * Returns DBFarmRole object
+		 * @return DBFarmRole
+		 */
+		public function GetDBFarmRoleObject()
+		{
+			return DBFarmRole::Load($this->FarmID, $this->AMIID);
 		}
 		
 		/**
