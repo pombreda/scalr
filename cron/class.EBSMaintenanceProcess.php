@@ -25,8 +25,63 @@
         public function OnEndForking()
         {
 			$db = Core::GetDBInstance(null, true);
+			
+			// Rotate MySQL master snapshots.
+			$list = $db->GetAll("SELECT * FROM farm_role_settings WHERE name=?", array(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED));
+			foreach ($list as $list_item)
+			{
+				try
+				{
+					$DBFarmRole = DBFarmRole::LoadByID($list_item['farm_roleid']);
+				}
+				catch(Exception $e)
+				{
+					continue;	
+				}
+				
+				$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($DBFarmRole->FarmID));				
+				if ($farminfo['status'] == FARM_STATUS::RUNNING)
+				{					
+					$old_snapshots = $db->GetAll("SELECT * FROM ebs_snaps_info WHERE is_autoebs_master_snap='1' AND farm_roleid=?  ORDER BY id ASC", array($DBFarmRole->ID));
+					if (count($old_snapshots) > $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATE))
+					{
+						try
+						{					
+							$Client = Client::Load($farminfo['clientid']);
+							$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
+							$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+							
+							while (count($old_snapshots) > $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATE))
+							{
+								$snapinfo = array_shift($old_snapshots);
+								try
+								{
+									$AmazonEC2Client->DeleteSnapshot($snapinfo['snapid']);
+									$db->Execute("DELETE FROM ebs_snaps_info WHERE id=?", array($snapinfo['id']));
+								}
+								catch(Exception $e)
+								{
+									if (stristr($e->getMessage(), "does not exist"))
+										$db->Execute("DELETE FROM ebs_snaps_info WHERE id=?", array($snapinfo['id']));
+															
+									throw $e;
+								}
+								
+							}
+						}
+						catch(Exception $e)
+						{
+							$this->Logger->warn(sprintf(
+								_("Cannot delete old snapshots for volume %s. %s"),
+								$snapshot_settings['volumeid'],
+								$e->getMessage()
+							));
+						}
+					}
+				}
+			}
+			
         	// Auto - snapshoting
-            
 			$snapshots_settings = $db->Execute("SELECT * FROM autosnap_settings 
 				WHERE (UNIX_TIMESTAMP(DATE_ADD(dtlastsnapshot, INTERVAL period HOUR)) < UNIX_TIMESTAMP(NOW()) OR dtlastsnapshot IS NULL)
 				AND volumeid != '0'");
@@ -103,7 +158,7 @@
 				}
 				catch(Exception $e)
 				{
-					$this->Logger->error(sprintf(
+					$this->Logger->warn(sprintf(
 						_("Cannot create snapshot for volume %s. %s"),
 						$snapshot_settings['volumeid'],
 						$e->getMessage()

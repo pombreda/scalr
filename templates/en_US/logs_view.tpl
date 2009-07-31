@@ -1,5 +1,10 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
+{literal}
+<style>
+	.x-grid3-cell-inner { white-space:normal !important; }
+</style>
+{/literal}
 <div id="search-ct"></div> 
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
 <script type="text/javascript">
@@ -117,13 +122,32 @@ Ext.onReady(function () {
 	function farmRenderer (value, p, record) {
 		return '<a href="farms_view.php?id='+record.data.farmid+'">'+value+'</a>';
 	}
+
+
+	function severityRenderer(value, p, record) {
+
+		var img = '';
+		if (value == '0')
+			img = '/images/log_icons/debug.png';
+		else if (value == '2')
+			img = '/images/log_icons/info.png';
+		else if (value == '3')
+			img = '/images/log_icons/warning.png';
+		else if (value == '4')
+			img = '/images/log_icons/error.png';
+		else if (value == '5')
+			img = '/images/log_icons/fatal_error.png';
+
+		return '<img src="'+img+'" title="'+record.data.s_severity+'">';
+	}
 	
     var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
 	var grid = new Ext.ux.scalr.GridViewer({
         //renderTo: "maingrid-ct",
-        id: "logs_list",
+        id: "logs_list5",
         height: 500,
         store: store,
+        title:'',
         maximize: false,
         enableFilter: false,
         sm: new Ext.grid.RowSelectionModel({singleSelect: true}),
@@ -143,11 +167,11 @@ Ext.onReady(function () {
                 
 	    // Columns
         columns:[
-			{header: "Time", width: 35, dataIndex: 'time', sortable: false},
-			{header: "Severity", width: 15, dataIndex: 's_severity', sortable: false, align:'center'},
+			{header: "", width: 10, dataIndex: 'severity', renderer:severityRenderer, sortable: false, align:'center'},
+			{header: "Time", width: 45, dataIndex: 'time', sortable: false},
 			{header: "Farm", width: 25, dataIndex: 'farm_name', renderer:farmRenderer, sortable: false},
-			{header: "Caller", width: 35, dataIndex: 'source', renderer:callerRenderer, sortable: false},
-			{header: "Message", width: 150, dataIndex: 'message', sortable: false}
+			{header: "Caller", width: 40, dataIndex: 'source', renderer:callerRenderer, sortable: false},
+			{header: "Message", width: 160, dataIndex: 'message', sortable: false}
 		]
     });
 

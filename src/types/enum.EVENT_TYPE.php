@@ -31,6 +31,8 @@
 		const BEFORE_INSTANCE_LAUNCH = "BeforeInstanceLaunch";
 		const BEFORE_HOST_TERMINATE = "BeforeHostTerminate";
 		
+		const DNS_ZONE_UPDATED = "DNSZoneUpdated";
+		
 		public static function GetEventDescription($event_type)
 		{
 			$descriptions = array(
@@ -39,22 +41,23 @@
 				self::HOST_CRASH 		=> _("Instance crashed inexpectedly."),
 				self::LA_OVER_MAXIMUM 	=> _("Cumulative load average for a role is higher than maxLA setting."),
 				self::LA_UNDER_MINIMUM 	=> _("Cumulative LA for a role is lower than minLA setting."),
-				self::REBUNDLE_COMPLETE => _("\"Synchronize to all\" or custom role creation competed succesfully."),
+				self::REBUNDLE_COMPLETE => _("\"Synchronize to all\" or custom role creation competed successfully."),
 				self::REBUNDLE_FAILED 	=> _("\"Synchronize to all\" or custom role creation failed."),
 				self::REBOOT_BEGIN 		=> _("Instance being rebooted."),
 				self::REBOOT_COMPLETE 	=> _("Instance came up after reboot."),
 				self::FARM_LAUNCHED 	=> _("Farm has been launched."),
 				self::FARM_TERMINATED 	=> _("Farm has been terminated."),
-				self::HOST_INIT			=> _("Instace booted up, Scalr environment not configured and services not initialized yet."),
+				self::HOST_INIT			=> _("Instance booted up, Scalr environment not configured and services not initialized yet."),
 				self::NEW_MYSQL_MASTER	=> _("One of MySQL instances promoted as master on boot up, or one of mySQL slaves promoted as master."), // due to master failure.",
-				self::MYSQL_BACKUP_COMPLETE 		=> _("MySQL backup completed succesfully."),
+				self::MYSQL_BACKUP_COMPLETE 		=> _("MySQL backup completed successfully."),
 				self::MYSQL_BACKUP_FAIL 			=> _("MySQL backup failed."),
 				self::INSTANCE_IP_ADDRESS_CHANGED 	=> _("Public IP address of the instance was changed upon reboot or within Elastic IP assignments."),
 				self::MYSQL_REPLICATION_FAIL 		=> _("MySQL replication failure."),
 				self::MYSQL_REPLICATION_RECOVERED 	=> _("MySQL replication recovered after failure."),
 				self::EBS_VOLUME_MOUNTED			=> _("Single EBS volume or array of EBS volumes attached and mounted to instance."),
 				self::BEFORE_INSTANCE_LAUNCH		=> _("New instance will be launched in a few minutes"),
-				self::BEFORE_HOST_TERMINATE			=> _("Instance will be terminated in 3 minutes")
+				self::BEFORE_HOST_TERMINATE			=> _("Instance will be terminated in 3 minutes"),
+				self::DNS_ZONE_UPDATED				=> _("DNS zone updated")
 			);
 			
 			return $descriptions[$event_type];

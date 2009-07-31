@@ -73,5 +73,28 @@
 			</td>
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
+		{include file="inc/intable_header.tpl" header="API settings" color="Gray"}
+		<tr>
+			<td>{t}Enabled{/t}:</td>
+			<td><input name="api.enabled" {if $api_enabled}checked="checked"{/if} type="checkbox" id="api.enabled" value="1"></td>
+		</tr>
+		<tr valign="top">
+			<td>
+				Allow access to the API only from the following IPs (coma separated):<br />
+				<div style="font-size:10px;"><i>Example: 67.45.3.7, 67.46.*.*, 91.*.*.*</i></div>
+			</td>
+			<td>
+				<textarea name="api.allowed_ips" class="text" cols="50" rows="10" id="api.allowed_ips">{$api_allowed_ips}</textarea>
+			</td>
+		</tr>
+		<tr>
+			<td>{t}API Key ID{/t}:</td>
+			<td><input name="scalr_api_keyid" type="text" readonly="readonly" class="text" id="scalr_api_keyid" value="{$scalr_api_keyid}"></td>
+		</tr>
+		<tr>
+			<td>{t}API Access Key{/t}:</td>
+			<td><textarea name="scalr_api_key" class="text" readonly="readonly" cols="50" rows="4" id="api_key">{$scalr_api_key}</textarea></td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
 	{include file="inc/table_footer.tpl" edit_page=1}
 {include file="inc/footer.tpl"}

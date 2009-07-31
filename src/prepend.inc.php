@@ -128,6 +128,7 @@
 	Core::Load("NET/API/AWS/AmazonS3");
 	Core::Load("NET/API/AWS/AmazonSQS");
 	Core::Load("NET/API/AWS/AmazonCloudFront");
+	Core::Load("NET/API/AWS/AmazonELB");
 	Core::Load("NET/SNMP");
 	
 	Core::Load("DNSZoneController", SRCPATH);
@@ -223,7 +224,7 @@
 			return $json->decode($text);
 		}
 	}
-		
+
 	// Smarty init
 	if (!defined("NO_TEMPLATES"))
 	{
@@ -284,6 +285,7 @@
 	Scalr::AttachObserver(new ScalarizrEventObserver());
 	Scalr::AttachObserver(new SNMPInformer());
 	Scalr::AttachObserver(new ElasticIPsEventObserver());
+	Scalr::AttachObserver(new ELBEventObserver());
 	Scalr::AttachObserver(new DNSEventObserver());
 				    
     //
@@ -295,13 +297,43 @@
 	//
     // Register scaling algos
     //
+    RoleScalingManager::RegisterScalingAlgo(new TimeScalingAlgo());
+    RoleScalingManager::RegisterScalingAlgo(new BaseScalingAlgo());
     RoleScalingManager::RegisterScalingAlgo(new BWScalingAlgo());
     RoleScalingManager::RegisterScalingAlgo(new LAScalingAlgo());
     RoleScalingManager::RegisterScalingAlgo(new SQSScalingAlgo());
+    RoleScalingManager::RegisterScalingAlgo(new RAMScalingAlgo());
     	
 	//
 	// Select AWS regions
 	//
 	
 	$display['regions'] = AWSRegions::GetList();
+	
+	define("TENDER_APIKEY", "ebc97df2196a3ac625c1d7a45f6644e9b0b397a548eabb3e479baf05b30f79bd46ed254c76cc4dde1bd8bab0f742ee11b0a68aec0165c69008d4a78e9614b0dd");
+	define("TENDER_SITEKEY", "scalr");
+	
+	function GenerateTenderMultipassToken($data)
+	{
+		$salted = TENDER_APIKEY . TENDER_SITEKEY;
+		$hash = hash('sha1',$salted,true);
+		$saltedHash = substr($hash,0,16);
+		$iv = "OpenSSL for Ruby";
+			
+		// double XOR first block
+		for ($i = 0; $i < 16; $i++)
+		{
+			$data[$i] = $data[$i] ^ $iv[$i];
+		}
+	
+		$pad = 16 - (strlen($data) % 16);
+		$data = $data . str_repeat(chr($pad), $pad);
+	    
+		$cipher = mcrypt_module_open(MCRYPT_RIJNDAEL_128,'','cbc','');
+		mcrypt_generic_init($cipher, $saltedHash, $iv);
+		$encryptedData = mcrypt_generic($cipher,$data);
+		mcrypt_generic_deinit($cipher);
+	
+		return urlencode(base64_encode($encryptedData));
+	}
 ?>

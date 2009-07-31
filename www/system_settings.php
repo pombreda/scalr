@@ -14,7 +14,9 @@
 		CLIENT_SETTINGS::MAX_EIPS_LIMIT => "int",
 		CLIENT_SETTINGS::RSS_LOGIN => "string",
 		CLIENT_SETTINGS::RSS_PASSWORD => "string",
-		CLIENT_SETTINGS::SYNC_TIMEOUT => "int"
+		CLIENT_SETTINGS::SYNC_TIMEOUT => "int",
+		CLIENT_SETTINGS::API_ENABLED  => "int",
+		CLIENT_SETTINGS::API_ALLOWED_IPS => "string"
 	);
 	
 	$Validator = new Validator();
@@ -26,23 +28,29 @@
 
         if (strlen($post_rss_password) < 6)
             $err[] = "RSS feed password must be 6 chars or more";
-            
+
         if (count($err) == 0)
         {                      
 			try
 			{
-            	foreach ($client_settings as $client_setting=>$type)
+            	$HTMLPurifier_Config = HTMLPurifier_Config::createDefault();
+			    $HTMLPurifier_Config->set('HTML', 'Allowed', '');
+			    $HTMLPurifier_Config->set('Cache', 'DefinitionImpl', null);	    
+				$HTMLPurifier_Config->set('Core', 'CollectErrors', true);
+				$purifier = new HTMLPurifier($HTMLPurifier_Config);
+				
+				foreach ($client_settings as $client_setting=>$type)
             	{
 					switch($type)
 					{
 						case "int":
-							$value = (int)$_POST[$client_setting];
+							$value = (int)$_POST[str_replace(".", "_", $client_setting)];
 							break;
 						default:
-							$value = $_POST[$client_setting];
+							$value = $purifier->purify($_POST[str_replace(".", "_", $client_setting)]);
 							break;
 					}
-            		
+					
             		$db->Execute("REPLACE INTO client_settings SET `key`=?, `value`=?, `clientid`=?", array($client_setting, $value, $_SESSION['uid']));
             	}
 			}
@@ -67,10 +75,16 @@
 	$display["client_max_eips"] = $client_max_eips ? $client_max_eips : CONFIG::$CLIENT_MAX_EIPS;
 	$display["sync_timeout"] = $sync_timeout ? $sync_timeout : CONFIG::$SYNC_TIMEOUT;
 	
+	$Client = Client::Load($_SESSION['uid']);
 	
-	$display["rss_login"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array(CLIENT_SETTINGS::RSS_LOGIN, $_SESSION['uid']));
-	$display["rss_password"] = $db->GetOne("SELECT `value` FROM client_settings WHERE `key`=? AND clientid=?", array(CLIENT_SETTINGS::RSS_PASSWORD, $_SESSION['uid']));	
-		
+	$display["rss_login"] = $Client->GetSettingValue(CLIENT_SETTINGS::RSS_LOGIN);
+	$display["rss_password"] = $Client->GetSettingValue(CLIENT_SETTINGS::RSS_PASSWORD);
+	$display["api_enabled"] = $Client->GetSettingValue(CLIENT_SETTINGS::API_ENABLED);
+	$display["api_allowed_ips"] = $Client->GetSettingValue(CLIENT_SETTINGS::API_ALLOWED_IPS);
+	
+	$display["scalr_api_keyid"] = $Client->ScalrKeyID;
+	$display["scalr_api_key"] = $Client->GetScalrAPIKey();
+			
 	$display["help"] = "By default, every AWS account can allocate maximum 5 Elastic IPs. If you're already using Elastic IPs outside Scalr, make sure to substract this amount, otherwise IPs will be reassigned to Scalr instances without any prompt.";
 	
 	require("src/append.inc.php"); 

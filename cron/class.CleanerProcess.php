@@ -18,7 +18,9 @@
             
             $cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
             
+            
             /** Clear zomby database instances **/
+            /*
             $farms = $db->Execute("SELECT * FROM farms WHERE status=?", array(FARM_STATUS::TERMINATED));
             while($farm = $farms->FetchRow())
             {
@@ -36,6 +38,7 @@
             		}
             	}
             }
+            */
                         
             /** Process garbage queue **/
             $queue = $db->Execute("SELECT * FROM garbage_queue");

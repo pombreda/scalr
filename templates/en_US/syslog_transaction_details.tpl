@@ -1,6 +1,11 @@
 {include file="inc/header.tpl"}
 <br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
+{literal}
+<style>
+	.x-grid3-cell-inner { white-space:normal !important; }
+</style>
+{/literal}
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
 <script type="text/javascript">
 {literal}

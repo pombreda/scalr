@@ -63,6 +63,17 @@
 				{
 					foreach ($zones as $zoneinfo)
 					{
+						try
+						{
+							$DBFarmRole = DBFarmRole::Load($instanceinfo['famrid'], $instanceinfo['ami_id']);
+							$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+						}
+						catch(Exception $e)
+						{
+							$Logger->fatal(sprintf("instances_view(73): %s", $e->getMessage()));
+							$skip_main_a_records = false;
+						}
+						
 						$records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $zoneinfo["role_name"], $ami_info['alias']);
 														
 						foreach ($records as $k=>$v)
@@ -83,7 +94,7 @@
 			}
 			
 			if (count($err) == 0)
-				$okmsg = _("Instance succesfully marked as active");
+				$okmsg = _("Instance successfully marked as active");
 		}
 		elseif ($req_task == 'setinactive')
 		{
@@ -132,101 +143,7 @@
 			}
 
 			if (count($err) == 0)
-				$okmsg = _("Instance succesfully marked as active");
-		}
-		else
-		{			
-			if (isset($req_action) && $_POST)
-			{
-				$req_instances = $post_id;
-				$req_task = $req_action;
-			}
-			else
-			{
-				$req_instances = array($req_iid);
-			}
-
-			foreach ($req_instances as $instanceid)
-			{
-				$instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND farmid=?", array($instanceid, $farminfo["id"]));
-				
-				if ($instance_info)
-				{
-					try 
-					{
-						$instances = array($instanceid);
-						
-						// Do something
-						if ($req_task == "terminate")
-						{
-							$running_instances = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE ami_id=? AND farmid=?", 
-								array($instance_info['ami_id'], $farminfo["id"])
-							);
-							
-							$db->BeginTrans();
-							
-							$DBFarmRole = DBFarmRole::Load($farminfo["id"], $instance_info['ami_id']);
-							
-							if (count($req_instances) == 1)
-							{
-								$min_instances = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES);
-								
-								if ($post_cbtn_2)
-								{
-									$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, $min_instances-1);
-								}
-								elseif ($post_cbtn_3)
-								{
-									//
-								}
-								else
-								{
-									if ($running_instances == $min_instances && $min_instances > 1)
-									{
-										$display["instance_id"] = $instance_info['instance_id'];
-										$display["min_count"] = $min_instances;
-										$display["role_name"] = $instance_info["role_name"];
-										$display["min_count_new"] = $min_instances-1;
-										$display["action"] = $post_action;
-										
-										$Smarty->assign($display);
-										$Smarty->display("instance_terminate_confirm.tpl");
-										exit();
-									}
-								}
-							}
-							
-							try
-							{
-								$response = $AmazonEC2Client->TerminateInstances($instances);
-							}
-							catch(Exception $e)
-							{
-								$db->RollbackTrans();
-								$err[] = $e->getMessage();
-							}
-							
-							$db->CommitTrans();
-						}
-						elseif ($req_task == "reboot")
-						{
-							$response = $AmazonEC2Client->RebootInstances($instances);
-						}
-							
-						if ($response instanceof SoapFault)
-							$err[] = $response->faultstring;
-					}
-					catch (Exception $e)
-					{
-						$err[] = $e->getMessage(); 
-					}
-				}
-			}
-
-			if (count($err) == 0)
-				$okmsg = sprintf(_("%d instance(s) %s"),
-				 count($req_instances),
-				($req_task == "reboot" ? _("going to reboot") : _("terminated")));
+				$okmsg = _("Instance successfully marked as active");
 		}
 		
 		if ($okmsg)

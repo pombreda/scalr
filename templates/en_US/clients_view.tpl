@@ -16,13 +16,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				'email', 'aws_accountid', 'farms', 'roles', 'apps', 'payments', 'isactive', 'farms_limit','fullname', 'comments'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/clients_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

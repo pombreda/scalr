@@ -37,7 +37,7 @@
 	            switch ($option[0])
 	            {
 					//
-	            	//TODO: переписать это все так, как мы обсудили с Маратом.
+	            	//TODO: пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 	            	//
 	            	
 	            	case "scripting":
@@ -200,8 +200,8 @@
 	            	
 	            	case "https":
 	            		
-	            		$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1' AND role_name=?", 
-	            			array($req_FarmID, $role_name)
+	            		$vhost_info = $db->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1'", 
+	            			array($req_FarmID)
 	            		);
 	            		if ($vhost_info)
 	            		{

@@ -5,7 +5,7 @@
     {
 		$enable_json = true;
 		require("../src/prepend.inc.php");
-		    
+		
 	    set_time_limit(360);
 	    
 	    $Validator = new Validator();
@@ -22,6 +22,9 @@
     	if ($farm_id && !$_SESSION['farm_builder_region'])
 			throw new Exception(_("Session expired. Please login again."));
     	
+		define("SUB_TRANSACTIONID", rand(10000, 99999));
+        define("LOGGER_FARMID", $farm_id);
+			
     	$uid = 0;
     	// Get User ID
     	if ($_SESSION['uid'] == 0)
@@ -55,7 +58,7 @@
 		// Prepare role information
     	$total_max_count = 0;
     	$farm_amis = array();
-	        
+	            	
         // Validate input vars
 		foreach ($roles as $role)
 		{
@@ -78,6 +81,9 @@
 			if ($maxCount < 1 || $maxCount > 99)
 				throw new Exception(sprintf(_("Max instances for '%s' must be a number between 1 and 99"), $rolename));
 
+			if ($maxCount < $minCount)
+				throw new Exception(sprintf(_("Max instances should be greater or equal than Min instances for role '%s'"), $rolename));
+				
 			$polling_interval = (int)$role['settings'][DBFarmRole::SETTING_SCALING_POLLING_INTERVAL];
 			if ($polling_interval < 1 || $polling_interval > 50)
 				throw new Exception(sprintf(_("Polling interval for role '%s' must be a number between 1 and 50"), $rolename));
@@ -139,7 +145,7 @@
 	    );
         
         if ($used_slots+$total_max_count > $i_limit)
-			throw new Exception(sprintf(_("You cannot launch more than %s instances on your account. Please adjust Max Instances setting."), $i_limit));
+			throw new Exception(sprintf(_("The total amount of instances across all your farms is %s (aggregated Maximum instances Setting for all roles across all farms). If all farms will be running simultaneously you might hit the Amazon Limit of %s simultaneously running instances. Contact  Amazon to increase your instances limit, and then update this value in Settings->General->AWS Settings->Instances limit."), ($used_slots+$total_max_count), $i_limit));
 		
 		$used_ips = $db->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE clientid=? AND farmid != ?", array($uid, $farm_id));
 		if ($used_ips+$need_elastic_ips_for_farm > $eips_limit)
@@ -337,6 +343,8 @@
 						));
 						
 						$DBFarmRole = DBFarmRole::Load($farm_id, $ami_id);
+						
+						$farm_amis[$ami_id]['DBFarmRole'] = $DBFarmRole;
                     }
     	            else 
     	            {
@@ -369,14 +377,46 @@
 						$DBFarmRole = new DBFarmRole($farm_role_id);
 						$DBFarmRole->FarmID = $farm_id;
 						$DBFarmRole->AMIID = $ami_id; 
+						
+						$farm_amis[$ami_id]['DBFarmRole'] = $DBFarmRole;
 					}
 					
 					foreach ($role['options']['scaling_algos'] as $k=>$v)
-						$DBFarmRole->SetSetting($k, $v);
-					
+					{
+						if ($k != TimeScalingAlgo::PROPERTY_TIME_PERIODS)
+							$DBFarmRole->SetSetting($k, $v);
+					}
+											
 					foreach ($role['settings'] as $k=>$v)
 						$DBFarmRole->SetSetting($k, $v);
 					
+					/** Time scaling */
+					//TODO: optimize this code...
+					$db->Execute("DELETE FROM farm_role_scaling_times WHERE farm_roleid=?", 
+						array($DBFarmRole->ID)
+					);
+					if ($DBFarmRole->GetSetting("scaling.time.enabled") == 1)
+					{
+						foreach ($role['options']['scaling_algos'][TimeScalingAlgo::PROPERTY_TIME_PERIODS] as $scal_period)
+						{
+							$chunks = explode(":", $scal_period);
+							$db->Execute("INSERT INTO farm_role_scaling_times SET
+								farm_roleid		= ?,
+								start_time		= ?,
+								end_time		= ?,
+								days_of_week	= ?,
+								instances_count	= ?
+							", array(
+								$DBFarmRole->ID,
+								$chunks[0],
+								$chunks[1],
+								$chunks[2],
+								$chunks[3]
+							));
+						}
+					}	
+					/*****************/
+						
 					/* Update role params */
 					$db->Execute("DELETE FROM farm_role_options WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
 					
@@ -404,13 +444,15 @@
 									ami_id		= ?,
 									name		= ?,
 									value		= ?,
-									hash	 	= ?
+									hash	 	= ? 
+									ON DUPLICATE KEY UPDATE name = ?
 								", array(
 									$farm_id,
 									$ami_id,
 									$name,
 									$value,
-									preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name))
+									preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name)),
+									$name
 								));
 							}
 						}
@@ -497,9 +539,97 @@
 				throw new Exception($e->getMessage(), E_ERROR);
 			}
 			
-	    	try
+			$Logger->getLogger("FarmEdit")->info("Farm Edit: {$farm_id}");
+			
+			try
 			{
-	        	// Asign elastic IPs
+				$elbs = array();
+				foreach ($farm_amis as $ami_id => $role)
+				{
+					$Logger->getLogger("FarmEdit")->info("Role: {$ami_id}");
+								
+					$AmazonELB = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+		        	$DBFarmRole = $role['DBFarmRole'];
+					
+					// Load balancer settings
+		        	if ($role['settings'][DBFarmRole::SETTING_BALANCING_USE_ELB] == 1)
+		        	{
+		        		// Listeners
+						$DBFarmRole->ClearSettings("lb.role.listener");
+		        		$ELBListenersList = new ELBListenersList();
+					    $li = 0;
+					    foreach ($role['settings'] as $sk=>$sv)
+					    {
+					    	if (stristr($sk, "lb.role.listener"))
+					    	{
+					    		$li++;
+					    		$listener_chunks = explode("#", $sv);
+					    		$ELBListenersList->AddListener($listener_chunks[0], $listener_chunks[1], $listener_chunks[2]);
+					    		$DBFarmRole->SetSetting("lb.role.listener.{$li}", $sv);
+					    	}
+					    }			
+		        		
+					    $Logger->getLogger("FarmEdit")->info("Role: {$ami_id}, Host: ".$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME));
+					    
+					    if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME))
+		        		{
+		        			$elb_ame = sprintf("scalr-%s-%s", $farm_id, rand(1,100));
+		        			
+			        		$avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
+						    $avail_zones = array();
+						    
+						    foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
+						    {
+						    	if (stristr($zone->zoneState,'available'))
+						    		array_push($avail_zones, (string)$zone->zoneName);
+						    }
+		        			
+		        			//CREATE NEW ELB
+		        			$elb_dns_name = $AmazonELB->CreateLoadBalancer($elb_ame, $avail_zones, $ELBListenersList);
+		        			
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME, $elb_dns_name);
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_NAME, $elb_ame);
+		        			
+		        			$elbs[] = $elb_dns_name;
+		        			//Update healthcheck Settings 
+		        		}
+		        		
+						$ELBHealthCheckType = new ELBHealthCheckType(
+							$role['settings'][DBFarmRole::SETTING_BALANCING_HC_TARGET],
+							$role['settings'][DBFarmRole::SETTING_BALANCING_HC_HTH],
+							$role['settings'][DBFarmRole::SETTING_BALANCING_HC_INTERVAL],
+							$role['settings'][DBFarmRole::SETTING_BALANCING_HC_TIMEOUT],
+							$role['settings'][DBFarmRole::SETTING_BALANCING_HC_UTH]
+						);
+	        			
+						$hash = md5(serialize($ELBHealthCheckType));
+						
+						if ($elb_ame || ($hash != $DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH)))
+						{
+		        			//UPDATE CURRENT ELB
+		        			$AmazonELB->ConfigureHealthCheck(
+		        				$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME),
+		        				$ELBHealthCheckType
+		        			);
+		        			
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH, $hash);
+						}
+		        	}
+		        	else
+		        	{
+		        		if ($role['settings'][DBFarmRole::SETTING_BALANCING_HOSTNAME])
+		        		{
+		        			$AmazonELB->DeleteLoadBalancer($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME));
+		        					        			
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_NAME, "");
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME, "");
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB, "0");
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH, "");
+		        		}
+		        	}
+				}
+
+				// Asign elastic IPs
 				if (count($assign_elastic_ips) > 0)
 				{
 					foreach ($assign_elastic_ips as $id => $ami_id)
@@ -622,6 +752,12 @@
 				 	
 				 if ($created_key_name)
 				 	$AmazonEC2Client->DeleteKeyPair($created_key_name);
+				 	
+				 if (count($elbs) > 0)
+				 {
+				 	foreach ($elbs as $elb)
+				 		$AmazonELB->DeleteLoadBalancer($elb);
+				 }
 				 	
 				 foreach ($allocated_ips as $allocated_ip)
 				 {

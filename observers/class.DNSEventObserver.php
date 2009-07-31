@@ -262,7 +262,18 @@
 					
 					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Instance {$instanceinfo['instance_id']}. Is DB Master = {$instanceinfo['isdbmaster']}"));
 					
-					$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $role_name, $ami_info['alias']);
+					try
+					{
+						$DBFarmRole = DBFarmRole::Load($farminfo['id'], $instanceinfo['ami_id']);
+						$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+					}
+					catch(Exception $e)
+					{
+						$this->Logger->fatal(sprintf("DNSEventObserver(275): %s", $e->getMessage()));
+						$skip_main_a_records = false;
+					}
+					
+					$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $role_name, $ami_info['alias'], $skip_main_a_records);
 										
 					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Adding system A records to zone {$zone['zone']}"));
 					

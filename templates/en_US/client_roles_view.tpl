@@ -24,8 +24,7 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				{name: 'clientid', type: 'int'},
@@ -33,6 +32,7 @@ Ext.onReady(function () {
 	            'client_name', 'fail_details', 'abort_id', 'dtbuilt', 'roletype'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/client_roles_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

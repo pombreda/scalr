@@ -23,12 +23,13 @@
 	
 	{if $load_extjs}
 	<script type="text/javascript" src="/js/extjs/ext-prototype-adapter.js"></script>
-	<script type="text/javascript" src="/js/extjs/ext-all.js"></script>
+	<script type="text/javascript" src="/js/extjs/ext-all-debug.js"></script>
 	<script type="text/javascript" src="/js/extjs/ext-ux.js"></script>
-	
+	<script type="text/javascript" src="/js/scalr-ui.js"></script>
 		{if !$no_extjs_style}
 			<link type="text/css" rel="stylesheet" href="/css/ext-all.css" />
 		{/if}
+	<link type="text/css" rel="stylesheet" href="/css/ext-scalr-ui.css" />
 	{/if}
 	
 	<script language="Javascript" type="text/javascript">
