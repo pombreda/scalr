@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menu>
+	<item href="index.php">Home</item>
+	<node title="Applications">
+		<item href="sites_view.php" search="SELECT COUNT(*) FROM zones WHERE zone LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>		
+		<item href="sites_add.php">Add new</item>				
+	</node>
+
+	<node title="Farms">
+		<item href="farms_add.php">Build new</item>
+		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="elastic_ips.php">Elastic IPs</item>
+		<separator />
+		<node title="Elastick Block Storage">
+			<item href="ebs_manage.php">Volumes &amp; Snapshots</item>
+			<item href="ebs_arrays.php">Arrays</item>
+		</node>
+	</node>
+
+	<node title="Roles">
+		<item href="client_roles_add.php">Add new</item>
+		<item href="client_roles_view.php" search="SELECT COUNT(*) FROM ami_roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="sec_groups_view.php">Security groups</item>
+	</node>
+	
+	<node title="Scripts">
+		<item href="script_templates.php?task=create">Add new</item>
+		<item href="script_templates.php" search="SELECT COUNT(*) FROM scripts WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="script_shortcuts.php">Shortcuts</item>
+	</node>		
+	
+	<node title="Logs">
+		<item href="logs_view.php">Event log</item>
+		<item href="scripting_logs_view.php">Scripting log</item>
+	</node>
+	
+	<node title="Settings">
+		<item href="profile.php">Profile</item>
+		<item href="aws_settings.php">AWS settings</item>
+		<item href="system_settings.php">System settings</item>
+		<separator />
+		<item href="default_records.php">Default DNS records</item>
+	</node>
+	
+	<node title="Tools">
+		<item href="garbage.php">Delete unused objects</item>
+		<separator />
+		<node title="Amazon Web Services">
+			<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
+			<item href="ec2_reserved_instances.php">List reserved instances</item>
+			<item href="ec2_reserved_offerings.php">List reserved instances offerings</item>
+		</node>
+	</node>
+</menu>
