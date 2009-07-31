@@ -2,17 +2,28 @@
 	require("src/prepend.inc.php"); 
 	
 	CONTEXTS::$APPCONTEXT = APPCONTEXT::ORDER_WIZARD;
-	
+		
 	$display['title'] = _("Self-Scaling Hosting Environment utilizing Amazon's EC2.  Built by Intridea.");
 	$display['meta_descr'] = _("Scalr is fully redundant, self-curing and self-scaling hosting environment utilizing Amazon's EC2.  It is open source, allowing you to create server farms through a web-based interface using pre-built AMI's.");
-	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, Intridea, self-scaling, hosting environment, cloud computing, open source, web-based interface");
+	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, Intridea, self-scaling, hosting environment, cloud computing, open source, web-based interface");		
 	
-	if ($get_logout)
+	if (isset($req_logout))
 	{
 		@session_destroy();
 		
-		$mess = _("Succesfully logged out");
-		UI::Redirect("login.php");
+		@setcookie("tender_email", "0", time()-86400, "/", ".scalr.net");
+        @setcookie("tender_expires", "0", time()-86400, "/", ".scalr.net");
+        @setcookie("tender_hash", "0", time()-86400, "/", ".scalr.net");
+        @setcookie("tender_name", "0", time()-86400, "/", ".scalr.net");
+        @setcookie("_tender_session", "0", time()-86400, "/", ".scalr.net");
+        @setcookie("anon_token", "0", time()-86400, "/", ".scalr.net");
+        		
+		$mess = _("Successfully logged out");
+		
+		if (isset($req_redirect_to) && $req_redirect_to == 'support')
+        	UI::Redirect("http://support.scalr.net");
+        else
+        	UI::Redirect("https://scalr.net/login.php");
 	}
 	
 	if ($req_action == "pwdrecovery")
@@ -136,7 +147,24 @@
 	
 		        			$db->Execute("UPDATE clients SET `login_attempts`=0, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
 		        			
-		        			UI::Redirect("{$rpath}");
+		        			///////////////////////////////
+		        			//TENDER LOGIN//
+		        			if (!$user['fullname'])
+		        				$user['fullname'] = $user['email'];
+		        			
+		        			$args = array(
+		        				"name"		=> $user['fullname'],
+		        				"email"		=> $user['email'],
+		        				"expires" => date("D M d H:i:s O Y", time()+120)
+		        			);
+		        					        			
+							$token = GenerateTenderMultipassToken(json_encode($args));
+		        			//////////////////////////////
+		        				        			
+		        			if (isset($req_redirect_to) && $req_redirect_to == 'support')
+		        				UI::Redirect("http://support.scalr.net/?sso={$token}");
+		        			else
+		        				UI::Redirect("{$rpath}");
 					    }
 					    else
 					    { 
@@ -150,7 +178,7 @@
                 $err[] = _("Incorrect login or password");
 		}
 	}
-	
+		
 	function CheckIPAcceess()
 	{
 	    global $db;

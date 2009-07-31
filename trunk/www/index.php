@@ -1,6 +1,25 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
+	if ($req_redirect_to == 'support')
+	{
+		if ($_SESSION['uid'] == 0)
+			UI::Redirect("/index.php");
+		
+		$Client = Client::Load($_SESSION['uid']);
+		
+		$args = array(
+        	"name"		=> $Client->Fullname,
+        	"email"		=> $Client->Email,
+        	"expires" => date("D M d H:i:s O Y", time()+120)
+        );
+        		        			
+		$token = GenerateTenderMultipassToken(json_encode($args));
+        //////////////////////////////
+        	        			
+        UI::Redirect("http://support.scalr.net/?sso={$token}");
+	}
+	
 	$display["title"] = _("Dashboard");
 	
 	if ($_SESSION['uid'] == 0)

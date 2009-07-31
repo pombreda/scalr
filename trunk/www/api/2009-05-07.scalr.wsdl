@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" 
+	xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+	targetNamespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/">
+	
+  <types>
+  		<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  				   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  				   xmlns:tns="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" 
+  				   targetNamespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" 
+  				   elementFormDefault="qualified">
+  				   
+  			<xs:annotation>
+  				<xs:documentation xml:lang="en">
+  				
+  				</xs:documentation> 
+		  	</xs:annotation>
+		  	
+		  	<!-- ListRoles -->
+		  	<xs:element name="ListRoles" type="tns:ListRolesType" />
+		  	<xs:complexType name="ListRolesType">
+		  		<xs:sequence>
+		  			<xs:element name="region" type="xs:string" minOccurs="1" maxOccurs="1" />
+		  			<xs:element name="amiId" type="xs:string" minOccurs="0" maxOccurs="1" />
+		  			<xs:element name="name" type="xs:string" minOccurs="0" maxOccurs="1" />
+		  			<xs:element name="prefix" type="xs:string" minOccurs="0" maxOccurs="1" />
+		  		</xs:sequence>
+		  	</xs:complexType>
+		  	
+		  	<!-- ListRoles response definitions -->
+		  	<xs:element name="ListRolesResponse" type="tns:ListRolesResponseType" />
+  			<xs:complexType name="ListRolesResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="roleSet" type="tns:ListRolesInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListRolesInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:ListRolesItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListRolesItemType">
+  				<xs:sequence>
+  					<xs:element name="name" type="xs:string" />
+  					<xs:element name="owner" type="xs:string" />
+  					<xs:element name="category" type="xs:string" />
+  					<xs:element name="amiId" type="xs:string" />
+  					<xs:element name="architecture" type="xs:string" />
+  					<xs:element name="buildDate" type="xs:string" />
+  				</xs:sequence>
+  			</xs:complexType>
+		  	
+		  	<!-- ListApplications request definitions -->
+		  	<xs:element name="ListApplications" type="tns:ListApplicationsType" />
+		  	<xs:complexType name="ListApplicationsType" />
+		  	
+		  	<!-- ListApplications response definitions -->
+		  	<xs:element name="ListApplicationsResponse" type="tns:ListApplicationsResponseType" />
+  			<xs:complexType name="ListApplicationsResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="applicationSet" type="tns:ListApplicationsInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListApplicationsInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:ListApplicationsItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListApplicationsItemType">
+  				<xs:sequence>
+  					<xs:element name="domainName" type="xs:string" />
+  					<xs:element name="farmId" type="xs:integer" />
+  					<xs:element name="farmRole" type="xs:string" />
+  					<xs:element name="status" type="xs:integer" />
+  					<xs:element name="ipSet" type="tns:ListApplicationsItemIpsInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListApplicationsItemIpsInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:ListApplicationsItemIpsItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListApplicationsItemIpsItemType">
+  				<xs:sequence>
+  					<xs:element name="ipAddress" type="xs:string" />
+  				</xs:sequence>
+  			</xs:complexType>
+		  	
+		  	<!-- ListScripts request definitions -->
+		  	<xs:element name="ListScripts" type="tns:ListScriptsType" />
+		  	<xs:complexType name="ListScriptsType" />
+		  	
+		  	<!-- ListScripts response definitions -->
+		  	<xs:element name="ListScriptsResponse" type="tns:ListScriptsResponseType" />
+  			<xs:complexType name="ListScriptsResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="scriptSet" type="tns:ListScriptsInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListScriptsInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:ListScriptsItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListScriptsItemType">
+  				<xs:sequence>
+  					<xs:element name="id" type="xs:integer" />
+  					<xs:element name="name" type="xs:string" />
+  					<xs:element name="description" type="xs:string" />
+  					<xs:element name="latestRevision" type="xs:integer" />
+  				</xs:sequence>
+  			</xs:complexType>
+		  	
+		  	<!-- ListFarms request definitions -->
+		  	<xs:element name="ListFarms" type="tns:ListFarmsType" />
+  			<xs:complexType name="ListFarmsType" />
+  			
+  			<!-- ListFarms response definitions -->
+		  	<xs:element name="ListFarmsResponse" type="tns:ListFarmsResponseType" />
+  			<xs:complexType name="ListFarmsResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="farmSet" type="tns:ListFarmsInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListFarmsInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:ListFarmsItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ListFarmsItemType">
+  				<xs:sequence>
+  					<xs:element name="id" type="xs:integer" />
+  					<xs:element name="name" type="xs:string" />
+  					<xs:element name="region" type="xs:string" />
+  					<xs:element name="status" type="xs:string" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- LaunchFarm request definitions-->
+  			<xs:element name="LaunchFarm" type="tns:LaunchFarmType" />
+  			<xs:complexType name="LaunchFarmType">
+  				<xs:sequence>
+  					<xs:element name="farmId" type="xs:integer" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- LaunchFarm response definitions-->
+  			<xs:element name="LaunchFarmResponse" type="tns:LaunchFarmResponseType" />
+  			<xs:complexType name="LaunchFarmResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="result" type="xs:boolean" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- TerminateFarm request definitions -->
+  			<xs:element name="TerminateFarm" type="tns:TerminateFarmType" />
+  			<xs:complexType name="TerminateFarmType">
+  				<xs:sequence>
+  					<xs:element name="farmId" type="xs:integer" />
+  					<xs:element name="keepEBS" type="xs:boolean" default="true" />
+  					<xs:element name="keepEIP" type="xs:boolean" default="true" />
+  					<xs:element name="keepDNSZone" type="xs:boolean" default="true" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- TerminateFarm response  definitions -->
+  			<xs:element name="TerminateFarmResponse" type="tns:TerminateFarmResponseType" />
+  			<xs:complexType name="TerminateFarmResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="result" type="xs:boolean" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- ExecuteScript request definitions -->
+  			<xs:element name="ExecuteScript" type="tns:ExecuteScriptType" />
+  			<xs:complexType name="ExecuteScriptType">
+  				<xs:sequence>
+  					<xs:element name="farmId" type="xs:integer" />
+  					<xs:element name="roleName" type="xs:string" minOccurs="0" maxOccurs="1" />
+  					<xs:element name="instanceId" type="xs:string" minOccurs="0" maxOccurs="1" />
+  					<xs:element name="scriptOptions" type="tns:ExecuteScriptoptionsType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="ExecuteScriptoptionsType">
+  				<xs:sequence>
+  					<xs:element name="async" type="xs:boolean" default="true" />
+  					<xs:element name="timeout" type="xs:integer" default="30" />
+  					<xs:element name="scriptId" type="xs:string" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- ExecuteScript response  definitions -->
+  			<xs:element name="ExecuteScriptResponse" type="tns:ExecuteScriptResponseType" />
+  			<xs:complexType name="ExecuteScriptResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="result" type="xs:boolean" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- GetFarmStats request definitions -->
+  			<xs:element name="GetFarmStats" type="tns:GetFarmStatsType" />
+  			<xs:complexType name="GetFarmStatsType">
+  				<xs:sequence>
+  					<xs:element name="farmId" type="xs:integer" />
+  					<xs:element name="date" type="xs:string" minOccurs="0" maxOccurs="1" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			
+  			<!-- GetFarmStats response definitions -->
+		  	<xs:element name="GetFarmStatsResponse" type="tns:GetFarmStatsResponseType" />
+  			<xs:complexType name="GetFarmStatsResponseType">
+  				<xs:sequence>
+  					<xs:element name="transactionId" type="xs:string" /> 
+  					<xs:element name="statisticsSet" type="tns:GetFarmStatsInfoType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="GetFarmStatsInfoType">
+  				<xs:sequence>
+  					<xs:element name="item" type="tns:GetFarmStatsItemType" minOccurs="0" maxOccurs="unbounded" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="GetFarmStatsItemType">
+  				<xs:sequence>
+  					<xs:element name="month" type="xs:integer" />
+  					<xs:element name="year" type="xs:integer" />
+  					<xs:element name="statistics" type="tns:FarmStatisticsResponseType" />
+  				</xs:sequence>
+  			</xs:complexType>
+  			<xs:complexType name="FarmStatisticsResponseType">
+  				<xs:sequence>
+  					<xs:element name="bandwidthIn" type="xs:integer" />
+  					<xs:element name="bandwidthOut" type="xs:integer" />
+  					<xs:element name="bandwidthTotal" type="xs:integer" />
+  					
+  					<xs:element name="m1.smallUsage" type="xs:integer" />
+  					<xs:element name="m1.largeUsage" type="xs:integer" />
+  					<xs:element name="m1.xlargeUsage" type="xs:integer" />
+  					<xs:element name="c1.mediumUsage" type="xs:integer" />
+  					<xs:element name="c1.xlargeUsage" type="xs:integer" />
+  				</xs:sequence>
+  			</xs:complexType>
+  		</xs:schema>
+  </types>
+  
+  <!-- message definitions -->
+  <message name="ListRolesRequestMsg">
+    <part name="ListRolesRequestMsgReq" type="tns:ListRolesType"/>
+  </message>
+  
+  <message name="ListRolesResponseMsg">
+    <part name="ListRolesResponseResp" type="tns:ListRolesResponseType"/>
+  </message>
+  
+  <message name="ListApplicationsRequestMsg">
+    <part name="ListApplicationsRequestMsgReq" type="tns:ListApplicationsType"/>
+  </message>
+  
+  <message name="ListApplicationsResponseMsg">
+    <part name="ListApplicationsResponseResp" type="tns:ListApplicationsResponseType"/>
+  </message>
+  
+  <message name="ListScriptsRequestMsg">
+    <part name="ListScriptsRequestMsgReq" type="tns:ListScriptsType"/>
+  </message>
+  
+  <message name="ListScriptsResponseMsg">
+    <part name="ListScriptsResponseResp" type="tns:ListScriptsResponseType"/>
+  </message>
+  
+  <message name="ListFarmsRequestMsg">
+    <part name="ListFarmsRequestMsgReq" type="tns:ListFarmsType"/>
+  </message>
+  
+  <message name="ListFarmsResponseMsg">
+    <part name="ListFarmsResponseResp" type="tns:ListFarmsResponseType"/>
+  </message>
+  
+  <message name="LaunchFarmRequestMsg">
+    <part name="LaunchFarmRequestMsgReq" type="tns:LaunchFarmType"/>
+  </message>
+  
+  <message name="LaunchFarmResponseMsg">
+    <part name="LaunchFarmResponseMsgReq" type="tns:LaunchFarmResponseType"/>
+  </message>
+  
+  <message name="TerminateFarmRequestMsg">
+    <part name="TerminateFarmRequestMsgReq" type="tns:TerminateFarmType"/>
+  </message>
+  
+  <message name="TerminateFarmResponseMsg">
+    <part name="TerminateFarmResponseMsgReq" type="tns:TerminateFarmResponseType"/>
+  </message>
+  
+  <message name="ExecuteScriptRequestMsg">
+    <part name="ExecuteScriptRequestMsgReq" type="tns:ExecuteScriptType"/>
+  </message>
+  
+  <message name="ExecuteScriptResponseMsg">
+    <part name="ExecuteScriptResponseMsgReq" type="tns:ExecuteScriptResponseType"/>
+  </message>
+  
+  <message name="GetFarmStatsRequestMsg">
+    <part name="GetFarmStatsRequestMsgReq" type="tns:GetFarmStatsType"/>
+  </message>
+  
+  <message name="GetFarmStatsResponseMsg">
+    <part name="GetFarmStatsResponseMsgReq" type="tns:GetFarmStatsResponseType"/>
+  </message>
+  
+  
+  <portType name="ScalrPortType">
+  	<operation name="ListRoles">
+      <input message="tns:ListRolesRequestMsg"/>
+      <output message="tns:ListRolesResponseMsg"/>
+    </operation>
+    
+  	<operation name="ListApplications">
+      <input message="tns:ListApplicationsRequestMsg"/>
+      <output message="tns:ListApplicationsResponseMsg"/>
+    </operation>
+    
+  	<operation name="ListScripts">
+      <input message="tns:ListScriptsRequestMsg"/>
+      <output message="tns:ListScriptsResponseMsg"/>
+    </operation>
+    
+    <operation name="ListFarms">
+      <input message="tns:ListFarmsRequestMsg"/>
+      <output message="tns:ListFarmsResponseMsg"/>
+    </operation>
+    
+    <operation name="LaunchFarm">
+      <input message="tns:LaunchFarmRequestMsg"/>
+      <output message="tns:LaunchFarmResponseMsg"/>
+    </operation>
+    
+    <operation name="TerminateFarm">
+      <input message="tns:TerminateFarmRequestMsg"/>
+      <output message="tns:TerminateFarmResponseMsg"/>
+    </operation>
+    
+    <operation name="ExecuteScript">
+      <input message="tns:ExecuteScriptRequestMsg"/>
+      <output message="tns:ExecuteScriptResponseMsg"/>
+    </operation>
+    
+    <operation name="GetFarmStats">
+      <input message="tns:GetFarmStatsRequestMsg"/>
+      <output message="tns:GetFarmStatsResponseMsg"/>
+    </operation>
+  </portType>
+  
+  
+  <binding name="ScalrBinding" type="tns:ScalrPortType">
+    <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="ListRoles">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/ListRoles"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="ListApplications">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/ListApplications"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="ListScripts">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/ListScripts"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="ListFarms">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/ListFarms"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="LaunchFarm">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/LaunchFarm"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="TerminateFarm">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/TerminateFarm"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="ExecuteScript">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/ExecuteScript"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+    
+    <operation name="GetFarmStats">
+      <soap:operation soapAction="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/GetFarmStats"/>
+      <input>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </input>
+      <output>
+        <soap:body namespace="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/" use="literal"/>
+      </output>
+    </operation>
+  </binding>
+  <service name="Scalr">
+    <port binding="tns:ScalrBinding" name="ScalrPort">
+      <soap:address location="http://ec2farm-dev.bsd2.webta.local/api/2009-05-07/"/>
+    </port>
+  </service>
+</definitions>

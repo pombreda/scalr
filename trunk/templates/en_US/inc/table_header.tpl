@@ -95,7 +95,9 @@
 		});
 
 		if ($('tab_contents_'+id))
+		{
 			$('tab_contents_'+id).style.display = "";
+		}
 			
 		try
 		{

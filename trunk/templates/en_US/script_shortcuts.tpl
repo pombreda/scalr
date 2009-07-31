@@ -13,13 +13,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				'farmid', 'farmname', 'ami_id', 'rolename', 'scriptname', 'event_name'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/script_shortcuts_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

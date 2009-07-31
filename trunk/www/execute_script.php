@@ -180,8 +180,8 @@
 							
 						case SCRIPTING_TARGET::INSTANCE:
 							
-							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND instance_id=?",
-								array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $req_iid)
+							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND instance_id=? AND farmid=?",
+								array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $req_iid, $farmid)
 							);
 							
 							break;

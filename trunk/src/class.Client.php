@@ -57,10 +57,10 @@
 			$sault = abs(crc32($key));
 			$keyid = dechex($sault).dechex(time());
 			
-			$this->ScalrKey = $key;
-			$this->ScalrKeyID = $keyid;
+			$ScalrKey = $key;
+			$ScalrKeyID = $keyid;
 			
-			return array("id" => $this->ScalrKeyID, "key" => $this->ScalrKey);
+			return array("id" => $ScalrKeyID, "key" => $ScalrKey);
 		}
 		
 		/**

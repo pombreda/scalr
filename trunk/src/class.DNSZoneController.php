@@ -13,10 +13,13 @@
         /**
          * Returns array of all DNS records needed for selected instance 
          */
-    	public static function GetInstanceDNSRecordsList($instance, $role_name, $role_alias)
+    	public static function GetInstanceDNSRecordsList($instance, $role_name, $role_alias, $skip_main_a_record = false)
         {
         	// Zone pointed to instance role: add '@ IN A' record 
-        	if ($instance["role_name"] == $role_name)
+        	//TODO: For future use:
+        	$skip_main_a_record = false;
+        	
+        	if ($instance["role_name"] == $role_name && !$skip_main_a_record)
     	    {
     			$records[] = array("rtype" => "A", "ttl" => CONFIG::$DYNAMIC_A_REC_TTL, "rvalue" => $instance["external_ip"], "rkey" => "@", "issystem" => 1);
     	    }

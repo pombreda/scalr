@@ -3,48 +3,7 @@
 	$display['load_extjs'] = true;
 	
 	$display["title"] = "Applications&nbsp;&raquo;&nbsp;View";
-	
-	if ($_POST && $post_with_selected)
-	{
-		if ($post_action == "delete")
-		{
-			$ZoneControler = new DNSZoneControler();
-		    
-		    foreach ((array)$_POST["id"] as $dd)
-			{	
-				$db->BeginTrans();
-				 
-				try
-				{
-					if ($_SESSION["uid"] != 0)
-						$zone = $db->GetRow("SELECT * FROM zones WHERE id=? AND clientid=?", array($dd, $_SESSION["uid"]));
-					else 
-						$zone = $db->GetRow("SELECT * FROM zones WHERE id=?", array($dd));
-					
-				    if ($zone)
-					{
-	    				$ZoneControler->Delete($zone["id"]);
-	    				$i++;
-					}
-				}
-				catch(Exception $e)
-				{
-					$db->RollbackTrans();
-		    		$Logger->fatal("Exception thrown during application delete: {$e->getMessage()}");
-		    		$err[] = "Cannot delete application '{$zone['name']}'. Please try again later.";
-				}
-			}
-			
-			if (count($err) == 0)
-			{
-				$db->CommitTrans();
-				
-				$okmsg = "Applications have been marked for deletion. They will be deleted in few minutes.";
-				UI::Redirect("sites_view.php?farmid={$req_farmid}");
-			}
-		}
-	};
-	
+		
 	if ($req_farmid)
 	{
 	    $id = (int)$req_farmid;

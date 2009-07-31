@@ -209,6 +209,8 @@
 			
             afterLoad();
             
+            SetActiveTab('general');
+            
 			window.LoadMask.hide();
 			//////////////////////////////////////////////////////
 		}
@@ -323,19 +325,32 @@
       
     function HideIntableTabs(skip_tab)
     {
-    	var elems = $('itabs_container').select('[class="InTableTab"]');
-		elems.each(function(item){    
-			if (item.id != 'itab_'+skip_tab)
-				item.style.display = 'none';
-		});
+    	for (i in window.RoleTabsPanel.items.items)
+    	{
+    		if (typeof(window.RoleTabsPanel.items.items[i]) == 'object')
+    		{
+    			if (window.RoleTabsPanel.items.items[i].id != skip_tab)
+    				window.RoleTabsPanel.hideTabStripItem(i);
+    		}
+    	}
+    	
+    	/*
+    	window.RoleTabsPanel.items.each(function(item){
+    		item.hideTabStripItem(item);
+    	});
+    	*/
     }
+    
     
     function ShowIntableTabs()
     {
-    	var elems = $('itabs_container').select('[class="InTableTab"]');
-		elems.each(function(item){ 
-			item.style.display = '';
-		});
+    	for (i in window.RoleTabsPanel.items.items)
+    	{
+    		if (typeof(window.RoleTabsPanel.items.items[i]) == 'object')
+    		{
+    			window.RoleTabsPanel.unhideTabStripItem(i);
+    		}
+    	}
     }
         
     function OnTabChanged_i(id)

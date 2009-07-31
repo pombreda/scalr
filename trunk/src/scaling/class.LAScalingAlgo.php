@@ -30,7 +30,7 @@
 					throw new Exception(sprintf(_("Minimum LA for role '%s' must be a number between 0.1 and 50"), $DBFarmRole->GetRoleName()));
 					
 				if($config[self::PROPERTY_MAX_LA] < $config[self::PROPERTY_MIN_LA])
-					$err[] = sprintf(_("Maximum LA for role '%s' must be greather than minimum LA"), $DBFarmRole->GetRoleName());
+					throw new Exception(sprintf(_("Maximum LA for role '%s' must be greather than minimum LA"), $DBFarmRole->GetRoleName()));
 			}
 				
 			return true;
@@ -61,9 +61,20 @@
 			
 			//
 			if ($sensor_value > $this->GetProperty(self::PROPERTY_MAX_LA))
-				return ScalingAlgo::UPSCALE;
+			{
+				if($DBFarmRole->GetRunningInstancesCount() < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES) 
+					&& $DBFarmRole->GetPendingInstancesCount() == 0)
+					return ScalingAlgo::UPSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			elseif ($sensor_value < $this->GetProperty(self::PROPERTY_MIN_LA))
-				return ScalingAlgo::DOWNSCALE;
+			{
+				if ($DBFarmRole->GetRunningInstancesCount() > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
+					return ScalingAlgo::DOWNSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			else
 				return ScalingAlgo::NOOP;
 		}

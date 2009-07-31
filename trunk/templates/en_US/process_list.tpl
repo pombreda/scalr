@@ -24,8 +24,7 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'hrSWRunName',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'hrSWRunName',
 				'hrSWRunPath',
@@ -36,6 +35,7 @@ Ext.onReady(function () {
 				'hrSWRunPerfMem'
 	       ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/processes_list.php?a=1{/literal}{$grid_query_string}&iid={$iid}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

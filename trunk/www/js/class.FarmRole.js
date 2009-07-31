@@ -22,11 +22,27 @@
 			this.launch_index = 0;
 			this.scripts = {};
 			this.params = {};
+						
 			this.settings = {
 					'scaling.min_instances': 1,
 					'scaling.max_instances': 2,
 					'scaling.polling_interval': 1,
-					'dns.exclude_role':0
+					
+					'dns.exclude_role':0,
+					
+					'lb.use_elb':0,
+					'lb.hostname':'',
+					'lb.healthcheck.timeout':5,
+					'lb.healthcheck.target':'',
+					'lb.healthcheck.interval':30,
+					'lb.healthcheck.unhealthythreshold':5,
+					'lb.healthcheck.healthythreshold':3,
+					'lb.healthcheck.hash':'',
+					
+					'health.terminate_if_snmp_fails':1,
+					
+					'mysql.ebs.rotate':5,
+					'mysql.ebs.rotate_snaps':0
 			};
 			
 			/* DEPRACATED */

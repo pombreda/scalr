@@ -402,7 +402,11 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 		var action = this.withSelectedTb.actionEl.dom;
 		action.value = menuItem.value;
 		if (menuItem.formAction) {
-			action.form.action = menuItem.formAction;
+			if (Ext.isIE) {
+				action.form.attributes["action"].value = menuItem.formAction;  
+			} else {
+				action.form.action = menuItem.formAction;
+			}
 		}
 		action.form.submit();
 	},

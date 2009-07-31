@@ -35,8 +35,8 @@
             
             $this->RRD = new RRD($rrddbpath);
             
-            $this->RRD->AddDS(new RRDDS("in", "COUNTER", 600));
-            $this->RRD->AddDS(new RRDDS("out", "COUNTER", 600));
+            $this->RRD->AddDS(new RRDDS("in", "COUNTER", 600, "U", "21474836480"));
+            $this->RRD->AddDS(new RRDDS("out", "COUNTER", 600, "U", "21474836480"));
             
             $this->RRD->AddRRA(new RRA("AVERAGE", array(0.5, 1, 800)));
             $this->RRD->AddRRA(new RRA("AVERAGE", array(0.5, 6, 800)));

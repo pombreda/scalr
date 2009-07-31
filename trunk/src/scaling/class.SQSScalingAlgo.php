@@ -31,7 +31,7 @@
 					throw new Exception(sprintf(_("Maximum SQS queue size for role '%s' must be a number greather than 2"), $DBFarmRole->GetRoleName()));
 					
 				if($config[self::PROPERTY_MAX_SIZE] < $config[self::PROPERTY_MIN_SIZE])
-					$err[] = sprintf(_("Maximum SQS queue size for role '%s' must be greather than minimum queue size"), $DBFarmRole->GetRoleName());
+					throw new Exception(sprintf(_("Maximum SQS queue size for role '%s' must be greather than minimum queue size"), $DBFarmRole->GetRoleName()));
 					
 				if (!$config[self::PROPERTY_QUEUE_NAME] || $config[self::PROPERTY_QUEUE_NAME] == '0')
 					throw new Exception(sprintf(_("SQS Queue name for role '%s' required"), $DBFarmRole->GetRoleName()));
@@ -82,14 +82,33 @@
 			//
 			// Get data from SQS sensor
 			//
-			$BWSensor = SensorFactory::NewSensor(SensorFactory::SQS_SENSOR);
-			$sensor_value = $BWSensor->GetValue($DBFarmRole);
-			$this->Logger->info("SQSScalingAlgo({$DBFarmRole->FarmID}, {$DBFarmRole->AMIID}) Sensor returned value: {$sensor_value}.");
+			try
+			{
+				$BWSensor = SensorFactory::NewSensor(SensorFactory::SQS_SENSOR);
+				$sensor_value = $BWSensor->GetValue($DBFarmRole);
+				$this->Logger->info("SQSScalingAlgo({$DBFarmRole->FarmID}, {$DBFarmRole->AMIID}) Sensor returned value: {$sensor_value}.");
+			}
+			catch(Exception $e)
+			{
+				$this->Logger->warn(new FarmLogMessage($DBFarmRole->FarmID, $e->getMessage()));
+				return ScalingAlgo::NOOP;
+			}
 			
 			if ($sensor_value > $this->GetProperty(self::PROPERTY_MAX_SIZE))
-				return ScalingAlgo::UPSCALE;
+			{
+				if($DBFarmRole->GetRunningInstancesCount() < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES) 
+					&& $DBFarmRole->GetPendingInstancesCount() == 0)
+					return ScalingAlgo::UPSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			elseif ($sensor_value < $this->GetProperty(self::PROPERTY_MIN_SIZE))
-				return ScalingAlgo::DOWNSCALE;
+			{
+				if ($DBFarmRole->GetRunningInstancesCount() > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
+					return ScalingAlgo::DOWNSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			else
 				return ScalingAlgo::NOOP;
 		}

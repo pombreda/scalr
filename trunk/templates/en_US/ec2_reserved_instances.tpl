@@ -2,6 +2,17 @@
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
 <script type="text/javascript">
+
+var uid = '{$smarty.session.uid}';
+
+var regions = [
+{section name=id loop=$regions}
+	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
+{/section}
+];
+
+var region = '{$smarty.session.aws_region}';
+
 {literal}
 Ext.onReady(function () {
 	// create the Data Store
@@ -12,13 +23,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'id', 'instance_type', 'avail_zone', 'duration', 
 				'usage_price', 'fixed_price', 'instance_count', 'description', 'state'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/reserved_instances_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -36,6 +47,23 @@ Ext.onReady(function () {
         	emptyText: "No reserved instances found"
         },
 
+        tbar: [{text: 'Region:'}, new Ext.form.ComboBox({
+			allowBlank: false,
+			editable: false, 
+	        store: regions,
+	        value: region,
+	        displayField:'state',
+	        typeAhead: false,
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:false,
+	        width:100,
+	        listeners:{select:function(combo, record, index){
+	        	store.baseParams.region = record.data.value; 
+	        	store.load();
+	        }}
+	    })],
+        
         // Columns
         columns:[
 			{header: "ID", width: 115, dataIndex: 'id', sortable: true},

@@ -3,6 +3,9 @@
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
 <script type="text/javascript">
+
+var FarmID = '{$smarty.get.farmid}';
+
 {literal}
 Ext.onReady(function () {
 	// create the Data Store
@@ -13,14 +16,14 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				"role", "alias", "uptime", "public_ip", "is_elastic", "is_active", "private_ip",
 				"is_rebooting", "can_use_ceip", "instance_index", "LA", "state", "instance_id",
 				"ami_id", "type", "avail_zone", "custom_eip", "farmid", "id"
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/instances_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -49,7 +52,7 @@ Ext.onReady(function () {
 		retval += value;
 
 		if (record.data.is_elastic)
-			retval += '</span>&nbsp;<img src="/images/icon_shelp.gif" style="vertical-align:middle;" title="Elastic IP">';
+			retval += '</span>&nbsp;<img src="/images/icon_shelp.png" style="vertical-align:middle;" title="Elastic IP">';
 
 		return retval;
 	}
@@ -101,8 +104,49 @@ Ext.onReady(function () {
 			new Ext.menu.Separator({id: "option.execSep"}),
 			{id: "option.exec",			text: 'Execute script', 					href: "/execute_script.php?farmid={farmid}&iid={instance_id}"},
 			new Ext.menu.Separator({id: "option.menuSep"}),
-			{id: "option.reboot",		text: 'Reboot', 							href: "/instances_view.php?iid={instance_id}&farmid={farmid}&task=reboot"},
-			{id: "option.term",			text: 'Terminate', 							href: "/instances_view.php?iid={instance_id}&farmid={farmid}&task=terminate"},		
+			{id: "option.reboot",		text: 'Reboot', handler:function(menuItem){
+				var Item = menuItem.parentMenu.record.data;
+				SendRequestWithConfirmation(
+					{
+						action: 'RebootInstances', 
+						instances: Ext.encode([Item.instance_id]),
+						farmid: Item.farmid
+					},
+					'Reboot selected instance(s)?',
+					'Sending reboot command to instance(s). Please wait...',
+					'ext-mb-instance-rebooting',
+					function(){
+						grid.autoSize();
+					},
+					function(){
+						store.load();
+					}
+				);
+			}},
+
+			{id: "option.term",	text: 'Terminate', 	handler:function(menuItem){
+				var Item = menuItem.parentMenu.record.data;
+				window.TID = false;
+				SendRequestWithConfirmation(
+					{
+						action: 'TerminateInstances', 
+						instances: Ext.encode([Item.instance_id]),
+						farmid: Item.farmid
+					},
+					'Terminate selected instance(s)?'+
+					'<br \><br \>'+
+					'<input type="checkbox" onclick="window.TID = this.checked;"> Decrease \'Mininimum instances\' setting',
+					'Terminating instance(s). Please wait...',
+					'ext-mb-instance-terminating',
+					function(){
+						grid.autoSize();
+					},
+					function(){
+						store.load();
+					}
+				);
+			}},		
+
 			new Ext.menu.Separator({id: "option.logsSep"}),
 			{id: "option.logs",			text: 'View logs', 							href: "/logs_view.php?iid={instance_id}"}
      	],
@@ -118,21 +162,21 @@ Ext.onReady(function () {
 			}
 			else if (item.id == 'option.console' || item.id == 'option.process' || item.id == 'procSep')
 			{
-				if (data.state != 'Pending terminate' & data.is_rebooting != '1')
+				if (data.state != 'Pending terminate' && data.is_rebooting != '1')
 					return true;
 				else
 					return false;
 			}
 			else if (item.id == 'option.dnsEx' || item.id == 'option.dnsIn' || item.id == 'option.dnsSep')
 			{
-				if (data.state != 'Pending terminate' && ((item.id == 'option.dnsEx' && data.is_active == 1) || (item.id == 'option.dnsIn' && data.is_active == 0) || item.id == 'option.dnsSep'))
+				if (data.state != 'Pending terminate' && data.state != 'Pending' && ((item.id == 'option.dnsEx' && data.is_active == 1) || (item.id == 'option.dnsIn' && data.is_active == 0) || item.id == 'option.dnsSep'))
 					return true;
 				else
 					return false;
 			}
 			else if (item.id == 'option.disEip' || item.id == 'option.assocEip')
 			{
-				if (data.state != 'Pending terminate' && data.can_use_ceip == 1)
+				if (data.state != 'Pending terminate' && data.can_use_ceip == 1 && data.state != 'Pending')
 				{
 					if ((data.custom_eip && item.id == 'option.disEip') || (!data.custom_eip && item.id == 'option.assocEip'))
 						return true;
@@ -144,7 +188,7 @@ Ext.onReady(function () {
 			}
 			else if (item.id == 'option.attachEBS')
 			{
-				if (data.state != 'Pending terminate')
+				if (data.state != 'Pending terminate' && data.state != 'Pending')
 					return true;
 				else
 					return false;
@@ -158,7 +202,7 @@ Ext.onReady(function () {
 			}
 			else if (item.id != 'option.logs')
 			{
-				if (data.state == 'Running')
+				if (data.state == 'Running' || item.id == 'option.term' || item.id == 'option.menuSep')
 					return true;
 				else
 					return false;
@@ -168,11 +212,58 @@ Ext.onReady(function () {
 		},
 		withSelected: {
 			menu: [
-				{text: "Reboot", value: "reboot"},
-				{text: "Terminate", value: "terminate"}
+				{text: "Reboot", value: "reboot", handler:function(){
+
+					var instances = grid.getSelectionModel().selections.keys;
+
+					SendRequestWithConfirmation(
+						{
+							action: 'RebootInstances', 
+							instances: Ext.encode(instances),
+							farmid: FarmID
+						},
+						'Reboot selected instance(s)?',
+						'Sending reboot command to instance(s). Please wait...',
+						'ext-mb-instance-rebooting',
+						function(){
+							grid.autoSize();
+						},
+						function(){
+							store.load();
+						}
+					);
+					
+				}},
+				{text: "Terminate", value: "terminate", handler:function(){
+
+					var instances = grid.getSelectionModel().selections.keys;
+
+					SendRequestWithConfirmation(
+						{
+							action: 'TerminateInstances', 
+							instances: Ext.encode(instances),
+							farmid: FarmID
+						},
+						'Terminate selected instance(s)?',
+						'Terminating instance(s). Please wait...',
+						'ext-mb-instance-terminating',
+						function(){
+							grid.autoSize();
+						},
+						function(){
+							store.load();
+						}
+					);
+					
+				}}
 			],
 			hiddens: {with_selected : 1},
 			action: "act"
+		},
+		listeners: {
+			beforeshowoptions: function (grid, record, romenu, ev) {
+				romenu.record = record;
+			}
 		}
     });
     grid.render();
@@ -182,110 +273,4 @@ Ext.onReady(function () {
 });
 {/literal}
 </script>
-
-<!--
-<link rel="stylesheet" href="css/SelectControl.css" type="text/css" />
-<script type="text/javascript" src="js/class.SelectControl.js"></script>
-    {include file="inc/table_header.tpl"}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Farm role</th>
-			<th>Instance ID</th>
-			<th>State</th>
-			<th>Placement</th>
-			<th>Type</th>
-			<th>Uptime</th>
-			<th>Load averages</th>
-			<th>Public IP</th>
-			<th>SSH</th>
-			<th>Include in DNS zone</th>
-			<th width="1">Options</th>
-			<td class="th" width="1%" nowrap><input type="checkbox" name="checkbox" value="checkbox" onClick="checkall()"></th>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-		<td class="Item" valign="top" nowrap><span title="{$rows[id]->instancesSet->item->imageId}">{$rows[id]->Role}</span></td>
-		<td class="Item" valign="top" nowrap>{$rows[id]->instancesSet->item->instanceId}</td>
-		<td class="Item" valign="top">{$rows[id]->State}</td>
-		<td class="Item" valign="top" nowrap>{$rows[id]->instancesSet->item->placement->availabilityZone}</td>
-		<td class="Item" valign="top">{$rows[id]->instancesSet->item->instanceType}</td>
-		<td class="Item" valign="top">{$rows[id]->Uptime}</td>
-		<td class="Item" valign="top">{$rows[id]->LA}</td>
-		<td class="Item" valign="top" nowrap></td>
-		<td class="Item" align="center" valign="middle"></td>
-		<td class="Item" align="center" valign="middle" nowrap>{if $rows[id]->IsActive}<img src="images/true.gif">{else}<img src="images/false.gif">{/if}</td>
-        <td class="ItemEdit" valign="top" width="1"><a id="control_{$rows[id]->instancesSet->item->instanceId}" href="javascript:void(0)">Options</a></td>
-        <td class="ItemDelete">
-			<span>
-				<input type="checkbox" id="delete[]" name="delete[]" value="{$rows[id]->instancesSet->item->instanceId}">
-			</span>
-		</td>
-	</tr>
-	<script language="Javascript" type="text/javascript">
-    	var iid = '{$rows[id]->instancesSet->item->instanceId}';
-    	var farmid = '{$farmid}';
-    	
-    	var menu = [
-            {if $rows[id]->instancesSet->item->instanceState->name == 'running' && $rows[id]->State != 'Pending terminate'}
-            	{if $rows[id]->LA != 'Unknown' && $rows[id]->IsRebootLaunched == 0}{literal}{href: 'syncronize_role.php?iid='+iid, innerHTML: 'Synchronize to all'}{/literal},{/if}
-            	{literal}{type: 'separator'},{/literal}
-            	{if $rows[id]->IsRebootLaunched == 0}{literal}{href: 'console_output.php?iid='+iid, innerHTML: 'View console output'}{/literal},{/if}
-            	{if $rows[id]->IsRebootLaunched == 0}{literal}{href: 'process_list.php?iid='+iid+"&farmid="+farmid, innerHTML: 'View process list'}{/literal},{/if}
-            	{literal}{type: 'separator'},{/literal}
-            	{if $rows[id]->IsActive == 1}
-            		{literal}{href: 'instances_view.php?iid='+iid+'&task=setinactive&farmid='+farmid, innerHTML: 'Exclude from DNS zone'}{/literal},
-            	{else}
-            		{literal}{href: 'instances_view.php?iid='+iid+'&task=setactive&farmid='+farmid, innerHTML: 'Include in DNS zone'}{/literal},
-            	{/if}
-	            {if $rows[id]->canUseCustomEIPs}
-	            	{if $rows[id]->customEIP}
-	            		{literal}{href: 'instance_eip.php?iid='+iid+'&task=unassign', innerHTML: 'Disassociate Elastic IP'}{/literal},
-	            	{else}
-	            		{literal}{href: 'instance_eip.php?iid='+iid+'&task=assign', innerHTML: 'Associate Elastic IP'}{/literal},
-	            	{/if}
-	            {/if}
-	            {literal}{href: 'ebs_manage.php?task=attach&instanceID='+iid, innerHTML: 'Attach EBS volume'}{/literal},
-	        {/if}
-	        {if $rows[id]->instancesSet->item->instanceState->name == 'running'}
-	        	{if $rows[id]->Alias == 'mysql'}
-	        		{literal}{type: 'separator'},{/literal}
-	        		{literal}{href: 'farm_mysql_info.php?farmid='+farmid, innerHTML: 'Backup\/bundle MySQL data'}{/literal},
-	        	{/if}
-	        	{literal}{type: 'separator'},{/literal}
-	        	
-	        	{literal}{href: 'execute_script.php?farmid='+farmid+"&iid="+iid, innerHTML: 'Execute script'},{/literal}
-	        	
-	        	{literal}{type: 'separator'},{/literal}
-	        	{literal}{href: 'instances_view.php?iid='+iid+'&task=reboot&farmid='+farmid, innerHTML: 'Reboot'}{/literal},
-	        	{literal}{href: 'instances_view.php?iid='+iid+'&task=terminate&farmid='+farmid, innerHTML: 'Terminate'}{/literal},
-	        	{literal}{type: 'separator'},{/literal}
-	        {/if}
-            {literal}{href: 'logs_view.php?iid='+iid, innerHTML: 'View logs'}{/literal}
-        ];
-        
-        
-        {literal}			
-        var control = new SelectControl({menu: menu});
-        control.attach('control_'+iid);
-        {/literal}
-	
-	</script>
-	{sectionelse}
-	<tr>
-		<td colspan="14" align="center">No instances found</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="10" align="center">&nbsp;</td>
-		<td class="ItemEdit" valign="top">&nbsp;</td>
-		<td class="ItemDelete" valign="top">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	<input type="hidden" name="farmid" value="{$farmid}" />
-	{include file="inc/table_footer.tpl" colspan=9}
- -->
 {include file="inc/footer.tpl"}
