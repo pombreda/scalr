@@ -66,6 +66,17 @@
     		{
     		    $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
     		    
+    			try
+				{
+					$DBFarmRole = DBFarmRole::Load($instance['famrid'], $instance['ami_id']);
+					$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+				}
+				catch(Exception $e)
+				{
+					$Logger->fatal(sprintf("instances_view(73): %s", $e->getMessage()));
+					$skip_main_a_records = false;
+				}
+    		    
     		    $instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $new_roleinfo["name"], $ami_info['alias']);
     		    $records = array_merge($records, $instance_records);
     		}

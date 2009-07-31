@@ -274,7 +274,7 @@
 			{
 				$this->Logger->info(new FarmLogMessage(
 					$this->FarmID, 
-					sprintf(_("There is no free EBS volumes for role %s in availability zone %s. Creating new one(s)."),
+					sprintf(_("There are no free EBS volumes for role %s in availability zone %s. Creating new one(s)."),
 						$farm_role_info['name'], $event->InstanceInfo['avail_zone']	
 					)
 				));

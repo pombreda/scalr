@@ -97,6 +97,8 @@
                 $role_instances_by_time = array();
 
                 $role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($db_ami['ami_id']));
+
+                $DBFarmRole = DBFarmRole::LoadByID($db_ami['id']);
                 
                 $this->Logger->info("[FarmID: {$farminfo['id']}] Begin check '{$role}' role instances...");
                 
@@ -143,9 +145,13 @@
                                     	continue 2;		
                                     else
                                     {
-                                    	$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance did not respond on {$db_item_info['external_ip']}:161."));
+                                    	$chk = @fsockopen("udp://{$instance_dns}", 161, $errno, $errstr, 5);
+                                    	if ($chk)
+                                    		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance {$db_item_info['instance_id']} ({$db_item_info['external_ip']}) doesn't respond to SNMP. Scalr was able to open connection to UDP port 161, but snmp doesn't respond. Most likely snmpd is hung up. Try to restart it with /etc/init.d/snmpd restart"));
+                                    	else
+                                    		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance {$db_item_info['instance_id']} did not respond on {$db_item_info['external_ip']}:161. (Error {$errno}: {$errstr})"));
                                     	
-                                    	if ($db_ami['status_timeout'] != 0)
+                                    	if ($db_ami['status_timeout'] != 0 && $DBFarmRole->GetSetting(DBFarmRole::SETTING_TERMINATE_IF_SNMP_FAILS) == 1)
                                     	{
 	                                    	if (!$db_item_info['dtlaststatusupdate'])
 	                                    		$db_item_info['dtlaststatusupdate'] = strtotime($db_item_info['dtadded'])+$db_ami['launch_timeout'];

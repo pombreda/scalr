@@ -269,7 +269,9 @@
     		    $DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
     		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
     		    {
-    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
+    		    	$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+    		    	
+    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias'], $skip_main_a_records);
     		    	$records = array_merge($records, $instance_records);
     		    }
     		}
@@ -495,7 +497,8 @@
     			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
     		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
     		    {    			
-    				$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias']);
+    				$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias'], $skip_main_a_records);
     				$records = array_merge($records, $instance_records);
     		    }
     		}

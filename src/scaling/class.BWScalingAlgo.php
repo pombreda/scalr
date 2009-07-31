@@ -30,7 +30,7 @@
 					throw new Exception(sprintf(_("Minimum Bandwidth for role '%s' must be a number between 1 and 200"), $DBFarmRole->GetRoleName()));
 					
 				if($config[self::PROPERTY_MAX_BW] < $config[self::PROPERTY_MIN_BW])
-					$err[] = sprintf(_("Maximum Bandwidth for role '%s' must be greather than minimum Bandwidth"), $DBFarmRole->GetRoleName());
+					throw new Exception(sprintf(_("Maximum Bandwidth for role '%s' must be greather than minimum Bandwidth"), $DBFarmRole->GetRoleName()));
 			}
 				
 			return true;	
@@ -59,9 +59,20 @@
 			$this->Logger->info("BWScalingAlgo({$DBFarmRole->FarmID}, {$DBFarmRole->AMIID}) Sensor returned value: {$sensor_value}.");
 			
 			if ($sensor_value > $this->GetProperty(self::PROPERTY_MAX_BW))
-				return ScalingAlgo::UPSCALE;
+			{
+				if($DBFarmRole->GetRunningInstancesCount() < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES) 
+					&& $DBFarmRole->GetPendingInstancesCount() == 0)
+					return ScalingAlgo::UPSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			elseif ($sensor_value < $this->GetProperty(self::PROPERTY_MIN_BW))
-				return ScalingAlgo::DOWNSCALE;
+			{
+				if ($DBFarmRole->GetRunningInstancesCount() > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
+					return ScalingAlgo::DOWNSCALE;
+				else
+					return ScalingAlgo::NOOP;
+			}
 			else
 				return ScalingAlgo::NOOP;
 		}

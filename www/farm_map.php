@@ -18,7 +18,7 @@
 	
 	$ReflectState = new ReflectionClass("INSTANCE_STATE"); 
 	
-	$display["roles"] = $db->GetAll("SELECT farm_amis.*, farm_amis.id as id, ami_roles.name, ami_roles.alias, ami_roles.alias as icon FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
+	$display["roles"] = $db->GetAll("SELECT farm_amis.*, farm_amis.id as id, ami_roles.name, ami_roles.alias, ami_roles.alias as icon, ami_roles.architecture FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
 	foreach ($display["roles"] as &$role)
 	{
 		// Default icon for nonexistent aias
@@ -79,7 +79,17 @@
 		else
 			$role_LA = 0;
 			
-		$LA_percent = $role_LA/(float)$role['max_LA']*100;
+		$role['min_LA'] = $DBFarmRole->GetSetting(LAScalingAlgo::PROPERTY_MIN_LA);
+		$role['max_LA'] = $DBFarmRole->GetSetting(LAScalingAlgo::PROPERTY_MAX_LA);  
+			
+		if ($role['max_LA'] != 0)
+			$LA_percent = $role_LA/(float)$role['max_LA']*100;
+		else
+		{
+			$LA_percent = $role_LA/99999*100;
+			$role['min_LA'] = 'X';
+			$role['max_LA'] = 'X';
+		}
 		
 		if ($LA_percent < 50)
 			$role['la_bar']['color'] = 'b';

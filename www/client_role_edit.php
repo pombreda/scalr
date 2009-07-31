@@ -89,11 +89,13 @@
 		
 		$Validator = new Validator();
 	    
-	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA < 1)
-	       $err[] = _("Invalid value for minimum LA");
+		if ($post_default_minLA)
+	    	if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA < 1)
+	       		$err[] = _("Invalid value for minimum LA");
 	    
-	    if (!$Validator->IsNumeric($post_default_maxLA) || $post_default_maxLA > 99)
-	       $err[] = _("Invalid value for maximum LA");
+	    if ($post_default_maxLA)
+	    	if (!$Validator->IsNumeric($post_default_maxLA) || $post_default_maxLA > 99)
+	       		$err[] = _("Invalid value for maximum LA");
 	       
 		if ($req_task == 'share')
 	    {

@@ -6,5 +6,8 @@
 		const RSS_LOGIN 			= 'rss_login';
 		const RSS_PASSWORD 			= 'rss_password';
 		const SYNC_TIMEOUT			= 'sync_timeout';
+		
+		const API_ENABLED			= 'api.enabled';
+		const API_ALLOWED_IPS		= 'api.allowed_ips';
 	}
 ?>

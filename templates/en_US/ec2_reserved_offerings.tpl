@@ -23,13 +23,13 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				'id', 'instance_type', 'avail_zone', 'duration', 
 				'fixed_price', 'usage_price', 'description'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/reserved_offerings_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

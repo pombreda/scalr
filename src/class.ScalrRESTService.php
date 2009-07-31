@@ -91,14 +91,9 @@
     			if (!$auth_key)
     				throw new Exception(_("Cannot find init token for specified instance"));
     				
-    			//TODO:
-    			//$this->DB->Execute("DELETE FROM init_tokens WHERE token=?", array($auth_key));
+    			$this->DB->Execute("DELETE FROM init_tokens WHERE token=?", array($auth_key));
     		}
-    		
-    		//TODO: Remove this
-    		$this->Logger->info($auth_key);
-    		$this->Logger->info($string_to_sign);
-    		
+    		    		
     		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, $string_to_sign, $auth_key, 1));    		
     		if ($valid_sign != $signature)
     			throw new Exception("Signature doesn't match");

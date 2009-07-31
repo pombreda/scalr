@@ -658,9 +658,9 @@
 	        	$isdbmaster = ($dbmaster) ? '1' : '0';
 	        	$isactive = ($active) ? '1' : '0';
 	                    	
-	        	$instace_id = $result->instancesSet->item->instanceId;
+	        	$instance_id = $result->instancesSet->item->instanceId;
 	        	
-	        	LoggerManager::getLogger('RunInstance')->debug(new FarmLogMessage($farmid, sprintf(_("Instance '%s' index: %s"), $instace_id, $instance_index)));
+	        	LoggerManager::getLogger('RunInstance')->debug(new FarmLogMessage($farmid, sprintf(_("Instance '%s' index: %s"), $instance_id, $instance_index)));
 	        	
 		        $DB->Execute("INSERT INTO 
         			`farm_instances` 
@@ -677,7 +677,7 @@
         	  		`region` = ?
          		", array(
 		        	$farmid, 
-		        	$instace_id, 
+		        	$instance_id, 
 		        	$ami, 
 		        	$isdbmaster, 
 		        	$isactive, 
@@ -688,10 +688,10 @@
 		        ));
 		        
 		        $DB->Execute("INSERT INTO init_tokens SET instance_id=?, token=?, dtadded=NOW()", 
-		        	array($instace_id, $user_data["inittoken"])
+		        	array($instance_id, $user_data["inittoken"])
 		        );
 		        
-		        $instance_info = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instace_id));
+		        $instance_info = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instance_id));
 		        Scalr::FireEvent($farmid, new BeforeInstanceLaunchEvent($instance_info));
 	        }
 	        else 
@@ -700,7 +700,7 @@
 	            return false;
 	        }
 	        
-	        return $instace_id;
+	        return $instance_id;
 	    }
 	}
 ?>

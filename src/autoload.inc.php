@@ -15,6 +15,11 @@
     		/****************************** LIB **********************************/
     	
     		
+    		/***************************** API ***********************************/
+    		'ScalrAPICoreFactory'	=> SRCPATH.'/api/class.ScalrAPICoreFactory.php',
+    		'ScalrAPICore'			=> SRCPATH.'/api/class.ScalrAPICore.php',
+    		'ScalrAPI20090507'		=> SRCPATH.'/api/class.ScalrAPI20090507.php',
+    		
     		/***************************** Scaling *******************************/
     		'IScalingAlgo'			=> SRCPATH.'/scaling/interface.IScalingAlgo.php',
     		'IScalingSensor'		=> SRCPATH.'/scaling/interface.IScalingSensor.php',
@@ -22,10 +27,16 @@
     		'LAScalingAlgo'			=> SRCPATH.'/scaling/class.LAScalingAlgo.php',
     		'BWScalingAlgo'			=> SRCPATH.'/scaling/class.BWScalingAlgo.php',
     		'SQSScalingAlgo'		=> SRCPATH.'/scaling/class.SQSScalingAlgo.php',
+    		'RAMScalingAlgo'		=> SRCPATH.'/scaling/class.RAMScalingAlgo.php',
+    		'TimeScalingAlgo'		=> SRCPATH.'/scaling/class.TimeScalingAlgo.php',
+    		'BaseScalingAlgo'		=> SRCPATH.'/scaling/class.BaseScalingAlgo.php',
     	
     		'LAScalingSensor'		=> SRCPATH.'/scaling/class.LAScalingSensor.php',
     		'BWScalingSensor'		=> SRCPATH.'/scaling/class.BWScalingSensor.php',
     		'SQSScalingSensor'		=> SRCPATH.'/scaling/class.SQSScalingSensor.php',
+    		'RAMScalingSensor'		=> SRCPATH.'/scaling/class.RAMScalingSensor.php',
+    		'TimeScalingSensor'		=> SRCPATH.'/scaling/class.TimeScalingSensor.php',
+    		'BaseScalingSensor'		=> SRCPATH.'/scaling/class.BaseScalingSensor.php',
     	
     		'ScalingAlgo'			=> SRCPATH.'/scaling/class.ScalingAlgo.php',
     		'SensorFactory'			=> SRCPATH.'/scaling/class.SensorFactory.php',
@@ -122,6 +133,7 @@
 		    'SSHWorker'				=> APPPATH.'/observers/class.SSHWorker.php',
 		    'ElasticIPsEventObserver'	=> APPPATH.'/observers/class.ElasticIPsEventObserver.php',
     		'ScalarizrEventObserver'	=> APPPATH.'/observers/class.ScalarizrEventObserver.php',
+    		'ELBEventObserver'		=> APPPATH.'/observers/class.ELBEventObserver.php',
     		
     		// Deferred observers
     		'MailEventObserver'		=> APPPATH.'/observers/class.MailEventObserver.php',

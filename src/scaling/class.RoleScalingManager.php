@@ -27,20 +27,23 @@
 		 */
 		function __construct(DBFarmRole $DBFarmRole)
 		{
-			$this->DB = Core::GetDBInstance();
+			$this->DB = Core::GetDBInstance(null, true);
 			$this->EnabledAlgos = array();
 			
 			foreach (self::$ScalingAlgos as $Algo)
 			{
 				$algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
 				
-				$is_enabled = $this->DB->GetOne("SELECT value FROM farm_role_settings WHERE farm_roleid = ? AND name = ?",
-					array($DBFarmRole->ID, "scaling.{$algo_name}.enabled")
-				);
+				if ($algo_name == 'base')
+					$is_enabled = true;
+				else
+					$is_enabled = $this->DB->GetOne("SELECT value FROM farm_role_settings WHERE farm_roleid = ? AND name = ?",
+						array($DBFarmRole->ID, "scaling.{$algo_name}.enabled")
+					);
 				
 				$props = array();
 				$config = $Algo->GetConfigurationForm();
-				foreach ($config->ListFields() as $field)
+				foreach ((array)$config->ListFields() as $field)
 				{
 					if ($field->FieldType != FORM_FIELD_TYPE::MIN_MAX_SLIDER)
 					{

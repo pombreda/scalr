@@ -31,7 +31,7 @@
     		    $uinfo = $db->GetRow("SELECT * FROM ipaccess WHERE id=?", array($post_id));
     			unset($uinfo["id"]);
     		    
-    		    $okmsg = _("Ip address succesfully updated");
+    		    $okmsg = _("Ip address successfully updated");
     			CoreUtils::Redirect("ipaccess_view.php");
     		}
 	    }

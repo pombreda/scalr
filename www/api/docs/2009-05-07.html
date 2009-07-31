@@ -1,0 +1,2565 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<base target="_top">
+<style type="text/css">
+
+
+/* default css */
+
+table {
+  font-size: 1em;
+  line-height: inherit;
+  border-collapse: collapse;
+}
+
+
+tr {
+  
+  text-align: left;
+  
+}
+
+
+div, address, ol, ul, li, option, select {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+p {
+  margin: 0px;
+}
+
+
+pre {
+  font-family: Courier New;
+  white-space: pre-wrap;
+  margin:0;
+}
+
+body {
+  margin: 6px;
+  padding: 0px;
+  font-family: Verdana, sans-serif;
+  font-size: 10pt;
+  background-color: #ffffff;
+}
+
+
+img {
+  -moz-force-broken-image-icon: 1;
+}
+
+@media screen {
+  html.pageview {
+    background-color: #f3f3f3 !important;
+  }
+
+  
+
+  body {
+    min-height: 1100px;
+    
+    counter-reset: __goog_page__;
+  }
+  * html body {
+    height: 1100px;
+  }
+  .pageview body {
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    border-right: 2px solid #bbb;
+    border-bottom: 2px solid #bbb;
+    width: 648px !important;
+    margin: 15px auto 25px;
+    padding: 40px 50px;
+  }
+  /* IE6 */
+  * html {
+    overflow-y: scroll;
+  }
+  * html.pageview body {
+    overflow-x: auto;
+  }
+  /* Prevent repaint errors when scrolling in Safari. This "Star-7" css hack
+     targets Safari 3.1, but not WebKit nightlies and presumably Safari 4.
+     That's OK because this bug is fixed in WebKit nightlies/Safari 4 :-). */
+  html*#wys_frame::before {
+    content: '\A0';
+    position: fixed;
+    overflow: hidden;
+    width: 0;
+    height: 0;
+    top: 0;
+    left: 0;
+  }
+  
+  
+
+  
+    .writely-callout-data {
+      display: none;
+      *display: inline-block;
+      *width: 0;
+      *height: 0;
+      *overflow: hidden;
+    }
+    .writely-footnote-marker {
+      background-image: url('MISSING');
+      background-color: transparent;
+      background-repeat: no-repeat;
+      width: 7px;
+      overflow: hidden;
+      height: 16px;
+      vertical-align: top;
+
+      
+      -moz-user-select: none;
+    }
+    .editor .writely-footnote-marker {
+      cursor: move;
+    }
+    .writely-footnote-marker-highlight {
+      background-position: -15px 0;
+      -moz-user-select: text;
+    }
+    .writely-footnote-hide-selection ::-moz-selection, .writely-footnote-hide-selection::-moz-selection {
+      background: transparent;
+    }
+    .writely-footnote-hide-selection ::selection, .writely-footnote-hide-selection::selection {
+      background: transparent;
+    }
+    .writely-footnote-hide-selection {
+      cursor: move;
+    }
+
+    
+    .editor .writely-comment-yellow {
+      background-color: #FF9;
+      background-position: -240px 0;
+    }
+    .editor .writely-comment-yellow-hover {
+      background-color: #FF0;
+      background-position: -224px 0;
+    }
+    .editor .writely-comment-blue {
+      background-color: #C0D3FF;
+      background-position: -16px 0;
+    }
+    .editor .writely-comment-blue-hover {
+      background-color: #6292FE;
+      background-position: 0 0;
+    }
+    .editor .writely-comment-orange {
+      background-color: #FFDEAD;
+      background-position: -80px 0;
+    }
+    .editor .writely-comment-orange-hover {
+      background-color: #F90;
+      background-position: -64px 0;
+    }
+    .editor .writely-comment-green {
+      background-color: #99FBB3;
+      background-position: -48px 0;
+    }
+    .editor .writely-comment-green-hover {
+      background-color: #00F442;
+      background-position: -32px 0;
+    }
+    .editor .writely-comment-cyan {
+      background-color: #CFF;
+      background-position: -208px 0;
+    }
+    .editor .writely-comment-cyan-hover {
+      background-color: #0FF;
+      background-position: -192px 0;
+    }
+    .editor .writely-comment-purple {
+      background-color: #EBCCFF;
+      background-position: -144px 0;
+    }
+    .editor .writely-comment-purple-hover {
+      background-color: #90F;
+      background-position: -128px 0;
+    }
+    .editor .writely-comment-magenta {
+      background-color: #FCF;
+      background-position: -112px 0;
+    }
+    .editor .writely-comment-magenta-hover {
+      background-color: #F0F;
+      background-position: -96px 0;
+    }
+    .editor .writely-comment-red {
+      background-color: #FFCACA;
+      background-position: -176px 0;
+    }
+    .editor .writely-comment-red-hover {
+      background-color: #FF7A7A;
+      background-position: -160px 0;
+    }
+
+    .editor .writely-comment-marker {
+      background-image: url('MISSING');
+      background-color: transparent;
+      padding-right: 11px;
+      background-repeat: no-repeat;
+      width: 16px;
+      height: 16px;
+      -moz-user-select: none;
+    }
+
+    .editor .writely-comment-hidden {
+      padding: 0;
+      background: none;
+    }
+    .editor .writely-comment-marker-hidden {
+      background: none;
+      padding: 0;
+      width: 0;
+    }
+    .editor .writely-comment-none {
+      opacity: .2;
+      filter:progid:DXImageTransform.Microsoft.Alpha(opacity=20);
+      -moz-opacity: .2;
+    }
+    .editor .writely-comment-none-hover {
+      opacity: .2;
+      filter:progid:DXImageTransform.Microsoft.Alpha(opacity=20);
+      -moz-opacity: .2;
+    }
+  
+
+
+  
+  .br_fix br:not(:-moz-last-node):not(:-moz-first-node) {
+    
+    position:relative;
+    
+    left: -1ex
+    
+  }
+  
+  .br_fix br+br {
+    position: static !important
+  }
+
+  
+  #cb-p-tgt {
+    font-size: 8pt;
+    padding: .4em;
+    font-style: oblique;
+    background-color: #FFF1A8;
+    border: 1px solid #000;
+  }
+}
+
+h6 { font-size: 8pt }
+h5 { font-size: 8pt }
+h4 { font-size: 10pt }
+h3 { font-size: 12pt }
+h2 { font-size: 14pt }
+h1 { font-size: 18pt }
+
+blockquote {padding: 10px; border: 1px #DDD dashed }
+
+.webkit-indent-blockquote { border: none; }
+
+a img {border: 0}
+
+.pb {
+  border-width: 0;
+  page-break-after: always;
+  /* We don't want this to be resizeable, so enforce a width and height
+     using !important */
+  height: 1px !important;
+  width: 100% !important;
+}
+
+.editor .pb {
+  border-top: 1px dashed #C0C0C0;
+  border-bottom: 1px dashed #C0C0C0;
+}
+
+div.google_header, div.google_footer {
+  position: relative;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+
+/* Table of contents */
+.editor div.writely-toc {
+  background-color: #f3f3f3;
+  border: 1px solid #ccc;
+}
+.writely-toc > ol {
+  padding-left: 3em;
+  font-weight: bold;
+}
+ol.writely-toc-subheading {
+  padding-left: 1em;
+  font-weight: normal;
+}
+/* IE6 only */
+* html writely-toc ol {
+  list-style-position: inside;
+}
+.writely-toc-none {
+  list-style-type: none;
+}
+.writely-toc-decimal {
+  list-style-type: decimal;
+}
+.writely-toc-upper-alpha {
+  list-style-type: upper-alpha;
+}
+.writely-toc-lower-alpha {
+  list-style-type: lower-alpha;
+}
+.writely-toc-upper-roman {
+  list-style-type: upper-roman;
+}
+.writely-toc-lower-roman {
+  list-style-type: lower-roman;
+}
+.writely-toc-disc {
+  list-style-type: disc;
+}
+
+/* Ordered lists converted to numbered lists can preserve ordered types, and
+   vice versa. This is confusing, so disallow it */
+ul[type="i"], ul[type="I"], ul[type="1"], ul[type="a"], ul[type="A"] {
+  list-style-type: disc;
+}
+
+ol[type="disc"], ol[type="circle"], ol[type="square"] {
+  list-style-type: decimal;
+}
+
+/* end default css */
+
+
+  /* default print css */
+  
+  @media print {
+    body {
+      padding: 0;
+      margin: 0;
+    }
+
+    div.google_header, div.google_footer {
+      display: block;
+      min-height: 0;
+      border: none;
+    }
+
+    div.google_header {
+      flow: static(header);
+    }
+
+    /* used to insert page numbers */
+    div.google_header::before, div.google_footer::before {
+      position: absolute;
+      top: 0;
+    }
+
+    div.google_footer {
+      flow: static(footer);
+    }
+
+    /* always consider this element at the start of the doc */
+    div#google_footer {
+      flow: static(footer, start);
+    }
+
+    span.google_pagenumber {
+      content: counter(page);
+    }
+
+    span.google_pagecount {
+      content: counter(pages);
+    }
+
+
+    callout.google_footnote {
+      
+      display: prince-footnote;
+      footnote-style-position: inside;
+      /* These styles keep the footnote from taking on the style of the text
+         surrounding the footnote marker. They can be overridden in the
+         document CSS. */
+      color: #000;
+      font-family: Verdana;
+      font-size: 10.0pt;
+      font-weight: normal;
+    }
+
+    /* Table of contents */
+    #WritelyTableOfContents a::after {
+      content: leader('.') target-counter(attr(href), page);
+    }
+
+    #WritelyTableOfContents a {
+      text-decoration: none;
+      color: black;
+    }
+  }
+
+  @page {
+    @top {
+      content: flow(header);
+    }
+    @bottom {
+      content: flow(footer);
+    }
+    @footnotes {
+      border-top: solid black thin;
+      padding-top: 8pt;
+    }
+  }
+  /* end default print css */
+
+
+/* custom css */
+
+
+/* end custom css */
+
+/* ui edited css */
+
+body {
+  font-family: Verdana;
+  
+  font-size: 10.0pt;
+  line-height: normal;
+  background-color: #ffffff;
+}
+/* end ui edited css */
+
+
+/* editor CSS */
+.editor a:visited {color: #551A8B}
+.editor table.zeroBorder {border: 1px dotted gray}
+.editor table.zeroBorder td {border: 1px dotted gray}
+.editor table.zeroBorder th {border: 1px dotted gray}
+
+
+.editor div.google_header, .editor div.google_footer {
+  border: 2px #DDDDDD dashed;
+  position: static;
+  width: 100%;
+  min-height: 2em;
+}
+
+.editor .misspell {background-color: yellow}
+
+.editor .writely-comment {
+  font-size: 9pt;
+  line-height: 1.4;
+  padding: 1px;
+  border: 1px dashed #C0C0C0
+}
+
+
+/* end editor CSS */
+
+</style>
+
+  
+  <title>Scalr API Developer Guide (API Version 2009-05-07)</title>
+
+</head>
+
+<body>
+    
+    
+    
+<DIV class=titlepage>
+  <DIV>
+    <DIV>
+      <H1 class=topictitle>
+        <DIV class=titlepage>
+          <DIV>
+            <DIV>
+              <H1 class=topictitle>
+                Scalr API Developer Guide (API Version 2009-05-07)<BR>
+              </H1>
+              <BR>
+              <H1 class=topictitle>
+                Common Request Parameters
+              </H1>
+            </DIV>
+          </DIV>
+        </DIV>
+        <A class=indexterm name=d0e1787></A><A class=indexterm name=d0e1792></A>
+        <P style=FONT-WEIGHT:normal>
+          <FONT size=2>&nbsp;&nbsp; &nbsp;All Query operations share a set of common parameters that must be present in each call:</FONT>
+        </P>
+        <P style=FONT-WEIGHT:normal>
+          <BR>
+        </P>
+        <P style=FONT-WEIGHT:normal>
+        </P>
+        <FONT size=2>
+        <DIV>
+          <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 width=1346>
+            <TBODY>
+            <TR bgColor=#cccccc>
+              <TD width=15%>
+                <B>Name<BR>
+                </B>
+              </TD>
+              <TD width=33%>
+                <B>Description<BR>
+                </B>
+              </TD>
+              <TD align=middle width=10%>
+                <B>Required<BR>
+                </B>
+              </TD>
+            </TR>
+            <TR>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                <SPAN style=FONT-WEIGHT:normal>Action<BR>
+                </SPAN>
+              </TD>
+              <TD width=33%>
+                <P class=simpara>
+                  <SPAN style=FONT-WEIGHT:normal>Indicates the action to perform.</SPAN>
+                </P>
+                <P class=simpara>
+                  <BR>
+                </P>
+                <P class=simpara>
+                  <I><SPAN style=FONT-WEIGHT:normal>Example: </SPAN></I><I><SPAN style=FONT-WEIGHT:normal>TerminateFarm</SPAN></I>
+                </P>
+              </TD>
+              <TD align=middle width=10%>
+                <SPAN style=FONT-WEIGHT:normal>Yes<BR>
+                </SPAN>
+              </TD>
+            </TR>
+            <TR>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                <SPAN style=FONT-WEIGHT:normal>KeyID</SPAN>
+              </TD>
+              <TD width=33%>
+                <SPAN style=FONT-WEIGHT:normal>The KeyID for the request sender. You can get it on 'Settings -&gt; System settings' page<BR>
+                </SPAN><I><SPAN style=FONT-WEIGHT:normal><BR>
+                Example: 5d0e16f7498c41cc</SPAN></I>
+              </TD>
+              <TD align=middle width=10%>
+                <SPAN style=FONT-WEIGHT:normal>Yes<BR>
+                </SPAN>
+              </TD>
+            </TR>
+            <TR>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                <P class=simpara>
+                  <I class=parameter><SPAN style=FONT-WEIGHT:normal>Timestamp</SPAN></I>
+                </P>
+              </TD>
+              <TD width=33%>
+                <P class=simpara>
+                  <SPAN style=FONT-WEIGHT:normal>The date and time at which the request is signed, in the format YYYY-MM-DDThh:mm:ssZ. For more information, go to </SPAN><A class=ulink href=http://www.w3.org/TR/NOTE-datetime target=_blank><SPAN style=FONT-WEIGHT:normal>ISO 8601 (http://www.w3.org/TR/NOTE-datetime)</SPAN></A><SPAN style=FONT-WEIGHT:normal>.</SPAN>
+                </P>
+                <P class=simpara>
+                </P>
+                <P class=simpara>
+                  <BR>
+                </P>
+                <P class=simpara>
+                  <I><SPAN style=FONT-WEIGHT:normal>Example: 2009-01-07T15:04:56Z</SPAN></I>
+                </P>
+              </TD>
+              <TD align=middle width=10%>
+                <SPAN style=FONT-WEIGHT:normal>Yes<BR>
+                </SPAN>
+              </TD>
+            </TR>
+            <TR>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                <P class=simpara>
+                  <I class=parameter><SPAN style=FONT-WEIGHT:normal>Signature</SPAN></I>
+                </P>
+              </TD>
+              <TD width=33%>
+                <P class=simpara>
+                  <SPAN style=FONT-WEIGHT:normal>The request signature. For more information, see "Using Query API -&gt; Qurey API Authentication".</SPAN>
+                </P>
+                <P class=simpara>
+                  <BR>
+                </P>
+                <P class=simpara>
+                  <I><SPAN style=FONT-WEIGHT:normal>Example: Qnpl4Qk/7tINHzfXCiT7VbBatDA=</SPAN></I>
+                </P>
+              </TD>
+              <TD align=middle width=10%>
+                <SPAN style=FONT-WEIGHT:normal>Yes<BR>
+                </SPAN>
+              </TD>
+            </TR>
+            <TR>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                <P class=simpara>
+                  <I class=parameter><SPAN style=FONT-WEIGHT:normal>Version</SPAN></I>
+                </P>
+              </TD>
+              <TD width=33%>
+                <P class=simpara>
+                  <SPAN style=FONT-WEIGHT:normal>The API version to use.</SPAN>
+                </P>
+                <P class=simpara>
+                  <BR>
+                </P>
+                <P class=simpara>
+                  <I><SPAN style=FONT-WEIGHT:normal>Example: 2009-05-07</SPAN></I>
+                </P>
+              </TD>
+              <TD align=middle width=10%>
+                <SPAN style=FONT-WEIGHT:normal>Yes</SPAN><BR>
+              </TD>
+            </TR>
+            </TBODY>
+          </TABLE>
+        </DIV>
+        </FONT>
+        <P>
+          &nbsp;
+        </P>
+      </H1>
+    </DIV>
+  </DIV>
+</DIV>
+<BR>
+<BR>
+<H1>
+  Using the Query API
+</H1>
+<DIV>
+  <DIV>
+    <H3 class=title id=requestId-common-data-type>
+      The Request ID
+    </H3>
+  </DIV>
+</DIV>
+<DIV class=section>
+  <A class=indexterm name=d0e561></A><A class=indexterm name=d0e564></A><A class=indexterm name=d0e569></A>
+  <P>
+    &nbsp;&nbsp; &nbsp;In every response from Scalr, you will find a string element called TransactionID. This is simply a unique identifier Scalr assigns to this request for tracking and troubleshooting purposes.
+  </P>
+  <P>
+    <BR>
+  </P>
+  <P>
+    <BR>
+  </P>
+  <H3 class=title id=query-authentication>
+    Query API Authentication<BR>
+  </H3>
+  <P>
+    &nbsp;&nbsp; &nbsp;You can send Query requests over HTTPS only. You must include a signature in every Query request. This section describes how to create the signature.
+  </P>
+  <P>
+    <BR>
+  </P>
+  <DIV class=procedure>
+    <A name=d0e618></A>
+    <P class=title>
+      <B>To create the signature</B>
+    </P>
+    <OL type=1>
+      <LI>
+        <P class=simpara>
+          Create the canonicalized query string that you need later in this procedure:
+        </P>
+        <OL type=a>
+          <LI>
+            <P>
+              Sort the UTF-8 query string components by parameter name with natural byte ordering.
+            </P>
+            <P class=simpara>
+              The parameters can come from the GET URI or from the POST body (when Content-Type is application/x-www-form-urlencoded).
+            </P>
+            <LI>
+              <P>
+                URL encode the parameter name and values according to the following rules:
+              </P>
+              <DIV class=itemizedlist>
+                <UL type=disc>
+                  <LI>
+                    <P>
+                    Do not URL encode any of the unreserved characters that RFC 3986 defines.
+                    </P>
+                    <P class=simpara>
+                    These unreserved characters are A-Z, a-z, 0-9, hyphen ( - ), underscore ( _ ), period ( . ), and tilde ( ~ ).
+                    </P>
+                    <LI>
+                    <P>
+                    Percent encode all other characters with %XY, where X and Y are hex characters 0-9 and uppercase A-F.
+                    </P>
+                    <LI>
+                    <P>
+                    Percent encode extended UTF-8 characters in the form %XY%ZA....
+                    </P>
+                    <LI>
+                    <P>
+                    Percent encode the space character as %20 (and not +, as common encoding schemes do).
+                    </P>
+                    </LI>
+                </UL>
+              </DIV>
+              <DIV class=note style="MARGIN-LEFT:0.5in; MARGIN-RIGHT:0.5in">
+              </DIV>
+              <LI>
+                <P>
+                  Concatinate name and values to a single string (eg. var1value1var2value2)
+                </P>
+              </LI>
+        </OL>
+        <LI>
+          <P>
+            Calculate an RFC 2104-compliant HMAC with the string you just created, your API Access Key (<FONT size=2>You can get it on 'Settings -&gt; System settings' page</FONT>) as the key, and SHA256 as the hash algorithm.
+          </P>
+          <P class=simpara>
+            For more information, go to <A class=ulink href=http://www.ietf.org/rfc/rfc2104.txt target=_blank>http://www.ietf.org/rfc/rfc2104.txt</A>.
+          </P>
+          <LI>
+            <P>
+              Convert the Resulting value to base64.
+            </P>
+            <LI>
+              <P>
+                Use the Resulting value as the value of the <I class=parameter>Signature</I> request parameter.
+              </P>
+            </LI>
+    </OL>
+  </DIV>
+  <DIV class=important style="MARGIN-LEFT:0.5in; MARGIN-RIGHT:0.5in">
+  </DIV>
+</DIV>
+<BR>
+<P class=simpara>
+  &nbsp;&nbsp; &nbsp;The final signature you send in the request must be URL encoded as specified in RFC 3986 (for more information, go to <A class=ulink href=http://www.ietf.org/rfc/rfc3986.txt target=_blank>http://www.ietf.org/rfc/rfc3986.txt</A>). If your toolkit URL encodes your final request, then it handles the required URL encoding of the signature. If your toolkit doesn't URL encode the final request, then make sure to URL encode the signature before you include it in the request. Most importantly, make sure the signature is URL encoded <SPAN class=emphasis><I>only once</I></SPAN>. A common mistake is to URL encode it manually during signature formation, and then again when the toolkit URL encodes the entire request.
+</P>
+<BR>
+<H3 class=title id=query-example>
+  Query Example
+</H3>
+<B>&nbsp;&nbsp; LaunchFarm</B><B> API Request<BR>
+<BR>
+&nbsp;&nbsp;
+<DIV>
+  <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 width=100%>
+    <TBODY>
+    <TR>
+      <TD width=100%>
+        https://api.scalr.net/?Action=LaunchFarm<BR>
+        &amp;FarmID=123<BR>
+        &amp;Version=2009-05-07<BR>
+        &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+        &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+      </TD>
+    </TR>
+    </TBODY>
+  </TABLE>
+</DIV>
+<BR>
+</B><BR>
+<P class=simpara>
+  Following is the string to sign.
+</P>
+<P class=simpara>
+  <BR>
+</P>
+<P class=simpara style=COLOR:#000000>
+</P>
+<DIV>
+  <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 height=25 id=s.of width=100%>
+    <TBODY>
+    <TR>
+      <TD width=100%>
+        <B>ActionLaunchFarmFarmID123KeyID5d0e16f7498c41ccTimeStamp2009-06-19T05%3A13%3A00.000ZVersion2009-05-07</B>
+      </TD>
+    </TR>
+    </TBODY>
+  </TABLE>
+</DIV>
+<BR>
+<BR>
+Following is the signed request.<BR>
+<B><BR>
+&nbsp;&nbsp;
+<DIV>
+  <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 width=100%>
+    <TBODY>
+    <TR>
+      <TD width=100%>
+        https://api.scalr.net/?Action=LaunchFarm<BR>
+        &amp;FarmID=123<BR>
+        &amp;Version=2009-05-07<BR>
+        &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+        &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+        &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;
+      </TD>
+    </TR>
+    </TBODY>
+  </TABLE>
+</DIV>
+</B><BR>
+<BR>
+<BR>
+<BR>
+<H1>
+  API Reference
+</H1>
+<BR>
+<H2>
+  TerminateFarm
+</H2>
+<H4>
+  &nbsp;&nbsp; &nbsp;Description
+</H4>
+&nbsp;&nbsp;&nbsp; This API terminates specified farm<BR>
+<BR>
+<H4>
+  &nbsp;&nbsp;&nbsp; Request Parameters
+</H4>
+<DIV>
+</DIV>
+<DIV>
+  <FONT size=2>
+  <DIV>
+    <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+      <TBODY>
+      <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+        <TD width=15%>
+          <B><B>Name<BR>
+          </B></B>
+        </TD>
+        <TD width=33%>
+          <B><B>Description<BR>
+          </B></B>
+        </TD>
+        <TD align=middle width=10%>
+          <B><B>Required<BR>
+          </B></B>
+        </TD>
+      </TR>
+      <TR style=TEXT-ALIGN:left>
+        <TD style=FONT-FAMILY:Verdana width=15%>
+          FarmID
+        </TD>
+        <TD width=33%>
+          <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+            The ID of farm that you want to terminate.
+          </P>
+          <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+            <BR>
+          </P>
+          <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+            <I>Example:&nbsp;</I><I>123456</I>
+          </P>
+        </TD>
+        <TD align=middle width=10%>
+          <B><SPAN style=FONT-WEIGHT:normal>Yes</SPAN><BR>
+          </B>
+        </TD>
+      </TR>
+      <TR style=TEXT-ALIGN:left>
+        <TD style=FONT-FAMILY:Verdana width=15%>
+          <P>
+            KeepEBS
+          </P>
+        </TD>
+        <TD width=33%>
+          <P>
+            Keep EBS volumes created for roles on this farm.
+          </P>
+          <P>
+            <BR>
+          </P>
+          <P>
+            <I>Example: 1</I>
+          </P>
+        </TD>
+        <TD style=TEXT-ALIGN:center width=10%>
+          Yes
+        </TD>
+      </TR>
+      <TR style=TEXT-ALIGN:left>
+        <TD style=FONT-FAMILY:Verdana width=15%>
+          KeepEIP
+        </TD>
+        <TD width=33%>
+          Keep Elastic IPs created for roles on this farm.<BR>
+          <BR>
+          <I>Example: 0</I>
+        </TD>
+        <TD style=TEXT-ALIGN:center width=10%>
+          Yes
+        </TD>
+      </TR>
+      <TR style=TEXT-ALIGN:left>
+        <TD style=FONT-FAMILY:Verdana width=15%>
+          KeepDNSZone
+        </TD>
+        <TD width=33%>
+          Keep DNS zone that assigned to this farm on nameservers.<BR>
+          <BR>
+          <I>Example: 1</I>
+        </TD>
+        <TD style=TEXT-ALIGN:center width=10%>
+          Yes
+        </TD>
+      </TR>
+      </TBODY>
+    </TABLE>
+    <BR>
+  </DIV>
+  <DIV>
+    &nbsp;
+  </DIV>
+  <H4>
+    &nbsp;&nbsp; Response Elements
+  </H4>
+  </FONT>
+</DIV>
+<DIV>
+  <DIV>
+    <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+      <TBODY>
+      <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+        <TD width=10%>
+          <B><B>Name<BR>
+          </B></B>
+        </TD>
+        <TD width=50%>
+          <B><B>Description<BR>
+          </B></B>
+        </TD>
+      </TR>
+      <TR style=TEXT-ALIGN:left>
+        <TD style=FONT-FAMILY:Verdana width=10%>
+          Result
+        </TD>
+        <TD width=50%>
+          <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+            Request Result
+          </P>
+        </TD>
+      </TR>
+      </TBODY>
+    </TABLE>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <H4>
+    &nbsp;&nbsp; Sample Request
+  </H4>
+  <DIV>
+    <B>
+    <DIV>
+      <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+        <TBODY>
+        <TR style=TEXT-ALIGN:left>
+          <TD width=100%>
+            https://api.scalr.net/?Action=TerminateFarm<BR>
+            &amp;FarmID=123<BR>
+            &amp;KeepEBS=1<BR>
+            &amp;KeepEIP=0<BR>
+            &amp;KeepDNSZone=0<BR>
+            &amp;Version=2009-05-07<BR>
+            &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+            &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+            &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;
+          </TD>
+        </TR>
+        </TBODY>
+      </TABLE>
+    </DIV>
+    </B><BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <H4>
+    &nbsp;&nbsp; Sample Response
+  </H4>
+  <DIV>
+    <DIV>
+      <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob width=100%>
+        <TBODY>
+        <TR>
+          <TD width=100%>
+            <B>&lt;?xml version="1.0"?&gt;&nbsp;<BR>
+            &lt;TerminateFarmResponse&gt;<BR>
+            &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;e1523428-767f-43c3-8b63-aa136e2cfc34&lt;/TransactionID&gt;<BR>
+            &nbsp;&nbsp; &nbsp;&lt;Result&gt;1&lt;/Result&gt;<BR>
+            &lt;/TerminateFarmResponse&gt;</B>
+          </TD>
+        </TR>
+        </TBODY>
+      </TABLE>
+    </DIV>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <H2>
+      <FONT size=4>LaunchFarm</FONT>
+    </H2>
+    <H4>
+      <FONT size=2>&nbsp;&nbsp; &nbsp;Description</FONT>
+    </H4>
+    &nbsp;&nbsp;&nbsp; This API launches specified farm<BR>
+    <BR>
+    <H4>
+      <FONT size=2>&nbsp;&nbsp;&nbsp; Request Parameters</FONT>
+    </H4>
+    <DIV>
+    </DIV>
+    <DIV>
+      <FONT size=2>
+      <DIV>
+        <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+          <TBODY>
+          <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+            <TD width=15%>
+              <B><B>Name<BR>
+              </B></B>
+            </TD>
+            <TD width=33%>
+              <B><B>Description<BR>
+              </B></B>
+            </TD>
+            <TD align=middle width=10%>
+              <B><B>Required<BR>
+              </B></B>
+            </TD>
+          </TR>
+          <TR style=TEXT-ALIGN:left>
+            <TD style=FONT-FAMILY:Verdana width=15%>
+              FarmID
+            </TD>
+            <TD width=33%>
+              <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                The ID of farm that you want to launch.
+              </P>
+              <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                <BR>
+              </P>
+              <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                <I>Example:&nbsp;</I><I>123456</I>
+              </P>
+            </TD>
+            <TD align=middle width=10%>
+              <B><SPAN style=FONT-WEIGHT:normal>Yes</SPAN><BR>
+              </B>
+            </TD>
+          </TR>
+          </TBODY>
+        </TABLE>
+        <BR>
+      </DIV>
+      <DIV>
+        &nbsp;
+      </DIV>
+      <H4>
+        <FONT size=2>&nbsp;&nbsp; Response Elements</FONT>
+      </H4>
+      </FONT>
+    </DIV>
+    <DIV>
+      <DIV>
+        <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+          <TBODY>
+          <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+            <TD width=10%>
+              <B><B>Name<BR>
+              </B></B>
+            </TD>
+            <TD width=50%>
+              <B><B>Description<BR>
+              </B></B>
+            </TD>
+          </TR>
+          <TR style=TEXT-ALIGN:left>
+            <TD style=FONT-FAMILY:Verdana width=10%>
+              Result
+            </TD>
+            <TD width=50%>
+              <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                Request Result
+              </P>
+            </TD>
+          </TR>
+          </TBODY>
+        </TABLE>
+        <BR>
+      </DIV>
+      <DIV>
+        <BR>
+      </DIV>
+      <H4>
+        <FONT size=2>&nbsp;&nbsp; Sample Request</FONT>
+      </H4>
+      <DIV>
+        <B>
+        <DIV>
+          <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+            <TBODY>
+            <TR style=TEXT-ALIGN:left>
+              <TD width=100%>
+                https://api.scalr.net/?Action=LaunchFarm<BR>
+                &amp;FarmID=123<BR>
+                &amp;Version=2009-05-07<BR>
+                &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;
+              </TD>
+            </TR>
+            </TBODY>
+          </TABLE>
+        </DIV>
+        </B><BR>
+      </DIV>
+      <DIV>
+        <BR>
+      </DIV>
+      <H4>
+        <FONT size=2>&nbsp;&nbsp; Sample Response</FONT>
+      </H4>
+      <DIV>
+        <DIV>
+          <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+            <TBODY>
+            <TR style=TEXT-ALIGN:left>
+              <TD width=100%>
+                <B>&lt;?xml version="1.0"?&gt;&nbsp;<BR>
+                &lt;LaunchFarmResponse&gt;<BR>
+                &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;e1523428-767f-43c3-8b63-aa136e2cfc34&lt;/TransactionID&gt;<BR>
+                &nbsp;&nbsp; &nbsp;&lt;Result&gt;1&lt;/Result&gt;<BR>
+                &lt;/LaunchFarmResponse&gt;</B>
+              </TD>
+            </TR>
+            </TBODY>
+          </TABLE>
+        </DIV>
+      </DIV>
+      <DIV>
+        <BR>
+      </DIV>
+    </DIV>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <DIV>
+      <H2>
+        <FONT class=Apple-style-span size=5><FONT size=4>ListRoles</FONT></FONT>
+      </H2>
+      <H4>
+        <FONT size=2>&nbsp;&nbsp; &nbsp;Description</FONT>
+      </H4>
+      &nbsp;&nbsp;&nbsp; This API allows you to list all your roles in specified region<BR>
+      <BR>
+      <H4>
+        <FONT size=2>&nbsp;&nbsp;&nbsp; Request Parameters</FONT>
+      </H4>
+      <DIV>
+      </DIV>
+      <DIV>
+        <FONT size=2>
+        <DIV>
+          <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+            <TBODY>
+            <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+              <TD width=15%>
+                <B><B>Name<BR>
+                </B></B>
+              </TD>
+              <TD width=33%>
+                <B><B>Description<BR>
+                </B></B>
+              </TD>
+              <TD align=middle width=10%>
+                <B><B>Required<BR>
+                </B></B>
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                Region
+              </TD>
+              <TD width=33%>
+                <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                  Region witch roles you want to see.
+                </P>
+                <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                  <BR>
+                </P>
+                <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                  <I>Example:&nbsp;</I><I>us-east-1</I>
+                </P>
+              </TD>
+              <TD align=middle width=10%>
+                <B><SPAN style=FONT-WEIGHT:normal>Yes</SPAN><BR>
+                </B>
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                Name
+              </TD>
+              <TD width=33%>
+                List roles with specified role name.<BR>
+                <BR>
+                <I>Example: app64</I>
+              </TD>
+              <TD style=TEXT-ALIGN:center width=10%>
+                No
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                Prefix
+              </TD>
+              <TD width=33%>
+                List all roles begins with specified prefix.<BR>
+                <BR>
+                <I>Example: mysql-custom</I>
+              </TD>
+              <TD style=TEXT-ALIGN:center width=10%>
+                No
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=15%>
+                AmiID
+              </TD>
+              <TD width=33%>
+                List roles with specified AMIID.<BR>
+                <BR>
+                <I>Example: ami-abcdef12</I>
+              </TD>
+              <TD style=TEXT-ALIGN:center width=10%>
+                No
+              </TD>
+            </TR>
+            </TBODY>
+          </TABLE>
+          <BR>
+        </DIV>
+        <DIV>
+          &nbsp;
+        </DIV>
+        <H4>
+          <FONT size=2>&nbsp;&nbsp; Response Elements</FONT>
+        </H4>
+        </FONT>
+      </DIV>
+      <DIV>
+        <DIV>
+          <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+            <TBODY>
+            <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+              <TD width=10%>
+                <B><B>Name<BR>
+                </B></B>
+              </TD>
+              <TD width=50%>
+                <B><B>Description<BR>
+                </B></B>
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                Name
+              </TD>
+              <TD width=50%>
+                <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                  Role name
+                </P>
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                Owner
+              </TD>
+              <TD width=50%>
+                Role owner
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                Category
+              </TD>
+              <TD width=50%>
+                Role category (Ex. Application servers)
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                AmiID
+              </TD>
+              <TD width=50%>
+                Role AMIID
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                Architecture
+              </TD>
+              <TD width=50%>
+                Role architecture: i386 or x86_64
+              </TD>
+            </TR>
+            <TR style=TEXT-ALIGN:left>
+              <TD style=FONT-FAMILY:Verdana width=10%>
+                BuildDate
+              </TD>
+              <TD width=50%>
+                Role build date
+              </TD>
+            </TR>
+            </TBODY>
+          </TABLE>
+          <BR>
+        </DIV>
+        <DIV>
+          <BR>
+        </DIV>
+        <H4>
+          <FONT size=2>&nbsp;&nbsp; Sample Request</FONT>
+        </H4>
+        <DIV>
+          <B>
+          <DIV>
+            <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+              <TBODY>
+              <TR style=TEXT-ALIGN:left>
+                <TD width=100%>
+                  https://api.scalr.net/?Action=ListRoles<BR>
+                  &amp;Region=us-east-1<BR>
+                  &amp;Prefix=app<BR>
+                  &amp;Version=2009-05-07<BR>
+                  &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                  &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                  &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+          </DIV>
+          </B><BR>
+        </DIV>
+        <DIV>
+          <BR>
+        </DIV>
+        <H4>
+          <FONT size=2>&nbsp;&nbsp; Sample Response</FONT>
+        </H4>
+        <DIV>
+          <DIV>
+            <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+              <TBODY>
+              <TR style=TEXT-ALIGN:left>
+                <TD width=100%>
+                  <B>&lt;?xml version="1.0"?&gt;<BR>
+                  &lt;ListRolesResponse&gt;<BR>
+                  &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;2f2a99b2-1631-4733-aa4a-c43303483ac4&lt;/TransactionID&gt;<BR>
+                  &nbsp;&nbsp; &nbsp;&lt;RoleSet&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Name&gt;app&lt;/Name&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Owner&gt;Scalr&lt;/Owner&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Category&gt;Application servers&lt;/Category&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;AmiID&gt;ami-bac420d3&lt;/AmiID&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Architecture&gt;i386&lt;/Architecture&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BuildDate&gt;2009-01-30 14:52:20&lt;/BuildDate&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Name&gt;app64&lt;/Name&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Owner&gt;Scalr&lt;/Owner&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Category&gt;Application servers&lt;/Category&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;AmiID&gt;ami-0ac62263&lt;/AmiID&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Architecture&gt;x86_64&lt;/Architecture&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BuildDate&gt;2009-01-30 14:52:20&lt;/BuildDate&gt;<BR>
+                  &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                  &nbsp;&nbsp; &nbsp;&lt;/RoleSet&gt;<BR>
+                  &lt;/ListRolesResponse&gt;</B>
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+          </DIV>
+        </DIV>
+        <DIV>
+          <BR>
+        </DIV>
+      </DIV>
+    </DIV>
+  </DIV>
+  <DIV>
+    &nbsp;
+  </DIV>
+  <DIV>
+    &nbsp;
+  </DIV>
+  <DIV>
+    <DIV>
+      <DIV>
+        <H2>
+          <FONT class=Apple-style-span size=5><FONT size=4><FONT size=2>
+          <H2>
+            GetFarmStats
+          </H2>
+          </FONT></FONT></FONT>
+        </H2>
+        <H4>
+          <FONT size=2>&nbsp;&nbsp; &nbsp;Description</FONT>
+        </H4>
+        &nbsp;&nbsp;&nbsp; This API returns information about bandwidth usage and instances usage for specified farm in specified date.<BR>
+        <BR>
+        <H4>
+          <FONT size=2>&nbsp;&nbsp;&nbsp; Request Parameters</FONT>
+        </H4>
+        <DIV>
+        </DIV>
+        <DIV>
+          <FONT size=2>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=15%>
+                  <B><B>Name<BR>
+                  </B></B>
+                </TD>
+                <TD width=33%>
+                  <B><B>Description<BR>
+                  </B></B>
+                </TD>
+                <TD align=middle width=10%>
+                  <B><B>Required<BR>
+                  </B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  FarmID
+                </TD>
+                <TD width=33%>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Farm ID.
+                  </P>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    <BR>
+                  </P>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    <I>Example:&nbsp;</I><I>123</I>
+                  </P>
+                </TD>
+                <TD align=middle width=10%>
+                  <B><SPAN style=FONT-WEIGHT:normal>Yes</SPAN><BR>
+                  </B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Date
+                </TD>
+                <TD width=33%>
+                  Date (mm-yyyy).<BR>
+                  <BR>
+                  <I>Example: 06-2009</I>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  No
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            &nbsp;
+          </DIV>
+          <H4>
+            <FONT size=2>&nbsp;&nbsp; Response Elements</FONT>
+          </H4>
+          </FONT>
+        </DIV>
+        <DIV>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=15%>
+                  <B><B>Name<BR>
+                  </B></B>
+                </TD>
+                <TD width=50%>
+                  <B><B>Description<BR>
+                  </B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Month
+                </TD>
+                <TD width=50%>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Month
+                  </P>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Year
+                </TD>
+                <TD width=50%>
+                  Year
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;BandwidthIn
+                </TD>
+                <TD width=50%>
+                  Inbound bandwith usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;BandwidthOut
+                </TD>
+                <TD width=50%>
+                  Outbound bandwidth usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;BandwidthTotal
+                </TD>
+                <TD width=50%>
+                  Total bandwidth usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;m1.smallUsage
+                </TD>
+                <TD width=50%>
+                  m1.small instances usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;m1.largeUsage
+                </TD>
+                <TD width=50%>
+                  m1.large instances usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;m1.xlargeUsage
+                </TD>
+                <TD width=50%>
+                  m1.xlarge instances usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;c1.mediumUsage
+                </TD>
+                <TD width=50%>
+                  c1.medium instances usage
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Statistics-&gt;c1.xlargeUsage
+                </TD>
+                <TD width=50%>
+                  c1.xlarge instances usage
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2>&nbsp;&nbsp; Sample Request</FONT>
+          </H4>
+          <DIV>
+            <B>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    https://api.scalr.net/?Action=GetFarmStats<BR>
+                    &amp;FarmID=126<BR>
+                    &amp;Version=2009-05-07<BR>
+                    &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                    &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                    &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+            </B><BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2>&nbsp;&nbsp; Sample Response</FONT>
+          </H4>
+          <DIV>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    <B>&lt;?xml version="1.0"?&gt;<BR>
+                    &lt;GetFarmStatsResponse&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;5147c852-308b-4fb8-bb6e-5f67d42dc678&lt;/TransactionID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;StatisticsSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Month&gt;6&lt;/Month&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Year&gt;2009&lt;/Year&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Statistics&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthIn&gt;95.69&lt;/BandwidthIn&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthOut&gt;95.29&lt;/BandwidthOut&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthTotal&gt;190&lt;/BandwidthTotal&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.smallUsage&gt;486.6&lt;/m1.smallUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.largeUsage&gt;0&lt;/m1.largeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.xlargeUsage&gt;0&lt;/m1.xlargeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;c1.mediumUsage&gt;0&lt;/c1.mediumUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;c1.xlargeUsage&gt;0&lt;/c1.xlargeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/Statistics&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Month&gt;5&lt;/Month&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Year&gt;2009&lt;/Year&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Statistics&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthIn&gt;49.01&lt;/BandwidthIn&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthOut&gt;4.17&lt;/BandwidthOut&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;BandwidthTotal&gt;53&lt;/BandwidthTotal&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.smallUsage&gt;36&lt;/m1.smallUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.largeUsage&gt;0&lt;/m1.largeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;m1.xlargeUsage&gt;0&lt;/m1.xlargeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;c1.mediumUsage&gt;0&lt;/c1.mediumUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;c1.xlargeUsage&gt;0&lt;/c1.xlargeUsage&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/Statistics&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;/StatisticsSet&gt;<BR>
+                    &lt;/GetFarmStatsResponse&gt;</B>
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+    <DIV>
+      <BR>
+    </DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <DIV>
+      <DIV>
+        <BR>
+        <H2>
+          <FONT class=Apple-style-span size=5><SPAN style=FONT-WEIGHT:800><FONT size=4>ExecuteScript</FONT></SPAN></FONT>
+        </H2>
+        <H4>
+          <FONT size=2><B>&nbsp;&nbsp; &nbsp;Description</B></FONT>
+        </H4>
+        <B>&nbsp;&nbsp;&nbsp; This API executes script on specified instance/role/farm<BR>
+        <BR>
+        </B>
+        <H4>
+          <FONT size=2><B>&nbsp;&nbsp;&nbsp; Request Parameters</B></FONT>
+        </H4>
+        <DIV>
+        </DIV>
+        <DIV>
+          <FONT size=2>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=15%>
+                  <B><B><B>Name<BR>
+                  </B></B></B>
+                </TD>
+                <TD width=33%>
+                  <B><B><B>Description<BR>
+                  </B></B></B>
+                </TD>
+                <TD align=middle width=10%>
+                  <B><B><B>Required<BR>
+                  </B></B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  RoleName
+                </TD>
+                <TD width=33%>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Script will be executed on all instances with this role.
+                  </P>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    <BR>
+                  </P>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    <I>Example:&nbsp;</I><I>app</I>
+                  </P>
+                </TD>
+                <TD align=middle width=10%>
+                  No
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  InstanceID
+                </TD>
+                <TD width=33%>
+                  Script will be executed on this instance<BR>
+                  <BR>
+                  <I>Example: i-123456a</I>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  No
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  FarmID
+                </TD>
+                <TD width=33%>
+                  Execute script on all instances in this farm<BR>
+                  <BR>
+                  <I>Example: 126</I>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  Yes
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  ScriptID
+                </TD>
+                <TD width=33%>
+                  Script ID.<BR>
+                  <BR>
+                  <I>Example: 1020</I>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  Yes
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Timeout
+                </TD>
+                <TD width=33%>
+                  Script execution timeout (seconds).<BR>
+                  <BR>
+                  <I>Example: 30</I>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  Yes
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  Async
+                </TD>
+                <TD width=33%>
+                  Excute script asynchronously or synchronously.<BR>
+                  <BR>
+                  Example: 1
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  Yes
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            <B>&nbsp;</B>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Response Elements</B></FONT>
+          </H4>
+          </FONT>
+        </DIV>
+        <DIV>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=10%>
+                  <B><B><B>Name<BR>
+                  </B></B></B>
+                </TD>
+                <TD width=50%>
+                  <B><B><B>Description<BR>
+                  </B></B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=10%>
+                  Result
+                </TD>
+                <TD width=50%>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Request Result
+                  </P>
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Sample Request</B></FONT>
+          </H4>
+          <DIV>
+            <B>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    <B>https://api.scalr.net/?Action=ExecuteScript<BR>
+                    &amp;FarmID=126<BR>
+                    &amp;ScriptID=100<BR>
+                    &amp;Timeout=30<BR>
+                    &amp;Async=1<BR>
+                    &amp;Version=2009-05-07<BR>
+                    &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                    &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                    &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;</B>
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+            </B><BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Sample Response</B></FONT>
+          </H4>
+          <DIV>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    <B><B>&lt;?xml version="1.0"?&gt;<BR>
+                    &lt;ExecuteScriptResponse&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;2f2a99b2-1631-4733-aa4a-c43303483ac4&lt;/TransactionID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;Result&gt;1&lt;/Result&gt;<BR>
+                    &lt;/ExecuteScriptResponse&gt;</B></B>
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+    <DIV>
+      <B>&nbsp;</B>
+    </DIV>
+    <DIV>
+      <B>&nbsp;</B>
+    </DIV>
+    <DIV>
+      <DIV>
+        <DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <DIV>
+      <DIV>
+        <H2>
+          <FONT class=Apple-style-span size=5><FONT size=4><B>ListFarms</B></FONT></FONT>
+        </H2>
+        <H4>
+          <FONT size=2><B>&nbsp;&nbsp; &nbsp;Description</B></FONT>
+        </H4>
+        <B>&nbsp;&nbsp;&nbsp; This API allows you to list all your farms<BR>
+        <BR>
+        </B>
+        <H4>
+          <FONT size=2><B>&nbsp;&nbsp;&nbsp; Request Parameters</B></FONT>
+        </H4>
+        <DIV>
+        </DIV>
+        <DIV>
+          <FONT size=2>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=15%>
+                  <B><B><B>Name<BR>
+                  </B></B></B>
+                </TD>
+                <TD width=33%>
+                  <B><B><B>Description<BR>
+                  </B></B></B>
+                </TD>
+                <TD align=middle width=10%>
+                  <B><B><B>Required<BR>
+                  </B></B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=15%>
+                  <B>-</B>
+                </TD>
+                <TD width=33%>
+                  <B>-</B>
+                </TD>
+                <TD style=TEXT-ALIGN:center width=10%>
+                  <B>-</B>
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            <B>&nbsp;</B>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Response Elements</B></FONT>
+          </H4>
+          </FONT>
+        </DIV>
+        <DIV>
+          <DIV>
+            <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+              <TBODY>
+              <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                <TD width=10%>
+                  <B><B><B>Name<BR>
+                  </B></B></B>
+                </TD>
+                <TD width=50%>
+                  <B><B><B>Description<BR>
+                  </B></B></B>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=10%>
+                  ID
+                </TD>
+                <TD width=50%>
+                  <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Farm ID
+                  </P>
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=10%>
+                  Name
+                </TD>
+                <TD width=50%>
+                  Farm name
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=10%>
+                  Region
+                </TD>
+                <TD width=50%>
+                  Region
+                </TD>
+              </TR>
+              <TR style=TEXT-ALIGN:left>
+                <TD style=FONT-FAMILY:Verdana width=10%>
+                  Status
+                </TD>
+                <TD width=50%>
+                  Current farm status (1 - Running, 0 - Terminated, 2 - Terminating, 3 - Synchronizing)
+                </TD>
+              </TR>
+              </TBODY>
+            </TABLE>
+            <BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Sample Request</B></FONT>
+          </H4>
+          <DIV>
+            <B>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    <B>https://api.scalr.net/?Action=ListFarms<BR>
+                    &amp;Version=2009-05-07<BR>
+                    &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                    &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                    &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;</B>
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+            </B><BR>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+          <H4>
+            <FONT size=2><B>&nbsp;&nbsp; Sample Response</B></FONT>
+          </H4>
+          <DIV>
+            <DIV>
+              <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+                <TBODY>
+                <TR style=TEXT-ALIGN:left>
+                  <TD width=100%>
+                    <B><B>&lt;?xml version="1.0"?&gt;<BR>
+                    &lt;ListFarmsResponse&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;4df7f431-927a-43e3-8ccf-bec323f18f9a&lt;/TransactionID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;FarmSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;ID&gt;123&lt;/ID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Name&gt;test-farm-1&lt;/Name&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Region&gt;us-east-1&lt;/Region&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Status&gt;0&lt;/Status&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;ID&gt;321&lt;/ID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Name&gt;test-farm-2&lt;/Name&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Region&gt;eu-west-1&lt;/Region&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Status&gt;1&lt;/Status&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;/FarmSet&gt;<BR>
+                    &lt;/ListFarmsResponse&gt;</B></B>
+                  </TD>
+                </TR>
+                </TBODY>
+              </TABLE>
+            </DIV>
+          </DIV>
+          <DIV>
+            <BR>
+          </DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+    <DIV>
+      <B>&nbsp;&nbsp;</B>
+    </DIV>
+    <DIV>
+    </DIV>
+    <DIV>
+      <DIV>
+        <DIV>
+          <DIV>
+            <DIV>
+            </DIV>
+          </DIV>
+        </DIV>
+      </DIV>
+      <DIV>
+        <BR>
+      </DIV>
+      <DIV>
+        <DIV>
+          <DIV>
+            <H2>
+              <FONT class=Apple-style-span size=5><FONT size=4><B>ListScripts</B></FONT></FONT>
+            </H2>
+            <H4>
+              <FONT size=2><B>&nbsp;&nbsp; &nbsp;Description</B></FONT>
+            </H4>
+            <B>&nbsp;&nbsp;&nbsp; This API allows you to list all scripts<BR>
+            <BR>
+            </B>
+            <H4>
+              <FONT size=2><B>&nbsp;&nbsp;&nbsp; Request Parameters</B></FONT>
+            </H4>
+            <DIV>
+            </DIV>
+            <DIV>
+              <FONT size=2>
+              <DIV>
+                <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+                  <TBODY>
+                  <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                    <TD width=15%>
+                    <B><B><B>Name<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD width=33%>
+                    <B><B><B>Description<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD align=middle width=10%>
+                    <B><B><B>Required<BR>
+                    </B></B></B>
+                    </TD>
+                  </TR>
+                  <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=15%>
+                    <B>-</B>
+                    </TD>
+                    <TD width=33%>
+                    <B>-</B>
+                    </TD>
+                    <TD style=TEXT-ALIGN:center width=10%>
+                    <B>-</B>
+                    </TD>
+                  </TR>
+                  </TBODY>
+                </TABLE>
+                <BR>
+              </DIV>
+              <DIV>
+                <B>&nbsp;</B>
+              </DIV>
+              <H4>
+                <FONT size=2><B>&nbsp;&nbsp; Response Elements</B></FONT>
+              </H4>
+              </FONT>
+            </DIV>
+            <DIV>
+              <DIV>
+                <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+                  <TBODY>
+                  <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                    <TD width=10%>
+                    <B><B><B>Name<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD width=50%>
+                    <B><B><B>Description<BR>
+                    </B></B></B>
+                    </TD>
+                  </TR>
+                  <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    ID
+                    </TD>
+                    <TD width=50%>
+                    <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Script ID
+                    </P>
+                    </TD>
+                  </TR>
+                  <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    Name
+                    </TD>
+                    <TD width=50%>
+                    Script name
+                    </TD>
+                  </TR>
+                  <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    Description
+                    </TD>
+                    <TD width=50%>
+                    Script description
+                    </TD>
+                  </TR>
+                  <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    LatestRevision
+                    </TD>
+                    <TD width=50%>
+                    Latest script revision
+                    </TD>
+                  </TR>
+                  </TBODY>
+                </TABLE>
+                <BR>
+              </DIV>
+              <DIV>
+                <BR>
+              </DIV>
+              <H4>
+                <FONT size=2><B>&nbsp;&nbsp; Sample Request</B></FONT>
+              </H4>
+              <DIV>
+                <B>
+                <DIV>
+                  <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+                    <TBODY>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD width=100%>
+                    <B>https://api.scalr.net/?Action=ListScripts<BR>
+                    &amp;Version=2009-05-07<BR>
+                    &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                    &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                    &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;</B>
+                    </TD>
+                    </TR>
+                    </TBODY>
+                  </TABLE>
+                </DIV>
+                </B><BR>
+              </DIV>
+              <DIV>
+                <BR>
+              </DIV>
+              <H4>
+                <FONT size=2><B>&nbsp;&nbsp; Sample Response</B></FONT>
+              </H4>
+              <DIV>
+                <DIV>
+                  <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+                    <TBODY>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD width=100%>
+                    <B><B>&lt;?xml version="1.0"?&gt;<BR>
+                    &lt;ListScriptsResponse&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;5546c5cb-842e-40d4-94bc-b6317f47945f&lt;/TransactionID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;ScriptSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;ID&gt;1&lt;/ID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Name&gt;SVN update&lt;/Name&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Description&gt;Update a working copy from SVN repository&lt;/Description&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;LatestRevision&gt;1&lt;/LatestRevision&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;ID&gt;2&lt;/ID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Name&gt;SVN export&lt;/Name&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Description&gt;Export SVN repository to local directory&lt;/Description&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;LatestRevision&gt;1&lt;/LatestRevision&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;/ScriptSet&gt;<BR>
+                    &lt;/ListScriptsResponse&gt;</B></B>
+                    </TD>
+                    </TR>
+                    </TBODY>
+                  </TABLE>
+                </DIV>
+              </DIV>
+              <DIV>
+                <BR>
+              </DIV>
+            </DIV>
+          </DIV>
+        </DIV>
+        <DIV>
+          <B>&nbsp;</B>
+        </DIV>
+        <DIV>
+          <BR>
+        </DIV>
+      </DIV>
+    </DIV>
+    <DIV>
+      <B>&nbsp;</B>
+    </DIV>
+    <DIV>
+      <DIV>
+        <DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+  </DIV>
+  <DIV>
+    <DIV>
+      <DIV>
+        <DIV>
+          <DIV>
+            <DIV>
+              <H2>
+                <FONT class=Apple-style-span size=5><FONT size=4><B>ListApplications</B></FONT></FONT>
+              </H2>
+              <H4>
+                <FONT size=2><B>&nbsp;&nbsp; &nbsp;Description</B></FONT>
+              </H4>
+              <B>&nbsp;&nbsp;&nbsp; This API allows you to list all your applications<BR>
+              <BR>
+              </B>
+              <H4>
+                <FONT size=2><B>&nbsp;&nbsp;&nbsp; Request Parameters</B></FONT>
+              </H4>
+              <DIV>
+              </DIV>
+              <DIV>
+                <FONT size=2>
+                <DIV>
+                  <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+                    <TBODY>
+                    <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                    <TD width=15%>
+                    <B><B><B>Name<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD width=33%>
+                    <B><B><B>Description<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD align=middle width=10%>
+                    <B><B><B>Required<BR>
+                    </B></B></B>
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=15%>
+                    <B>-</B>
+                    </TD>
+                    <TD width=33%>
+                    <B>-</B>
+                    </TD>
+                    <TD style=TEXT-ALIGN:center width=10%>
+                    <B>-</B>
+                    </TD>
+                    </TR>
+                    </TBODY>
+                  </TABLE>
+                  <BR>
+                </DIV>
+                <DIV>
+                  <B>&nbsp;</B>
+                </DIV>
+                <H4>
+                  <FONT size=2><B>&nbsp;&nbsp; Response Elements</B></FONT>
+                </H4>
+                </FONT>
+              </DIV>
+              <DIV>
+                <DIV>
+                  <TABLE border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=b193 style=FONT-SIZE:1em width=1000>
+                    <TBODY>
+                    <TR bgColor=#cccccc style=TEXT-ALIGN:left>
+                    <TD width=10%>
+                    <B><B><B>Name<BR>
+                    </B></B></B>
+                    </TD>
+                    <TD width=50%>
+                    <B><B><B>Description<BR>
+                    </B></B></B>
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    DomainName
+                    </TD>
+                    <TD width=50%>
+                    <P class=simpara style="MARGIN-LEFT:0px; MARGIN-RIGHT:0px">
+                    Domain name
+                    </P>
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    FarmID
+                    </TD>
+                    <TD width=50%>
+                    Farm ID
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    FarmRole
+                    </TD>
+                    <TD width=50%>
+                    Role name
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    Status
+                    </TD>
+                    <TD width=50%>
+                    Application status (0 - Active, 1 - Inactive, 2 - Pending delete, 3 - Pending create)
+                    </TD>
+                    </TR>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD style=FONT-FAMILY:Verdana width=10%>
+                    IPSet
+                    </TD>
+                    <TD width=50%>
+                    IP addresses assigned to this application
+                    </TD>
+                    </TR>
+                    </TBODY>
+                  </TABLE>
+                  <BR>
+                </DIV>
+                <DIV>
+                  <BR>
+                </DIV>
+                <H4>
+                  <FONT size=2><B>&nbsp;&nbsp; Sample Request</B></FONT>
+                </H4>
+                <DIV>
+                  <B>
+                  <DIV>
+                    <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=3 height=104 id=yyf2 style=FONT-SIZE:1em width=100%>
+                    <TBODY>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD width=100%>
+                    <B>https://api.scalr.net/?Action=ListApplications<BR>
+                    &amp;Version=2009-05-07<BR>
+                    &amp;KeyID=&lt;Your Scalr API Key ID&gt;<BR>
+                    &amp;TimeStamp=2009-06-19T05%3A13%3A00.000Z<BR>
+                    &amp;Signature=&lt;URLEncode(Base64Encode(Signature))&gt;</B>
+                    </TD>
+                    </TR>
+                    </TBODY>
+                    </TABLE>
+                  </DIV>
+                  </B><BR>
+                </DIV>
+                <DIV>
+                  <BR>
+                </DIV>
+                <H4>
+                  <FONT size=2><B>&nbsp;&nbsp; Sample Response</B></FONT>
+                </H4>
+                <DIV>
+                  <DIV>
+                    <TABLE bgColor=#cfe2f3 border=1 borderColor=#000000 cellPadding=3 cellSpacing=0 id=u1ob style=FONT-SIZE:1em width=100%>
+                    <TBODY>
+                    <TR style=TEXT-ALIGN:left>
+                    <TD width=100%>
+                    <B><B>&lt;?xml version="1.0"?&gt;<BR>
+                    &lt;ListApplicationsResponse&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;TransactionID&gt;dbc3e429-ea17-4503-abae-7862f8c467e1&lt;/TransactionID&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;ApplicationSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;DomainName&gt;maintest123.gov&lt;/DomainName&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;FarmId&gt;100&lt;/FarmId&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;FarmRole&gt;app&lt;/FarmRole&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Status&gt;2&lt;/Status&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;IPSet/&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;DomainName&gt;ertfswfs.com&lt;/DomainName&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;FarmId&gt;100&lt;/FarmId&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;FarmRole&gt;app&lt;/FarmRole&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;Status&gt;2&lt;/Status&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&lt;IPSet/&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;DomainName&gt;testeufarm.eu&lt;/DomainName&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;FarmId&gt;126&lt;/FarmId&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;FarmRole&gt;www&lt;/FarmRole&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Status&gt;0&lt;/Status&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;IPSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;IPAddress&gt;174.129.138.164&lt;/IPAddress&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;IPAddress&gt;174.129.138.165&lt;/IPAddress&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;/IPSet&gt;<BR>
+                    &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;&lt;/Item&gt;<BR>
+                    &nbsp;&nbsp; &nbsp;&lt;/ApplicationSet&gt;<BR>
+                    &lt;/ListApplicationsResponse&gt;</B></B>
+                    </TD>
+                    </TR>
+                    </TBODY>
+                    </TABLE>
+                  </DIV>
+                </DIV>
+                <DIV>
+                  <BR>
+                </DIV>
+              </DIV>
+            </DIV>
+          </DIV>
+          <DIV>
+            <B>&nbsp;</B>
+          </DIV>
+        </DIV>
+      </DIV>
+      <DIV>
+        <B>&nbsp;</B>
+      </DIV>
+      <DIV>
+        <DIV>
+          <DIV>
+          </DIV>
+        </DIV>
+      </DIV>
+    </DIV>
+    <DIV>
+      <BR>
+    </DIV>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+  <DIV>
+    <BR>
+  </DIV>
+</DIV>
+<BR></body>
+</html>

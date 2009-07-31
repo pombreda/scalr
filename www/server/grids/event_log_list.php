@@ -37,8 +37,6 @@
 			$sql  .= " AND severity IN (2,3,4,5)";
 		}
 		
-		$display["table_title_text"] = sprintf(_("Current time: %s"), date("d-m-Y H:i:s"));
-		
 		if ($req_query)
 		{
 			$filter = mysql_escape_string($req_query);

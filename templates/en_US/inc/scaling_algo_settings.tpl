@@ -1,4 +1,5 @@
 {if $DataForm}
+	<table width="100%">
 	{assign var=fields value=$DataForm->ListFields()}
 	{foreach from=$fields key=key item=field}
 		    {if ($field->FieldType == 'text')}
@@ -30,6 +31,12 @@
 					</div>
 					<input type="hidden" style="padding:0px;margin:0px;" name="{$field->Name}.max" id="{$field->Name}.max" class="scaling_options"/>
 					<input type="hidden" style="padding:0px;margin:0px;" name="{$field->Name}.min" id="{$field->Name}.min" class="scaling_options"/>
+				</td>
+			</tr>
+			{elseif ($field->FieldType == 'date_time_table')}
+			<tr valign="top">
+				<td colspan="2">
+					{include file='inc/scaling_time_algo_settings.tpl'}
 				</td>
 			</tr>
 			{elseif ($field->FieldType == 'checkbox')}
@@ -68,4 +75,5 @@
 			</tr>
 			{/if}
 	{/foreach}
+	</table>
 {/if}

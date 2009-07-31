@@ -3,6 +3,42 @@
     
     switch($_REQUEST["_cmd"])
     {            
+    	case "terminateInstances":
+    		
+    		$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($req_instanceID));
+            if (!$instanceinfo)
+            {
+            	header("HTTP/1.0 500 Error");
+    			exit();
+            }
+			
+            $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmID));
+            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
+            {
+            	header("HTTP/1.0 500 Error");
+    			exit();
+            }
+
+            $Client = Client::Load($farminfo['clientid']);
+
+	    	try
+	    	{
+    			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region']));
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			
+    			$AmazonEC2Client->TerminateInstances(array($req_instanceID));
+    			
+    			print "OK";
+	    	}
+	    	catch(Exception $e)
+	    	{
+	    		//die(sprintf(_("Cannot fetch instance information from EC2: %s"), $e->getMessage()));
+	    		header("HTTP/1.0 500 Error");
+    			exit();
+	    	}   		
+    		
+    		break;
+    	
     	case "purchaseReservedOffering":
     
 	    	try

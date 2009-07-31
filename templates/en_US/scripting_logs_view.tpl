@@ -1,4 +1,9 @@
 {include file="inc/header.tpl"}
+{literal}
+<style>
+	.x-grid3-cell-inner { white-space:normal !important; }
+</style>
+{/literal}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="search-ct"></div> 
 <div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>

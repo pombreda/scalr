@@ -25,7 +25,7 @@
             else
             	$event_name = $this->GetArg("event");
 
-            if (!$event_name && preg_match("/^CustomEvent-[0-9]+-[0-9]+$/si", $this->GetArg("event")))
+            if (!$event_name && preg_match("/^(Custom|API)Event-[0-9]+-[0-9]+$/si", $this->GetArg("event")))
             	$custom_event_name = $this->GetArg("event");
             	
     		/************/

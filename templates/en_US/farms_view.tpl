@@ -12,7 +12,6 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
 	        fields: [
 				{name: 'id', type: 'int'},
 				{name: 'clientid', type: 'int'},
@@ -20,6 +19,7 @@ Ext.onReady(function () {
 	            'name', 'status', 'region', 'instances', 'roles', 'sites','client_email','havemysqlrole'
 	        ]
 	    }),
+	    remoteSort: true,
 		url: '/server/grids/farms_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });

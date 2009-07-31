@@ -94,7 +94,7 @@
     			);
     
     							
-    			$okmsg = "Nameserver succesfully updated";
+    			$okmsg = "Nameserver successfully updated";
     			UI::Redirect("ns_view.php");
     		}
 	    }

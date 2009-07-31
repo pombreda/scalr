@@ -63,39 +63,6 @@
 		
 		UI::Redirect("script_templates.php");
 	}
-	elseif ($req_task == "delete")
-	{
-		// Get template infor from database
-		$template = $db->GetRow("SELECT * FROM scripts WHERE id=?", array($req_id));
-		
-		// Check permissions
-		if (!$template || ($template['clientid'] == 0 && $_SESSION['uid'] != 0) ||
-			($template['clientid'] != 0 && $_SESSION['uid'] != 0 && $_SESSION['uid'] != $template['clientid'])
-		) {
-			$errmsg = _("You don't have permissions to edit this template");
-			UI::Redirect("script_templates.php");
-		}
-		
-		// Check template usage
-		$roles_count = $db->GetOne("SELECT COUNT(*) FROM farm_role_scripts WHERE scriptid=? AND event_name NOT LIKE 'CustomEvent-%'",
-			array($req_id)
-		);
-		
-		// If script used redirect and show error
-		if ($roles_count > 0)
-		{
-			$errmsg = _("This template being used and cannot be deleted");
-			UI::Redirect("script_templates.php");
-		}
-		
-		// Delete tempalte and all revisions
-		$db->Execute("DELETE FROM farm_role_scripts WHERE scriptid=?", array($req_id));
-		$db->Execute("DELETE FROM scripts WHERE id=?", array($req_id));
-		$db->Execute("DELETE FROM script_revisions WHERE scriptid=?", array($req_id));
-		
-		$okmsg = _("Script template successfully removed");
-		UI::Redirect("script_templates.php");
-	}
 	elseif ($req_task == 'create' || $req_task == 'edit' || $req_task == 'share')
 	{
 		if ($req_id)

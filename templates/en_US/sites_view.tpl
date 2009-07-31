@@ -12,14 +12,14 @@ Ext.onReady(function () {
 	        errorProperty: 'error',
 	        totalProperty: 'total',
 	        id: 'id',
-	        remoteSort: true,
-	
+	        	
 	        fields: [
 				{name: 'id', type: 'int'},
 				{name: 'clientid', type: 'int'},
 	            'zone', 'string_status', 'status', 'role_alias', 'role_name', 'farmid', 'farm_name', 'ami_id'
 	        ]
     	}),
+    	remoteSort: true,
 		url: '/server/grids/apps_list.php?a=1{/literal}{$grid_query_string}{literal}',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
@@ -106,7 +106,26 @@ Ext.onReady(function () {
 		// With selected options
 		withSelected: {
 			menu: [
-				{text: "Delete", value: "delete"}
+				{text: "Delete", value: "delete", handler:function(){
+
+					var zones = grid.getSelectionModel().selections.keys;
+
+					SendRequestWithConfirmation(
+						{
+							action: 'RemoveApplications', 
+							zones: Ext.encode(zones)
+						},
+						'Remove selected application(s)?',
+						'Removing application(s). Please wait...',
+						'ext-mb-object-removing',
+						function(){
+							grid.autoSize();
+						},
+						function(){
+							store.load();
+						}
+					);
+				}}
 			],
 			hiddens: {with_selected : 1},
 			action: "act"

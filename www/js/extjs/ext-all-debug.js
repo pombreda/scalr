@@ -19851,7 +19851,7 @@ Ext.TabPanel = Ext.extend(Ext.Panel,  {
         if(this.resizeTabs && this.rendered){
             this.autoSizeTabs();
         }
-        if(this.enableTabScroll && this.rendered){
+        if(this.enableTabScroll && this.rendered){        	
             this.autoScrollTabs();
         }
     },
@@ -19948,10 +19948,11 @@ Ext.TabPanel = Ext.extend(Ext.Panel,  {
         var cw = wd.offsetWidth;
         var pos = this.getScrollPos();
         var l = this.edge.getOffsetsTo(this.stripWrap)[0] + pos;
-
+        
         if(!this.enableTabScroll || count < 1 || cw < 20){ // 20 to prevent display:none issues
             return;
         }
+                
         if(l <= tw){
             wd.scrollLeft = 0;
             wrap.setWidth(tw);
