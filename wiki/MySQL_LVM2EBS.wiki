@@ -1,17 +1,27 @@
 #summary MySQL LVM to EBS storage engine migration manual
-#labels Deprecated
+#labels Featured
 
 = Introduction =
 
-Add your content here.
+This manual will help you to migrate to MySQL+EBS.
 
 
 = Details =
 
-1. Убедиться что на ферме не бежит бандл данных на мускльных инстансах (и что предыдущий бандл содержит актуальные данные).
+Before migrating, you should ensure there is no MySQL data bundling is currently performing. Ignoring this can lead to data corruption/loss.
+The data for the new role will be taken from the last bundle, so you probably will want to launch bundle manually and wait until it will complete.
 
-2. В настройках фермы отпыкнуть мускльную роль. Сохранить.
+*If you use custom mysql role or non mysqllvm role you sholud:*
+        # Terminate your farm
+        # Remove mysql role from your farm and add mysqllvm role.
+        # On MySQL Options tab select EBS as MySQL data storage engine and specify size for EBS volume.
+        #) Save & launch farm.
 
-3. В настройках фермы снова пыкнуть мускльную роль, на вкладке MySQL options выбрать "EBS" в качестве хранилища данных и задать размер для мастер волюма. Сохранить.
 
-4. Обождать.
+
+*If you already using mysqllvm role you should:*
+        # Terminate your farm
+        # Remove mysqllvm role from farm and save it.
+        # Edit your farm ad add mysqllvm role once again.
+        # On MySQL Options tab select EBS as MySQL data storage engine and specify size for EBS volume.
+        # Save & launch farm.
