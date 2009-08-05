@@ -905,5 +905,3 @@ CREATE TABLE `farm_role_scaling_times` (
 alter table `ebs_snaps_info` add column `is_autoebs_master_snap` tinyint(1) DEFAULT '0' NULL after `autosnapshotid`;
 
 alter table `ebs_snaps_info` add column `farm_roleid` int(11) NULL after `is_autoebs_master_snap`;
-
-alter table `clients` add column `comments` text NULL after `scalr_api_key`;
