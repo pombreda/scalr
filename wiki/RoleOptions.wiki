@@ -1,6 +1,6 @@
 #summary Using role parameters
 
-=*THIS IS DEPRECATED FEATURE! PLEASE USE "<a href="http://code.google.com/p/scalr/wiki/QueryEnv">"Query-env</a>" INTERFACE INSTEAD.*=
+=*THIS IS DEPRECATED FEATURE! PLEASE USE "<a href="http://code.google.com/p/scalr/wiki/QueryEnv">Query-env</a>" INTERFACE INSTEAD.*=
 
 = What is this all about? =
 
