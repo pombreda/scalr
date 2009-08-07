@@ -1,5 +1,7 @@
 #summary Using role parameters
 
+=*THIS IS DEPRECATED FEATURE! PLEASE USE "<a href="http://code.google.com/p/scalr/wiki/QueryEnv">"Query-env</a>" INTERFACE INSTEAD.*=
+
 = What is this all about? =
 
 When you create your custom role on Scalr, you can specify what "options" instances of this role will need to function properly.
