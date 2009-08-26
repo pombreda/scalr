@@ -3,4 +3,4 @@
 
 = Scalr v1 Instalation and Configuration =
 
-Installation guide moved here: <a href="http://wiki.scalr.net/Installation">http://wiki.scalr.net</a>
+Installation guide moved here: <a href="http://wiki.scalr.net/Installation">http://wiki.scalr.net/Installation</a>
