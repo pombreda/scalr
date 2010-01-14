@@ -1,0 +1,1 @@
+Instance {$event->DBInstance->InstanceID} Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP} successfully rebooted 

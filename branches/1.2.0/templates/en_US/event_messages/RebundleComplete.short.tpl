@@ -1,0 +1,1 @@
+Rebundle started on {$event->DBInstance->ExternalIP}. AMI_ID: {$event->AMIID}

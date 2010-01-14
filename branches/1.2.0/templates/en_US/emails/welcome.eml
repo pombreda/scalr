@@ -1,0 +1,17 @@
+[subject]Welcome to Scalr[/subject]
+Dear {$client.fullname},
+
+Welcome to Scalr!
+Use the information below to log in to Control Panel:
+
+{$site_url}
+Email: {$client.email}
+Password: {$client.password}
+
+Please keep this information confidential!
+
+Getting Started guide: http://wiki.scalr.net/Getting_Started
+Questions and Support: http://support.scalr.net (also found in the top right corner when logged in)
+
+Cheers,
+The Scalr Team

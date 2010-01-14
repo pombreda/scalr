@@ -1,0 +1,1 @@
+New MySQL master UP: {$event->DBInstance->InstanceID} Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP}

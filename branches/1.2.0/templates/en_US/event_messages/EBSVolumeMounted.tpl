@@ -1,0 +1,1 @@
+EBS volume {$event->VolumeID} successfully mounted to {$event->Mountpoint} on {$event->DBInstance->InsatnceID} ({$event->DBInstance->InternalIP}) instance

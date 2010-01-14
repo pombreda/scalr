@@ -1,0 +1,1 @@
+Instance {$event->DBInstance->InstanceID} ({$event->DBInstance->RoleName}) Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP} is UP 

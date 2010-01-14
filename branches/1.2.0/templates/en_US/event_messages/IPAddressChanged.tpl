@@ -1,0 +1,1 @@
+IP address for instance {$event->DBInstance->InstanceID} changed to {$event->NewIPAddress} 

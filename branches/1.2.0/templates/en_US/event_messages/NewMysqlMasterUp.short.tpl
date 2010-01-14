@@ -1,0 +1,1 @@
+New MySQL master: {$event->DBInstance->ExternalIP} Up
