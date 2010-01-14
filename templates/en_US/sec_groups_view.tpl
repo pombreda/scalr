@@ -1,15 +1,14 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
 
 var regions = [
-{section name=id loop=$regions}
-	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
-{/section}
+{foreach from=$regions name=id key=key item=item}
+	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
+{/foreach}
 ];
 
 var region = '{$smarty.session.aws_region}';
@@ -39,16 +38,16 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Security groups",
-        id: 'sgroups_list',
+        id: 'sgroups_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
         	emptyText: "No security groups found"
         },
 
-        enableFilter: false,
+        enableFilter: true,
         
-		tbar: ['Region:', new Ext.form.ComboBox({
+		tbar: ['Location:', new Ext.form.ComboBox({
 			allowBlank: false,
 			editable: false, 
 	        store: regions,
@@ -60,7 +59,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.region = record.data.value; 
+	        	store.baseParams.region = combo.getValue(); 
 	        	store.load();
 	        }}
 	    }), '-', '&nbsp;&nbsp;', {xtype:'checkbox', boxLabel:'Show all security groups', listeners:
@@ -72,7 +71,7 @@ Ext.onReady(function () {
 		
         // Columns
         columns:[
-			{header: "Name", width: 70, dataIndex: 'name', sortable: false},
+			{header: "Name", width: 70, dataIndex: 'name', sortable: true},
 			{header: "Description", width: 50, dataIndex: 'description', sortable: false}
 		],
 		

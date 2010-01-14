@@ -27,7 +27,7 @@
 				{
 					case COMMENTS_OBJECT_TYPE::ROLE:
 						
-						$db->Execute("UPDATE ami_roles SET approval_state=? WHERE id=?", array($post_approval_state, $role_info['id']));
+						$db->Execute("UPDATE roles SET approval_state=? WHERE id=?", array($post_approval_state, $role_info['id']));
 						
 						break;
 						

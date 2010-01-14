@@ -52,6 +52,16 @@
 		foreach ($db->GetAll($sql) as $row)
 		{
 			$row['autosnapshoting'] = $db->GetOne("SELECT id FROM autosnap_settings WHERE arrayid=?", array($row['id']));
+			try
+			{
+				if ($row['farm_roleid'])
+				{
+					$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
+					$row['role_name'] = $DBFarmRole->GetRoleName();
+				}
+			}
+			catch(Exception $e) {}
+			 
 			$response["data"][] = $row;
 		}
 	}

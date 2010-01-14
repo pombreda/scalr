@@ -31,8 +31,8 @@
 			$DB = Core::GetDBInstance(null, true);
 			
 			$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBFarmRole->FarmID));
-			$farm_pending_instances = $DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND state != ?",
-				array($DBFarmRole->FarmID, INSTANCE_STATE::RUNNING)
+			$farm_pending_instances = $DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND state IN (?,?)",
+				array($DBFarmRole->FarmID, INSTANCE_STATE::PENDING, INSTANCE_STATE::INIT)
 			);
 			
 			if ($farminfo['farm_roles_launch_order'] == 1 && $farm_pending_instances > 0)

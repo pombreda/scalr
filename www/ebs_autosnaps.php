@@ -100,7 +100,11 @@
 		}
 		else
 		{
-			$db->Execute("DELETE FROM autosnap_settings WHERE (volumeid=? OR arrayid=?) AND clientid=?", array($req_volumeId, $req_array_id, $Client->ID));
+			if ($req_volumeId)
+				$db->Execute("DELETE FROM autosnap_settings WHERE volumeid=? AND clientid=?", array($req_volumeId, $Client->ID));
+			elseif ($req_array_id)
+				$db->Execute("DELETE FROM autosnap_settings WHERE arrayid=? AND clientid=?", array($req_array_id, $Client->ID));
+				
 			$okmsg = sprintf(_("Auto-snapshots successfully disabled"));
 			
 			if ($req_volumeId)

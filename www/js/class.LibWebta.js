@@ -23,7 +23,7 @@
 var LibWebta = Class.create();
 
 LibWebta.prototype = {
-	allchecked:		false,
+	allchecked:		new Array(),
 	tweaker:		null,
 	tweakers:		new Array(),
 	options:		{},
@@ -37,8 +37,8 @@ LibWebta.prototype = {
 			tabitems:		'Webta_Items',
 			xmlserver:		'xmlserver.php',
 			
-			menucss:		'../js/dmenu/dmenu.css',
-			menujs:			'dmenu/dmenu.js',
+			//menucss:		'../js/dmenu/dmenu.css',
+			//menujs:			'dmenu/dmenu.js',
 			
 			calendar_js:	'calendar/calendar.js',
 			calendar_en:	'calendar/lang/calendar-en.js',
@@ -53,6 +53,8 @@ LibWebta.prototype = {
 	
 	load: function(library) {
 		if (!library) return false;
+		
+		console.log(library);
 		
 		if (library.indexOf(".js") != -1) {
 			// load js library
@@ -79,16 +81,19 @@ LibWebta.prototype = {
 		if (!chk_name)
 			chk_name = "delete[]";
 		
+		if (typeof(this.allchecked[chk_name]) == 'undefined')
+			this.allchecked[chk_name] = false;
+		
 		var frm = $("frm");
 		for (var i=0; i<frm.elements.length; i++) 
 		{
 			var e = frm.elements[i];
 			if (((e.name == chk_name || e.name == "actid[]") && e.type=='checkbox') && !e.disabled) {
-				e.checked = !this.allchecked;
+				e.checked = !this.allchecked[chk_name];
 			}
 		}
 		
-		this.allchecked = !this.allchecked;
+		this.allchecked[chk_name] = !this.allchecked[chk_name];
 		if (this.tweaker)
 			this.tweaker.checkall();
 	},
@@ -170,11 +175,13 @@ LibWebta.prototype = {
 	},
 	
 	loadDefautls: function() {
+		/*
 		if (this.options.menucss)
 			this.load(this.options.menucss);
 		
 		if (this.options.menujs)
 			this.load(this.options.menujs);
+		*/
 		
 	    if (this.options.load_calendar) 
 		{

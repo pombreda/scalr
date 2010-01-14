@@ -1,15 +1,18 @@
 {include file="inc/header.tpl"}
 {include file="inc/table_header.tpl"}
-    {include file="inc/intable_header.tpl" header="Step 3 - DNS Round-robin settings" color="Gray"}
+    {include file="inc/intable_header.tpl" header="DNS Settings (Step 3 of 3)" color="Gray"}
 	<tr valign="top">
-		<td width="400" nowrap>Instances of this role will create domain A records in DNS zone:</td>
+		<td width="400" nowrap><p>Traffic to your domain will go to the following role</p></td>
 		<td colspan="6">
 		  <select name="dnsami" class="text">
 		  {section name=id loop=$roles}
 		      <option value="{$roles[id].ami_id}">{$roles[id].name}</option>
 		  {/section}
-		  </select> (<b>www</b> is a common choice)
+		  </select>
 		</td>
+	</tr>
+	<tr>
+		<td colspan='7'>This role should preferably be a load balancer.</td>
 	</tr>
 {include file="inc/intable_footer.tpl" color="Gray"}
 <input type="hidden" name="step" value="4">

@@ -51,6 +51,7 @@
 		while ($row = $rows->FetchRow())
 		{        
 	   	 	$row["farm_name"] = $db->GetOne("SELECT name FROM farms WHERE id=?", array($row['farmid']));
+	   	 	$row["dtadded"] = date("M j, Y H:i:s", strtotime($row["dtadded"]." ".SCALR_SERVER_TZ));
 			$response["data"][] = $row;
 		}
 	}

@@ -2,12 +2,19 @@
 	
 	class MysqlBackupFailEvent extends Event
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
+		
 		public $Operation;
 		
-		public function __construct($InstanceInfo, $Operation)
+		public function __construct(DBInstance $DBInstance, $Operation)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->Operation = $Operation;
 		}
 	}

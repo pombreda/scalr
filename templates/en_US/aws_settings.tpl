@@ -1,6 +1,9 @@
 {include file="inc/header.tpl" upload_files=1}
 	{include file="inc/table_header.tpl"}
         {include file="inc/intable_header.tpl" header="AWS settings" color="Gray"}
+		<tr>
+			<td colspan="2">Scalr needs your AWS credentials to scale capacity on your behalf. If you are unsure how to get these credentials, <a href="http://www.youtube.com/watch?v=UG0WOiIwmuw">see this video</a>.</td>
+		</tr>
         <tr>
     		<td width="20%">AWS Account ID:</td>
     		<td><input type="text" class="text" name="aws_accountid" value="{$aws_accountid}" /></td>

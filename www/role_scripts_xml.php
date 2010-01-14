@@ -52,7 +52,9 @@
 		EVENT_TYPE::NEW_MYSQL_MASTER,
 		EVENT_TYPE::EBS_VOLUME_MOUNTED,
 		EVENT_TYPE::BEFORE_INSTANCE_LAUNCH,
-		EVENT_TYPE::BEFORE_HOST_TERMINATE
+		EVENT_TYPE::BEFORE_HOST_TERMINATE,
+		EVENT_TYPE::DNS_ZONE_UPDATED,
+		EVENT_TYPE::EBS_VOLUME_ATTACHED
 	);	
 		
 	foreach ($events as $event)
@@ -113,7 +115,7 @@
 			    $data = array();
 			    foreach ($vars as $var)
 			    {
-			    	if (!in_array($var, CONFIG::$SCRIPT_BUILTIN_VARIABLES))
+			    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
 			    		$data[$var] = ucwords(str_replace("_", " ", $var));
 			    }
 			    $data = json_encode($data);
@@ -144,7 +146,8 @@
 	//TODO: Move it to class
 	function GetCustomVariables($template)
 	{
-		preg_match_all("/\%([^\%\s]+)\%/si", $template, $matches);
+		$text = preg_replace('/(\\\%)/si', '$$scalr$$', $template);
+		preg_match_all("/\%([^\%\s]+)\%/si", $text, $matches);
 		return $matches[1];		
 	}
 	

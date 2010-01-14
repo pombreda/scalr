@@ -3,5 +3,5 @@
 				Powered by <a href="http://code.google.com/p/scalr/">Scalr</a>
 			</div>
 		</div>
-<body>
+</body>
 </html>

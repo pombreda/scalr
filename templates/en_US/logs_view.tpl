@@ -6,7 +6,7 @@
 </style>
 {/literal}
 <div id="search-ct"></div> 
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer grid-padding-fix"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -18,7 +18,7 @@ Ext.onReady(function () {
 	
 	// ---- Init search form
 	var searchPanel = new Ext.FormPanel({
-		style: 'margin:5px 5px 15px 5px',
+		style: 'margin-bottom:5px;margin-top:5px;',
 		renderTo: document.body,
         labelWidth: 150,
         frame:true,
@@ -144,7 +144,7 @@ Ext.onReady(function () {
     var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
 	var grid = new Ext.ux.scalr.GridViewer({
         //renderTo: "maingrid-ct",
-        id: "logs_list5",
+        id: 'logs_list_'+GRID_VERSION,
         height: 500,
         store: store,
         title:'',
@@ -171,7 +171,7 @@ Ext.onReady(function () {
 			{header: "Time", width: 45, dataIndex: 'time', sortable: false},
 			{header: "Farm", width: 25, dataIndex: 'farm_name', renderer:farmRenderer, sortable: false},
 			{header: "Caller", width: 40, dataIndex: 'source', renderer:callerRenderer, sortable: false},
-			{header: "Message", width: 160, dataIndex: 'message', sortable: false}
+			{header: "Message", width: 160, dataIndex: 'message', sortable: false, css: 'white-space: normal !important;'}
 		]
     });
 

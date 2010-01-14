@@ -15,7 +15,7 @@
         {
 			$db = Core::GetDBInstance();
 			
-			$this->ThreadArgs = $db->GetAll("SELECT * FROM farm_amis WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias=?)", 
+			$this->ThreadArgs = $db->GetAll("SELECT * FROM farm_roles WHERE ami_id IN (SELECT ami_id FROM roles WHERE alias=?)", 
             	array(ROLE_ALIAS::MYSQL)
             );
         }
@@ -39,20 +39,18 @@
         	if ($mysql_farm_ami['replace_to_ami'] != '')
                 return;
             	
-            $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", 
-                array($mysql_farm_ami['farmid'])
-			);
+            $DBFarm = DBFarm::LoadByID($mysql_farm_ami['farmid']);
                 
 			//skip terminated farms
-			if ($farminfo["status"] == FARM_STATUS::TERMINATED)
+			if ($DBFarm->Status != FARM_STATUS::RUNNING)
 				return;
                     
 			//
             // Check replication status
             //
-			$this->Logger->info("[FarmID: {$farminfo['id']}] Checking replication status");
-			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=? AND isdbmaster='0' AND state=?",
-                array($farminfo['id'], $mysql_farm_ami['ami_id'], INSTANCE_STATE::RUNNING)
+			$this->Logger->info("[FarmID: {$DBFarm->ID}] Checking replication status");
+			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farm_roleid=? AND isdbmaster='0' AND state=?",
+                array($mysql_farm_ami['id'], INSTANCE_STATE::RUNNING)
 			);
 			if (count($instances) > 0)
 			{
@@ -60,7 +58,7 @@
                 {
                 	try
 	   				{
-	   					$this->Logger->info("[FarmID: {$farminfo['id']}] {$instance['external_ip']} -> SLAVE STATUS");
+	   					$this->Logger->info("[FarmID: {$DBFarm->ID}] {$instance['external_ip']} -> SLAVE STATUS");
 	   					
 	   					$sock = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 						@socket_set_nonblock($sock);
@@ -91,7 +89,7 @@
 						
 	   					if (!$res)
 	   					{
-	   						$this->Logger->warn(new FarmLogMessage($farminfo['id'], sprintf(_("Scalr cannot connect to instance %s:3306 (%s) and check replication status. (Error (%s):%s)"), $instance['external_ip'], $instance['instance_id'], $err, socket_strerror($err))));
+	   						$this->Logger->warn(new FarmLogMessage($DBFarm->ID, sprintf(_("Scalr cannot connect to instance %s:3306 (%s) and check replication status. (Error (%s):%s)"), $instance['external_ip'], $instance['instance_id'], $err, socket_strerror($err))));
 	   						continue;
 	   					}
 	   					
@@ -112,132 +110,111 @@
 		   				if ($replication_status != $instance['mysql_replication_status'])
 		   				{
 		   					if ($replication_status == 0)
-		   						Scalr::FireEvent($farminfo['id'], new MySQLReplicationFailEvent($instance));
+		   						Scalr::FireEvent($DBFarm->ID, new MySQLReplicationFailEvent(DBInstance::LoadByID($instance['id'])));
 		   					else
-		   						Scalr::FireEvent($farminfo['id'], new MySQLReplicationRecoveredEvent($instance));
+		   						Scalr::FireEvent($DBFarm->ID, new MySQLReplicationRecoveredEvent(DBInstance::LoadByID($instance['id'])));
 		   				}
 	   				}
 	   				catch(Exception $e)
 	   				{
 	   					$this->Logger->warn(
 	   						new FarmLogMessage(
-	   							$farminfo['id'], 
+	   							$DBFarm->ID, 
 	   							"Cannot retrieve replication status. {$e->getMessage()}"
 	   						)
 	   					);
 	   				}
                 }
-                }
-                else
-                $this->Logger->info("[FarmID: {$farminfo['id']}] There are no running slave hosts.");
+			}
+			else
+				$this->Logger->info("[FarmID: {$DBFarm->ID}] There are no running slave hosts.");
                       
-                //
-                // Check backups and mysql bandle procedures
-                //
+            //
+            // Check backups and mysql bandle procedures
+            //
                                         
-                // Backups
-                if ($farminfo["mysql_bcp"] == 1 && $farminfo["mysql_bcp_every"] != 0)
-                {
-                if ($farminfo["isbcprunning"] == 1)
-                {
+            //Backups
+			if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_ENABLED) && $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY) != 0)
+			{
+				if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_IS_BCP_RUNNING) == 1)
+				{
                     // Wait for timeout time * 2 (Example: NIVs problem with big mysql snapshots)
                     // We must wait for running bundle process.
-                	$bcp_timeout = $farminfo["mysql_bcp_every"]*(60*2);
-                    if ($farminfo["dtlastbcp"]+$bcp_timeout < time())
+                	$bcp_timeout = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY)*(60*2);
+                    if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_LAST_BCP_TS)+$bcp_timeout < time())
                     	$bcp_timeouted = true;
                     	
 	                if ($bcp_timeouted)
 	                {
-	                	$db->Execute("UPDATE farms SET isbcprunning='0' WHERE id=?", array($farminfo["id"]));
-	                	
-	                	$this->Logger->info("[FarmID: {$farminfo['id']}] MySQL Backup already running. Timeout. Clear lock.");
+	                	$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_IS_BCP_RUNNING, 0);
+	                	$this->Logger->info("[FarmID: {$DBFarm->ID}] MySQL Backup already running. Timeout. Clear lock.");
 	                }
-                }
+				}
                 else
                 {
-                	$timeout = $farminfo["mysql_bcp_every"]*60;
-                    if ($farminfo["dtlastbcp"]+$timeout < time())
+                	$timeout = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY)*60;
+                    if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_LAST_BCP_TS)+$timeout < time())
                     {
-                        $this->Logger->info("[FarmID: {$farminfo['id']}] Need new backup");
+                        $this->Logger->info("[FarmID: {$DBFarm->ID}] Need new backup");
                         
-                    	$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
-							ORDER BY isdbmaster ASC
-						", array(INSTANCE_STATE::RUNNING));
-							
-						if (!$instance)
-						{
-							//TODO: Make this query better
-							$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
-								ORDER BY isdbmaster ASC
-							", array(INSTANCE_STATE::RUNNING));							
-						}
-                            
+                    	$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? AND farm_roleid=? ORDER BY isdbmaster ASC", 
+                    		array(INSTANCE_STATE::RUNNING, $mysql_farm_ami['id'])
+                    	);
+							                            
                         if ($instance)
                         {
                             $DBInstance = DBInstance::LoadByID($instance['id']);
                             $DBInstance->SendMessage(new MakeMySQLBackupScalrMessage());
                         	
-                        	$db->Execute("UPDATE farms SET isbcprunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
+                            $DBFarm->SetSetting(DBFarm::SETTING_MYSQL_IS_BCP_RUNNING, 1);
+                            $DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BCP_INSTANCE_ID, $instance['instance_id']);
                         }
                         else 
-                            $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql instances for run backup procedure!");
+                            $this->Logger->info("[FarmID: {$DBFarm->ID}] There is no running mysql instances for run backup procedure!");
                     }
-                }
-                }
+				}
+			}
                 
-                if ($farminfo["mysql_bundle"] == 1 && $farminfo["mysql_rebundle_every"] != 0)
-                {
-                if ($farminfo["isbundlerunning"] == 1)
+			if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_ENABLED) && $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY) != 0)
+			{
+				if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_IS_BUNDLE_RUNNING) == 1)
                 {	                    
                     // Wait for timeout time * 2 (Example: NIVs problem with big mysql snapshots)
                     // We must wait for running bundle process.
-                	$bundle_timeout = $farminfo["mysql_rebundle_every"]*(3600*2);
-	                if ($farminfo["dtlastrebundle"]+$bundle_timeout < time())
+                	$bundle_timeout = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY)*(3600*2);
+	                if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_LAST_BUNDLE_TS)+$bundle_timeout < time())
 	                	$bundle_timeouted = true;
                     	
 	                if ($bundle_timeouted)
 	                {
-	                	$db->Execute("UPDATE farms SET isbundlerunning='0' WHERE id=?", array($farminfo["id"]));
-	                	
-	                	$this->Logger->info("[FarmID: {$farminfo['id']}] MySQL Bundle already running. Timeout. Clear lock.");
+	                	$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_IS_BUNDLE_RUNNING, 0);
+	                	$this->Logger->info("[FarmID: {$DBFarm->ID}] MySQL Bundle already running. Timeout. Clear lock.");
 	                }
                 }
                 else
                 {
-                	$timeout = $farminfo["mysql_rebundle_every"]*3600;
-	                if ($farminfo["dtlastrebundle"]+$timeout < time())
-	                {
-	                    $this->Logger->info("[FarmID: {$farminfo['id']}] Need mySQL bundle procedure");
+					$timeout = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY)*3600;
+					if ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_LAST_BUNDLE_TS)+$timeout < time())
+					{
+	                    $this->Logger->info("[FarmID: {$DBFarm->ID}] Need mySQL bundle procedure");
 	                    
 	                	// Rebundle
-	               		$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                        	AND ami_id='{$mysql_farm_ami['ami_id']}' AND farmid='{$farminfo['id']}' 
-							AND isdbmaster='1'
-						", array(INSTANCE_STATE::RUNNING));
-
-	                	if (!$instance)
-						{
-							//TODO: Make this query better
-							$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? 
-                            	AND role_name IN ('mysql', 'mysql64', 'mysqllvm', 'mysqllvm64') AND farmid='{$farminfo['id']}' 
-								AND isdbmaster='1'
-							", array(INSTANCE_STATE::RUNNING));							
-						}
+	               		$instance = $db->GetRow("SELECT * FROM farm_instances WHERE state=? AND farm_roleid=? AND isdbmaster='1'
+						", array(INSTANCE_STATE::RUNNING, $mysql_farm_ami['id']));
 						
 						if ($instance)
 	                    {
 	                        $DBInstance = DBInstance::LoadByID($instance['id']);
                             $DBInstance->SendMessage(new MakeMySQLDataBundleScalrMessage());
 	                        
-	                        $db->Execute("UPDATE farms SET isbundlerunning='1', bcp_instance_id='{$instance['instance_id']}' WHERE id='{$farminfo['id']}'");
+                            $DBFarm->SetSetting(DBFarm::SETTING_MYSQL_IS_BUNDLE_RUNNING, 1);
+                            $DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BUNDLE_INSTANCE_ID, $instance['instance_id']);
 	                    }
 	                    else 
-	                        $this->Logger->info("[FarmID: {$farminfo['id']}] There is no running mysql master instances for run bundle procedure!");
+	                        $this->Logger->info("[FarmID: {$DBFarm->ID}] There is no running mysql master instances for run bundle procedure!");
 					}
-                }
+	            }
 			}
-        }
+       	 }
     }
 ?>

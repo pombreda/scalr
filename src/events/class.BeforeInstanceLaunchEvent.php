@@ -2,13 +2,19 @@
 	
 	class BeforeInstanceLaunchEvent extends Event 
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
 		
 		public $SkipDeferredOperations = true;
 		
-		public function __construct($InstanceInfo)
+		public function __construct(DBInstance $DBInstance)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 		}
 	}
 ?>

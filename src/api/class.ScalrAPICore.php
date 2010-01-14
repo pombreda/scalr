@@ -1,5 +1,7 @@
 <?php
 
+	define("API_SERVER_IP", "174.132.108.66");
+
 	abstract class ScalrAPICore
 	{
 		const HASH_ALGO = 'SHA256';
@@ -64,7 +66,7 @@
 					
 					//Check IP Addresses
 					$ips = explode(",", $this->Client->GetSettingValue(CLIENT_SETTINGS::API_ALLOWED_IPS));
-					if (!$this->IPAccessCheck($ips))
+					if (!$this->IPAccessCheck($ips) && $_SERVER['REMOTE_ADDR'] != API_SERVER_IP)
 						throw new Exception(sprintf(_("Access to the API is not allowed from your IP '%s'"), $_SERVER['REMOTE_ADDR']));
 						
 						
@@ -73,12 +75,11 @@
 					$args = array();
 					foreach ($ReflectMethod->getParameters() as $param)
 					{
-						if (!$param->isOptional() && !$request[$param->getName()])
+						if (!$param->isOptional() && !isset($request[$param->getName()]))
 							throw new Exception(sprintf("Missing required parameter '%s'", $param->getName()));
 						else
 							$args[$param->getName()] = $request[$param->getName()];
 					}
-					
 					
 					$result = $ReflectMethod->invokeArgs($this, $args);
 					
@@ -107,7 +108,7 @@
 			$this->LogRequest(
 				$this->LastTransactionID,
 				$request['Action'],
-				$_SERVER['REMOTE_ADDR'],
+				(($_SERVER['REMOTE_ADDR'] == API_SERVER_IP) ? 'Mobile app' : $_SERVER['REMOTE_ADDR']),
 				$request,
 				$retval
 			);

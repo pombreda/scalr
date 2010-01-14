@@ -4,6 +4,9 @@
 	// AJAX_REQUEST;
 	$context = 6;
 	
+	$req_start = $req_start ? (int)$req_start : 0;
+	$req_limit = $req_limit ? (int)$req_limit : 50;
+	
 	try
 	{ 
 		$enable_json = true;
@@ -14,24 +17,44 @@
 		
 		if (!$get_trnid && !$get_strnid)
 		   exit();
+
+		$where = array("transactionid=".$db->qstr($get_trnid));
+		if ($req_category)
+			$where[] = "caller LIKE '".addslashes($req_category)."%'";
+		
+		if (!$req_severity)
+			$req_severity = array("FATAL", "INFO", "ERROR", "WARN");
+		$where_sev = array();
+		foreach ($req_severity as $sev)
+			$where_sev[] = $db->qstr($sev);
+		$where[] = "severity IN (".join(",", $where_sev). ")";
+
+		if ($req_query)
+			$where[] = "message LIKE '%".addslashes($req_query)."%'";
 		   
 		if ($get_trnid && !$get_strnid)
 		{
-			$trn_id = $db->qstr($get_trnid);
+			$sql = "SELECT * FROM syslog WHERE transactionid != sub_transactionid AND ".join(" AND ", $where)." GROUP BY sub_transactionid
+				UNION SELECT * FROM syslog WHERE transactionid = sub_transactionid AND ".join(" AND ", $where)." ORDER BY dtadded_time ASC, id ASC";
 			
-			$sql = "SELECT * FROM syslog WHERE transactionid={$trn_id} AND transactionid != sub_transactionid GROUP BY sub_transactionid
-				UNION SELECT * FROM syslog WHERE transactionid={$trn_id} AND transactionid = sub_transactionid ORDER BY dtadded_time ASC, id ASC";
+			$sql_total = "SELECT COUNT(*) FROM ($sql) AS logs";
+			
+			$sql = "SELECT * FROM ($sql) AS logs LIMIT {$req_start}, {$req_limit}";
+			
 		}
 		else
 		{
-			$trn_id = $db->qstr($get_trnid);
-			$strn_id = $db->qstr($get_strnid);
+			$where[] = "sub_transactionid=".$db->qstr($get_strnid);
 			
-			$sql = "SELECT *, transactionid as sub_transactionid FROM syslog WHERE sub_transactionid={$strn_id} AND transactionid={$trn_id} ORDER BY dtadded_time ASC, id ASC";
+			$sql = "SELECT *, transactionid as sub_transactionid FROM syslog WHERE ".join(" AND ", $where)." ORDER BY dtadded_time ASC, id ASC";
+
+			$sql_total = preg_replace("/SELECT[^F]FROM/", "SELECT COUNT(*) FROM", $sql);
+			
+			$sql .= " LIMIT {$req_start}, {$req_limit}";			
 		}
 		
 		$t = $db->Execute($sql);
-		$response["total"] = $t->RecordCount();
+		$response["total"] = $db->GetOne($sql_total);
 			
 		$response['success'] = '';
 		$response['error'] = '';

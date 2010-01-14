@@ -24,39 +24,37 @@
             
             if ($farminfo["clientid"] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
                 UI::Redirect("index.php");
+
+            $DBFarmRole = DBFarmRole::LoadByID($instanceinfo['farm_roleid']);
                 
-            $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$instanceinfo['ami_id']}'");
-            $rolename = $ami_info['name'];
+            $rolename = $DBFarmRole->GetRoleName();
             
-            if ($ami_info['alias'] == ROLE_ALIAS::MYSQL)
+            if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL)
             	$display["warnmsg"] = _("You are about to synchronize MySQL instance. The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$instanceinfo['farmid']}'>Click here if you wish to bundle and save MySQL data</a>.");
-            
-            if (!$ami_info)
-            	$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=? AND region=?", array($instanceinfo['role_name'], ROLE_TYPE::SHARED, $instanceinfo['region']));
-            
-            if ($db->GetOne("SELECT id FROM ami_roles WHERE `replace` = '{$ami_info["ami_id"]}' and clientid='{$farminfo['clientid']}'"))
+                       
+            if ($db->GetOne("SELECT id FROM roles WHERE `replace` = '{$DBFarmRole->AMIID}' and clientid='{$farminfo['clientid']}'"))
             {
-                $errmsg = _("This role already synchonizing&#x2026;");
+                $errmsg = _("This role already synchonizing...");
                 UI::Redirect("client_roles_view.php");
             }
             
-            if ($ami_info["roletype"] == ROLE_TYPE::SHARED)
+            if ($DBFarmRole->GetRoleOrigin() == ROLE_TYPE::SHARED)
             {
                 $i = 1;
-                $name = "{$ami_info["name"]}-".date("Ymd")."01";
-                $role = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));
+                $name = "{$DBFarmRole->GetRoleName()}-".date("Ymd")."01";
+                $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));
                 if ($role)
                 {
 	                while ($role)
 	                {
-	               		$name = $ami_info["name"];
+	               		$name = $DBFarmRole->GetRoleName();
 	                    if ($i > 0)
 	                    {
 	                        $istring = ($i < 10) ? "0{$i}" : $i;
 	                    	$name .= "-".date("Ymd")."{$istring}";
 	                    }
 	                        
-	                    $role = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));                    
+	                    $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));                    
 	                    $i++;
 	                }
                 }
@@ -64,7 +62,7 @@
                 $new_rolename = $name;
             }
             else 
-                $new_rolename = $ami_info['name'];
+                $new_rolename = $DBFarmRole->GetRoleName();
                 
             $instance_id = $instanceinfo["instance_id"];
         }
@@ -88,20 +86,22 @@
 		{
 		    if ($post_name != $new_rolename)
 		    {
-		        if ($db->GetOne("SELECT * FROM ami_roles WHERE name=? AND clientid=? AND iscompleted='1'", array($post_name, $farminfo["clientid"])))
+		        if ($db->GetOne("SELECT * FROM roles WHERE name=? AND clientid=? AND iscompleted='1'", array($post_name, $farminfo["clientid"])))
 		          	$err[] = sprintf(_("Role %s already exists. Please use a different name for new role."), $post_name);
 		          
-		        if ($db->GetOne("SELECT * FROM ami_roles WHERE name=? AND roletype=?", array($post_name, ROLE_TYPE::SHARED)))
+		        if ($db->GetOne("SELECT * FROM roles WHERE name=? AND roletype=?", array($post_name, ROLE_TYPE::SHARED)))
 		        	$err[] = sprintf(_("There is already a shared role %s. Please use a different name for new role."), $post_name);
 		    }
 		}
 		
 		if (count($err) == 0)
 		{
-			$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo["ami_id"]));
+			$DBFarmRole = DBFarmRole::LoadByID($instanceinfo["farm_roleid"]);
+			
+			$instance_ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($DBFarmRole->AMIID));
 			if (!$instance_ami_info)
 			{
-				$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE name=? AND roletype=? AND region=?", array($instanceinfo["role_name"], ROLE_TYPE::SHARED, $instanceinfo["region"]));
+				$instance_ami_info = $db->GetRow("SELECT * FROM roles WHERE name=? AND roletype=? AND region=?", array($instanceinfo["role_name"], ROLE_TYPE::SHARED, $instanceinfo["region"]));
 				$db->Execute("UPDATE farm_instances SET ami_id=? WHERE farmid=? AND ami_id=?", array($instance_ami_info["ami_id"], $instanceinfo["farmid"], $instanceinfo['ami_id']));
 			}
                 
@@ -114,12 +114,7 @@
             $alias = $instance_ami_info["alias"];
 			$architecture = $instance_ami_info["architecture"];
 			
-			$farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
-				array($instanceinfo["ami_id"], $instanceinfo['farmid'])
-			);
-			
-			if ($farm_ami_info)
-				$i_type = $farm_ami_info["instance_type"];
+			$i_type = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE);
 			
 			if (!$i_type)
 				$i_type = $instance_ami_info["instance_type"];
@@ -135,8 +130,8 @@
                 
 				$ismasterbundle = $instanceinfo['isdbmaster'];
 				
-				$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW(), `ismasterbundle`=?, `region`=?", 
-					array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type, $ismasterbundle, $instanceinfo['region'])
+				$db->Execute("INSERT INTO roles SET name=?, roletype=?, clientid=?, prototype_iid=?, iscompleted='0', `replace`=?, `alias`=?, `architecture`=?, `instance_type`=?, dtbuildstarted=NOW(), `ismasterbundle`=?, `region`=?, `default_ssh_port`=?", 
+					array($post_name, ROLE_TYPE::CUSTOM, $farminfo["clientid"], $instanceinfo['instance_id'], $instance_ami_info['ami_id'], $alias, $architecture, $i_type, $ismasterbundle, $instanceinfo['region'], $instance_ami_info['default_ssh_port'])
 				);
                 
 				$DBInstance = DBInstance::LoadByID($instanceinfo['id']);

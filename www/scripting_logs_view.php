@@ -14,6 +14,7 @@
 	
 	$display['farms'] = json_encode($disp_farms);
 	
+	$display["table_title_text"] = sprintf(_("Current time: %s"), date("M j, Y H:i:s"));
 	
 	require("src/append.inc.php"); 	
 ?>

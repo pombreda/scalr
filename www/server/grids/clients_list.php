@@ -12,8 +12,17 @@
 		if ($_SESSION["uid"] != 0)
 		   throw new Exception(_("Requested page cannot be viewed from the client account"));
 		
-		$sql = "SELECT id,email,aws_accountid,isactive,farms_limit,fullname,comments  FROM clients WHERE id > 0";
-		
+		$sql = "SELECT 
+			id, 
+			email,
+			aws_accountid,
+			isactive,
+			dtadded,
+			farms_limit,
+			fullname, 
+			comments
+			FROM clients WHERE id > 0";
+	
 		//
 		// If specified user id
 		//
@@ -27,6 +36,11 @@
 		{
 			$isactive = (int)$req_isactive;
 			$sql .= " AND isactive='{$isactive}'";
+		}
+		
+		if ($req_cancelled)
+		{
+			$sql .= " AND ((SELECT COUNT(*) FROM subscriptions WHERE status = 'Active' AND subscriptions.clientid = clients.id) = 0 AND isactive='0')";
 		}
 		
 		if ($req_query)
@@ -60,8 +74,7 @@
 		{
 			$row["farms"] = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$row['id']}'");
 			$row["apps"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE clientid='{$row['id']}'");
-			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE clientid='{$row['id']}'");
-						
+			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM roles WHERE clientid='{$row['id']}'");
 			$response["data"][] = $row;
 		}
 	

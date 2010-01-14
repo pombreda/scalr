@@ -1,0 +1,1 @@
+Option {$event->OptionName} for role {$event->DBFarmRole->GetRoleName()} chnaged

@@ -36,13 +36,13 @@
         	Scalr::ReconfigureObservers();
         	
         	$db = Core::GetDBInstance();
-                        
+        	
             define("SUB_TRANSACTIONID", posix_getpid());
             define("LOGGER_FARMID", $farminfo["id"]);
             
             $this->Logger->info("Begin polling farm (ID: {$farminfo['id']}, Name: {$farminfo['name']}, Status: {$farminfo['status']})");
                         
-            $farm_amis = $db->GetAll("SELECT ami_id, id, replace_to_ami FROM farm_amis WHERE farmid=?", array($farminfo['id']));
+            $farm_roles = $db->GetAll("SELECT ami_id, id, replace_to_ami FROM farm_roles WHERE farmid=? ORDER BY launch_index ASC", array($farminfo['id']));
 
             $Client = Client::Load($farminfo['clientid']);
             
@@ -57,7 +57,7 @@
             	return;
             }
 			
-            foreach ($farm_amis as $farm_ami)
+            foreach ($farm_roles as $farm_ami)
             {
             	$DBFarmRole = DBFarmRole::LoadByID($farm_ami['id']);
             	
@@ -99,9 +99,38 @@
 	            		//TODO:
 	            	}
 	            	elseif ($res == ScalingAlgo::DOWNSCALE)
-	            	{	            			
-            			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state = ? AND farmid=? AND (ami_id = ? OR ami_id=?) ORDER BY dtadded ASC",
-		            		array(INSTANCE_STATE::RUNNING, $DBFarmRole->FarmID, $DBFarmRole->AMIID, $DBFarmRole->ReplaceToAMI)
+	            	{	     
+						/*
+						 Timeout instance's count decrease. Decreases instance’s count after scaling 
+						 resolution “the spare instances are running” for selected timeout interval
+						 from scaling EditOptions							
+						*/    
+						
+						// We have to check timeout limits before new scaling (downscaling) process will be initiated
+						if($DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_DOWNSCALE_TIMEOUT_ENABLED))
+						{   // if the farm timeout is exceeded
+							// checking timeout interval.
+							
+							$last_down_scale_data_time =  strtotime($DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_DOWNSCALE_DATETIME, false)); 							
+							$timeout_interval = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_DOWNSCALE_TIMEOUT);
+							
+							// check the time interval to continue scaling or cancel it...
+							if(time() - $last_down_scale_data_time < $timeout_interval*60)
+							{
+								// if the launch time is too small to terminate smth in this role -> go to the next role in foreach()							
+								$this->Logger->info(new FarmLogMessage($farminfo['id'], 
+											sprintf("The running time is too small to terminate any instance in farm %s, role %s",
+												$farminfo['name'],
+												$instanceinfo['role_name']
+												)
+											));
+								continue;
+							}
+						} // end Timeout instance's count decrease         			
+            			$sort = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_KEEP_OLDEST) == 1) ? 'DESC' : 'ASC';
+	            		
+	            		$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state = ? AND farm_roleid=? ORDER BY dtadded {$sort}",
+		            		array(INSTANCE_STATE::RUNNING, $DBFarmRole->ID)
 		            	);
 		            	
 		            	$got_valid_instance = false;
@@ -128,8 +157,7 @@
 	                        	{
 	                        		$chk_sync_time = $db->GetOne("SELECT id FROM farm_instances 
 	                        		WHERE dtlastsync > {$instanceinfo['dtlastsync']} 
-		                        		AND farmid='{$instanceinfo['farmid']}' 
-		                        		AND ami_id='{$instanceinfo['ami_id']}'");
+		                        	AND farm_roleid='{$instanceinfo['farm_roleid']}' AND state != '".INSTANCE_STATE::TERMINATED."'");
 	                        		if ($chk_sync_time)
 	                        			$got_valid_instance = true;
 	                        	}
@@ -181,7 +209,7 @@
 		                            	)
 		                            ));
 		                            
-						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($instanceinfo));
+						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($instanceinfo['id'], false)));
 		                        }
 		                        catch (Exception $e)
 		                        {
@@ -200,6 +228,33 @@
 	            	}
             		elseif ($res == ScalingAlgo::UPSCALE)
 	            	{
+						/*
+						Timeout instance's count increase. Increases  instance's count after 
+						scaling resolution “need more instances” for selected timeout interval
+						from scaling EditOptions						
+						*/
+						
+						if($DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_UPSCALE_TIMEOUT_ENABLED))
+						{ 
+							// if the farm timeout is exceeded
+							// checking timeout interval.
+							$last_up_scale_data_time =  strtotime($DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_UPSCALE_DATETIME, false)); 								
+							$timeout_interval = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_UPSCALE_TIMEOUT);						
+							
+							// check the time interval to continue scaling or cancel it...
+							if(time() - $last_up_scale_data_time < $timeout_interval*60)
+							{
+								// if the launch time is too small to terminate smth in this role -> go to the next role in foreach()							
+								$this->Logger->info(new FarmLogMessage($farminfo['id'], 
+											sprintf("The last scaling time interval is too small to start a new instance in farm %s, role %s",
+												$farminfo['name'],
+												$instanceinfo['role_name']
+												)
+											));
+								continue;									
+							}
+						}// end Timeout instance's count increase 
+						
 						$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($farminfo['id']));
 			            if ($farminfo['status'] != FARM_STATUS::RUNNING)
 			            {
@@ -207,7 +262,7 @@
 			            	break;
 			            }
 	            		
-	            		$instance_id = Scalr::RunInstance(CONFIG::$SECGROUP_PREFIX.$DBFarmRole->GetRoleName(), $farminfo["id"], $DBFarmRole->GetRoleName(), $farminfo["hash"], $DBFarmRole->AMIID, false, true);                            
+	            		$instance_id = Scalr::RunInstance($DBFarmRole, false, false, true);                            
                         if ($instance_id)
 							$this->Logger->info(new FarmLogMessage($farminfo['id'], sprintf("Starting new instance. InstanceID = %s.", $instance_id)));
             		

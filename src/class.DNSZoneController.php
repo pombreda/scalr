@@ -167,32 +167,32 @@
 	    					switch($record["rtype"])
 	        				{
 	        					case "A":
-	        							$record = new ADNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);
+	        							$record = new ADNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 	        						
 	        					case "NS":
-	        							$record = new NSDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);        							
+	        							$record = new NSDNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"]);        							
 	        							$this->Zone->AddRecord($record);
 	        						break;
 
 	        					case "TXT":
-	        							$record = new TXTDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);
+	        							$record = new TXTDNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 	        						
 	        					case "CNAME":
-	        							$record = new CNAMEDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"]);
+	        							$record = new CNAMEDNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 	        						
 	        					case "MX":
-	        							$record = new MXDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"], $record["rpriority"]);
+	        							$record = new MXDNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"], $record["rpriority"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 
 	        					case "SRV":
-	        							$record = new SRVDNSRecord($record["rkey"], $record["rvalue"], $record["ttl"], $record["rpriority"], $record["rweight"], $record["rport"]);
+	        							$record = new SRVDNSRecord($record["rkey"], trim($record["rvalue"]), $record["ttl"], $record["rpriority"], $record["rweight"], $record["rport"]);
 	        							$this->Zone->AddRecord($record);
 	        						break;
 	        				}
@@ -258,6 +258,15 @@
             	throw $e;
             }
 			
+            try
+            {
+            	Scalr::FireEvent($zoneinfo["farmid"], new DNSZoneUpdatedEvent($zoneinfo["zone"]));
+            }
+            catch(Exception $e)
+            {
+            	$this->Logger->fatal(sprintf(_("DNSZoneUpdatedEvent: %s"), $e->getMessage()));
+            }
+            
 			// Remove lock
 			$this->Logger->debug(sprintf(_("Unlocking zone %s"), $zoneid));
 			$this->DB->Execute("UPDATE zones SET islocked='0' WHERE id=?", array($zoneid));

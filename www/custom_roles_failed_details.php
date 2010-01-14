@@ -7,9 +7,9 @@
 	   UI::Redirect("client_coles_view.php");
 
 	if ($_SESSION["uid"] != 0)
-		$info = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid=?", array($get_id, $_SESSION["uid"]));
+		$info = $db->GetRow("SELECT * FROM roles WHERE id=? AND clientid=?", array($get_id, $_SESSION["uid"]));
 	else
-		$info = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($get_id));
+		$info = $db->GetRow("SELECT * FROM roles WHERE id=?", array($get_id));
 		
 	if (!$info["fail_details"])
 	{

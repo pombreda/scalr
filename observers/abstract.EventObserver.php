@@ -51,17 +51,13 @@
 		
 		public function OnHostCrash(HostCrashEvent $event)
 		{
-			$event->InstanceInfo['isrebootlaunched'] = 0;
+			$event->DBInstance->IsRebootLaunched = 0;
 			
-			$HostDownEvent = new HostDownEvent($event->InstanceInfo);
+			$HostDownEvent = new HostDownEvent($event->DBInstance);
 			
 			$this->OnHostDown($HostDownEvent);
 		}
-				
-		public function OnLAOverMaximum(LAOverMaximumEvent $event) {}
-		
-		public function OnLAUnderMinimum(LAUnderMinimumEvent $event) {}
-		
+						
 		public function OnRebundleComplete(RebundleCompleteEvent $event) {}
 		
 		public function OnRebundleFailed(RebundleFailedEvent $event) {}
@@ -91,5 +87,11 @@
 		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event) {}
 		
 		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event) {}
+		
+		public function OnDNSZoneUpdated(DNSZoneUpdatedEvent $event) {}
+		
+		public function OnRoleOptionChanged(RoleOptionChangedEvent $event) {}
+		
+		public function OnEBSVolumeAttached(EBSVolumeAttachedEvent $event) {}
 	}
 ?>

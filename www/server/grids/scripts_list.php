@@ -45,13 +45,11 @@
 	    	$approval_state = preg_replace("/[^A-Za-z0-9-]+/", "", $req_approval_state);
 	    	$sql .= " AND scripts.approval_state='{$approval_state}'";
 	    }
-	    
-	    $sql .= " GROUP BY script_revisions.scriptid";
-		    
+	        
 	    if ($req_query)
 		{
 			$filter = mysql_escape_string($req_query);
-			foreach(array("name", "description") as $field)
+			foreach(array("scripts.name", "scripts.description") as $field)
 			{
 				$likes[] = "$field LIKE '%{$filter}%'";
 			}
@@ -60,10 +58,11 @@
 			$sql .= ")";
 		}
 		
+		$sql .= " GROUP BY script_revisions.scriptid";
+		
 		$sort = $req_sort ? mysql_escape_string($req_sort) : "id";
 		$dir = $req_dir ? mysql_escape_string($req_dir) : "ASC";
 		$sql .= " ORDER BY $sort $dir";
-			
 			
 		$response["total"] = $db->Execute($sql)->RecordCount();
 		

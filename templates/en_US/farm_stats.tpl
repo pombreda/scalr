@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-	<br />
 	<script language="Javascript" src="/js/stat_img_loader.js"></script>
 	<script language="Javascript">
 	{literal}

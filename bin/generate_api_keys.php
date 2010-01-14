@@ -3,7 +3,7 @@
 	
 	set_time_limit(0);
 	
-	$clients = $db->GetAll("SELECT id FROM clients");
+	$clients = $db->GetAll("SELECT id FROM clients WHERE scalr_api_keyid IS NULL");
 	foreach ($clients as $client)
 	{
 		$keys = Client::GenerateScalrAPIKeys();

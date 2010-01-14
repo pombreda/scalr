@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-	<br />
 	<div style="position:relative;width:auto;">
 	{include file="inc/table_header.tpl" nofilter=1}
 		{include file="inc/intable_header.tpl" header="General information" color="Gray"}

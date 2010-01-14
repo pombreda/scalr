@@ -29,8 +29,8 @@
 	    	try
 	    	{
 		    	$db->Execute("DELETE FROM farms WHERE id=?", array($farminfo['id']));
-		    	$db->Execute("DELETE FROM farm_role_settings WHERE farm_roleid IN (SELECT id FROM farm_amis WHERE farmid=?)", array($farminfo['id']));
-	    		$db->Execute("DELETE FROM farm_amis WHERE farmid=?", array($farminfo['id']));
+		    	$db->Execute("DELETE FROM farm_role_settings WHERE farm_roleid IN (SELECT id FROM farm_roles WHERE farmid=?)", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM farm_roles WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM farm_instances WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM logentries WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farminfo['id']));

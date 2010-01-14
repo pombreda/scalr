@@ -4,10 +4,8 @@
 	{
 		public function HostInit()
 		{
-			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?", array($this->DBInstance->ID));
-			
 			$event = new HostInitEvent(
-				$instanceinfo, 
+				$this->DBInstance, 
 				$this->Request['LocalIP'], 
 				$this->GetCallerIPAddress(), 
 				base64_decode($this->Request["Based64Pubkey"])
@@ -18,10 +16,8 @@
 		
 		public function HostUp()
 		{
-			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?", array($this->DBInstance->ID));
-			
 			$event = new HostUpEvent(
-				$instanceinfo, 
+				$this->DBInstance, 
 				$TODO // TODO:
 			);
 			

@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = _("Application creation wizard");
+	$display["title"] = _("Website creation wizard");
     $Validator = new Validator();
     
     $Client = Client::Load($_SESSION['uid']);
@@ -16,7 +16,7 @@
     {
         if (!$_SESSION['wizard'] || !$_SESSION['wizard']["domainname"] || count($_SESSION['wizard']['amis']) == 0)
         {
-        	$errmsg = _("Your session has been expired.<br>Due to security reasons, you must start ordering proccess over from the beginning.");
+        	$errmsg = _("Your session has been expired.<br>Please start again.");
         	UI::Redirect("app_wizard.php");
         }
     	
@@ -47,9 +47,8 @@
         
         $bucket_name = "farm-{$farmid}-{$Client->AWSAccountID}";
         
-        $db->Execute("UPDATE farms SET bucket_name=? WHERE id=?",
-			array($bucket_name, $farmid)
-		);
+        $DBFarm = new DBFarm($farmid);
+		$DBFarm->SetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME, $bucket_name);
         
         //
         // Create FARM KeyPair
@@ -59,7 +58,11 @@
             $key_name = "FARM-{$farmid}";
             $result = $AmazonEC2Client->CreateKeyPair($key_name);
             if ($result->keyMaterial)
-                $db->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farmid));
+            {
+                $DBFarm = new DBFarm($farmid);
+        		$DBFarm->SetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY, $result->keyMaterial);
+        		$DBFarm->SetSetting(DBFarm::SETTING_AWS_KEYPAIR_NAME, $key_name);
+            }
             else 
                 throw new Exception(_("Cannot create key pair for farm."), E_ERROR);
         }
@@ -76,27 +79,17 @@
         {
 	        foreach ($_SESSION['wizard']['amis'] as $ami_id)
 	        {
-	            $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$ami_id}'");
+	            $roleinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id='{$ami_id}'");
 	            
 	            $itype = ($roleinfo["architecture"] == INSTANCE_ARCHITECTURE::I386) ? I386_TYPE::M1_SMALL : X86_64_TYPE::M1_LARGE;
 	            
-	            $db->Execute("INSERT INTO farm_amis SET 
-							farmid=?, ami_id=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
-                            reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?
+	            $db->Execute("INSERT INTO farm_roles SET 
+							farmid=?, ami_id=?, reboot_timeout=?, launch_timeout=?, status_timeout = ?
                             ", array( 
                         		$farmid, 
                         		$ami_id, 
-	                            "", 
-	                            $itype,
-	                            0,
 	                            300,
                             	2400,
-                            	0,
-                            	0,
-                            	"",
-                         		0,
-                         		"",
                          		20
 						));
 
@@ -109,6 +102,7 @@
 				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, 1);
 				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, 1);
 				$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_POLLING_INTERVAL, 2);
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE, $itype);
 				
 				if ($roleinfo['default_minLA'])
 					$DBFarmRole->SetSetting(LAScalingAlgo::PROPERTY_MIN_LA, $roleinfo['default_minLA']);
@@ -118,7 +112,18 @@
 				
 				
 				if ($roleinfo['alias'] == ROLE_ALIAS::MYSQL)
-					$db->Execute("UPDATE farms SET mysql_rebundle_every='48', mysql_bcp_every='180', mysql_bcp='0' WHERE id=?", array($farmid));
+				{
+					if (!$DBFarm)
+						$DBFarm = new DBFarm($farmid);
+	    	
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BCP_ENABLED, $farm_mysql_make_backup);
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY, $farm_mysql_make_backup_every);	                
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BUNDLE_ENABLED, $farm_mysql_bundle);
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY, $farm_mysql_bundle_every);
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE, 'LVM');	                
+					$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE, $farm_mysql_ebs_size);
+					
+				}
 	        }
         }
         catch(Exception $e)
@@ -144,10 +149,8 @@
                 }
             }
             
-            $is_europe = ($_SESSION["wizard"]["region"] == 'eu-west-1') ? true : false;
-            
             if ($create_bucket)
-               $AmazonS3->CreateBucket($bucket_name, $is_europe);
+               $AmazonS3->CreateBucket($bucket_name, $_SESSION["wizard"]["region"]);
         }
         catch (Exception $e)
         {
@@ -160,7 +163,7 @@
 	        //
 	        // Add DNS Zone
 	        //
-	        $roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$_SESSION['wizard']["dnsami"]}'");
+	        $roleinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id='{$_SESSION['wizard']["dnsami"]}'");
         	
 	        $records = array();
 			$nss = $db->GetAll("SELECT * FROM nameservers WHERE isbackup='0'");
@@ -278,7 +281,7 @@
 	    else 
 	    {
 	        $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
-	        	AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
+	        	AND farm_roleid IN (SELECT id FROM farm_roles WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
 	        	array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $_SESSION["uid"])
 	        );
 	    	
@@ -292,7 +295,7 @@
 	        {
     	        $_SESSION["wizard"]["amis"] = $post_amis;
     	        
-    	        $roles = $db->GetAll("SELECT * FROM ami_roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
+    	        $roles = $db->GetAll("SELECT * FROM roles WHERE (clientid='0' OR clientid='{$_SESSION['uid']}') AND iscompleted='1'");
     	        foreach ($roles as $role)
     	        {
     	            if (in_array($role["ami_id"], $post_amis))
@@ -348,7 +351,7 @@
 	    	        {
 	        	        $display["amis"] = $post_amis;
 	        	        
-	        	        $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM ami_roles WHERE roletype=? OR (roletype=? and clientid=?)", 
+	        	        $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM roles WHERE roletype=? OR (roletype=? and clientid=?)", 
 					    	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $_SESSION['uid'])
 					    );
 	        	        

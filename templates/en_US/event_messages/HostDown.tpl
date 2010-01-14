@@ -1,1 +1,1 @@
-Instance {$event->InstanceInfo.instance_id} ({$event->InstanceInfo.role_name}) {if $event->InstanceInfo.external_ip}Public IP: {$event->InstanceInfo.external_ip} Internal IP: {$event->InstanceInfo.internal_ip}{/if} terminated 
+Instance {$event->DBInstance->InstanceID} ({$event->DBInstance->RoleName}) {if $event->DBInstance->ExternalIP}Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP}{/if} terminated 

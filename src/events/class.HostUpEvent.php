@@ -2,12 +2,19 @@
 	
 	class HostUpEvent extends Event
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
+		
 		public $ReplUserPass;
 		
-		public function __construct($InstanceInfo, $ReplUserPass)
+		public function __construct(DBInstance $DBInstance, $ReplUserPass)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->ReplUserPass = $ReplUserPass;
 		}
 	}

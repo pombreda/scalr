@@ -57,7 +57,7 @@
 				$AmazonEC2Client->SetAuthKeys($private_key, $cert);
 	
 	            $RunInstancesType = new RunInstancesType();
-		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM ami_roles WHERE roletype=? AND architecture=?",
+		        $RunInstancesType->imageId = $db->GetOne("SELECT ami_id FROM roles WHERE roletype=? AND architecture=?",
 		        	array(ROLE_TYPE::SHARED, INSTANCE_ARCHITECTURE::I386));
 		        $RunInstancesType->minCount = 1;
 		        $RunInstancesType->maxCount = 1;

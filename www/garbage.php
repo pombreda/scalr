@@ -15,7 +15,7 @@
 		
 		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array($_SESSION['uid'], $remove_items));
 		
-		$okmsg = _("Items removal has been scheduled. They will be deleted in approximatey 10 minutes.");
+		$okmsg = _("Items removal has been scheduled. They will be deleted in approximately 10 minutes.");
 		UI::Redirect("index.php");
 	}
 			

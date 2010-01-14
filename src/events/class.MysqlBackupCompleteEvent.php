@@ -2,13 +2,20 @@
 	
 	class MysqlBackupCompleteEvent extends Event
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
+		
 		public $Operation;
 		public $SnapshotInfo;
 		
-		public function __construct($InstanceInfo, $Operation, $SnapInfo)
+		public function __construct(DBInstance $DBInstance, $Operation, $SnapInfo)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->Operation = $Operation;
 			$this->SnapshotInfo = $SnapInfo;
 		}

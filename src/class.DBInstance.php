@@ -4,26 +4,31 @@
 	{
 		const PROPERTY_SCALARIZR_PACKAGE_VERSION = 'scalarizr_pkg_version';
 		
-		public 
-			$ID,
-			$FarmID,
-			$ClientID,
-			$InstanceID,
-			$State,
-			$AMIID,
-			$InternalIP,
-			$ExternalIP,
-			$IsDBMaster,
-			$IncludeInDNS,
-			$RoleName,
-			$AvailZone,
-			$Index,
-			$Region,
-			$ScalarizrPackageVersion;
+		public $ID;
+		public $FarmID;
+		public $ClientID;
+		public $InstanceID;
+		public $State;
+		public $AMIID;
+		public $InternalIP;
+		public $ExternalIP;
+		public $IsDBMaster;
+		public $IncludeInDNS;
+		public $RoleName;
+		public $AvailZone;
+		public $Index;
+		public $Region;
+		public $FarmRoleID;
+		public $Uptime;
+		public $IsRebootLaunched;
+		public $ReplaceIID;
+		public $ScalarizrPackageVersion;
 		
 		private $DB;
 		private $Client;
-		private $Farm;
+		private $DBFarm;
+		private $DBFarmRole;
+		private $SettingsCache = array();
 		
 		private static $FieldPropertyMap = array(
 			'id' 			=> 'ID',
@@ -38,9 +43,15 @@
 			'role_name'		=> 'RoleName',
 			'avail_zone'	=> 'AvailZone',
 			'index'			=> 'Index',
-			'Region'		=> 'Region',
+			'region'		=> 'Region',
+			'farm_roleid'	=> 'FarmRoleID',
+			'uptime'		=> 'Uptime',
+			'replace_iid'	=> 'ReplaceIID',
+			'isrebootlaunched'	=> 'IsRebootLaunched',
 			self::PROPERTY_SCALARIZR_PACKAGE_VERSION => 'ScalarizrPackageVersion'
 		);
+		
+		private $Logger;
 		
 		/**
 		 * Constructor
@@ -52,6 +63,25 @@
 			$this->InstanceID = $instance_id;
 			$this->DB = Core::GetDBInstance();
 			
+			$this->Logger = Logger::getLogger(__CLASS__);
+		}
+		
+		public function __sleep()
+		{
+			// Init objects
+			$this->GetDBFarmObject();
+			$this->GetDBFarmRoleObject();
+			
+			$retval = array("ID", "FarmID", "InstanceID", "AMIID", "InternalIP", "ExternalIP", "AvailZone", "Index", "Region", "FarmRoleID", "RoleName");
+			array_push($retval, "DBFarmRole");
+			array_push($retval, "DBFarm");
+			
+			return $retval;
+		}
+		
+		public function __wakeup()
+		{
+			$this->DB = Core::GetDBInstance();
 			$this->Logger = Logger::getLogger(__CLASS__);
 		}
 		
@@ -97,6 +127,32 @@
 			return self::LoadByID($id);
 		}
 		
+		public function ReLoad()
+		{
+			$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?", array($this->ID));
+			
+			if (!$instance_info)
+				throw new Exception(sprintf(_("Cannot reload DBInstance object. Instance ID#%s not found in database"), $this->ID));
+				
+			foreach(self::$FieldPropertyMap as $k=>$v)
+			{
+				if ($instance_info[$k])
+					$this->{$v} = $instance_info[$k];
+			}
+		}
+		
+		/**
+		 * Returns DBFarm Object
+		 * @return DBFarm
+		 */
+		public function GetFarmObject()
+		{
+			if (!$this->DBFarm)
+				$this->DBFarm = DBFarm::LoadByID($this->FarmID);
+				
+			return $this->DBFarm;
+		}
+		
 		/**
 		 * 
 		 * Returns DBFarmRole object
@@ -104,7 +160,81 @@
 		 */
 		public function GetDBFarmRoleObject()
 		{
-			return DBFarmRole::Load($this->FarmID, $this->AMIID);
+			if (!$this->DBFarmRole)
+				$this->DBFarmRole = DBFarmRole::LoadByID($this->FarmRoleID);
+				
+			return $this->DBFarmRole;
+		}
+		
+		/**
+		 * returns DBFarm object
+		 * @return DBFarm
+		 */
+		public function GetDBFarmObject()
+		{
+			if (!$this->DBFarm)
+				$this->DBFarm = DBFarm::LoadByID($this->FarmID);
+				
+			return $this->DBFarm;
+		}
+		
+		/**
+		 * Returns all instance settings
+		 * @return unknown_type
+		 */
+		public function GetAllSettings()
+		{
+			$settings = $this->DB->GetAll("SELECT * FROM farm_instance_settings WHERE farm_instanceid=?", array($this->ID));
+			$retval = array();
+			foreach ($settings as $setting)
+				$retval[$setting['name']] = $setting['value']; 
+			
+			$this->SettingsCache = array_merge($this->SettingsCache, $retval);
+				
+			return $retval;
+		}
+		
+		/**
+		 * Set Instance setting
+		 * @param string $name
+		 * @param mixed $value
+		 * @return void
+		 */
+		public function SetSetting($name, $value)
+		{
+			$Reflect = new ReflectionClass($this);
+			$consts = array_values($Reflect->getConstants());
+			if (in_array($name, $consts))
+			{
+				$this->DB->Execute("REPLACE INTO farm_instance_settings SET `farm_instanceid`=?, `name`=?, `value`=?",
+					array($this->ID, $name, $value)
+				);
+				
+				$this->SettingsCache[$name] = $value;
+				
+				return true;
+			}			
+			else
+				throw new Exception("Unknown instance setting setting '{$name}'");
+		}
+		
+		/**
+		 * Get Instance setting by name
+		 * @param string $name
+		 * @return mixed
+		 */
+		public function GetSetting($name)
+		{
+			if (!$this->SettingsCache[$name])
+			{
+				$this->SettingsCache[$name] = $this->DB->GetOne("SELECT `value` FROM `farm_instance_settings` WHERE `farm_instanceid`=? AND `name` = ?",
+				array(
+					$this->ID,
+					$name
+				));
+			}
+			
+			return $this->SettingsCache[$name];
 		}
 		
 		/**
@@ -196,6 +326,7 @@
 				$this->InstanceID,
 				XMLMessageSerializer::Serialize($message) 
 			));
+		
 			
 			if ($this->IsSupported("0.5-1"))
 			{

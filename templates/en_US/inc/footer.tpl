@@ -1,12 +1,6 @@
-
-{if !$noheader}
-</form>
-{/if}
-		</td>
-      </tr>
-    </table></td>
-  </tr>
-  
-</table>
+	{if !$noheader}
+		</form>
+	{/if}
+</div>
 </body>
 </html>

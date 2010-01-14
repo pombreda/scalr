@@ -14,36 +14,33 @@
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 						
-			$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+			$this->AddInstanceToDNS($farminfo, $event->DBInstance);
 		}
 		
 		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
 		{
-			// Reload instance info
-			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
-				array($event->InstanceInfo['id'])
-			);
+			$event->DBInstance->ReLoad();
 			
-			if ($instanceinfo['isactive'] != 1)
+			if ($event->DBInstance->IncludeInDNS != 1)
 				return;
 			
-			$DBFarmRole = DBFarmRole::Load($this->FarmID, $instanceinfo['ami_id']);
+			$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
 			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
 				return;
 				
 			try
 			{
-				$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid='{$this->FarmID}' AND status IN (?,?)", array(ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING));
+				$zones = $this->DB->GetAll("SELECT * FROM zones WHERE farmid=? AND status IN (?,?)", 
+					array($this->FarmID, ZONE_STATUS::ACTIVE, ZONE_STATUS::PENDING)
+				);
 				if (count($zones) == 0)
 					return;
-					
-				$ami_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
 					
 				foreach ($zones as $zone)
 				{								
 					if (!$zone['id'])
 						continue;
-					
+											
 					$records_attrs = array();
 					
 					// We must update: 
@@ -52,26 +49,27 @@
 					// records
 					if ($instanceinfo["isdbmaster"] == 1)
 					{
-						$records_attrs[] = array("int-{$instanceinfo['role_name']}-master", $instanceinfo["internal_ip"], 20);
-						$records_attrs[] = array("ext-{$instanceinfo['role_name']}-master", $instanceinfo['external_ip'], 20);
+						$records_attrs[] = array("int-{$DBFarmRole->GetRoleName()}-master", $event->DBInstance->InternalIP, 20);
+						$records_attrs[] = array("ext-{$DBFarmRole->GetRoleName()}-master", $event->DBInstance->ExternalIP, 20);
 						
-						if ($instanceinfo["role_name"] != ROLE_ALIAS::MYSQL)
+						if ($DBFarmRole->GetRoleName() != ROLE_ALIAS::MYSQL)
 						{
-							$records_attrs[] = array("int-mysql-master", $instanceinfo["internal_ip"], 20);
-							$records_attrs[] = array("ext-mysql-master", $instanceinfo['external_ip'], 20);
+							$records_attrs[] = array("int-mysql-master", $event->DBInstance->InternalIP, 20);
+							$records_attrs[] = array("ext-mysql-master", $event->DBInstance->ExternalIP, 20);
 						}
 					}
 										
 					// Adding new records to database
 					foreach ($records_attrs as $record_attrs)
 					{									
-						$this->DB->Execute("REPLACE INTO records SET zoneid='{$zone['id']}', rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
-						array($record_attrs[2], $record_attrs[1], $record_attrs[0]));
+						$this->DB->Execute("REPLACE INTO records SET zoneid=?, rtype='A', ttl=?, rvalue=?, rkey=?, issystem='1'",
+							array($zone['id'], $record_attrs[2], $record_attrs[1], $record_attrs[0])
+						);
 					}
 					
 					// Remove old role-slave and mysql-slave records for this instance
 					$this->DB->Execute("DELETE FROM records WHERE zoneid=? AND rtype='A' AND rkey LIKE '%-slave' AND (rvalue=? OR rvalue=?) AND issystem='1'",
-						array($zone['id'], $instanceinfo["internal_ip"], $instanceinfo['external_ip'])
+						array($zone['id'], $event->DBInstance->InternalIP, $event->DBInstance->ExternalIP)
 					);
 					
 					
@@ -101,9 +99,9 @@
 			if ($farminfo['status'] != 1)
 				return;
 				
-			$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+			$DBFarmRole = DBFarmRole::LoadByID($event->DBInstance->FarmRoleID);
 			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
-				$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+				$this->AddInstanceToDNS($farminfo, $event->DBInstance);
 		}
 		
 		/**
@@ -163,10 +161,10 @@
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 
-			$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+			$DBFarmRole = DBFarmRole::LoadByID($event->DBInstance->FarmRoleID);
 			
 			if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
-				$this->AddInstanceToDNS($farminfo, $event->InstanceInfo);
+				$this->AddInstanceToDNS($farminfo, $event->DBInstance);
 		}
 		
 		/**
@@ -185,7 +183,7 @@
 				
 			try
 			{
-				$zones = $this->DB->GetAll("SELECT DISTINCT(zoneid) FROM records WHERE rvalue='{$event->InstanceInfo['external_ip']}' OR rvalue='{$event->InstanceInfo['internal_ip']}' GROUP BY zoneid");
+				$zones = $this->DB->GetAll("SELECT DISTINCT(zoneid) FROM records WHERE rvalue='{$event->DBInstance->ExternalIP}' OR rvalue='{$event->DBInstance->InternalIP}' GROUP BY zoneid");
 				foreach ($zones as $zone)
 				{
 					$zoneinfo = $this->DB->GetRow("SELECT * FROM zones WHERE id='{$zone['zoneid']}'");
@@ -197,15 +195,15 @@
 						issystem='1' AND 
 						zoneid=? AND 
 						(rvalue=? OR rvalue=?)",
-						array($zoneinfo['id'], $event->InstanceInfo['external_ip'], $event->InstanceInfo['internal_ip'])
+						array($zoneinfo['id'], $event->DBInstance->ExternalIP, $event->DBInstance->InternalIP)
 					);
 					
 					//TODO: Check affected rows.
 					
 					if (!$this->DNSZoneController->Update($zoneinfo["id"]))
-						$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot remove terminated instance '{$event->InstanceInfo['instance_id']}' ({$event->InstanceInfo['external_ip']}) from DNS zone '{$zoneinfo['zone']}'");
+						$this->Logger->warn("[FarmID: {$farminfo['id']}] Cannot remove terminated instance '{$event->DBInstance->InstanceID}' ({$event->DBInstance->ExternalIP}) from DNS zone '{$zoneinfo['zone']}'");
 					else
-						$this->Logger->info("[FarmID: {$farminfo['id']}] Terminated instance '{$event->InstanceInfo['instance_id']}' (ExtIP: {$event->InstanceInfo['external_ip']}, IntIP: {$event->InstanceInfo['internal_ip']}) removed from DNS zone '{$zoneinfo['zone']}'");
+						$this->Logger->info("[FarmID: {$farminfo['id']}] Terminated instance '{$event->DBInstance->InstanceID}' (ExtIP: {$event->DBInstance->ExternalIP}, IntIP: {$event->DBInstance->InternalIP}) removed from DNS zone '{$zoneinfo['zone']}'");
 				}
 			}
 			catch(Exception $e)
@@ -220,11 +218,11 @@
 		 * @param array $farminfo
 		 * @param array $instanceinfo
 		 */
-		private function AddInstanceToDNS($farminfo, $instanceinfo)
+		private function AddInstanceToDNS($farminfo, DBInstance $DBInstance)
 		{
 			// Reload instance info
 			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
-				array($instanceinfo['id'])
+				array($DBInstance->ID)
 			);
 			
 			if ($instanceinfo['isactive'] != 1)
@@ -243,7 +241,7 @@
 					
 					$records_attrs = array();
 
-					$ami_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+					$ami_info = $this->DB->GetRow("SELECT * FROM roles WHERE ami_id=?", array($instanceinfo['ami_id']));
 					
 					$replace = false;
 					
@@ -264,7 +262,7 @@
 					
 					try
 					{
-						$DBFarmRole = DBFarmRole::Load($farminfo['id'], $instanceinfo['ami_id']);
+						$DBFarmRole = DBFarmRole::LoadByID($instanceinfo['farm_roleid']);
 						$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
 					}
 					catch(Exception $e)

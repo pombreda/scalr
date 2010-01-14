@@ -298,10 +298,14 @@
             if ($DBEBSArray->Status == EBS_ARRAY_STATUS::ATTACHING_VOLUMES)
             {
             	//MOUNT OR CREATE Filesystem
-            	$instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($DBEBSArray->InstanceID));
-            	$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($instance_info['farmid']));
             	
-            	if ($instance_info && $farminfo)
+            	try
+            	{
+            		$DBInstance = DBInstance::LoadByIID($DBEBSArray->InstanceID);
+            	}
+            	catch(Exception $e) {}
+            	
+            	if ($DBInstance)
             	{	                
 	                if ($DBEBSArray->IsFSCreated)
 		                $DBEBSArray->Status = EBS_ARRAY_STATUS::MOUNTING;
@@ -310,8 +314,6 @@
 		            	
 		            $DBEBSArray->Save();
 
-		            // Send message
-		            $DBInstance = DBInstance::LoadByID($instance_info['id']);
 		            $DBInstance->SendMessage(new MountPointsReconfigureScalrMessage());
             	}
             	else

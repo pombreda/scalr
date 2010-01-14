@@ -16,8 +16,23 @@
 		CLIENT_SETTINGS::RSS_PASSWORD => "string",
 		CLIENT_SETTINGS::SYNC_TIMEOUT => "int",
 		CLIENT_SETTINGS::API_ENABLED  => "int",
-		CLIENT_SETTINGS::API_ALLOWED_IPS => "string"
+		CLIENT_SETTINGS::API_ALLOWED_IPS => "string",
+		CLIENT_SETTINGS::TIMEZONE => "string"
 	);
+	
+	$timezone_abbreviations_list = timezone_abbreviations_list();
+	foreach ($timezone_abbreviations_list as $timezone_abbreviations)
+	{
+		foreach ($timezone_abbreviations as $v)
+		{
+			if ($v['timezone_id'])
+				$timezones[$v['timezone_id']] = $v['offset'];
+		}
+	}
+	
+	ksort($timezones);
+	
+	$display['timezones'] = array_keys($timezones);
 	
 	$Validator = new Validator();
 		
@@ -81,6 +96,9 @@
 	$display["rss_password"] = $Client->GetSettingValue(CLIENT_SETTINGS::RSS_PASSWORD);
 	$display["api_enabled"] = $Client->GetSettingValue(CLIENT_SETTINGS::API_ENABLED);
 	$display["api_allowed_ips"] = $Client->GetSettingValue(CLIENT_SETTINGS::API_ALLOWED_IPS);
+	$display["timezone"] = $Client->GetSettingValue(CLIENT_SETTINGS::TIMEZONE);
+	if (!$display["timezone"])
+		$display["timezone"] = 'CST6CDT';
 	
 	$display["scalr_api_keyid"] = $Client->ScalrKeyID;
 	$display["scalr_api_key"] = $Client->GetScalrAPIKey();

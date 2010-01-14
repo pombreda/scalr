@@ -9,7 +9,7 @@
 		UI::Redirect("index.php");
 	}
 	
-	$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($req_id));
+	$roleinfo = $db->GetRow("SELECT * FROM roles WHERE id=?", array($req_id));
 	if (!$roleinfo || $roleinfo['roletype'] != ROLE_TYPE::CUSTOM || $roleinfo['clientid'] != $_SESSION['uid'] || $post_cancel)
 		UI::Redirect("client_roles_view.php");
 	
@@ -24,7 +24,7 @@
 	{
 		try
 		{
-			$db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
+			$db->Execute("INSERT INTO roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
 				iscompleted='0', default_minLA=?, default_maxLA=?, alias=?, architecture=?, 
 				instance_type=?, dtbuildstarted=NOW(), region=?", 
 				array($post_name, ROLE_TYPE::CUSTOM, $_SESSION['uid'], "", 

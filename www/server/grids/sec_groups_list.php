@@ -27,6 +27,12 @@
 		$rows = $aws_response->securityGroupInfo->item;
 		foreach ($rows as $row)
 		{
+			if ($req_query)
+			{
+				if (!stristr($row->groupName, $req_query))
+					continue;
+			}
+			
 			// Show only scalr security groups
 			if (stristr($row->groupName, CONFIG::$SECGROUP_PREFIX) || $_SESSION['sg_show_all'])
 				$rowz[] = $row;
@@ -44,6 +50,21 @@
 		
 		$response["data"] = array();
 		
+		if ($req_sort)
+		{
+			$nrowz = array();
+			foreach ($rowz as $row)
+			{
+				$nrowz[$row->groupName] = $row;
+			}
+			
+			ksort($nrowz);
+			
+			if ($req_dir == 'DESC')
+				$rowz = array_reverse($nrowz);
+			else
+				$rowz = $nrowz;
+		}
 		
 		// Rows
 		foreach ($rowz as $row)

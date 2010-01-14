@@ -21,7 +21,7 @@
 	}
 	
 	$display["title"] = _("Dashboard");
-	
+		
 	if ($_SESSION['uid'] == 0)
 	{
 		$display['clients'] = array(
@@ -37,12 +37,12 @@
 		);
 		
 		$display['roles'] = array(
-			'total' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1'"),
-			'shared'		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND clientid='0' AND roletype=?", array(ROLE_TYPE::SHARED)),
-			'custom'		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND roletype=?", array(ROLE_TYPE::CUSTOM)),
-			'approved' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::APPROVED)),
-			'declined' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::DECLINED)),
-			'pending' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::PENDING))
+			'total' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1'"),
+			'shared'		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND clientid='0' AND roletype=?", array(ROLE_TYPE::SHARED)),
+			'custom'		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND roletype=?", array(ROLE_TYPE::CUSTOM)),
+			'approved' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::APPROVED)),
+			'declined' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::DECLINED)),
+			'pending' 		=> (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::PENDING))
 		);
 		
 		$display['scripts'] = array(
@@ -53,7 +53,7 @@
 			'pending'		=> 0,
 			'declined'		=> 0
 		);
-		
+				
 		$scripts = $db->GetAll("SELECT * FROM scripts");
 		
 		foreach ($scripts as $script)
@@ -88,6 +88,10 @@
 					break;
 			}
 		}
+	}
+	else
+	{
+		UI::Redirect("/client_dashboard.php");
 	}
 	
 	require("src/append.inc.php"); 

@@ -18,28 +18,6 @@
             
             $cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
             
-            
-            /** Clear zomby database instances **/
-            /*
-            $farms = $db->Execute("SELECT * FROM farms WHERE status=?", array(FARM_STATUS::TERMINATED));
-            while($farm = $farms->FetchRow())
-            {
-            	$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state = ?", 
-            		array($farm['id'], INSTANCE_STATE::RUNNING)
-            	);
-            	
-            	if (count($instances) != 0)
-            	{
-            		$this->Logger->warn("Found ".count($instances)." zomby instances in database for farm ID {$farm['id']}.");
-            		foreach ($instances as $instance)
-            		{
-            			$this->Logger->warn("Removing zomby record '{$instance['instance_id']}' ('{$instance['external_ip']}') from database");
-            			Scalr::FireEvent($instance['farmid'], new HostDownEvent($instance));
-            		}
-            	}
-            }
-            */
-                        
             /** Process garbage queue **/
             $queue = $db->Execute("SELECT * FROM garbage_queue");
             while ($queue_item = $queue->FetchRow())

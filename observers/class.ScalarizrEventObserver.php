@@ -17,7 +17,7 @@
 		 */
 		public function OnHostInit(HostInitEvent $event)
 		{			
-			$DBInstance = DBInstance::LoadByIID($event->InstanceInfo['instance_id']);
+			$DBInstance = $event->DBInstance;
 			
 			$this->Logger->info("ScalarizrEventObserver::OnHostInit()");
 			$this->Logger->info("Scalarizr version: {$DBInstance->ScalarizrPackageVersion}");

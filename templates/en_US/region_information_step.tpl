@@ -1,13 +1,13 @@
 {include file="inc/header.tpl"}
 {include file="inc/table_header.tpl"}
-    {include file="inc/intable_header.tpl" header="Step 1 - Region information" color="Gray"}
+    {include file="inc/intable_header.tpl" header="Step 1 - Location information" color="Gray"}
 	<tr>
-		<td width="15%">Region:</td>
+		<td width="15%">Location:</td>
 		<td colspan="6">
 			<select name="region" id="region" style="vertical-align:middle;">
-				{section name=id loop=$regions}
-					<option {if $region == $regions[id]}selected{/if} value="{$regions[id]}">{$regions[id]}</option>
-				{/section}
+				{foreach from=$regions name=id key=key item=item}
+					<option {if $region == $key}selected{/if} value="{$key}">{$item}</option>
+				{/foreach}
 			</select>
 		</td>
 	</tr>

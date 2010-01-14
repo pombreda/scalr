@@ -32,42 +32,41 @@
 		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event)
 		{			
 			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?",
-				array($event->InstanceInfo['id'])
+				array($event->DBInstance->ID)
 			);
 
-			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$ami_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+			$event->DBInstance->ReLoad();
+			$DBFarm = $event->DBInstance->GetDBFarmObject(); 
 			
-			$AmazonEC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+			$ami_info = $this->DB->GetRow("SELECT * FROM roles WHERE ami_id=?", array($event->DBInstance->AMIID));
+			
+			$AmazonEC2Client = $this->GetAmazonEC2ClientObject($DBFarm->Region);
 			
 			$this->Logger->info(sprintf("EBSEventObserver::OnBeforeInstanceLaunch(instance_id = %s, ami_id = %s, alias = %s, engine = %s, volumeid = %s, size = %s, isdbmaster = %s)",
-				$instanceinfo['instance_id'],
-				$instanceinfo['ami_id'],
+				$event->DBInstance->InstanceID,
+				$event->DBInstance->AMIID,
 				$ami_info['alias'],
-				$farminfo['mysql_data_storage_engine'],
-				$farminfo['mysql_master_ebs_volume_id'],
-				$farminfo['mysql_ebs_size'],
-				$instanceinfo['isdbmaster']
+				$DBFarm->GetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+				$DBFarm->GetSetting(DBFarm::SETTING_MYSQL_MASTER_EBS_VOLUME_ID),
+				$DBFarm->GetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE),
+				$event->DBInstance->IsDBMaster
 			));
 						
-			if ($ami_info['alias'] == ROLE_ALIAS::MYSQL && $farminfo['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
+			if ($ami_info['alias'] == ROLE_ALIAS::MYSQL && $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
 			{
-				if (!$farminfo['mysql_master_ebs_volume_id'])
+				if (!$DBFarm->GetSetting(DBFarm::SETTING_MYSQL_MASTER_EBS_VOLUME_ID))
 				{
-					$this->Logger->info(sprintf("There is no master EBS volume. Creating new one... Size = %s GB", $farminfo['mysql_ebs_size']));
+					$this->Logger->info(sprintf("There is no master EBS volume. Creating new one... Size = %s GB", $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE)));
 					
 					$CreateVolumeType = new CreateVolumeType();
-    				$CreateVolumeType->availabilityZone = $instanceinfo['avail_zone'];
-    				$CreateVolumeType->size = $farminfo['mysql_ebs_size'];
+    				$CreateVolumeType->availabilityZone = $event->DBInstance->AvailZone;
+    				$CreateVolumeType->size = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE);
 					
 					$res = $AmazonEC2Client->CreateVolume($CreateVolumeType);
 				    if ($res->volumeId)
 				    {
 				    	$this->Logger->info(sprintf("Master EBS volume created, VolumeID = %s", $res->volumeId));
-				    	
-				    	$this->DB->Execute("UPDATE farms SET mysql_master_ebs_volume_id=? WHERE id=?", 
-				    		array($res->volumeId, $this->FarmID)
-				    	);
+				    	$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $res->volumeId);
 				    }
 				}
 			}
@@ -134,26 +133,24 @@
 		public function OnHostInit(HostInitEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$farm_role_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND (ami_id=? OR replace_to_ami=?)", 
-				array($this->FarmID, $event->InstanceInfo["ami_id"], $event->InstanceInfo["ami_id"])
-			);
-			$farm_role_info['name'] = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_role_info['ami_id']));
 			
-			$event->InstanceInfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE id=?", array($event->InstanceInfo['id']));
+			$event->DBInstance->ReLoad();
+			$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
+						
 			
 			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 			$volumes_to_attach = array();
 
 			// Manualy attached volumes
-			$volumes = $this->DB->GetAll("SELECT volumeid FROM farm_ebs WHERE farmid=? AND role_name=? AND instance_index=?",
-				array($this->FarmID, $farm_role_info['name'], $event->InstanceInfo['index'])
+			$volumes = $this->DB->GetAll("SELECT volumeid FROM farm_ebs WHERE farmid=? AND farm_roleid=? AND instance_index=?",
+				array($this->FarmID, $event->DBInstance->FarmRoleID, $event->DBInstance->Index)
 			);
 			
 			//
 			// EBS Arrays
 			//
-			$arrays = $this->DB->GetAll("SELECT id FROM ebs_arrays WHERE farmid=? AND role_name=? AND instance_index=? AND attach_on_boot=?",
-				array($this->FarmID, $farm_role_info['name'], $event->InstanceInfo['index'], 1)
+			$arrays = $this->DB->GetAll("SELECT id FROM ebs_arrays WHERE farm_roleid=? AND instance_index=? AND attach_on_boot=?",
+				array($event->DBInstance->FarmRoleID, $event->DBInstance->Index, 1)
 			);
 			foreach ($arrays as $array)
 			{
@@ -165,7 +162,7 @@
 					$volumes[] = $array_volume;
 					
 				$DBEBSArray->Status = EBS_ARRAY_STATUS::ATTACHING_VOLUMES;
-				$DBEBSArray->InstanceID = $event->InstanceInfo['instance_id'];
+				$DBEBSArray->InstanceID = $event->DBInstance->InstanceID;
 				$DBEBSArray->Save();
 			}
 			
@@ -198,7 +195,7 @@
 								$this->FarmID, 
 								sprintf(_("The volume %s assigned for instance %s is currently attached to instance %s. Detaching."),
 									$DBEBSVolume->VolumeID,
-									$event->InstanceInfo['instance_id'],
+									$event->DBInstance->InstanceID,
 									$info->volumeSet->item->attachmentSet->item->instanceId
 								)
 							));
@@ -209,13 +206,13 @@
 								$EC2Client->DetachVolume($DetachVolumeType);
 								
 								$DBEBSVolume->State = FARM_EBS_STATE::CREATING;
-								$DBEBSVolume->InstanceID = $event->InstanceInfo['instance_id'];
+								$DBEBSVolume->InstanceID = $event->DBInstance->InstanceID;
 								$DBEBSVolume->Save();
 								
 								// Add task to queue for EBS volume status check
 								TaskQueue::Attach(QUEUE_NAME::EBS_STATE_CHECK)->AppendTask(new CheckEBSVolumeStateTask($DBEBSVolume->VolumeID));
 								
-								if ($farm_role_info['use_ebs'] && $DBEBSVolume->IsManual == 0)
+								if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS) && $DBEBSVolume->IsManual == 0)
 									$auto_attached_volumes = 1;
 							}
 							catch(Exception $e)
@@ -240,15 +237,15 @@
 							$this->Logger->info(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("Volume %s status is available. Attaching it to the instance %s"),
-									$DBEBSVolume->VolumeID, $event->InstanceInfo['instance_id']
+									$DBEBSVolume->VolumeID, $event->DBInstance->InstanceID
 								)
 							));
 							
 							try
 							{
-								Scalr::AttachEBS2Instance($EC2Client, $event->InstanceInfo, $farminfo, $DBEBSVolume);
+								Scalr::AttachEBS2Instance($EC2Client, $event->DBInstance, $farminfo, $DBEBSVolume);
 								
-								if ($farm_role_info['use_ebs'])
+								if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS))
 									$auto_attached_volumes = 1;
 							}
 							catch(Exception $e)
@@ -263,30 +260,31 @@
 					catch(Exception $e)
 					{
 						$this->Logger->fatal(sprintf(_("Cannot use volume %s for instance %s: %s"), 
-							$DBEBSVolume->VolumeID, $event->InstanceInfo['instance_id'], $e->getMessage())
+							$DBEBSVolume->VolumeID, $event->DBInstance->InstanceID, $e->getMessage())
 						);
 					}
 				}
 			}
 			
 			
-			if (!$auto_attached_volumes && $farm_role_info['use_ebs'] == 1)
+			if (!$auto_attached_volumes && $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS))
 			{
 				$this->Logger->info(new FarmLogMessage(
 					$this->FarmID, 
 					sprintf(_("There are no free EBS volumes for role %s in availability zone %s. Creating new one(s)."),
-						$farm_role_info['name'], $event->InstanceInfo['avail_zone']	
+						$DBFarmRole->GetRoleName(), $event->DBInstance->AvailZone	
 					)
 				));
 				
 				// Create new EBS volume and then attach it
 				$CreateVolumeType = new CreateVolumeType();
-		    	if ($farm_role_info['ebs_snapid'])
-		    		$CreateVolumeType->snapshotId = $farm_role_info['ebs_snapid'];
-		    	else
-		    		$CreateVolumeType->size = $farm_role_info['ebs_size'];
+		    	if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID))
+		    		$CreateVolumeType->snapshotId = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID);
+		    	
+		    	if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SIZE))
+		    		$CreateVolumeType->size = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SIZE);
 		    		 
-		    	$CreateVolumeType->availabilityZone = $event->InstanceInfo['avail_zone'];
+		    	$CreateVolumeType->availabilityZone = $event->DBInstance->AvailZone;
 		    	
 		    	try
 		    	{
@@ -296,15 +294,15 @@
 		    			$DBEBSVolume = new DBEBSVolume($result->volumeId);
 		    			
 		    			$DBEBSVolume->FarmID = $this->FarmID;
-		    			$DBEBSVolume->RoleName = $farm_role_info['name'];
 		    			$DBEBSVolume->State = FARM_EBS_STATE::CREATING;
-		    			$DBEBSVolume->InstanceID = $event->InstanceInfo['instance_id'];
-		    			$DBEBSVolume->InstanceIndex = $event->InstanceInfo['index'];
-		    			$DBEBSVolume->AvailZone = $event->InstanceInfo['avail_zone'];
-		    			$DBEBSVolume->Region = $event->InstanceInfo['region'];
+		    			$DBEBSVolume->FarmRoleID = $event->DBInstance->FarmRoleID;
+		    			$DBEBSVolume->InstanceID = $event->DBInstance->InstanceID;
+		    			$DBEBSVolume->InstanceIndex = $event->DBInstance->Index;
+		    			$DBEBSVolume->AvailZone = $event->DBInstance->AvailZone;
+		    			$DBEBSVolume->Region = $event->DBInstance->Region;
 		    			$DBEBSVolume->IsManual = '0';
 		    			
-		    			$DBEBSVolume->IsFSExists = ($farm_role_info['ebs_snapid']) ? 1 : 0;
+		    			$DBEBSVolume->IsFSExists = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID)) ? 1 : 0;
 		    			
 		    			$DBEBSVolume->Save();
 		    			
@@ -344,51 +342,58 @@
 		public function OnHostDown(HostDownEvent $event)
 		{
 			$this->Logger->info(sprintf(_("EBSEventObserver::OnHostDown(%s, %s) instance_id: %s"), 
-				$event->InstanceInfo['isrebootlaunched'],
-				$event->InstanceInfo['skip_ebs_observer'],
-				$event->InstanceInfo["instance_id"]
+				(int)$event->DBInstance->IsRebootLaunched,
+				(int)$event->DBInstance->SkipEBSObserver,
+				$event->DBInstance->InstanceID
 			));
 			
-			if ($event->InstanceInfo['isrebootlaunched'] == 1 || $event->InstanceInfo['skip_ebs_observer'])
+			if ($event->DBInstance->IsRebootLaunched == 1 || $event->DBInstance->SkipEBSObserver)
 				return;
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$farm_role_info = $this->DB->GetRow("SELECT id FROM farm_amis WHERE farmid=? AND (ami_id=? OR replace_to_ami=?)", 
-				array($this->FarmID, $event->InstanceInfo["ami_id"], $event->InstanceInfo["ami_id"])
-			);
+			
+			
 			
 			$this->DB->Execute("UPDATE farm_ebs SET state=?, instance_id='' WHERE instance_id=? AND ismanual='1'",
-				array(FARM_EBS_STATE::AVAILABLE, $event->InstanceInfo['instance_id'])
+				array(FARM_EBS_STATE::AVAILABLE, $event->DBInstance->InstanceID)
 			);
 			
 			$this->DB->Execute("UPDATE ebs_arrays SET status=?, instance_id='' WHERE instance_id=?",
-				array(EBS_ARRAY_STATUS::AVAILABLE, $event->InstanceInfo['instance_id'])
+				array(EBS_ARRAY_STATUS::AVAILABLE, $event->DBInstance->InstanceID)
 			);
 			
 			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 			
-			// If role exists in farm roles list
-			if ($farm_role_info)
+			try
 			{
-				$DBFarmRole = DBFarmRole::LoadByID($farm_role_info['id']);
+				$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
+			}
+			catch(Exception $e)
+			{
 				
+			}
+			
+			// If role exists in farm roles list
+			if ($DBFarmRole)
+			{
+								
 				$this->Logger->info(sprintf(_("Role: %s, EBS: %s"), 
 					$DBFarmRole->GetRoleName(),
-					$DBFarmRole->IsAutoEBSEnabled
+					$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS)
 				));
 				
-				if (!$DBFarmRole->IsAutoEBSEnabled)				
+				if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS))				
 					return;
 									
 				// Get EBS attached to terminated instance
 				$ebs_volumes = $this->DB->GetAll("SELECT * FROM farm_ebs WHERE instance_id=? AND ismanual='0'", 
-					array($event->InstanceInfo['instance_id'])
+					array($event->DBInstance->InstanceID)
 				);
 				
 				if (count($ebs_volumes) > 0)
 				{
-					$farm_ebs = $this->DB->GetOne("SELECT COUNT(*) FROM farm_ebs WHERE farmid=? AND ismanual='0' AND state != ? AND role_name=?",
-						array($this->FarmID, FARM_EBS_STATE::DETACHING, $ebs_volumes[0]['role_name'])
+					$farm_ebs = $this->DB->GetOne("SELECT COUNT(*) FROM farm_ebs WHERE ismanual='0' AND state != ? AND farm_roleid=?",
+						array(FARM_EBS_STATE::DETACHING, $event->DBInstance->FarmRoleID)
 					);
 					
 					if ($farm_ebs > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
@@ -401,7 +406,7 @@
 					if ($need_delete)
 					{
 						$this->Logger->info(new FarmLogMessage(
-							$event->InstanceInfo['farmid'],
+							$event->DBInstance->FarmID,
 							sprintf(_("Added new EBS volume delete task to queue (VolumeID: %s)"), 
 								$ebs['volumeid']
 							)
@@ -428,8 +433,8 @@
 			}
 			else
 			{
-				$volumes = $this->DB->GetAll("SELECT * FROM farm_ebs WHERE farmid=? AND role_name=? AND ismanual='0' AND instance_index=?",
-					array($this->FarmID, $event->InstanceInfo['role_name'], $event->InstanceInfo['index'])
+				$volumes = $this->DB->GetAll("SELECT * FROM farm_ebs WHERE farm_roleid=? AND ismanual='0' AND instance_index=?",
+					array($event->DBInstance->FarmRoleID, $event->DBInstance->Index)
 				);
 				
 				if (count($volumes) == 0)
@@ -438,7 +443,7 @@
 				foreach ($volumes as $ebs)
 				{
 					$this->Logger->info(new FarmLogMessage(
-						$event->InstanceInfo['farmid'],
+						$event->DBInstance->FarmID,
 						sprintf(_("Added new EBS volume delete task to queue (VolumeID: %s)"), 
 							$ebs['volumeid']
 						)

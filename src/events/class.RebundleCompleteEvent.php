@@ -3,11 +3,18 @@
 	class RebundleCompleteEvent extends Event
 	{
 		public $AMIID;
-		public $InstanceInfo;
 		
-		public function __construct($InstanceInfo, $AMIID)
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
+		
+		public function __construct(DBInstance $DBInstance, $AMIID)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->AMIID = $AMIID;
 		}
 	}

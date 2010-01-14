@@ -15,6 +15,7 @@
 		$Client = Client::Load($_SESSION['uid']);
 		
 		$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey); 
+		$AmazonELBClient->SetRegion($_SESSION['aws_region']);
 		
 		// Rows
 		$aws_response = $AmazonELBClient->DescribeLoadBalancers();

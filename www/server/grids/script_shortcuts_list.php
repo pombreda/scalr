@@ -44,8 +44,18 @@
 		foreach ($db->GetAll($sql) as $row)
 		{
 			$row['farmname'] = $db->GetOne("SELECT name FROM farms WHERE id=?", array($row['farmid']));
-			if ($row['ami_id'])
-				$row['rolename'] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($row['ami_id']));
+			if ($row['farm_roleid'])
+			{
+				try
+				{
+					$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
+					$row['rolename'] = $DBFarmRole->GetRoleName();
+				}
+				catch(Exception $e)
+				{
+					
+				} 
+			}
 				
 			$response["data"][] = $row;
 		}

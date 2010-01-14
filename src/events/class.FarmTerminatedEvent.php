@@ -9,6 +9,8 @@
     	
     	public function __construct($RemoveZoneFromDNS, $KeepElasticIPs, $TermOnSyncFail, $KeepEBS)
     	{
+    		parent::__construct();
+    		
     		$this->RemoveZoneFromDNS = $RemoveZoneFromDNS;
     		$this->KeepElasticIPs = $KeepElasticIPs;
     		$this->TermOnSyncFail = $TermOnSyncFail;

@@ -1,4 +1,6 @@
 
+var GRID_VERSION = 110;
+
 Ext.ux.FilterField = Ext.extend(Ext.form.TwinTriggerField, {
     initComponent : function(){
         Ext.ux.FilterField.superclass.initComponent.call(this);
@@ -109,6 +111,9 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 	/**
 	 * @cfg {Boolean} maximize
 	 */
+	/**
+	 * @cfg {Boolean} noPaging
+	 */
 	
 	messages: {
 		pageSize: "{0} items per page",
@@ -131,7 +136,7 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 		// Create options menu
 		if (this.rowOptionsMenu) {
 			if (Ext.isArray(this.rowOptionsMenu)) {
-				this.rowOptionsMenu = new Ext.menu.Menu(this.rowOptionsMenu); 
+				this.rowOptionsMenu = new Ext.menu.Menu({items: this.rowOptionsMenu}); 
 			}
 			// Add options column
 			this.columns.push({
@@ -159,6 +164,7 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 				});
 			}
 			var bbar = new Ext.PagingToolbar({
+				pageSize: this.defaultPageSize,
 		        store: this.store,
 		    	items: ['-', {
 		    		cls: "pagesize-btn",
@@ -166,7 +172,7 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 		    		menu: menu
 		    	}]
 		    });
-			this.bbar = bbar;
+			//this.bbar = bbar;
 			
 			if (this.withSelected) {
 				if (!this.withSelected.menu) {
@@ -194,30 +200,23 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 					}
 				}
 	
-				var withSelectedTb = new Ext.Toolbar({
+				/**
+				 * Add 'With selected' menu to bottom bar
+				 */
+				Ext.apply(bbar, {
 					actionName: ws.actionName,
-					htmlBeforeEnd: hiddensHtml,
-					buttons: [
-			          	{text: this.messages.withSelected, menu: ws.menu}
-					],
-					onRender: function () {
-						this.el = bbar.getEl();
-						var table = this.el.insertHtml('beforeEnd', 
-								'<table class="ux-tbar-right" cellspacing="0"><tr></tr></table>', 
-								true);
-						this.tr = table.child('tr');
-						this.actionEl = this.el.createChild({tag: "input", type: "hidden", name: this.actionName});
-						this.el.insertHtml("beforeEnd", this.htmlBeforeEnd);
-					},
-					afterRender: function () {
-				        if(this.buttons){
-				            this.add.apply(this, this.buttons);
-				            delete this.buttons;
-				        }
-					}
+					htmlBeforeEnd: hiddensHtml
 				});
-				bbar.on("render", withSelectedTb.render, withSelectedTb);
-				this.withSelectedTb = withSelectedTb;
+				bbar.addFill();
+				bbar.add({text: this.messages.withSelected, menu: ws.menu});
+				bbar.on("render", function () {
+					this.actionEl = this.el.createChild({tag: "input", type: "hidden", name: this.actionName});
+					this.el.insertHtml("beforeEnd", this.htmlBeforeEnd);
+					//console.log(this, "bbar on render");	
+				}, bbar);
+
+				
+
 				
 				// Add checkbox column
 				this.columns.push({
@@ -353,7 +352,7 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 	    	//var bodyOverflow = bodyEl.getStyle("overflow");
 	    	bodyEl.setStyle("overflow", "hidden");
 	    	this.setWidth(Ext.lib.Dom.getViewWidth() - gridCt.getPadding("lr") - gridCt.getBorderWidth("lr"));
-	    	this.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - gridCt.getY() - gridCt.getPadding("tb") - gridCt.getBorderWidth("tb")));
+	    	this.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - gridCt.getY() - gridCt.getPadding("tb") - gridCt.getBorderWidth("tb"))-5);
 	    	//bodyEl.setStyle("overflow", bodyOverflow);
 		}
 	},
@@ -399,7 +398,8 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 			return;
 		}
 			
-		var action = this.withSelectedTb.actionEl.dom;
+		var bbar = this.getBottomToolbar();
+		var action = bbar.actionEl.dom;
 		action.value = menuItem.value;
 		if (menuItem.formAction) {
 			if (Ext.isIE) {
@@ -430,7 +430,7 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
     	
      	var btnEl = Ext.get(ev.getTarget("a"));
     	var xy = btnEl.getXY();
-    	this.rowOptionsMenu.showAt([xy[0] - (this.rowOptionsMenu.getEl().getWidth() - btnEl.getWidth()), xy[1] + btnEl.getHeight()]);		
+    	this.rowOptionsMenu.showAt([xy[0] - (this.rowOptionsMenu.getEl().getWidth() - btnEl.getWidth()), xy[1] + btnEl.getHeight()]);
 	},
 	
 	getRowMenuVisibility: function (record) {
@@ -486,7 +486,8 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 	    },
 	    // Render checkbox
 	    checkbox: function (value, p, record) {
-	    	var dh = {tag: "input", type: "checkbox", value: record.data.id, name: "id[]"};
+	    	var idProperty = record.store.idProperty || record.store.reader.meta.id || "id";
+	    	var dh = {tag: "input", type: "checkbox", value: record.id, name: idProperty + "[]"};
 	    	return Ext.DomHelper.markup(dh);
 	    }
 	};
@@ -513,13 +514,25 @@ Ext.ux.scalr.CheckboxSelectionModel = Ext.extend(Ext.grid.RowSelectionModel, {
 Ext.ux.scalr.JsonReader = Ext.extend(Ext.data.JsonReader, {
 	readRecords: function (o) {
 		var dataBlock = Ext.ux.scalr.JsonReader.superclass.readRecords.call(this, o);
+		
 		var meta = this.meta;
+		
 		if (meta.errorProperty) {
-			if (!this.getError) {
-				this.getError = this.getJsonAccessor(meta.errorProperty);
+			
+			try
+			{
+				if (!this.getError) {
+					this.getError = this.createAccessor(meta.errorProperty);
+				}
+				
+				dataBlock.error = this.getError(o);
 			}
-			dataBlock.error = this.getError(o);
+			catch(e)
+			{
+				alert(e);
+			}
 		}
+		
 		return dataBlock;
 	}
 });

@@ -1,1 +1,1 @@
-{$event->InstanceInfo.external_ip}({$event->InstanceInfo.role_name}) Up
+{$event->DBInstance->ExternalIP}({$event->DBInstance->RoleName}) Up

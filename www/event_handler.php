@@ -1,10 +1,18 @@
 <?
 	define("NO_AUTH", true);
-	include("src/prepend.inc.php");
 	try
 	{
+		include("src/prepend.inc.php");
+		
 		if ($req_FarmID && $req_Hash)
 		{
+			$chunks = explode(";", $req_Data);
+			foreach ($chunks as $chunk)
+			{
+				$dt = explode(":", $chunk);
+				$data[$dt[0]] = trim($dt[1]);
+			}
+						
 			// prepare GET params
 			$farm_id = (int)$req_FarmID;
 			$hash = preg_replace("/[^A-Za-z0-9]+/", "", $req_Hash);
@@ -12,8 +20,7 @@
 			$pkg_ver = $req_PkgVer;
 			
 			// Add log infomation about event received from instance
-			$Logger->info("Event '{$req_EventType}' received from '{$_SERVER['REMOTE_ADDR']}': FarmID={$farm_id}, Hash={$hash}, InstanceID={$req_InstanceID}");
-			$Logger->info("Event data: {$req_Data}");
+			#$Logger->info("Event data: {$req_Data}");
 			$Logger->info("Scalarizr version: {$req_PkgVer}");
 			
 			// Get farminfo and instanceinfo from database
@@ -27,23 +34,10 @@
 					array($pkg_ver, $instanceinfo['id'])
 				);
 			}
-			
-			$chunks = explode(";", $req_Data);
-			foreach ($chunks as $chunk)
-			{
-				$dt = explode(":", $chunk);
-				$data[$dt[0]] = trim($dt[1]);
-			}
-			
+						
 			/**
 			 * Deserialize data from instance
 			 */
-			$chunks = explode(";", $req_Data);
-			foreach ($chunks as $chunk)
-			{
-				$dt = explode(":", $chunk);
-				$data[$dt[0]] = trim($dt[1]);
-			}
 			if (!$instanceinfo['internal_ip'])
 				$instanceinfo['internal_ip'] = $data["localip"];
 			
@@ -92,7 +86,7 @@
 				{
 					try
 					{
-						Scalr::FireEvent($farminfo['id'], new IPAddressChangedEvent($instanceinfo, $_SERVER['REMOTE_ADDR']));
+						Scalr::FireEvent($farminfo['id'], new IPAddressChangedEvent(DBInstance::LoadByID($instanceinfo['id']), $_SERVER['REMOTE_ADDR']));
 					}
 					catch(Exception $e)
 					{
@@ -113,15 +107,25 @@
 					case "go2Halt": break;
 		
 					case "hostDown":
-							$event = new HostDownEvent($instanceinfo);
+							$event = new HostDownEvent(DBInstance::LoadByID($instanceinfo['id']));
 						break;
 						
 					case "rebootFinish":
-							$event = new RebootCompleteEvent($instanceinfo);
+							$event = new RebootCompleteEvent(DBInstance::LoadByID($instanceinfo['id']));
 						break;
 						
 					case "rebootStart":
-							$event = new RebootBeginEvent($instanceinfo);
+							$event = new RebootBeginEvent(DBInstance::LoadByID($instanceinfo['id']));
+						break;
+						
+					case "ebsVolumeAttached":
+						
+							$event = new EBSVolumeAttachedEvent(
+								DBInstance::LoadByID($instanceinfo['id']),
+								$data["device_name"],
+								$data["volume_id"]
+							);
+						
 						break;
 						
 					case "hostUp":
@@ -129,43 +133,60 @@
 						switch ($instanceinfo["state"])
 						{
 							case INSTANCE_STATE::INIT:
-									$event = new HostUpEvent($instanceinfo, $data['ReplUserPass']);
+									$event = new HostUpEvent(DBInstance::LoadByID($instanceinfo['id']), $data['ReplUserPass']);
 								break;
 		
 							default:
-									$Logger->warn("Strange situation. Received hostUp event from instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') width state {$instanceinfo['state']}!");
+									$Logger->error("Strange situation. Received hostUp event from instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') with state {$instanceinfo['state']}!");
 								break;
 						}
 						
 						break;
 											 
 					case "newMysqlMaster":
-							$event = new NewMysqlMasterUpEvent($instanceinfo, $data['snapurl']);
+						
+							$old_master_info = $db->GetRow("SELECT id FROM farm_instances WHERE isdbmaster='1' AND farmid=?", array($farm_id));	
+						
+							$OldMasterInstance = ($old_master_info) ? DBInstance::LoadByID($old_master_info['id']) : null;
+							
+							$event = new NewMysqlMasterUpEvent(DBInstance::LoadByID($instanceinfo['id']), $data['snapurl'], $OldMasterInstance);
 						break;
 		
 					case "hostInit":
-							$event = new HostInitEvent(
-									$instanceinfo, 
-									$data["localip"], 
-									$_SERVER['REMOTE_ADDR'], 
-									base64_decode($data["based64_pubkey"])
-								);
+						
+							switch ($instanceinfo["state"])
+							{
+								case INSTANCE_STATE::PENDING:
+										$event = new HostInitEvent(
+											DBInstance::LoadByID($instanceinfo['id']), 
+											$data["localip"], 
+											$_SERVER['REMOTE_ADDR'], 
+											base64_decode($data["based64_pubkey"])
+										);
+									break;
+			
+								default:
+										$Logger->error("Strange situation. Received hostInit event from instance '{$req_InstanceID}' ('{$_SERVER['REMOTE_ADDR']}') with state {$instanceinfo['state']}!");
+									break;
+							}
+						
+							
 						break;
 		
 					case "rebundleFail":
-							$event = new RebundleFailedEvent($instanceinfo);							
+							$event = new RebundleFailedEvent(DBInstance::LoadByID($instanceinfo['id']));							
 						break;
 		
 					case "mysqlBckComplete":
-							$event = new MysqlBackupCompleteEvent($instanceinfo, $data["operation"], $data['snapinfo']);
+							$event = new MysqlBackupCompleteEvent(DBInstance::LoadByID($instanceinfo['id']), $data["operation"], $data['snapinfo']);
 						break;
 		
 					case "mysqlBckFail":
-							$event = new MysqlBackupFailEvent($instanceinfo, $data["operation"]);
+							$event = new MysqlBackupFailEvent(DBInstance::LoadByID($instanceinfo['id']), $data["operation"]);
 						break;
 						
 					case "newAMI":			
-							$event = new RebundleCompleteEvent($instanceinfo, $data["amiid"]);
+							$event = new RebundleCompleteEvent(DBInstance::LoadByID($instanceinfo['id']), $data["amiid"]);
 						break;
 											
 				    //********************
@@ -198,10 +219,36 @@
 						}
 						
 						if ($data['mountpoint'] && $data['success'] == 1)
-							Scalr::FireEvent($req_FarmID, new EBSVolumeMountedEvent($instanceinfo, $data['mountpoint']));
+							Scalr::FireEvent($req_FarmID, new EBSVolumeMountedEvent(DBInstance::LoadByID($instanceinfo['id']), $data['mountpoint'], $data['name']));
 						
 						break;
 					
+					case "basicEvent":
+						
+						
+						
+						if ($data['MessageName'] == BASIC_MESSAGE_NAMES::MYSQL_PMA_CREDENTIALS)
+						{
+							$DBFarmRole = DBFarmRole::LoadByID($data['Arg1']);
+							if ($data['PmaUser'] && $data['PmaPass'])
+							{
+								$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_USER, $data['PmaUser']);
+								$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_PASS, $data['PmaPass']);
+							}
+							else
+							{
+								if (!$data['Error'])
+									$data['Error'] = 'Cannot create mysql user/password for PMA.';
+								else
+									$data['Error'] = base64_decode($data['Error']);
+									
+								$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_REQUEST_TIME, "");
+								$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_REQUEST_ERROR, $data['Error']);
+							}
+						}
+						
+						break;
+						
 					case "trapACK": 
 					
 						$db->Execute("UPDATE messages SET isdelivered='1' WHERE messageid=?", array($data['trap_id']));
@@ -236,7 +283,7 @@
 							if (!$stderr && !$stdout)
 								$stdout = _("Script executed without any output.");
 								
-							$Logger->info(new ScriptingLogMessage(
+							$Logger->warn(new ScriptingLogMessage(
 								$req_FarmID, 
 								$event_name,
 								$req_InstanceID,
@@ -253,7 +300,7 @@
 						
 					case "rebundleStatus":
 					
-						$roleid = $db->GetOne("SELECT id FROM ami_roles WHERE iscompleted='0' AND prototype_iid=?", array($req_InstanceID));
+						$roleid = $db->GetOne("SELECT id FROM roles WHERE iscompleted='0' AND prototype_iid=?", array($req_InstanceID));
 						if ($roleid)
 							$db->Execute("INSERT INTO rebundle_log SET roleid=?, dtadded=NOW(), message=?", array($roleid, $req_Data));
 						
@@ -264,10 +311,10 @@
 						try
 						{
 							$message = base64_decode($data["msg"]);
-							$db->Execute("INSERT INTO logentries SET serverid=?, message=?, time=?, severity=?, source=?, farmid=?", array($req_InstanceID, $message, time(), $data["severity"], $data["source"], $farminfo["id"]));
+							$db->Execute("INSERT DELAYED INTO logentries SET serverid=?, message=?, time=?, severity=?, source=?, farmid=?", array($req_InstanceID, $message, time(), $data["severity"], $data["source"], $farminfo["id"]));
 							
 							if (stristr($message, "Received rebundle trap"))
-								$db->Execute("UPDATE ami_roles SET rebundle_trap_received='1' WHERE prototype_iid=?", array($req_InstanceID));
+								$db->Execute("UPDATE roles SET rebundle_trap_received='1' WHERE prototype_iid=?", array($req_InstanceID));
 						}
 						catch (Exception $e)
 						{

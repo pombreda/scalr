@@ -1,1 +1,1 @@
-{$event->InstanceInfo.external_ip}({$event->InstanceInfo.role_name}) Initialized
+{$event->DBInstance->InstanceID}({$event->DBInstance->RoleName}) Initialized

@@ -97,229 +97,59 @@
 		}
 	{/literal}
 	</style>
-    <div style="padding-left:5px;padding-right:5px;height:100%;" id="main_page_cont">
-    <table width="99%" cellpadding="10" cellspacing="5" border="0" style="height:100%;">
-        <tr valign="top">
-            <td width="250" valign="top">
-                {include file="inc/table_header.tpl" nofilter=1}
-                <table width="99%" cellpadding="0" cellspacing="0" border="0" style="margin-left:10px;">
-                	<tr valign="top">
-                		<td>
-                			<div style="position:relative;top:0px;left:0px;width:250px;height:500px;">
-	                		    <div style="position:absolute;top:0px;left:0px;z-index:1;">
-	                		      <div id="inventory_tree" style="width:250px;height:500px;"></div>
-	                		    </div>                            
-	                            <script language="Javascript" type="text/javascript">
-	                            	/*
-	                            	Init variables
-	                            	*/								                            	
-	                            	var i_types = new Array();
-	                            	i_types['i386'] = new Array();
-	                            	{section name=id loop=$32bit_types}
-	                            	i_types['i386'][i_types['i386'].length] = '{$32bit_types[id]}';
-	                            	{/section}
-	                            	
-	                            	i_types['x86_64'] = new Array();
-	                            	{section name=id loop=$64bit_types}
-	                            	i_types['x86_64'][i_types['x86_64'].length] = '{$64bit_types[id]}';
-	                            	{/section}
-	                                
-	                                var MANAGER_ACTION = '{if $id}edit{else}create{/if}';
-	                                var FARM_ID		   = '{$id}';
-	                                var REGION		   = '{$region}';
-	                                var FARM_MYSQL_ROLE = '{$farm_mysql_role}'; 
-	                                var FARM_ROLES_LAUNCH_ORDER = '{if $farminfo}{$farminfo.farm_roles_launch_order}{else}0{/if}';
-	                                var SELECTED_AMI_ID = '{$ami_id}';                          
-
-	                                var tree = null;
-	                                var events_tree = null;
-									var LoadMask = null;
-									var RoleTabsPanel = null
-									
-									{if $roles}
-	                                var l_roles = {$roles};
-	                                {/if}
-
-	                                {if $default_scaling_algos}
-		                            var default_scaling_algos = {$default_scaling_algos};
-		                            {/if}
-	                                
-	                                /*
-	                                Setup initial observer
-	                                */
-									{literal}
-									
-									hljs.initHighlightingOnLoad.apply(null, hljs.ALL_LANGUAGES);								 
-	            	                            	                
-	            	                /*
-	            	                Setup script events tree
-	            	                */
-	            	                var ConfigFieldTemplate = new Template('<div class="s_field_container"> '+
-										'<div class="s_field_name">#{title}:</div>'+
-										'<div style="float:left;"><input id="script_configopt_#{name}" type=\'text\' name=\'#{name}\' value=\'\' class=\'text configopt\'></div>'+
-										'<div style="clear:both;"></div>'+
-										'</div>'
-									); 
-
-	            	                Ext.onReady(function(){
-
-	            	                	var gridCt = Ext.get(document.body);
-	            	        	   		var bodyEl = Ext.get(document.body);
-	            	        	    	//bodyEl.setStyle("overflow", "hidden");
-	            	        	    	gridCt.setWidth(Ext.lib.Dom.getViewWidth() - gridCt.getPadding("lr") - gridCt.getBorderWidth("lr"));
-	            	        	    	gridCt.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - gridCt.getY() - gridCt.getPadding("tb") - gridCt.getBorderWidth("tb")));
-
-										
-	            	                	window.LoadMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait..."});
-	            	                	window.LoadMask.show();
-			            	            
-		            	            	var Tree = Ext.tree;
-		            	            	    
-	            	            	    window.RolesOrderTree = new Tree.TreePanel({
-	            	            	        el:'roles_order_panel',
-	            	            	        useArrows:false,
-	            	            	        lines: false,
-	            	            	        title:'Drag & drop items to set roles launch order.',
-	            	            	        autoScroll:true,
-	            	            	        animate:true,
-	            	            	        height:300,
-	            	            	        style:'width:100%',
-	            	            	        itemCls:'test-class',
-	            	            	        enableDD:true,
-	            	            	        containerScroll: true,
-											rootVisible:false,
-	            	            	        
-	            	            	        root: {
-	            	            	            text: 'Roles',
-	            	            	            draggable:false,
-	            	            	            id:'source'
-	            	            	        }
-	            	            	    });
-
-	            	            	    	            	            	    
-	            	            	    // render the tree
-	            	            	    window.RolesOrderTree.render();            	            	    
-	            	            	    window.RolesOrderTree.getRootNode().expand();
-
-	            	            	    window.RoleTabsPanel = new Ext.TabPanel({
-									        renderTo:'role_tabs_container',
-									        id:'role_options_tab_panel',
-									        resizeTabs:false, // turn on tab resizing
-									        enableTabScroll:true,
-									        deferredRender:true,
-									        height:500,
-									        defaults: {autoScroll:false, autoHeight:true},
-									        bodyStyle:'overflow-x:hidden',
-											listeners:{
-												beforerender:function(tabPanel){
-									        		var wz = Ext.get('tab_contents_roles').parent().getComputedWidth();
-									        		tabPanel.setWidth(wz);
-									        	}
-								        	},
-									        items: [
-											{
-												id:'role_t_about',
-								                title: 'About',
-								                closable:false,
-								                contentEl:'itab_contents_info_n'
-								            },								            
-								            {
-												id:'role_t_mysql',
-								                title: 'MySQL settings',
-								                closable:false,
-								                contentEl:'itab_contents_mysql_n'
-								            },
-								            {
-								                title: 'Scaling options',
-								                closable:false,
-								                contentEl:'itab_contents_scaling_n'
-								            },
-								            {
-								                title: 'Load balancing options',
-								               	closable:false,
-								                contentEl:'itab_contents_balancing_n'
-								            },
-								            {
-								                title: 'Placement and type',
-								                closable:false,
-								                contentEl:'itab_contents_placement_n'
-								            },
-								            {
-								                title: 'Parameters',
-								                closable:false,
-								                contentEl:'itab_contents_params_n'
-								            },
-								            {
-								                title: 'Elastic IPs',
-								                closable:false,
-								                contentEl:'itab_contents_eips_n'
-								            },
-								            {
-								                title: 'EBS',
-								                closable:false,
-								                contentEl:'itab_contents_ebs_n'
-								            },
-								            {
-								                title: 'DNS',
-								                closable:false,
-								                contentEl:'itab_contents_dns_n'
-								            },
-								            {
-								                title: 'Timeouts',
-								                closable:false,
-								                contentEl:'itab_contents_timeouts_n'
-								            },
-								            {
-								                title: 'Scripting',
-								                closable:false,
-								                contentEl:'itab_contents_scripts_n'
-								            }]
-									    });
-								        										
-	            	            	    MainLoader(1);
-										MainLoader(2);
-		            	            });
-		            	            
-	            	                {/literal}
-	                            </script>
-	                        </div>
-                		</td>
-                	</tr>
-                </table>
-                {include file="inc/table_footer.tpl" disable_footer_line=1}
-            </td>
-            <td style="padding:0px;margin:0px;" valign="top">
-                {include file="inc/table_header.tpl" nofilter=1 tabs=1}								
-					{include intable_tabs=0 intable_classname="tab_contents" intableid="tab_contents_general" file="inc/intable_header.tpl" header="Farm information" color="Gray"}
-                      	<tr id="mysql_dep_warning" style="display:none;">
-							<td colspan="2">
-                      			<div class="Webta_ExperimentalMsg" style="margin-bottom:15px;">
-								'mysql' and 'mysql64' roles are deprecated. Please use 'mysqllvm' and 'mysqllvm64' instead.
-								</div>
-                      		</td>
-                      	</tr>
-                        <tr>
-                        	<td width="20%">Name:</td>
-                        	<td><input type="text" class="text" name="farm_name" id="farm_name" value="{$farminfo.name}" /></td>
-                        </tr>
-                        <tr>
-                        	<td width="20%">Region:</td>
-                        	<td>
-                        		{$region}
-                        	</td>
-                        </tr>
-                        <tr>
-                        	<td colspan='2'>
-                        		&nbsp;
-                        	</td>
-                        </tr>
-                        <tr>
-                        	<td colspan='2'>
-                        		<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("0");' id='roles_launch_order_0' name="roles_launch_order" checked="checked" style='vertical-align:middle;'> Launch roles simultaneously
-                        		<br/>
-                        		<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("1");' id='roles_launch_order_1' name="roles_launch_order" style='vertical-align:middle;'> Launch roles one-by-one in the order I set (slower)
-                        	</td>
-                        </tr>
+    <div id="main_page_cont">
+    	<div style="height:100%;padding-left:269px;position:relative;">
+	    	<div style="width:264px;position:absolute;left:0px;top:0px;">
+	    		{include file="inc/table_header.tpl" nofilter=1}
+					<div style="position:relative;top:0px;left:0px;width:264px;height:500px;">
+						<div style="position:absolute;top:0px;left:0px;z-index:1;">
+							<div id="inventory_tree" style="width:250px;height:500px;"></div>
+						</div>                            
+					</div>
+	            {include file="inc/table_footer.tpl" disable_footer_line=1}
+	    	</div>
+    	<div>
+    		{include file="inc/table_header.tpl" nofilter=1 tabs=1}								
+				{include intable_tabs=0 intable_classname="tab_contents" intableid="tab_contents_general" file="inc/intable_header.tpl" header="Farm information" color="Gray"}
+					<tr id="mysql_dep_warning" style="display:none;">
+						<td colspan="2">
+                     			<div class="Webta_ExperimentalMsg" style="margin-bottom:15px;">
+							'mysql' and 'mysql64' roles are deprecated. Please use 'mysqllvm' and 'mysqllvm64' instead.
+							</div>
+                     	</td>
+					</tr>
+                    <tr>
+                      	<td width="20%">Name:</td>
+                       	<td><input type="text" class="text" name="farm_name" id="farm_name" value="{$farminfo.name}" /></td>
+                       	
+                    </tr>
+                    <tr>
+						<td width="20%">Location:</td>
+                       	<td>
+                       		{$region}
+                       	</td>
+					</tr>
+					<tr>
+                       	<td colspan='2'>
+                       		&nbsp;
+                       	</td>
+					</tr>
+                    <tr>
+                       	<td colspan='2'>
+                       		<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("0");' id='roles_launch_order_0' name="roles_launch_order" checked="checked" style='vertical-align:middle;'> Launch roles simultaneously
+                       		<br/>
+                       		<input type='radio' onclick='RoleTabObject.SetRolesLaunchOrder("1");' id='roles_launch_order_1' name="roles_launch_order" style='vertical-align:middle;'> Launch roles one-by-one in the order I set (slower)
+                       	</td>
+                    </tr>
+                    <tr>
+                       	<td colspan='2'>
+                       		&nbsp;
+                       	</td>
+					</tr>
+                    <tr>						
+						<td width="20%" valign="top">Comments:</td>
+                       	<td><textarea type="text" class="text" cols="40" rows="5"  name="farm_comments" id="farm_comments">{$farminfo.comments}</textarea></td>
+                    </tr>
 					{include file="inc/intable_footer.tpl" color="Gray"}
                         		
                     <div id="tab_contents_rso" class="tab_contents">
@@ -327,7 +157,7 @@
                     </div>
                         		
                		<div id="tab_contents_roles" class="tab_contents">
-               			<div id="role_tabs_container" style="margin:0px;"></div>
+               			<div id="role_tabs_container"></div>
                			{include file='tab_fa_about.tpl'}
                			{include file='tab_fa_mysql.tpl'}
                			{include file='tab_fa_scaling.tpl'}
@@ -339,6 +169,7 @@
                			{include file='tab_fa_dns.tpl'}
                			{include file='tab_fa_timeouts.tpl'}
                			{include file='tab_fa_scripting.tpl'}
+               			{include file='tab_fa_cloudwatch.tpl'}
                		</div>
 				{include file="inc/table_footer.tpl" disable_footer_line=1}
 				<br>
@@ -350,47 +181,224 @@
 					button_js=1 
 					button_js_action='window.RoleTabObject.SubmitForm();' 
 					loader='Building farm. Please wait...'
-					}
-            </td>
-        </tr>
-    </table>
+				}
+    		</div>
+    	</div>
     </div>
-    <script language="Javascript">
-    $('button_js').style.display='';
-	var NoCloseButton = false;
-	
-	{literal}
-	function ShowDescriptionPopup(event, id, obj)
-	{
-		var event = event || window.event;
+    <script language="Javascript" type="text/javascript">
+       	/*
+       	Init variables
+       	*/								                            	
+       	var i_types = new Array();
+    	i_types['i386'] = new Array();
+    	{section name=id loop=$32bit_types}
+    	i_types['i386'][i_types['i386'].length] = '{$32bit_types[id]}';
+    	{/section}
+    	
+    	i_types['x86_64'] = new Array();
+    	{section name=id loop=$64bit_types}
+    	i_types['x86_64'][i_types['x86_64'].length] = '{$64bit_types[id]}';
+    	{/section}
+        
+        var MANAGER_ACTION = '{if $id}edit{else}create{/if}';
+        var FARM_ID		   = '{$id}';
+        var REGION		   = '{$region}';
+        var FARM_MYSQL_ROLE = '{$farm_mysql_role}'; 
+        var FARM_ROLES_LAUNCH_ORDER = '{if $farminfo}{$farminfo.farm_roles_launch_order}{else}0{/if}';
+        var SELECTED_AMI_ID = '{$ami_id}';  
+        var RETURN_TO = '{$return_to}';                        
+
+        var tree = null;
+        var events_tree = null;
+		var LoadMask = null;
+		var RoleTabsPanel = null;
+
+		{if $roles}
+		var l_roles = {$roles};
+        {else}
+        var l_roles = '';
+        {/if}
+
+		{if $default_scaling_algos}
+		var default_scaling_algos = {$default_scaling_algos};
+		{/if}
+                        
+        /*
+        Setup initial observer
+        */
+		{literal}
+		hljs.initHighlightingOnLoad.apply(null, hljs.ALL_LANGUAGES);								 
+    	                            	                
+        /*
+        Setup script events tree
+        */
+		var ConfigFieldTemplate = new Template('<div class="s_field_container"> '+
+			'<div class="s_field_name">#{title}:</div>'+
+			'<div style="float:left;"><input id="script_configopt_#{name}" type=\'text\' name=\'#{name}\' value=\'\' class=\'text configopt\'></div>'+
+			'<div style="clear:both;"></div>'+
+			'</div>'
+		); 
+
+        Ext.onReady(function(){
+
+        	var gridCt = Ext.get(document.body);
+	   		var bodyEl = Ext.get(document.body);
+	    	gridCt.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - gridCt.getY() - gridCt.getPadding("tb") - gridCt.getBorderWidth("tb")));
+
+
+        	window.LoadMask = new Ext.LoadMask(Ext.getBody(), {msg:"Please wait..."});
+        	window.LoadMask.show();
+      	            
+			var Tree = Ext.tree;
+     	            	    
+       	    window.RolesOrderTree = new Tree.TreePanel({
+       	        el:'roles_order_panel',
+       	        useArrows:false,
+       	        lines: false,
+       	        title:'Drag & drop items to set roles launch order.',
+       	        autoScroll:true,
+       	        animate:true,
+       	        height:300,
+       	        style:'width:100%',
+       	        itemCls:'test-class',
+       	        enableDD:true,
+       	        containerScroll: true,
+				rootVisible:false,
+       	        root: {
+       	            text: 'Roles',
+       	            draggable:false,
+       	            id:'source'
+       	        }
+			});
+
+    	            	    	            	            	    
+      	    // render the tree
+      	    window.RolesOrderTree.render();            	            	    
+      	    window.RolesOrderTree.getRootNode().expand();
+
+      	    window.RoleTabsPanel = new Ext.TabPanel({
+		        renderTo:'role_tabs_container',
+		        id:'role_options_tab_panel',
+		        resizeTabs:false, // turn on tab resizing
+		        enableTabScroll:true,
+		        deferredRender:true,
+		        defaults: {autoScroll:false, autoHeight:true},
+		        bodyStyle:'overflow:hidden; width:auto;',
+				listeners:{
+					beforerender:function(tabPanel){
+
+		        	}
+		       	},
+		        items: [
+				{
+					id:'role_t_about',
+	              	title: 'About',
+	               	closable:false,
+	               	contentEl:'itab_contents_info_n'
+	           	},								            
+	           	{
+					id:'role_t_mysql',
+	               	title: 'MySQL settings',
+	               	closable:false,
+	              	contentEl:'itab_contents_mysql_n'
+	           	},
+	           	{
+	               title: 'Scaling options',
+	               closable:false,
+	               contentEl:'itab_contents_scaling_n'
+	           	},
+	           	{
+	               	title: 'Load balancing options',
+	              	closable:false,
+	               	contentEl:'itab_contents_balancing_n'
+	           	},
+	           	{
+	               	title: 'Placement and type',
+	               	closable:false,
+	               	contentEl:'itab_contents_placement_n'
+	           	},
+	           	{
+	               	title: 'Parameters',
+	               	closable:false,
+	               	contentEl:'itab_contents_params_n'
+	           	},
+	           	{
+	               	title: 'Elastic IPs',
+	               	closable:false,
+	               	contentEl:'itab_contents_eips_n'
+	           	},
+	          	{
+	               	title: 'EBS',
+	               	closable:false,
+	               	contentEl:'itab_contents_ebs_n'
+	           	},
+	           	{
+	               	title: 'DNS',
+	               	closable:false,
+	               	contentEl:'itab_contents_dns_n'
+	           	},
+	           	{
+	               	title: 'Timeouts',
+	               	closable:false,
+	               	contentEl:'itab_contents_timeouts_n'
+	           	},
+	           	{
+	               	title: 'Scripting',
+	               	closable:false,
+	               	contentEl:'itab_contents_scripts_n'
+	           	},
+	           	{
+	               	title: 'CloudWatch',
+	               	closable:false,
+	               	contentEl:'itab_contents_cloudwatch_n'
+	           	}/*,
+				{
+					title: 'MTA options',
+					closeable:false,
+					contentEl:'itab_contents_mta_n'
+				}*/
+	           	]
+		    });
+       										
+			MainLoader(1);
+			MainLoader(2);
+		}); 	            
+		{/literal}
+
+	    $('button_js').style.display='';
+		var NoCloseButton = false;
 		
-		var pos = Position.positionedOffset(obj);
+		{literal}
+		function ShowDescriptionPopup(event, id, obj)
+		{
+			var event = event || window.event;
+			
+			var pos = Position.positionedOffset(obj);
+			
+			pos[0] = Event.pointerX(event);
+			pos[1] = Event.pointerY(event);
+			
+			$('popup_contents').innerHTML = $('role_description_tooltip_'+id).innerHTML;
+			
+			popup.raisePopup(pos);
+		}
 		
-		pos[0] = Event.pointerX(event);
-		pos[1] = Event.pointerY(event);
+		function ShowHelp(event, content_id, obj)
+		{
+			var event = event || window.event;
+			
+			var pos = Position.positionedOffset(obj);
+			
+			pos[0] = Event.pointerX(event)+50;
+			pos[1] = Event.pointerY(event);
+			
+			$('popup_help_contents').innerHTML = $(content_id).innerHTML;
+			
+			popup_help.raisePopup(pos);
+		}
+		{/literal}
 		
-		$('popup_contents').innerHTML = $('role_description_tooltip_'+id).innerHTML;
-		
-		popup.raisePopup(pos);
-	}
-	
-	function ShowHelp(event, content_id, obj)
-	{
-		var event = event || window.event;
-		
-		var pos = Position.positionedOffset(obj);
-		
-		pos[0] = Event.pointerX(event)+50;
-		pos[1] = Event.pointerY(event);
-		
-		$('popup_help_contents').innerHTML = $(content_id).innerHTML;
-		
-		popup_help.raisePopup(pos);
-	}
-	{/literal}
-	
-	$('tab_roles').style.display = 'none';
-	
+		$('tab_roles').style.display = 'none';
 	</script>
 	
 	{section name=id loop=$roles_descr}
@@ -454,11 +462,11 @@
 		<br /><br /><br />
 	</span>
 	<span id="mini_help" style="display:none;">
-		Always keep at least this many running instances
+		Always keep at least this many running instances.
 		<br /><br /><br />	
 	</span>
 	<span id="maxi_help" style="display:none;">
-		Scalr will not launch more instances
+		Scalr will not launch more instances.
 		<br /><br /><br />	
 	</span>
 	<span id="mysql_help" style="display:none;">
@@ -466,7 +474,7 @@
 		<br>
 		When farm starts:<br> 
 		1. MySQL master dowloads and extracts a snapshot from S3<br>
-		2. When data is loaded and master starts, slaves download and extract a snapshot as well.<br>
+		2. When data is loaded and master starts, slaves download and extract a snapshot as well<br>
 		3. Slaves are syncing with master for some time
 	</span>
 	<span id="scaler_help" style="display:none;">

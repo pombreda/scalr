@@ -18,7 +18,7 @@
 	
 	$ReflectState = new ReflectionClass("INSTANCE_STATE"); 
 	
-	$display["roles"] = $db->GetAll("SELECT farm_amis.*, farm_amis.id as id, ami_roles.name, ami_roles.alias, ami_roles.alias as icon, ami_roles.architecture FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
+	$display["roles"] = $db->GetAll("SELECT farm_roles.*, farm_roles.id as id, roles.name, roles.alias, roles.alias as icon, roles.architecture FROM farm_roles INNER JOIN roles ON roles.ami_id = farm_roles.ami_id WHERE farmid=?", array($farminfo['id']));
 	foreach ($display["roles"] as &$role)
 	{
 		// Default icon for nonexistent aias
@@ -30,8 +30,8 @@
 	
 		$DBFarmRole = DBFarmRole::LoadByID($role['id']);
 		
-		$role["instances"] = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?",
-			array($farminfo['id'], $role['ami_id'])
+		$role["instances"] = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=? AND state != ?",
+			array($farminfo['id'], $role['ami_id'], INSTANCE_STATE::TERMINATED)
 		);
 		
 		$role["empty_instances"] = array_fill(0, $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES)-count($role["instances"]), "empty");
@@ -71,7 +71,7 @@
 		    	}
 		    }
 		    		    
-		    $instance['issync'] = $db->GetOne("SELECT name FROM ami_roles WHERE prototype_iid=? AND iscompleted='0'", array($instance['instance_id']));
+		    $instance['issync'] = $db->GetOne("SELECT name FROM roles WHERE prototype_iid=? AND iscompleted='0'", array($instance['instance_id']));
 		}
 		
 		if (count($role["instances"]) > 0)

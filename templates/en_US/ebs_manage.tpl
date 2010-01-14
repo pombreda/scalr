@@ -1,16 +1,17 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
-<br>
-<div id="maingrid-ct2" class="ux-gridviewer" style="padding: 5px;"></div>
+<div class="grid-padding-fix">
+	<div id="maingrid-ct" class="ux-gridviewer"></div>
+	<br />
+	<div id="maingrid-ct2" class="ux-gridviewer"></div>
+</div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
 var regions = [
-{section name=id loop=$regions}
-	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
-{/section}
+{foreach from=$regions name=id key=key item=item}
+	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
+{/foreach}
 ];
 var region = '{$smarty.session.aws_region}';
 
@@ -31,7 +32,7 @@ Ext.onReady(function () {
 	        	
 	        fields: [
 				'farmid','arrayid', 'farm_name', 'role_name', 'mysql_master_volume', 'array_name','array_part_no',
-				'volume_id', 'size', 'snapshot_id', 'avail_zone', 'status', 'attachment_status', 'device', 'instance_id'
+				'volume_id', 'size', 'snapshot_id', 'avail_zone', 'status', 'attachment_status', 'device', 'instance_id', 'auto_snap'
 	        ]
     	}),
     	remoteSort: true,
@@ -48,7 +49,7 @@ Ext.onReady(function () {
 	        id: 'snap_id',
 	        	
 	        fields: [
-				'snap_id', 'volume_id', 'status', 'time', 'comment', 'is_array_snapshot', 'progress'
+				'snap_id', 'volume_id', 'status', 'time', 'comment', 'is_array_snapshot', 'progress', 'owner'
 	        ]
         }),
         remoteSort: true,
@@ -68,6 +69,7 @@ Ext.onReady(function () {
 	}
 
 	function autosnapRenderer(value, p, record) {
+
 		if (value)
 			return "<img src='/images/true.gif' />";
 		else
@@ -109,8 +111,9 @@ Ext.onReady(function () {
 	var grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct",
         height: 350,
+        width:'100%',
         title: "EBS volumes",
-        id: 'ebs_volumes_list',
+        id: 'ebs_volumes_list_'+GRID_VERSION,
         store: store,
         maximize: false,
         viewConfig: { 
@@ -119,7 +122,7 @@ Ext.onReady(function () {
 
         enableFilter: false,
         
-		tbar: ['Region:', new Ext.form.ComboBox({
+		tbar: ['Location:', new Ext.form.ComboBox({
 			allowBlank: false,
 			editable: false, 
 	        store: regions,
@@ -131,7 +134,8 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.region = record.data.value; 
+	        	store.baseParams.region = combo.getValue();
+	        	region = combo.getValue();
 	        	store.load();
 	        }}
 	    }), '-', {
@@ -162,7 +166,9 @@ Ext.onReady(function () {
 			{id: "option.attach", 		text:'Attach', 			  	href: "/ebs_manage.php?task=attach&volumeId={volume_id}"},
 			{id: "option.detach", 		text:'Detach', 			  	href: "/ebs_manage.php?task=detach&volumeId={volume_id}"},
 			new Ext.menu.Separator({id: "option.attachSep"}),
-			{id: "option.autosnap", 	text:'Auto-snapshot settings', 	href: "/ebs_autosnaps.php?task=settings&volumeId={volume_id}&region="+region},
+			{id: "option.autosnap", 	text:'Auto-snapshot settings', handler: function(menuItem){
+				document.location.href = '/ebs_autosnaps.php?task=settings&volumeId='+menuItem.parentMenu.record.data.volume_id+'&region='+region;
+			}},
 			new Ext.menu.Separator({id: "option.snapSep"}),
 			{id: "option.createSnap", 	text:'Create snapshot', 	href: "/ebs_manage.php?task=snap_create&volumeId={volume_id}"},
 			{id: "option.viewSnaps", 	text:'View snapshots', 		handler: function(menuItem){
@@ -172,7 +178,27 @@ Ext.onReady(function () {
 				
 			}}, 
 			new Ext.menu.Separator({id: "option.vsnapSep"}),
-			{id: "option.delete", 	text:'Delete volume', 		href: "/ebs_manage.php?task=delete_volume&volumeId={volume_id}"}
+			{id: "option.delete", 	text:'Delete volume', handler:function(menuItem){
+				var Item = menuItem.parentMenu.record.data;
+				window.TID = false;
+				window.TIF = false;
+				SendRequestWithConfirmation(
+					{
+						action: 'RemoveVolume', 
+						volume_id: Item.volume_id,
+						region: region
+					},
+					'Are you sure want remove this volume?',
+					'Removing volume. Please wait...',
+					'ext-mb-object-removing',
+					function(){
+						grid.autoSize();
+					},
+					function(){
+						store.load();
+					}
+				);
+			}}
      	],
      	getRowOptionVisibility: function (item, record) {
 
@@ -207,22 +233,29 @@ Ext.onReady(function () {
 
     var snaps_grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct2",
-        height: 350,
+        height: 320,
+        width:'100%',
         title: "EBS snapshots",
-        id: 'ebs_snaps_list2',
+        id: 'ebs_snaps_list_'+GRID_VERSION,
         store: snapsStore,
         maximize: false,
         viewConfig: { 
         	emptyText: "No snapshots found"
         },
 
-        enableFilter: false,
+        enableFilter: true,
         
-		//tbar: [],
+        tbar: ['&nbsp;&nbsp;', {xtype:'checkbox', boxLabel:'Show public (Shared) snapshots', listeners:
+	    	{check:function(item, checked){
+        		snapsStore.baseParams.show_public_snapshots = checked ? 'true' : 'false'; 
+        		snapsStore.load();
+	    	}}
+		}],
 		
         // Columns
         columns:[
 			{header: "Snapshot ID", width: 40, dataIndex: 'snap_id', sortable: false},
+			{header: "Owner", width: 120, dataIndex: 'owner', sortable: false},
 			{header: "Created on", width: 35, dataIndex: 'volume_id', sortable: false},
 			{header: "Status", width: 25, dataIndex: 'status', sortable: false},
 			{header: "Local start time", width: 45, dataIndex: 'time', sortable: false},
@@ -234,11 +267,43 @@ Ext.onReady(function () {
     	rowOptionsMenu: [    	          	             	
 			{id: "option.create", 	text:'Create new volume based on this snapshot', 		href: "/ebs_manage.php?task=create_volume&snapid={snap_id}"},
 			new Ext.menu.Separator({id: "option.Sep"}),
-			{id: "option.delete", 	text:'Delete snapshot', 		href: "/ebs_manage.php?task=snap_delete&snapshotId={snap_id}"}
+			{id: "option.delete_snap", 	text:'Delete snapshot', 		href: "/ebs_manage.php?task=snap_delete&snapshotId={snap_id}"}
      	],
      	getRowOptionVisibility: function (item, record) {
         	
 			return true;
+		},
+		withSelected: {
+			menu: [
+				{text: "Remove", value: "remove", handler:function(){
+
+					var snapshots = snaps_grid.getSelectionModel().selections.keys;
+
+					SendRequestWithConfirmation(
+						{
+							action: 'RemoveSnapshots', 
+							snapshots: Ext.encode(snapshots)
+						},
+						'Remove selected snapshot(s)?',
+						'Removing snapshot(s). Please wait...',
+						'ext-mb-object-removing',
+						function(){
+							//snapsStore.autoSize();
+						},
+						function(){
+							snapsStore.load();
+						}
+					);
+					
+				}}
+			],
+			hiddens: {with_selected : 1},
+			action: "act"
+		},
+		listeners: {
+			beforeshowoptions: function (grid, record, romenu, ev) {
+				romenu.record = record;
+			}
 		}
     });
 

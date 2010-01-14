@@ -29,12 +29,9 @@
 					// Get farminfo from database
 					$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBEBSVolume->FarmID));
 					// Get instance info fro database
-					$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($DBEBSVolume->InstanceID));
-					// Get farm role info
-					$farm_role_info = $DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=? OR replace_to_ami=? AND farmid=?",
-						array($instanceinfo['ami_id'], $instanceinfo['ami_id'], $farminfo['id'])
-					);
-					
+					$DBInstance = DBInstance::LoadByIID($DBEBSVolume->InstanceID);
+					$DBFarmRole = $DBInstance->GetDBFarmRoleObject();
+										
 					// Get EC2 Client
 					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['clientid'], $farminfo['region']);
 					
@@ -50,15 +47,14 @@
 					{
 						if ($volume->attachmentSet->item->status == 'attached')
 						{
-							$createfs = ($farm_role_info['ebs_snapid'] || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
+							$createfs = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID) || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
 	
 							// Nicolas request. Device not avaiable on instance after attached state. need some time.
 							sleep(5);
-							
-							$DBInstance = DBInstance::LoadByID($instanceinfo['id']);
+
 							$DBInstance->SendMessage(new MountPointsReconfigureScalrMessage(
 								$DBEBSVolume->Device, 
-								($DBEBSVolume->IsManual == 1) ? $DBEBSVolume->MountPoint : $farm_role_info['ebs_mountpoint'], 
+								($DBEBSVolume->IsManual == 1) ? $DBEBSVolume->MountPoint : $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT), 
 								$createfs
 							));
 							
@@ -78,7 +74,7 @@
 					{
 						try
 						{
-							Scalr::AttachEBS2Instance($EC2Client, $instanceinfo, $farminfo, $DBEBSVolume);
+							Scalr::AttachEBS2Instance($EC2Client, $DBInstance, $farminfo, $DBEBSVolume);
 							return true;
 						}
 						catch(Exception $e)

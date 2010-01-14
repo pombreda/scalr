@@ -1,13 +1,6 @@
 {include file="inc/header.tpl" upload_files=1}
 	{include file="inc/table_header.tpl"}
 		{include file="inc/intable_header.tpl" header="Account information" color="Gray"}
-		<tr>
-    		<td width="20%">Active due:</td>
-    		<td>{if $dtdue}{$dtdue}{else}Never overdue{/if}</td>
-    	</tr>
-    	<tr>
-    		<td colspan="2">&nbsp</td>
-    	</tr>
     	<tr>
     		<td width="20%">E-mail:</td>
     		<td><input type="text" class="text" disabled name="email" value="{$email}" /></td>

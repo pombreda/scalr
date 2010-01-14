@@ -9,7 +9,7 @@
 	
 	if ($_SESSION["uid"] != 0)
 	{
-		if (!$db->GetOne("SELECT id FROM ami_roles WHERE clientid=? AND id=?", array($_SESSION["uid"], $roleid)))
+		if (!$db->GetOne("SELECT id FROM roles WHERE clientid=? AND id=?", array($_SESSION["uid"], $roleid)))
 			UI::Redirect("client_roles_view.php");
 	}
 	

@@ -21,7 +21,7 @@
 		$display["farminfo"] = $farminfo;
 		$display["title"] = sprintf(_("Events for farm %s"), $farminfo['name']);
 		
-		$sql = "SELECT * from events WHERE farmid='{$farminfo['id']}'";
+		$sql = "SELECT farmid, message, type, dtadded FROM events WHERE farmid='{$farminfo['id']}'";
 	
 		if ($req_query)
 		{
@@ -35,7 +35,7 @@
 			$sql .= ")";
 		}
 		
-		$response["total"] = $db->GetOne(preg_replace('/\*/', 'COUNT(*)', $sql, 1));
+		$response["total"] = $db->GetOne(str_replace('farmid, message, type, dtadded', 'COUNT(*)', $sql));
 
 		$sort = $req_sort ? mysql_escape_string($req_sort) : "id";
 		$dir = $req_dir ? mysql_escape_string($req_dir) : "DESC";
@@ -45,13 +45,14 @@
 		$start = $req_start ? (int) $req_start : 0;
 		$limit = $req_limit ? (int) $req_limit : 20;
 		$sql .= " LIMIT $start, $limit";
-		
+				
 		$response['success'] = '';
 		$response['error'] = '';
 		
 		foreach ($db->GetAll($sql) as $row)
 		{			
 			$row['message'] = nl2br($row['message']);	
+			$row["dtadded"] = date("M j, Y H:i:s", strtotime($row["dtadded"]." ".SCALR_SERVER_TZ));
 			$response["data"][] = $row;
 		}	
 	}

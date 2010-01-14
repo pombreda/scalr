@@ -3,14 +3,26 @@
 	class EBSVolumeMountedEvent extends Event 
 	{
 		public $Mountpoint;
-		public $InstanceInfo;
+		public $VolumeID;
 		
-		public $SkipDeferredOperations = true;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
 		
-		public function __construct($InstanceInfo, $Mountpoint)
+		public function __construct(DBInstance $DBInstance, $Mountpoint, $VolumeID)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->Mountpoint = $Mountpoint;
+			$this->VolumeID = $VolumeID;
+		}
+		
+		public static function GetScriptingVars()
+		{
+			return array("mountpoint" => "Mountpoint", "volume_id" => "VolumeID");
 		}
 	}
 ?>

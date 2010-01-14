@@ -1,16 +1,16 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
 
 var regions = [
-{section name=id loop=$regions}
-	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
-{/section}
+{foreach from=$regions name=id key=key item=item}
+	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
+{/foreach}
 ];
+
 
 var region = '{$smarty.session.aws_region}';
 
@@ -41,8 +41,8 @@ Ext.onReady(function () {
 	function statusRenderer(value, p, record) {
 		var retval = "";
 		
-		if (record.data.isreplaced && record.data.iscompleted != 2)
-			retval = "Synchronizing&#x2026";
+		if ((record.data.isreplaced && record.data.iscompleted != 2) || record.data.abort_id)
+			retval = "Synchronizing...";
 		else
 		{
 			if (record.data.iscompleted == 1)
@@ -107,13 +107,13 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Roles",
-        id: 'client_roles_list',
+        id: 'client_roles_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
         	emptyText: "No roles found"
         },
-		tbar: ['&nbsp;&nbsp;Region:', new Ext.form.ComboBox({
+		tbar: ['&nbsp;&nbsp;Location:', new Ext.form.ComboBox({
 			allowBlank: false,
 			editable: false, 
 	        store: regions,
@@ -125,7 +125,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.region = record.data.value; 
+	        	store.baseParams.region = combo.getValue(); 
 	        	store.load();
 	        }}
 	    }), '-', '&nbsp;&nbsp;Moderation phase:', new Ext.form.ComboBox({
@@ -140,11 +140,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-
-				if (record.data.value == '' || record.data.value == '&nbsp;')
-					record.data.value = '';
-	        
-	        	store.baseParams.approval_state = record.data.value; 
+	        	store.baseParams.approval_state = combo.getValue();  
 	        	store.load();
 	        }}
 	    }), '-', '&nbsp;&nbsp;Origin:', new Ext.form.ComboBox({
@@ -160,11 +156,7 @@ Ext.onReady(function () {
 	        emptyText: ' ',
 	        width:150,
 	        listeners:{select:function(combo, record, index){
-
-	    		if (record.data.value == '' || record.data.value == '&nbsp;')
-					record.data.value = '';
-	        
-	        	store.baseParams.origin = record.data.value; 
+	        	store.baseParams.origin = combo.getValue(); 
 	        	store.load();
 	        }}
 	    })],
@@ -189,6 +181,8 @@ Ext.onReady(function () {
 
 			{id: "option.edit", 		text:'Edit', 			  			href: "/client_role_edit.php?id={id}"},
 			new Ext.menu.Separator({id: "option.editSep"}),
+			{id: "option.switch", 		text:'Switch AMI', 			  			href: "/client_role_edit.php?task=switch&id={id}"},
+			new Ext.menu.Separator({id: "option.switchSep"}),
 			{id: "option.share", 		text:'Share this role', 			href: "/client_role_edit.php?task=share&id={id}"},
 			new Ext.menu.Separator({id: "option.shareSep"}),
 			
@@ -207,7 +201,7 @@ Ext.onReady(function () {
 			if (record.data.roletype == 'CUSTOM')
 			{
 
-				if (item.id == 'option.edit' || item.id == 'option.editSep' || item.id == 'option.share' || item.id == 'option.shareSep')
+				if (item.id == 'option.edit' || item.id == 'option.editSep' || item.id == 'option.share' || item.id == 'option.shareSep' || item.id == 'option.switch' || item.id == 'option.switchSep')
 				{
 					if (uid != 0 && record.data.iscompleted == '1' && !record.data.isreplaced)
 						return true;

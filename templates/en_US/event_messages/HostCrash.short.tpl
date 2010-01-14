@@ -1,1 +1,1 @@
-{$event->InstanceInfo.external_ip} Crashed
+{$event->DBInstance->ExternalIP} Crashed

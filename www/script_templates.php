@@ -330,7 +330,6 @@
 				$display["err"] = $err;
 		}
 		
-				
 		$display["sys_vars"] = CONFIG::$SCRIPT_BUILTIN_VARIABLES;
 		$display["script_timeout"] = CONFIG::$SYNCHRONOUS_SCRIPT_TIMEOUT;
 		

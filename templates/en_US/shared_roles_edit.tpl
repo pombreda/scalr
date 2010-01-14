@@ -441,12 +441,12 @@ function SetField()
     		<td><input type="text" class="text" name="ami_id" value=""></td>
     	</tr>
     	<tr>
-    		<td width="20%">Region:</td>
+    		<td width="20%">Location:</td>
     		<td>
     			<select name="region" id="region" style="vertical-align:middle;">
-					{section name=id loop=$regions}
-						<option {if $region == $regions[id]}selected{/if} value="{$regions[id]}">{$regions[id]}</option>
-					{/section}
+					{foreach from=$regions name=id key=key item=item}
+						<option {if $region == $key}selected{/if} value="{$key}">{$item}</option>
+					{/foreach}
 				</select>
     		</td>
     	</tr>

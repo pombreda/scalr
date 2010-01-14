@@ -21,16 +21,21 @@
 		{
 			$DB = Core::GetDBInstance(null, true);
 			
-			$event = $DB->GetRow("SELECT * FROM events WHERE id=?", array($this->EventID));
-            if ($event)
+			$dbevent = $DB->GetRow("SELECT * FROM events WHERE id=?", array($this->EventID));
+            if ($dbevent)
             {
             	try
             	{
-            		LoggerManager::getLogger(__CLASS__)->info(sprintf(_("Fire event %s for farm: %s"), $event['type'], $event['farmid']));
-		            	
-		            // Fire event
-					Scalr::FireDeferredEvent($event['farmid'], $event['type'], $event['message']);
-		            $DB->Execute("UPDATE events SET ishandled='1' WHERE id=?", array($event['id']));
+            		//TODO: Initialize Event classes
+            		$Event = unserialize($dbevent['event_object']);
+            		if ($Event)
+            		{
+	            		LoggerManager::getLogger(__CLASS__)->info(sprintf(_("Fire event %s for farm: %s"), $Event->GetName(), $Event->GetFarmID()));
+			            // Fire event
+						Scalr::FireDeferredEvent($Event);
+            		}
+            		
+            		$DB->Execute("UPDATE events SET ishandled='1' WHERE id=?", array($dbevent['id']));
             	}
             	catch(Exception $e)
             	{

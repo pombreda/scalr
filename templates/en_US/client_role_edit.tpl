@@ -74,6 +74,19 @@
     		<td width="20%">Default maximum LA for this role:</td>
     		<td><input type="text" class="text" name="default_maxLA" value="{$default_maxLA}" /></td>
     	</tr>
+    	<tr valign="middle">
+    		<td width="20%">Default SSH port:</td>
+    		<td>
+    		<div style="float:left;vertical-align:middle;height:30px;">
+    			<input type="text" class="text" style="margin-top:4px;" name="default_SSH_port" value="{if $default_SSH_port}{$default_SSH_port}{else}22{/if}" />
+    		</div>
+    		<div style="float:left;vertical-align:middle;height:30px;">
+	    		<div class="Webta_ExperimentalMsg" style="margin-top:2px;font-size:10px;line-height:;">
+					This setting WON'T change default SSH port on the instances. This port should be opened in the security groups.
+				</div>
+			</div>
+    		</td>
+    	</tr>
     	<tr valign="top">
     		<td width="20%">Description:</td>
     		<td>

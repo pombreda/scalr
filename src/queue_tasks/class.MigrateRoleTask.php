@@ -26,8 +26,8 @@
 		{
 			$DB = Core::GetDBInstance();
 			
-			$roleinfo = $DB->GetRow("SELECT * FROM ami_roles WHERE id=?", array($this->RoleID));
-			$proto_roleinfo = $DB->GetRow("SELECT * FROM ami_roles WHERE id=?", array($this->PrototypeRoleID));
+			$roleinfo = $DB->GetRow("SELECT * FROM roles WHERE id=?", array($this->RoleID));
+			$proto_roleinfo = $DB->GetRow("SELECT * FROM roles WHERE id=?", array($this->PrototypeRoleID));
 
 			$this->Log(sprintf(_("Migrating role %s to %s region"), $proto_roleinfo['name'], $roleinfo['region']));
 			
@@ -68,7 +68,7 @@
 			{
 				$msg = sprintf(_("Cannot get information about prototype role. %s"), $e->getMessage());
 				
-				$DB->Execute("UPDATE ami_roles SET iscompleted='2', `replace`='', fail_details=? WHERE id=? AND iscompleted='0'", 
+				$DB->Execute("UPDATE roles SET iscompleted='2', `replace`='', fail_details=? WHERE id=? AND iscompleted='0'", 
 					array($msg, $this->RoleID)
 				);
 				
@@ -94,7 +94,7 @@
 			{
 				$msg = sprintf(_("Cannot get files list from S3. %s"), $e->getMessage());
 				
-				$DB->Execute("UPDATE ami_roles SET iscompleted='2', `replace`='', fail_details=? WHERE id=? AND iscompleted='0'", 
+				$DB->Execute("UPDATE roles SET iscompleted='2', `replace`='', fail_details=? WHERE id=? AND iscompleted='0'", 
 					array($msg, $this->RoleID)
 				);
 				

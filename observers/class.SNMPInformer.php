@@ -7,11 +7,34 @@
 		{
 			parent::__construct();
 		}
-				
+
+		public function OnRoleOptionChanged(RoleOptionChangedEvent $event) 
+		{	
+			switch($event->OptionName)
+			{
+				case RESERVED_ROLE_OPTIONS::APACHE_HTTPS_VHOST_TEMPLATE:
+				case RESERVED_ROLE_OPTIONS::APACHE_HTTP_VHOST_TEMPLATE:
+				case RESERVED_ROLE_OPTIONS::NGINX_HTTPS_VHOST_TEMPLATE:
+					
+					$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
+						array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
+					);
+					foreach ((array)$instances as $instance)
+					{
+						$DBInstance = DBInstance::LoadByID($instance['id']);
+						
+						if ($DBInstance->GetDBFarmRoleObject()->GetRoleOrigin() == ROLE_ALIAS::APP || $DBInstance->GetDBFarmRoleObject()->GetRoleOrigin() == ROLE_ALIAS::WWW)
+						{
+							$DBInstance->SendMessage(new VhostReconfigureScalrMessage());
+						}
+					}
+					
+					break;
+			}
+		}
+		
 		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
 		{
-			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			
 			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
 				array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
 			);
@@ -19,9 +42,9 @@
 			{
 				$DBInstance = DBInstance::LoadByID($instance['id']);
 				$DBInstance->SendMessage(new NewMySQLMasterUpScalrMessage(
-					$event->InstanceInfo['internal_ip'], 
+					$event->DBInstance->InternalIP, 
                 	$event->SnapURL,
-                	$event->InstanceInfo['role_name']
+                	$event->DBInstance->GetDBFarmRoleObject()->GetRoleName()
 				));
 			}
 		}
@@ -32,8 +55,7 @@
 			
 			$Client = Client::Load($farminfo["clientid"]);
 			
-			$DBInstance = DBInstance::LoadByID($event->InstanceInfo['id']);
-			$DBInstance->SendMessage(new HostInitScalrMessage(
+			$event->DBInstance->SendMessage(new HostInitScalrMessage(
 				$Client->AWSAccountID
 			));
 		}
@@ -41,7 +63,6 @@
 		public function OnHostUp(HostUpEvent $event)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$event->InstanceInfo["ami_id"]}' AND iscompleted='1'");
 			
 			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN(?,?)", 
 				array($farminfo["id"], INSTANCE_STATE::RUNNING, INSTANCE_STATE::INIT)
@@ -51,54 +72,92 @@
 			{
 				$DBInstance = DBInstance::LoadByID($instance['id']);
 				$DBInstance->SendMessage(new HostUpScalrMessage(
-					$alias, 
-					$event->InstanceInfo['internal_ip'], 
-					$event->InstanceInfo["role_name"]
+					$event->DBInstance->GetDBFarmRoleObject()->GetRoleAlias(), 
+					$event->DBInstance->InternalIP, 
+					$event->DBInstance->GetDBFarmRoleObject()->GetRoleName()
 				));
+			}
+		}
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
+		{
+			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+			
+			if ($event->DBInstance->GetDBFarmRoleObject()->GetRoleAlias() != ROLE_ALIAS::APP)
+				return true;
+			
+			// Get list of all instances for farm
+			$farm_instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
+				array($farminfo['id'], INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
+			);
+			
+			foreach ($farm_instances as $farm_instance_snmp)
+			{
+				if (!$farm_instance_snmp["external_ip"])
+					continue;
+
+				if ($farm_instance_snmp["id"] == $event->DBInstance->ID)
+					continue;
+
+				$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
+				$DBFarmRoleISNMP = DBFarmRole::LoadByID($farm_instance_snmp['farm_roleid']);	
+				
+				if ($DBFarmRoleISNMP->GetRoleAlias() != ROLE_ALIAS::WWW)
+					continue;
+												
+				if ($event->DBInstance->InternalIP)
+				{
+					$DBInstance = DBInstance::LoadByID($farm_instance_snmp['id']);
+					$DBInstance->SendMessage(new HostDownScalrMessage(
+						$event->DBInstance->GetDBFarmRoleObject()->GetRoleAlias(), 
+	                	$event->DBInstance->InternalIP, 
+	                	"0",
+	                	$DBFarmRole->GetRoleName()
+					));
+				}
 			}
 		}
 		
 		public function OnHostDown(HostDownEvent $event)
 		{
-			if ($event->InstanceInfo['isrebootlaunched'] == 1)
+			if ($event->DBInstance->IsRebootLaunched == 1)
 				return;
-			
-			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
 			// Get list of all instances for farm
 			$farm_instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
 				array($this->FarmID, INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
 			);
 			
-			$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($event->InstanceInfo['ami_id']));
-			$is_synchronize = ($farm_ami_info['replace_to_ami']) ? true : false;
-			
-			// Get alias of role
-			$alias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id='{$event->InstanceInfo['ami_id']}'");
-			
+			try
+			{
+				$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
+				$is_synchronize = ($DBFarmRole->ReplaceToAMI) ? true : false;
+				$alias = $DBFarmRole->GetRoleAlias();
+			}
+			catch(Exception $e)
+			{
+				$is_synchronize = false;
+				$alias = $this->DB->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($event->DBInstance->AMIID));
+			}
+
 			$first_in_role_handled = false;
 			foreach ($farm_instances as $farm_instance_snmp)
 			{
 				if (!$farm_instance_snmp["external_ip"])
 					continue;
 
-				if ($farm_instance_snmp["id"] == $event->InstanceInfo["id"])
+				if ($farm_instance_snmp["id"] == $event->DBInstance->ID)
 					continue;
 
-				$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", 
-					array($event->InstanceInfo['ami_id'])
-				);
-					
 				$this->Logger->debug("Processing instance: {$farm_instance_snmp['instance_id']} ({$farm_instance_snmp["ami_id"]})");
-				$this->Logger->debug("Farm ami: {$farm_ami_info['ami_id']}, {$farm_ami_info['replace_to_ami']}");
-				
+								
 				$isfirstinrole = '0';
+				$calias = $this->DB->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
 				
-				if ($event->InstanceInfo['isdbmaster'] == 1 && !$first_in_role_handled)
+				if ($event->DBInstance->IsDBMaster == 1 && !$first_in_role_handled)
 				{
-					if (!$is_synchronize || $farm_instance_snmp['ami_id'] != $event->InstanceInfo['ami_id'])
+					if (!$is_synchronize || $farm_instance_snmp['farm_roleid'] != $event->DBInstance->FarmRoleID)
 					{
-						$calias = $this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($farm_instance_snmp['ami_id']));
 						if ($calias == ROLE_ALIAS::MYSQL)
 						{
 							$first_in_role_handled = true;
@@ -107,14 +166,14 @@
 					}	
 				}
 								
-				if ($event->InstanceInfo['internal_ip'])
+				if ($event->DBInstance->InternalIP)
 				{
 					$DBInstance = DBInstance::LoadByID($farm_instance_snmp['id']);
 					$DBInstance->SendMessage(new HostDownScalrMessage(
 						$alias, 
-	                	$event->InstanceInfo['internal_ip'], 
+	                	$event->DBInstance->InternalIP, 
 	                	$isfirstinrole,
-	                	$event->InstanceInfo["role_name"]
+	                	$event->DBInstance->RoleName
 					));
 				}
 			}

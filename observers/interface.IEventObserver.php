@@ -9,11 +9,7 @@
 		public function OnHostDown(HostDownEvent $event);
 		
 		public function OnHostCrash(HostCrashEvent $event);
-				
-		public function OnLAOverMaximum(LAOverMaximumEvent $event);
-		
-		public function OnLAUnderMinimum(LAUnderMinimumEvent $event);
-		
+						
 		public function OnRebundleComplete(RebundleCompleteEvent $event);
 		
 		public function OnRebundleFailed(RebundleFailedEvent $event);
@@ -37,5 +33,13 @@
 		public function OnMySQLReplicationFail(MySQLReplicationFailEvent $event);
 		
 		public function OnMySQLReplicationRecovered(MySQLReplicationRecoveredEvent $event);
+		
+		public function OnDNSZoneUpdated(DNSZoneUpdatedEvent $event);
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event);
+		
+		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event);
+		
+		public function OnEBSVolumeMounted(EBSVolumeMountedEvent $event);
 	}
 ?>

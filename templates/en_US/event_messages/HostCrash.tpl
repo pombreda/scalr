@@ -1,1 +1,1 @@
-Instance {$event->InstanceInfo.instance_id} Public IP: {$event->InstanceInfo.external_ip} Internal IP: {$event->InstanceInfo.internal_ip} crashed 
+Instance {$event->DBInstance->InstanceID} Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP} crashed 

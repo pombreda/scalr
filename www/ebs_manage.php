@@ -19,8 +19,9 @@
 				
 				if ($_POST)
 				{
-					$instanceinfo = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($post_inststanceId));
-					$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
+					$DBInstance = DBInstance::LoadByIID($post_inststanceId);
+					
+					$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($DBInstance->FarmID));
 					
 					if ($farminfo['clientid'] != $_SESSION['uid'])
 						$errmsg = _("Instance not found");
@@ -45,10 +46,10 @@
 								if ($post_attach_on_boot == 1)
 								{
 									$DBEBSVolume->FarmID = $farminfo['id'];
-									$DBEBSVolume->RoleName = $instanceinfo['role_name'];
-									$DBEBSVolume->AvailZone = $instanceinfo['avail_zone'];
-									$DBEBSVolume->InstanceIndex = $instanceinfo['index'];
-									$DBEBSVolume->Region = $instanceinfo['region'];
+									$DBEBSVolume->FarmRoleID = $DBInstance->FarmRoleID;
+									$DBEBSVolume->AvailZone = $DBInstance->AvailZone;
+									$DBEBSVolume->InstanceIndex = $DBInstance->Index;
+									$DBEBSVolume->Region = $DBInstance->Region;
 									
 									$DBEBSVolume->Mount = ($post_mount == 1) ? 1 : 0;
 									$DBEBSVolume->Mountpoint = $post_mountpoint;
@@ -57,7 +58,7 @@
 									$DBEBSVolume->Save();
 								}
 								
-								Scalr::AttachEBS2Instance($AmazonEC2Client, $instanceinfo, $farminfo, $DBEBSVolume);
+								Scalr::AttachEBS2Instance($AmazonEC2Client, $DBInstance, $farminfo, $DBEBSVolume);
 								
 								$okmsg = _("EBS volume attachment successfully initialized");
 								UI::Redirect("ebs_manage.php");
@@ -296,7 +297,7 @@
 		}
 	}
 
-	$display['warnmsg'] = _("You should never manually re-assign EBS volumes, auto-assinged by Scalr");
+	$display['warnmsg'] = _("You should never manually re-assign EBS volumes that are auto-assigned by Scalr.");
 	
 	if ($req_farmid)
 		$display['grid_query_string'] .= "&farmid={$req_farmid}";

@@ -1,10 +1,17 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
+
+var regions = [
+{foreach from=$regions name=id key=key item=item}
+	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
+{/foreach}
+];
+
+var region = '{$smarty.session.aws_region}';
 
 {literal}
 Ext.onReady(function () {
@@ -48,13 +55,30 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Elastic Load Balancers",
-        id: 'elb_list2',
+        id: 'elb_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
         	emptyText: "No elastic load balancers found"
         },
 
+        tbar: [{text: 'Location:'}, new Ext.form.ComboBox({
+			allowBlank: false,
+			editable: false, 
+	        store: regions,
+	        value: region,
+	        displayField:'state',
+	        typeAhead: false,
+	        mode: 'local',
+	        triggerAction: 'all',
+	        selectOnFocus:false,
+	        width:100,
+	        listeners:{select:function(combo, record, index){
+	        	store.baseParams.region = combo.getValue(); 
+	        	store.load();
+	        }}
+	    })],
+        
         enableFilter: false,
 		
         // Columns
@@ -73,15 +97,7 @@ Ext.onReady(function () {
      	],
      	getRowOptionVisibility: function (item, record) {
 
-        	if (item.id == 'option.details')
-				return true;
-        	else
-        	{
-				if (record.data.farmid)
-					return false;
-				else
-					return true;
-        	}
+        	return true;
 		}
     });
     

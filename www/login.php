@@ -3,27 +3,22 @@
 	
 	CONTEXTS::$APPCONTEXT = APPCONTEXT::ORDER_WIZARD;
 		
-	$display['title'] = _("Self-Scaling Hosting Environment utilizing Amazon's EC2.  Built by Intridea.");
+	$display['title'] = _("Self-Scaling Hosting Environment utilizing Amazon's EC2.");
 	$display['meta_descr'] = _("Scalr is fully redundant, self-curing and self-scaling hosting environment utilizing Amazon's EC2.  It is open source, allowing you to create server farms through a web-based interface using pre-built AMI's.");
-	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, Intridea, self-scaling, hosting environment, cloud computing, open source, web-based interface");		
+	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, self-scaling, hosting environment, cloud computing, open source, web-based interface");		
 	
 	if (isset($req_logout))
 	{
 		@session_destroy();
+		        		
+        setcookie("scalr_sault", "0", time()-86400);
+		setcookie("scalr_hash", "0", time()-86400);
+		setcookie("scalr_uid", "0", time()-86400);
+		setcookie("scalr_signature", "0", time()-86400);
+        
+		$mess = _("Succesfully logged out");
 		
-		@setcookie("tender_email", "0", time()-86400, "/", ".scalr.net");
-        @setcookie("tender_expires", "0", time()-86400, "/", ".scalr.net");
-        @setcookie("tender_hash", "0", time()-86400, "/", ".scalr.net");
-        @setcookie("tender_name", "0", time()-86400, "/", ".scalr.net");
-        @setcookie("_tender_session", "0", time()-86400, "/", ".scalr.net");
-        @setcookie("anon_token", "0", time()-86400, "/", ".scalr.net");
-        		
-		$mess = _("Successfully logged out");
-		
-		if (isset($req_redirect_to) && $req_redirect_to == 'support')
-        	UI::Redirect("http://support.scalr.net");
-        else
-        	UI::Redirect("https://scalr.net/login.php");
+		UI::Redirect("/login.php");
 	}
 	
 	if ($req_action == "pwdrecovery")
@@ -63,7 +58,7 @@
 		
 		if (!$template_name)
 			$template_name = "pwdrecovery.tpl";
-	}
+	}	
 	
 	if ($_POST || $req_isadmin == 1)
 	{
@@ -106,7 +101,7 @@
 			if ($user)
 			{
 			    if ($user["isactive"] == 0)
-			    	$err[] = "Your account has been stopped by service administrator. Please <a href='mailto:".CONFIG::$EMAIL_ADDRESS."'>contact us</a> for more information";
+			    	$err[] = "Your account has been stopped by service administrator. Please <a href='mailto:".CONFIG::$EMAIL_ADDRESS."'>contact us</a> for more information.";
 			    else
 			    {
 			    	$bruteforce = false;
@@ -147,24 +142,15 @@
 	
 		        			$db->Execute("UPDATE clients SET `login_attempts`=0, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
 		        			
-		        			///////////////////////////////
-		        			//TENDER LOGIN//
-		        			if (!$user['fullname'])
-		        				$user['fullname'] = $user['email'];
-		        			
-		        			$args = array(
-		        				"name"		=> $user['fullname'],
-		        				"email"		=> $user['email'],
-		        				"expires" => date("D M d H:i:s O Y", time()+120)
-		        			);
-		        					        			
-							$token = GenerateTenderMultipassToken(json_encode($args));
-		        			//////////////////////////////
-		        				        			
-		        			if (isset($req_redirect_to) && $req_redirect_to == 'support')
-		        				UI::Redirect("http://support.scalr.net/?sso={$token}");
-		        			else
-		        				UI::Redirect("{$rpath}");
+		        			if ($post_keep_session)
+		        			{
+		        				setcookie("scalr_sault", $_SESSION["sault"], time()+86400*2);
+		        				setcookie("scalr_hash", $_SESSION["hash"], time()+86400*2);
+		        				setcookie("scalr_uid", $_SESSION["uid"], time()+86400*2);
+		        				setcookie("scalr_signature", $Crypto->Hash("{$_SESSION["sault"]}:{$_SESSION["hash"]}:{$_SESSION["uid"]}:{$_SERVER['REMOTE_ADDR']}:{$_SESSION["cpwd"]}"), time()+43200);
+		        			}
+		        				        				        			
+		        			UI::Redirect("{$rpath}");
 					    }
 					    else
 					    { 

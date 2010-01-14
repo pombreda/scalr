@@ -5,6 +5,7 @@
 		private static $EventObservers = array();
 		private static $DeferredEventObservers = array();
 		private static $ConfigsCache = array();
+		private static $InternalObservable;
 				
 		/**
 		 * Attach observer
@@ -37,6 +38,79 @@
 		}
 		
 		/**
+		 * @return Scalr_Util_Observable
+		 */
+		private static function GetInternalObservable () 
+		{
+			if (self::$InternalObservable === null)
+			{
+				self::$InternalObservable = new Scalr_Util_Observable();
+				self::$InternalObservable->defineEvents(array(
+				
+					/**
+					 * @param Client $client
+					 */
+					"addClient",
+				
+					/**
+					 * @param Client $client
+					 */
+					"updateClient",
+				
+					/**
+					 * @param Client $client
+					 */
+					"beforeDeleteClient",
+				
+					/**
+					 * @param Client $client
+					 */
+					"deleteClient",
+				
+					/**
+					 * @param Client $client
+					 * @param int $invoiceId
+					 */
+					"addPayment",
+				
+					/**
+					 * @param Client $client
+					 * @param string $paypalSubscrId
+					 */
+					"subscrSignup",
+					
+					/**
+					 * @param Client $client
+					 * @param string $paypalSubscrId
+					 */
+					"subscrCancel",
+				
+					/**
+					 * @param Client $client
+					 * @param string $paypalSubscrId
+					 */
+					"subscrEot"
+				));
+			}
+			
+			return self::$InternalObservable;
+		}
+		
+		static function FireInternalEvent ($event_name)
+		{
+			$Observable = self::GetInternalObservable();
+			$args = func_get_args();
+			call_user_func_array(array($Observable, "fireEvent"), $args);
+		}
+		
+		static function AttachInternalObserver ()
+		{
+			$Observable = self::GetInternalObservable();
+			$args = func_get_args();
+			return call_user_func_array(array($Observable, "addListener"), $args);
+		}
+		
+		/**
 		 * Return observer configuration for farm
 		 *
 		 * @param string $farmid
@@ -46,8 +120,6 @@
 		private static function GetFarmNotificationsConfig($farmid, $observer)
 		{
 			$DB = Core::GetDBInstance(NULL, true);
-			
-			Logger::getLogger(__CLASS__)->debug("GetFarmNotificationsConfig({$farmid}, {$observer->ObserverName})");
 			
 			// Reconfigure farm settings if changes made
 			$farms = $DB->GetAll("SELECT farms.id as fid FROM farms INNER JOIN client_settings ON client_settings.clientid = farms.clientid WHERE client_settings.`key` = 'reconfigure_event_daemon' AND client_settings.`value` = '1'");
@@ -109,7 +181,7 @@
 		 * @param string $event_name
 		 * @param string $event_message
 		 */
-		public static function FireDeferredEvent ($farmid, $event_type, $event_message)
+		public static function FireDeferredEvent (Event $event)
 		{
 			try
 			{
@@ -117,19 +189,19 @@
 				foreach (self::$DeferredEventObservers as $observer)
 				{
 					// Get observer config for farm
-					$config = self::GetFarmNotificationsConfig($farmid, $observer);
+					$config = self::GetFarmNotificationsConfig($event->GetFarmID(), $observer);
 					
 					// If observer configured -> set config and fire event
 					if ($config)
 					{
 						$observer->SetConfig($config);
-						$res = call_user_func(array($observer, "On{$event_type}"), $event_message);
+						$res = call_user_func(array($observer, "On{$event->GetName()}"), $event);
 					}
 				}
 			}
 			catch(Exception $e)
 			{
-				Logger::getLogger(__CLASS__)->fatal("Exception thrown in Scalr::FireEvent(): ".$e->getMessage());
+				Logger::getLogger(__CLASS__)->fatal("Exception thrown in Scalr::FireDeferredEvent(): ".$e->getMessage());
 			}
 				
 			return;
@@ -145,6 +217,8 @@
 		{
 			try
 			{
+				$event->SetFarmID($farmid);
+				
 				// Notify class observers
 				foreach (self::$EventObservers as $observer)
 				{
@@ -155,7 +229,14 @@
 			}
 			catch(Exception $e)
 			{
-				Logger::getLogger(__CLASS__)->fatal("Exception thrown in Scalr::FireEvent(): ".$e->getMessage());
+				Logger::getLogger(__CLASS__)->fatal(
+					sprintf("Exception thrown in Scalr::FireEvent(%s:%s, %s:%s): %s",
+						@get_class($observer),
+						$event->GetName(),
+						$e->getFile(),
+						$e->getLine(),
+						$e->getMessage()	
+					));
 				throw new Exception($e->getMessage());
 			}
 			
@@ -178,16 +259,9 @@
 			try
 			{
 				$DB = Core::GetDBInstance();
-
-				// Get farm infor from database
-				$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
-				if (!$farminfo)
-					return;
-				else
-					$event->Farm = $farminfo;
 				
-				if ($event->InstanceInfo && $event->GetName() != EVENT_TYPE::HOST_DOWN)
-					$event->InstanceInfo = $DB->GetRow("SELECT * FROM farm_instances WHERE id=?", array($event->InstanceInfo['id']));
+				if ($event->DBInstance && $event->GetName() != EVENT_TYPE::HOST_DOWN)
+					$event->DBInstance->ReLoad(); 
 					
 				// Get Smarty object
 				$Smarty = Core::GetSmartyInstance();
@@ -203,11 +277,13 @@
 				$DB->Execute("INSERT INTO events SET 
 					farmid	= ?, 
 					type	= ?, 
-					dtadded	= NOW(), 
+					dtadded	= NOW(),
 					message	= ?,
-					short_message = ?
+					short_message = ?, 
+					event_object = ?,
+					event_id	 = ?
 					",
-					array($farmid, $event->GetName(), $message, $short_message)
+					array($farmid, $event->GetName(), $message, $short_message, serialize($event), $event->GetEventID())
 				);
 				
 				$eventid = $DB->Insert_ID();
@@ -225,29 +301,29 @@
 		 * Attach EBS volume to instance
 		 *
 		 * @param EC2Client $AmazonEC2Client
-		 * @param array $instanceinfo
+		 * @param DBinstance $DBInstance
 		 * @param array $farminfo
 		 * @param string $volume_id
 		 * @return boolean
 		 */
-		public static function AttachEBS2Instance($AmazonEC2Client, $instanceinfo, $farminfo, DBEBSVolume $DBEBSVolume)
+		public static function AttachEBS2Instance($AmazonEC2Client, DBInstance $DBInstance, $farminfo, DBEBSVolume $DBEBSVolume)
 		{
 			$DB = Core::GetDBInstance();
 			
 			Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-				sprintf(_("Attaching volume %s to instance %s"), $DBEBSVolume->VolumeID, $instanceinfo['instance_id'])
+				sprintf(_("Attaching volume %s to instance %s"), $DBEBSVolume->VolumeID, $DBInstance->InstanceID)
 			));
 			
 			$AttachVolumeType = new AttachVolumeType();
-			$AttachVolumeType->instanceId = $instanceinfo['instance_id'];
+			$AttachVolumeType->instanceId = $DBInstance->InstanceID;
 			$AttachVolumeType->volumeId = $DBEBSVolume->VolumeID;
 			
 			$SNMP = new SNMP();
-			$SNMP->Connect($instanceinfo['external_ip'], 161, $farminfo['hash'], false, false, true);
+			$SNMP->Connect($DBInstance->ExternalIP, 161, $farminfo['hash'], false, false, true);
 			$result = $SNMP->GetTree("UCD-DISKIO-MIB::diskIODevice");
 			
 			$map = array(
-				"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", 
+				"b", "c", "d", "e", "f", "g", "h", "i", "j", 
 				"k", "l", "m", "n", "o", "p", "q", "r", "s", "t", 
 				"u", "v", "w", "x", "y", "z"
 			);
@@ -276,7 +352,7 @@
 			if ($res->status == AMAZON_EBS_STATE::ATTACHING)
 			{
 				$DBEBSVolume->Device = $AttachVolumeType->device;
-				$DBEBSVolume->InstanceID = $instanceinfo['instance_id'];
+				$DBEBSVolume->InstanceID = $DBInstance->InstanceID;
 				
 				$DBEBSVolume->Save();
 								
@@ -289,23 +365,25 @@
 						sprintf(_("Volume %s status: %s (%s)"), $DBEBSVolume->VolumeID, $volume->status, $volume->attachmentSet->item->status)
 					));
 					
-					$farm_role_info = $DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?) AND farmid=?",
-						array($instanceinfo['ami_id'], $instanceinfo['ami_id'], $farminfo['id'])
+					$DBFarmRole = $DBInstance->GetDBFarmRoleObject();
+					
+					$farm_role_info = $DB->GetRow("SELECT * FROM farm_roles WHERE id=?",
+						array($DBInstance->FarmRoleID)
 					);
 					
 					Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-						sprintf(_("Need mount: %s, %s"), $farm_role_info['ebs_mount'], $DBEBSVolume->Mount)
+						sprintf(_("Need mount: %s, %s"), $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT), $DBEBSVolume->Mount)
 					));
 					
 					if ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->status == 'attached')
 					{										
 						Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-							sprintf(_("Volume %s successfully attached to instance %s"), $DBEBSVolume->VolumeID, $instanceinfo['instance_id'])
+							sprintf(_("Volume %s successfully attached to instance %s"), $DBEBSVolume->VolumeID, $DBInstance->InstanceID)
 						));
 						
-						if ($farm_role_info['ebs_mount'] == 1 || $DBEBSVolume->Mount == 1)
+						if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT) == 1 || $DBEBSVolume->Mount == 1)
 						{
-							$createfs = ($farm_role_info['ebs_snapid'] || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
+							$createfs = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID) || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
 							
 							Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
 								sprintf(_("Waiting 5 seconds"))
@@ -315,13 +393,12 @@
 							sleep(5);
 							
 							Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
-								sprintf(_("Sending trap mountEBS to %s"), $instanceinfo['external_ip'])
+								sprintf(_("Sending trap mountEBS to %s"), $DBInstance->ExternalIP)
 							));
 							
-							$DBInstance = DBInstance::LoadByID($instanceinfo['id']);
 							$DBInstance->SendMessage(new MountPointsReconfigureScalrMessage(
 								$AttachVolumeType->device, 
-								$farm_role_info['ebs_mountpoint'], 
+								$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT), 
 								$createfs
 							));
 				            
@@ -336,7 +413,7 @@
 					}
 					elseif ($volume->status == AMAZON_EBS_STATE::ATTACHING || $volume->status == AMAZON_EBS_STATE::IN_USE)
 					{
-						if ($farm_role_info['ebs_mount'] == 1 || $DBEBSVolume->Mount == 1)
+						if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT) || $DBEBSVolume->Mount == 1)
 						{
 							Logger::getLogger(__CLASS__)->info(
 								sprintf(_("Added EBSMount task for volume: %s"), $DBEBSVolume->VolumeID)
@@ -385,32 +462,33 @@
 		 * @param bool $active
 		 * @return string Instance ID
 		 */
-		public static function RunInstance($sec_group, $farmid, $role, $farmhash, $ami, $dbmaster = false, $active = true, $avail_zone = "", $index = false)
+		public static function RunInstance(DBFarmRole $DBFarmRole, $ami = false, $dbmaster = false, $active = true, $avail_zone = "", $index = false)
 	    {
 	        global $Crypto, $cpwd;
 	        
 	    	$DB = Core::GetDBInstance();
 	        
-	        $farminfo = $DB->GetRow("SELECT * FROM farms WHERE id='{$farmid}'");
+	    	$DBFarm = $DBFarmRole->GetFarmObject();
+	    	
+	        $Client = Client::Load($DBFarm->ClientID);
 	        
-	        $Client = Client::Load($farminfo["clientid"]);
-	        
-	        $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region']));
+	        $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBFarm->Region));
 	        $AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 	        
-	        $ami_info = $DB->GetRow("SELECT * FROM ami_roles WHERE ami_id='{$ami}'");
+	        if (!$ami)
+	        	$ami = $DBFarmRole->AMIID;
+	        
+	        $ami_info = $DB->GetRow("SELECT * FROM roles WHERE ami_id='{$ami}'");
 	        
 	        $alias = $ami_info["alias"];
 	        $role_name = $ami_info["name"];
-	                
-	        $farm_role_info = $DB->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND (ami_id=? OR replace_to_ami=?)", array($farmid, $ami, $ami));
-	        if ($farm_role_info)
-	        	$i_type = $farm_role_info["instance_type"];
-	        else
-	        	$i_type = $DB->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id='{$ami}'");
+			$sec_group = CONFIG::$SECGROUP_PREFIX.$ami_info["name"];
+	        
+	        $i_type = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE);
+	        
+	        if (!$i_type)
+	        	$i_type = $DB->GetOne("SELECT instance_type FROM roles WHERE ami_id='{$ami}'");
 	
-	        $aki_id = $farm_role_info['aki_id'];
-	        $ari_id = $farm_role_info['ari_id'];
 	       	//
 	       	// Check Security group - start
 	       	//	    
@@ -460,9 +538,9 @@
 				{
 					if (count($group_rules) == 0)
 					{
-						$prototype_roleid = $DB->GetOne("SELECT id FROM ami_roles WHERE name=?", array($ami_info['prototype_role']));
+						$prototype_roleid = $DB->GetOne("SELECT id FROM roles WHERE name=?", array($ami_info['prototype_role']));
 						if (!$prototype_roleid || $prototype_roleid == $ami_info['id'])
-							$prototype_roleid = $DB->GetOne("SELECT id FROM ami_roles WHERE name=?", array($alias));	
+							$prototype_roleid = $DB->GetOne("SELECT id FROM roles WHERE name=?", array($alias));	
 						
 						// Get permission rules for group
 			            $group_rules = $DB->GetAll("SELECT * FROM security_rules WHERE roleid=?", array($prototype_roleid));	                        
@@ -502,12 +580,16 @@
 	        //
 	        // Check Security group - end
 	        //
-	        if (!$farminfo['bucket_name'])
-	        	$bucket_name = "FARM-{$farmid}-{$Client->AWSAccountID}";
+	        if (!$DBFarm->GetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME))
+	        	$bucket_name = "FARM-{$DBFarmRole->FarmID}-{$Client->AWSAccountID}";
 	        else
-	        	$bucket_name = $farminfo['bucket_name'];
+	        	$bucket_name = $DBFarm->GetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME);
 	        	
 	        $RunInstancesType = new RunInstancesType();
+	        $RunInstancesType->SetCloudWatchMonitoring($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_ENABLE_CW_MONITORING));
+	        
+	        $RunInstancesType->ConfigureRootPartition(true, false, 3);
+	        	        
 	        $RunInstancesType->imageId = $ami;
 	        
 	        if ($aki_id != '')
@@ -531,8 +613,8 @@
         	//
         	if (!$index)
         	{
-	        	$indexes = $DB->GetAll("SELECT `index` FROM farm_instances WHERE farmid=? AND (ami_id=? OR ami_id=?) AND state != 'Pending terminate'",
-	        		array($farmid, $farm_role_info['ami_id'], $farm_role_info['replace_to_ami'])
+        		$indexes = $DB->GetAll("SELECT `index` FROM farm_instances WHERE farmid=? AND farm_roleid=? AND state NOT IN (?,?)",
+	        		array($DBFarmRole->FarmID, $DBFarmRole->ID, INSTANCE_STATE::TERMINATED, INSTANCE_STATE::PENDING_TERMINATE)
 	        	);
 	        	$used_indexes = array();
 	
@@ -556,19 +638,20 @@
         	//
 	        
         	
-        	$ebs = $DB->GetRow("SELECT * FROM farm_ebs WHERE instance_index=? AND farmid=? AND role_name=?",
-        		array($instance_index, $farmid, $role_name)
+        	$ebs = $DB->GetRow("SELECT * FROM farm_ebs WHERE instance_index=? AND farm_roleid=?",
+        		array($instance_index, $DBFarmRole->ID)
         	);
         	
+        	$role_avail_zone = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE);
         	if ($ebs)
         	{
-        		LoggerManager::getLogger('RunInstance')->info(new FarmLogMessage($farmid, sprintf(_("There are EBS volumes assigned to this instance. Using avail-zone: %s"), $ebs['avail_zone'])));
-        		$farm_role_info["avail_zone"] = $ebs['avail_zone'];
+        		LoggerManager::getLogger('RunInstance')->info(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("There are EBS volumes assigned to this instance. Using avail-zone: %s"), $ebs['avail_zone'])));
+        		$role_avail_zone = $ebs['avail_zone'];
         	}
         	
-	        if ($farm_role_info["avail_zone"])
+	        if ($role_avail_zone)
 	        {
-	        	if ($farm_role_info["avail_zone"] == "x-scalr-diff")
+	        	if ($role_avail_zone == "x-scalr-diff")
 	        	{
 	        		// Get list of all available zones
 	        		$avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
@@ -580,43 +663,43 @@
 				    }
 	        		
 				    // Get count of curently running instances
-	        		$instance_count = $DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND ami_id=? AND state != ?", 
-	        			array($farmid, $ami, INSTANCE_STATE::PENDING_TERMINATE)
+	        		$instance_count = $DB->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND ami_id=? AND state NOT IN (?,?)", 
+	        			array($DBFarmRole->FarmID, $ami, INSTANCE_STATE::PENDING_TERMINATE, INSTANCE_STATE::TERMINATED)
 	        		);
 	        		
 	        		// Get zone index.
 	        		$zone_index = ($instance_index-1) % count($avail_zones);
 	        		
-	        		LoggerManager::getLogger('RunInstance')->debug(sprintf(_("[FarmID: %s] Selected zone: %s"), $farmid, $avail_zones[$zone_index]));
+	        		LoggerManager::getLogger('RunInstance')->debug(sprintf(_("[FarmID: %s] Selected zone: %s"), $DBFarmRole->FarmID, $avail_zones[$zone_index]));
 	        		
 	        		// Set avail zone
 	        		$RunInstancesType->SetAvailabilityZone($avail_zones[$zone_index]);
 	        	}
 	        	else
-	        		$RunInstancesType->SetAvailabilityZone($farm_role_info["avail_zone"]);
+	        		$RunInstancesType->SetAvailabilityZone($role_avail_zone);
 	        }
 	        elseif ($avail_zone != '')
 	        	$RunInstancesType->SetAvailabilityZone($avail_zone);        
 	        
 	        $RunInstancesType->additionalInfo = "";
-	        $RunInstancesType->keyName = "FARM-{$farmid}";
+	        $RunInstancesType->keyName = "FARM-{$DBFarmRole->FarmID}";
 	        
 	        // User data for all versions of scalr-ami-tools
 	        $user_data = array(
-	        	"farmid" 			=> $farmid,
+	        	"farmid" 			=> $DBFarmRole->FarmID,
 	        	"role"				=> $alias,
 	        	"eventhandlerurl"	=> CONFIG::$EVENTHANDLER_URL,
-	        	"hash"				=> $farmhash,
+	        	"hash"				=> $DBFarm->Hash,
 	        	"s3bucket"			=> $bucket_name,
 	        	"realrolename"		=> $role_name,
 	        	"httpproto"			=> CONFIG::$HTTP_PROTO,
-	        	"region"			=> $farminfo['region']
+	        	"region"			=> $DBFarm->Region
 	        );
 	        
 	        // User data for scalarizer ( >= 0.5-1).
 	        $user_data["callbackserviceurl"] = CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/cb_service.php";
 	        $user_data["inittoken"]			 = self::GenerateInitToken();
-	        $user_data["scalrcert"]			 = $farminfo['scalarizr_cert'];
+	        $user_data["scalrcert"]			 = $DBFarm->ScalarizrCertificate;
 	        
 	        
 	        foreach ($user_data as $k=>$v)
@@ -635,11 +718,13 @@
 	        	{
 		        	if (stristr($e->getMessage(), "The key pair") && stristr($e->getMessage(), "does not exist"))
 		        	{
-		        		$key_name = "FARM-{$farmid}";
+		        		$key_name = "FARM-{$DBFarmRole->FarmID}";
 						$result = $AmazonEC2Client->CreateKeyPair($key_name);
 						if ($result->keyMaterial)
 						{
-							$DB->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farmid));
+							$DBFarm = $DBFarmRole->GetFarmObject();
+	        				$DBFarm->SetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY, $result->keyMaterial);
+	        				$DBFarm->SetSetting(DBFarm::SETTING_AWS_KEYPAIR_NAME, $key_name);
 	                    }
 		        	}
 	        	}
@@ -648,7 +733,12 @@
 				
 	        	}
 	        	
-	        	LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($farmid, sprintf(_("Cannot launch new instance on role %s. %s"), $role_name, $e->getMessage())));
+	        	LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(
+	        		_("Cannot launch new instance on role %s in availability zone %s. %s"), 
+	        		$role_name, 
+	        		$RunInstancesType->placement->availabilityZone, 
+	        		$e->getMessage()
+	        	)));
 	            return false;
 	        }
 	        
@@ -660,7 +750,7 @@
 	                    	
 	        	$instance_id = $result->instancesSet->item->instanceId;
 	        	
-	        	LoggerManager::getLogger('RunInstance')->debug(new FarmLogMessage($farmid, sprintf(_("Instance '%s' index: %s"), $instance_id, $instance_index)));
+	        	LoggerManager::getLogger('RunInstance')->debug(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Instance '%s' index: %s"), $instance_id, $instance_index)));
 	        	
 		        $DB->Execute("INSERT INTO 
         			`farm_instances` 
@@ -674,9 +764,10 @@
         	  		`role_name` = ?,
         	  		`avail_zone` = ?,
         	  		`index` = ?,
-        	  		`region` = ?
+        	  		`region` = ?,
+        	  		`farm_roleid` = ?
          		", array(
-		        	$farmid, 
+		        	$DBFarmRole->FarmID, 
 		        	$instance_id, 
 		        	$ami, 
 		        	$isdbmaster, 
@@ -684,19 +775,29 @@
 		        	$role_name, 
 		        	$avail_zone, 
 		        	$instance_index, 
-		        	$farminfo['region']
+		        	$DBFarm->Region,
+		        	$DBFarmRole->ID
 		        ));
 		        
 		        $DB->Execute("INSERT INTO init_tokens SET instance_id=?, token=?, dtadded=NOW()", 
 		        	array($instance_id, $user_data["inittoken"])
 		        );
 		        
-		        $instance_info = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instance_id));
-		        Scalr::FireEvent($farmid, new BeforeInstanceLaunchEvent($instance_info));
+		        $DB->Execute("INSERT INTO instances_history SET
+		        	instance_id	= ?,
+		        	dtlaunched	= ?,
+		        	instance_type	= ?
+		        ", array(
+		        	$instance_id,
+		        	time(),
+		        	$RunInstancesType->instanceType
+		        ));
+		        
+		        Scalr::FireEvent($DBFarmRole->FarmID, new BeforeInstanceLaunchEvent(DBInstance::LoadByIID($instance_id)));
 	        }
 	        else 
 	        {
-	            LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($farmid, sprintf(_("Cannot launch new instance. %s"), $result->faultstring)));
+	            LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Cannot launch new instance. %s"), $result->faultstring)));
 	            return false;
 	        }
 	        

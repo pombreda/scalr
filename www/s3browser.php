@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = _("Amazon S3 and CloudFron manager");
+	$display["title"] = _("Amazon S3 and CloudFront manager");
 	
 	if ($_SESSION["uid"] == 0)
 	{
@@ -83,9 +83,9 @@
 	    				rtype	= ? AND
 	    				rvalue	= ? AND
 	    				rkey	= ?
-	    			", array($zoneinfo['id'], 'CNAME', "{$info['cname']}.{$info['zone']}", $info['cfurl']));
+	    			", array($zoneinfo['id'], 'CNAME', "{$info['cname']}", "{$info['cfurl']}."));
 	    			
-	    			$db->Execute("UDPATE zones SET isobsoleted='1' WHERE id=?", array($zoneinfo['id']));
+	    			$db->Execute("UPDATE zones SET isobsoleted='1' WHERE id=?", array($zoneinfo['id']));
 	    		}
     		}
     		
@@ -99,23 +99,34 @@
     }
     
     if ($req_task == 'create_dist')
-    {
+    {    	
     	if (isset($post_cancel))
     		UI::Redirect("s3browser.php");
-
+		
     	if ($post_confirm)
-    	{
-	    	$DistributionConfig = new DistributionConfig();
-	    	$DistributionConfig->CNAME = "{$post_domainname}.{$post_zone}";
+    	{ 	
+    		
+    		if($post_remotedomainname) // if customer uses self created domain name
+    		{
+    			$post_zone = $post_remotedomainname;
+    			$post_domainname = '';
+    		}
+    		
+	    	$DistributionConfig = new DistributionConfig();	    	
+	    	if($post_remotedomainname)
+	    		$DistributionConfig->CNAME = "{$post_zone}";
+	    	else
+	    		$DistributionConfig->CNAME = "{$post_domainname}.{$post_zone}"; 	
 	    	$DistributionConfig->Comment = $post_comment;
 	    	$DistributionConfig->Enabled = true;
 	    	$DistributionConfig->CallerReference = date("YmdHis");
 	    	$DistributionConfig->Origin = "{$req_bucket_name}.s3.amazonaws.com";
-	    	
+	    
 	    	try
 	    	{
+	    		   		
 	    		$result = $AmazonCloudFront->CreateDistribution($DistributionConfig);
-	    		
+	    		   		
 	    		$db->Execute("INSERT INTO distributions SET
 	    			cfid	= ?,
 	    			cfurl	= ?,
@@ -127,20 +138,22 @@
 	    		
 	    		// Add CNAME to zone
 	    		$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid=?", array($post_zone, $_SESSION['uid']));
-	    		if ($zoneinfo)
+	    		
+	    		if ($zoneinfo && $post_domainname)
 	    		{
 	    			$db->Execute("INSERT INTO records SET 
 	    				zoneid	= ?,
 	    				rtype	= ?,
 	    				ttl		= ?,
-	    				rvalue	= ?,
 	    				rkey	= ?,
+	    				rvalue	= ?,
 	    				issystem= ?
-	    			", array($zoneinfo['id'], 'CNAME', 14400, "{$post_domainname}.{$zoneinfo['zone']}", $result['DomainName'], 0));
+	    			", array($zoneinfo['id'], 'CNAME', 14400, "{$post_domainname}", "{$result['DomainName']}.", 0));
 	    			
-	    			$db->Execute("UDPATE zones SET isobsoleted='1' WHERE id=?", array($zoneinfo['id']));
+	    			$db->Execute("UPDATE zones SET isobsoleted='1' WHERE id=?", array($zoneinfo['id']));
 	    		}
 	    		
+	    
 	    		$okmsg = _("Distribution successfully created");
 	    		UI::Redirect("s3browser.php");
 	    	}

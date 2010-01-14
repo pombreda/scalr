@@ -1,7 +1,7 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="search-ct"></div> 
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -31,8 +31,8 @@ Ext.onReady(function () {
 	 var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
 	 var grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct",
-        id: "api_logs_list",
-        title: "API logs",
+        id: 'api_logs_list_'+GRID_VERSION,
+        title: "API logs {/literal}({$table_title_text}){literal}",
         height: 500,
         store: store,
         maximize: true,

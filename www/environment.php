@@ -36,7 +36,7 @@
     	
     $args = trim($args, ",");
     	
-    Logger::getLogger('query-env')->info("Received request. Args: {$args}");
+    Logger::getLogger('query-env')->info("Received request. Args: {$args} (".http_build_query($_REQUEST).")");
     	
     try
     {

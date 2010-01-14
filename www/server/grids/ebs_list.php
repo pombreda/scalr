@@ -41,8 +41,15 @@
 					$item->Scalr->FarmID = $DBEBSVolume->FarmID;
 				}
 					
-				if ($DBEBSVolume->RoleName)
-					$item->Scalr->RoleName = $DBEBSVolume->RoleName;
+				if ($DBEBSVolume->FarmRoleID)
+				{
+					try
+					{
+						$DBFarmRole = DBFarmRole::LoadByID($DBEBSVolume->FarmRoleID);
+						$item->Scalr->RoleName = $DBFarmRole->GetRoleName(); 
+					}
+					catch(Exception $e) {}
+				}
 					
 				if ($DBEBSVolume->EBSArrayID)
 				{
@@ -71,19 +78,32 @@
 			
 			if ($item->Scalr->FarmID)
 			{
-				$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", $item->Scalr->FarmID);
-				$item->Scalr->FarmName = $farminfo['name'];
+				$DBFarm = DBFarm::LoadByID($item->Scalr->FarmID);
 				
-				$item->Scalr->MySQLMasterVolume = ($farminfo['mysql_master_ebs_volume_id'] == $item->volumeId) ? true : false;
+				$item->Scalr->FarmName = $DBFarm->Name;
+				
+				$item->Scalr->MySQLMasterVolume = ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_MASTER_EBS_VOLUME_ID) == $item->volumeId) ? true : false;
 			}
 			else
 			{
-				$farminfo = $db->GetRow("SELECT * FROM farms WHERE mysql_master_ebs_volume_id=?", $item->volumeId);
-				if ($farminfo && $farminfo['clientid'] == $_SESSION["uid"])
+				$farmid = $db->GetRow("SELECT farmid FROM farm_settings WHERE `name`=? AND `value`=?", 
+					array(DBFarm::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $item->volumeId)
+				);
+				
+				if ($farmid)
 				{
-					$item->Scalr->FarmID = $farminfo['id'];
-					$item->Scalr->FarmName = $farminfo['name'];
-					$item->Scalr->MySQLMasterVolume = true;
+					try
+					{
+						$DBFarm = DBFarm::LoadByID($farmid);
+						
+						if ($DBFarm->ClientID == $_SESSION["uid"])
+						{
+							$item->Scalr->FarmID = $DBFarm->ID;
+							$item->Scalr->FarmName = $DBFarm->Name;
+							$item->Scalr->MySQLMasterVolume = true;
+						}
+					}
+					catch(Exception $e){}
 				}
 			}
 			

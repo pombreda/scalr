@@ -2,15 +2,18 @@
 	require("src/prepend.inc.php"); 
 	
 	$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($req_name));
-	if ($_SESSION['uid'] != 0 && $zoneinfo['clientid'] != $_SESSION['uid'])
+	
+	if ($_SESSION['uid'] == 0 || $zoneinfo['clientid'] != $_SESSION['uid'])
 		UI::Redirect("sites_view.php");
 	
 	$display["title"] = "Apache virtual host settings";
 	
 	$Client = Client::Load($zoneinfo['clientid']);
 	
-	$display["can_use_ssl"] = !(bool)$db->GetOne("SELECT id FROM vhosts WHERE issslenabled='1' AND farmid=? AND name!=? AND role_name != ?",
-		array($zoneinfo['farmid'], $req_name, $zoneinfo['role_name'])
+	$DBFarmRole = DBFarmRole::Load($zoneinfo['farmid'], $zoneinfo['ami_id']);
+	
+	$display["can_use_ssl"] = !(bool)$db->GetOne("SELECT id FROM vhosts WHERE issslenabled='1' AND farmid=? AND name!=? AND farm_roleid != ?",
+		array($zoneinfo['farmid'], $req_name, $DBFarmRole->ID)
 	);
 	
 	if ($_POST)
@@ -75,34 +78,29 @@
 					ssl_cert			= ?,
 					ssl_pkey			= ?,
 					aliases				= ?,
-					role_name			= ?
+					farm_roleid			= ?
 				", 
 				array($req_name, $post_document_root_dir, $post_server_admin,
 					$issslenabled, $zoneinfo['farmid'], $post_logs_dir, $ssl_cert, $ssl_pkey,
-					$post_aliases, $zoneinfo['role_name']
+					$post_aliases, $DBFarmRole->ID
 				)
 			);
 			
-			$zone_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($zoneinfo['ami_id']));
-
 			$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($zoneinfo['farmid']));
 			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state IN (?,?)", 
 				array($zoneinfo['farmid'], INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING)
 			);
 			foreach ((array)$instances as $instance)
 			{
-				$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+				$alias = $db->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($instance['ami_id']));
 				if ($alias != ROLE_ALIAS::APP && $alias != ROLE_ALIAS::WWW)
 					continue;
 					
-				if ($zone_ami_info['alias'] == ROLE_ALIAS::APP && $zone_ami_info['ami_id'] != $instance['ami_id'])
+				if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::APP && $DBFarmRole->ID != $instance['farm_roleid'])
 					continue;
 				
 				$DBInstance = DBInstance::LoadByID($instance['id']);
-				$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
-					$req_name, 
-					$issslenabled
-				));
+				$DBInstance->SendMessage(new VhostReconfigureScalrMessage());
 			}
 			
 			$okmsg = "Virtual host settings successfully updated";

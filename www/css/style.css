@@ -112,7 +112,7 @@ td.Offset			{ padding: 0px; font-size: 1px; height: 1px; }
 .Inner_Gray			{ background-color: #F4F4F4; }
 
 .Inner table th, .Inner_Gray table th, .Inner_Blue table th		{text-align: left; font-weight: normal; font-size:14px;}
-.SettingsHeader, .SettingsHeader_Blue, .SettingsHeader_Gray, .SettingsHeader_LGray		{cursor: pointer; height: 23px; padding-top: 2px;}
+.SettingsHeader, .SettingsHeader_Blue, .SettingsHeader_Gray, .SettingsHeader_LGray	{cursor: pointer; height: 23px; padding-top: 2px;}
 .SettingsHeader_Gray	{background: url(../images/grey-bg.gif) repeat-x bottom; }
 .SettingsHeader_LGray	{background: url(../images/lgrey-bg.gif) repeat-x bottom; }
 

@@ -1,1 +1,1 @@
-Rebundle on {$event->InstanceInfo.external_ip} failed.
+Rebundle on {$event->DBInstance->ExternalIP} failed.

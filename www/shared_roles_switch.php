@@ -7,7 +7,7 @@
 		
 	if ($_POST)
 	{
-		if ($db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($post_new_ami_id)) && 
+		if ($db->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($post_new_ami_id)) && 
 			$db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE ami_id=?", array($post_new_ami_id))
 		)
 		{
@@ -18,11 +18,9 @@
 		$db->BeginTrans();
 		try
 		{
-			$db->Execute("UPDATE ami_roles SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
-			$db->Execute("UPDATE farm_amis SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE roles SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
+			$db->Execute("UPDATE farm_roles SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 			$db->Execute("UPDATE zones SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
-			$db->Execute("UPDATE farm_role_scripts SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
-			$db->Execute("UPDATE farm_role_options SET ami_id=? WHERE ami_id=?", array($post_new_ami_id, $post_ami_id));
 		}
 		catch(Exception $e)
 		{
@@ -35,7 +33,7 @@
 		UI::Redirect("shared_roles.php");
 	}
 
-	$rinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($req_ami_id));
+	$rinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($req_ami_id));
 	
 	// Filter by our accountid
 	$DescribeImagesType = new DescribeImagesType();
@@ -56,7 +54,7 @@
 	foreach ($rowz as $pk=>$pv)
 	{
 		$rowz[$pk]->isPublicStr = $rowz[$pk]->isPublic ? "true" : "false";
-		if (!$db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", $rowz[$pk]->imageId))
+		if (!$db->GetOne("SELECT name FROM roles WHERE ami_id=?", $rowz[$pk]->imageId))
 			$rows[] = $rowz[$pk];
 	}
 	

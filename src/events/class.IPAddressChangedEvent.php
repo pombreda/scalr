@@ -2,13 +2,25 @@
 	
 	class IPAddressChangedEvent extends Event
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
+		
 		public $NewIPAddress;
 		
-		public function __construct($InstanceInfo, $NewIPAddress)
+		public function __construct(DBInstance $DBInstance, $NewIPAddress)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->NewIPAddress = $NewIPAddress;
+		}
+		
+		public static function GetScriptingVars()
+		{
+			return array("new_ip_address" => "NewIPAddress");
 		}
 	}
 ?>

@@ -83,15 +83,15 @@
 
             $farm_data = array();
             
-            // Get all farm amis
-            $farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=?", array($farminfo["id"]));
-            foreach ($farm_amis as $farm_ami)
+            // Get all farm roles
+            $farm_roles = $db->GetAll("SELECT * FROM farm_roles WHERE farmid=?", array($farminfo["id"]));
+            foreach ($farm_roles as $farm_ami)
             {
             	$ami_data = array();
             	$ami_icnt = 0;
             	
             	// Get Role name
-            	$farm_ami["role_name"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?",
+            	$farm_ami["role_name"] = $db->GetOne("SELECT name FROM roles WHERE ami_id=?",
             		array($farm_ami["ami_id"])
             	);
             	
@@ -104,6 +104,9 @@
             	// Watch SNMP values fro each instance
             	foreach ($ami_instances as $ami_instance)
             	{
+            		if ($ami_instance['state'] == INSTANCE_STATE::PENDING_TERMINATE || $ami_instance['state'] == INSTANCE_STATE::TERMINATED)
+            			continue;
+            		
             		// Connect to SNMP
             		$Watcher->Connect($ami_instance['external_ip']);
             		
@@ -113,10 +116,14 @@
             			$data = $Watcher->RetreiveData($watcher_name);
             			
             			$this->Logger->info("Retrieved data from {$ami_instance['external_ip']} ($watcher_name): ".implode(", ", $data));
+            	
+				if ($data[0] == '')
+				{
             			
-            			 if ($data[0] === '' || $data[0] === false || $data[0] === null)
-            				break 3;
-            			
+				 $this->Logger->info("break2");
+				break 2;
+				}
+		
             			// Collect data
             			foreach($data as $k=>$v)
             			{
@@ -141,11 +148,14 @@
             		
             		$this->Logger->info("Data for role {$farm_ami["role_name"]} ($watcher_name): ".implode(", ", $data));
             			
-            		 if ($data[0] === '' || $data[0] === false || $data[0] === null)
-            			continue 1;
-            		
-            		try
-            		{
+			if ($data[0] === '' || $data[0] === false || $data[0] === null)
+			{
+            			$this->Logger->info("break 1");
+				break 1;
+			}
+
+			try
+			{
 	            		// Update RRD database for role
 	            		$Watcher->UpdateRRDDatabase($watcher_name, $data, $farm_ami["role_name"]);
             		}
@@ -171,6 +181,11 @@
             	
             	$this->Logger->info("Data for farm ($watcher_name): ".implode(", ", $data));
             		
+		if ($data[0] == '')
+		{
+		 $this->Logger->info("break");            	
+		break;
+		}
             	try
             	{
 	            	// Update farm RRD database

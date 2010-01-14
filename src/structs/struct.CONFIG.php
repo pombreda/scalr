@@ -119,8 +119,18 @@
 		public static $ASYNCHRONOUS_SCRIPT_TIMEOUT = 1200; // seconds
 		
 		public static $SCRIPT_BUILTIN_VARIABLES = array(
-			"external_ip", "internal_ip", "instance_id", "ami_id", "role_name", "isdbmaster", "instance_index", "region", "avail_zone"
+			"external_ip" => 1, 
+			"internal_ip" => 1, 
+			"instance_id" => 1, 
+			"ami_id" => 1, 
+			"role_name" => 1, 
+			"isdbmaster" => 1, 
+			"instance_index" =>1, 
+			"region" => 1, 
+			"avail_zone" => 1
 		);
+		
+		public static $PMA_INSTANCE_IP_ADDRESS = '75.101.139.178';
 		
 		/**
 		 * List all available properties through reflection

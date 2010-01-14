@@ -1,5 +1,4 @@
 <?
-
 	class ScalrEnvironment20081125 extends ScalrEnvironment
     {    	
     	protected function ListScripts()
@@ -14,7 +13,8 @@
             	"hostInit" 			=> "HostInit",
             	"hostUp" 			=> "HostUp",
             	"rebootFinish" 		=> "RebootComplete",
-            	"newMysqlMaster"	=> "NewMysqlMasterUp"
+            	"newMysqlMaster"	=> "NewMysqlMasterUp",
+    			"ebsVolumeAttached"	=> "EBSVolumeAttached"
             );
 
             $Reflect = new ReflectionClass("EVENT_TYPE");
@@ -28,27 +28,78 @@
             if (!$event_name && preg_match("/^(Custom|API)Event-[0-9]+-[0-9]+$/si", $this->GetArg("event")))
             	$custom_event_name = $this->GetArg("event");
             	
+            if ($this->GetArg("event_id"))
+            {
+            	if (preg_match("/^FRSID-([0-9]+)$/", $this->GetArg("event_id"), $matches))
+            	{
+            		$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND id=? ORDER BY order_index ASC",
+						array($this->GetArg("farmid"), $matches[1])
+					);
+            	}
+            	else
+            	{
+            		$event_info = $this->DB->GetRow("SELECT * FROM events WHERE event_id=?", array($this->GetArg("event_id")));
+            		if ($event_info)
+            		{
+            			$Event = unserialize($event_info['event_object']);
+            			if ($Event->DBInstance)
+            			{
+            				if ($Event->DBInstance->InstanceID == $this->GetArg("instanceid"))
+								$is_target = '1';
+							else
+								$is_target = '0';	
+            				
+            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
+			            		AND event_name=? AND (target = ? OR (target = ? AND 1 = {$is_target} AND farm_roleid=?) OR (target = ? AND farm_roleid=?)) ORDER BY order_index ASC",
+								array(
+									$Event->GetFarmID(), 
+									$Event->GetName(), 
+									SCRIPTING_TARGET::FARM,
+									SCRIPTING_TARGET::INSTANCE, 
+									$Event->DBInstance->FarmRoleID,
+									SCRIPTING_TARGET::ROLE,
+									$Event->DBInstance->FarmRoleID
+								)
+							);
+							
+							$TargetDBFarmRole = DBFarmRole::LoadByID($Event->DBInstance->FarmRoleID);
+							$target_instance_id = $Event->DBInstance->InstanceID;
+            			}
+            			else
+            			{
+            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
+			            		AND event_name=? AND target = ? ORDER BY order_index ASC",
+								array(
+									$Event->GetFarmID(), 
+									$Event->GetName(), 
+									SCRIPTING_TARGET::FARM
+								)
+							);
+            			}
+            		}
+            	}
+            }
     		/************/
-            	
+		            	
             
 			/***********************************************************/
+            /** Instance from which request has come **/
             $instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?",
     			array($this->GetArg("instanceid"))
     		);
     		
-    		$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?)", 
-				array($instance_info['ami_id'], $instance_info['ami_id'])
-			);
-
+    		try
+    		{
+    			$DBFarmRole = DBFarmRole::LoadByID($instance_info['farm_roleid']);
+    		}
+    		catch(Exception $e)
+    		{
+    			throw new Exception ("Cannot initialize DBFarmRole object for instance: {$instance_info['instance_id']}");
+    		}
+    		
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->GetArg("farmid")));
 			
-			if ($custom_event_name)
-			{
-				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND event_name=? ORDER BY order_index ASC",
-					array($this->GetArg("farmid"), $custom_event_name)
-				);
-			}
-			else
+			if (!$scripts)
 			{
 				// Check context and get list of scripts
 	    		if (!$this->GetArg("target_ip"))
@@ -63,23 +114,9 @@
 	            		$instance_info['external_ip'] = $_SERVER['REMOTE_ADDR'];
 	            	}
 	            		
-	            	$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (ami_id=? OR ami_id=?) 
+	            	$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND farm_roleid=? 
 	            		AND event_name=? ORDER BY order_index ASC",
-						array($this->GetArg("farmid"), $farm_ami_info['ami_id'], $farm_ami_info['replace_to_ami'], $event_name)
-					);
-	            }
-	            elseif ($event_name == EVENT_TYPE::HOST_DOWN)
-	            {
-	            	$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND ami_id=? 
-	            		AND event_name=? AND (target = ? OR (target = ? AND ami_id=?)) GROUP BY scriptid ORDER BY order_index ASC",
-						array(
-							$this->GetArg("farmid"), 
-							$this->DB->GetOne("SELECT ami_id FROM ami_roles WHERE (clientid='0' OR clientid=?) AND name=?", array($farminfo['clientid'], $this->GetArg("target_role_name"))), 
-							$event_name, 
-							SCRIPTING_TARGET::FARM, 
-							SCRIPTING_TARGET::ROLE,
-							$instance_info['ami_id']
-						)
+						array($this->GetArg("farmid"), $DBFarmRole->ID, $event_name)
 					);
 	            }
 	            else
@@ -106,25 +143,27 @@
 		            	);		
 	            	}
 	            	
+	            	if ($this->GetArg("target_ip") == $this->GetArg('local_ip'))
+						$is_target = '1';
+					else
+						$is_target = '0';	
+	            	
 	            	if (!$target_instance_info)
 		            	exit();
-	            		
-	            	$target_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=? OR replace_to_ami=?",
-						array($target_instance_info['ami_id'], $target_instance_info['ami_id'])
-					);
-					$target_role_name = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_ami_info['ami_id']));
-					
-					$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (ami_id=? OR ami_id=?) 
-	            		AND event_name=? AND (target = ? OR target = ? OR (target = ? AND ami_id=?)) ORDER BY order_index ASC",
+		            	
+		            $TargetDBFarmRole = DBFarmRole::LoadByID($target_instance_info['farm_roleid']);
+		            $target_instance_id = $target_instance_info['instance_id'];
+		            						
+					$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
+	            		AND event_name=? AND (target = ? OR (target = ? AND 1 = {$is_target} AND farm_roleid=?) OR (target = ? AND farm_roleid=?)) ORDER BY order_index ASC",
 						array(
 							$this->GetArg("farmid"), 
-							$target_ami_info['ami_id'], 
-							$target_ami_info['replace_to_ami'], 
 							$event_name, 
+							SCRIPTING_TARGET::FARM,
 							SCRIPTING_TARGET::INSTANCE,
-							SCRIPTING_TARGET::FARM, 
+							$TargetDBFarmRole->ID, 
 							SCRIPTING_TARGET::ROLE,
-							$instance_info['ami_id']
+							$TargetDBFarmRole->ID
 						)
 					);
 	            }
@@ -136,9 +175,15 @@
     		{
 	    		foreach ($scripts as $script)
 	            {
-	            	if ($script['target'] == SCRIPTING_TARGET::INSTANCE && $target_instance_info)
+	            	if ($script['target'] == SCRIPTING_TARGET::INSTANCE && $target_instance_id)
 	            	{
-	            		if ($target_instance_info['instance_id'] != $instance_info['instance_id'])
+	            		if ($target_instance_id != $instance_info['instance_id'])
+	            			continue;
+	            	}
+	            	
+	            	if ($script['target'] == SCRIPTING_TARGET::ROLE && $TargetDBFarmRole)
+	            	{
+	            		if ($TargetDBFarmRole->ID != $DBFarmRole->ID)
 	            			continue;
 	            	}
 	            	
@@ -168,6 +213,12 @@
 												
 						$params = array_merge($instance_info, (array)unserialize($script['params']));
 						
+						if ($Event)
+						{
+							foreach ($Event->GetScriptingVars() as $k=>$v)
+								$params[$k] = $Event->{$v};
+						}
+						
 						// Prepare keys array and array with values for replacement in script
 						$keys = array_keys($params);
 						$f = create_function('$item', 'return "%".$item."%";');
@@ -176,6 +227,7 @@
 						
 						// Generate script contents
 						$script_contents = str_replace($keys, $values, $template['script']);
+						$script_contents = str_replace('\%', "%", $script_contents);
 						$name = preg_replace("/[^A-Za-z0-9]+/", "_", $template['name']);
 						
 						$ScriptDOMNode = $ResponseDOMDocument->createElement("script");
@@ -216,17 +268,10 @@
     		
     		$VhostsDOMNode = $ResponseDOMDocument->createElement("vhosts");
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
-    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
-    		);
-    		
-    		$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?)", 
-				array($instance_info['ami_id'], $instance_info['ami_id'])
-			);
+    		$DBInstance = DBInstance::LoadByIID($this->GetArg("instanceid"));
+			$DBFarmRole = $DBInstance->GetDBFarmRoleObject();
 			
-			$role_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($farm_ami_info['ami_id']));
-			
-			if ($role_info['alias'] != ROLE_ALIAS::APP && $role_info['alias'] != ROLE_ALIAS::WWW)
+			if ($DBFarmRole->GetRoleAlias() != ROLE_ALIAS::APP && $DBFarmRole->GetRoleAlias() != ROLE_ALIAS::WWW)
 				throw new Exception("Virtualhosts list not available for non app or www roles.");
     		
     		while (count($virtual_hosts) > 0)
@@ -249,11 +294,14 @@
     				continue;
     				
     			// Check Role Name
-    			if ($role_info['name'] != $virtualhost['role_name'])
+    			if ($DBFarmRole->GetRoleAlias() == 'www' && $DBFarmRole->ID != $virtualhost['farm_roleid'])
     				continue;
-    				
-    			$type = ($role_info['alias'] == ROLE_ALIAS::APP) ? "apache" : "nginx";
-				    				
+    			
+    			$type = ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::APP) ? "apache" : "nginx";
+
+    			if ($type == "nginx" && !$virtualhost['issslenabled'])
+    				continue;
+    			
     			$VhostDOMNode =  $ResponseDOMDocument->createElement("vhost");
     			$VhostDOMNode->setAttribute("hostname", $virtualhost['name']);
     			$VhostDOMNode->setAttribute("https", $virtualhost['issslenabled']);
@@ -261,13 +309,13 @@
     			
     			$template_option_name = "{$type}_http".($virtualhost['issslenabled'] ? "s" : "")."_vhost_template";
     			
-    			$template = $this->DB->GetOne("SELECT value FROM farm_role_options WHERE hash=? AND farmid=? AND ami_id=?", 
-            		array($template_option_name, $this->GetArg("farmid"), $farm_ami_info['ami_id'])
+    			$template = $this->DB->GetOne("SELECT value FROM farm_role_options WHERE hash=? AND farm_roleid=?", 
+            		array($template_option_name, $DBFarmRole->ID)
             	);
             	if (!$template)
             	{
-            		$alias_ami_id = $db->GetOne("SELECT ami_id FROM ami_roles WHERE name=?", array($role_info['alias']));
-            		$template = $db->GetOne("SELECT defval FROM role_options WHERE ami_id=? AND hash=?", 
+            		$alias_ami_id = $this->DB->GetOne("SELECT ami_id FROM roles WHERE name=?", array($DBFarmRole->GetRoleAlias()));
+            		$template = $this->DB->GetOne("SELECT defval FROM role_options WHERE ami_id=? AND hash=?", 
             			array($alias_ami_id, $template_option_name)
             		);
             	}
@@ -287,7 +335,7 @@
             		$contents = $Smarty->fetch("string:{$template}");
             	}
             	else
-            		throw new Exception("Virtualhost template ({$template_option_name}) not found in database. (ami-id: {$farm_ami_info['ami_id']}, farmid: {$farm_ami_info['farmid']})");
+            		throw new Exception("Virtualhost template ({$template_option_name}) not found in database. (farm roleid: {$DBFarmRole->ID})");
     			
     			$RawDOMNode = $ResponseDOMDocument->createElement("raw");
     			$RawDOMNode->appendChild($ResponseDOMDocument->createCDATASection($contents));
@@ -305,12 +353,11 @@
     	{
     		$ResponseDOMDocument = $this->CreateResponse();
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
-    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
-    		);
+    		$DBInstance = DBInstance::LoadByIID($this->GetArg("instanceid"));
+			$DBFarmRole = $DBInstance->GetDBFarmRoleObject();
     		
-    		$sql_query = "SELECT * FROM farm_role_options WHERE farmid=? AND ami_id=?";
-    		$sql_params = array($this->GetArg("farmid"), $instance_info['ami_id']);
+    		$sql_query = "SELECT * FROM farm_role_options WHERE farm_roleid=?";
+    		$sql_params = array($DBFarmRole->ID);
     		
 			if ($this->GetArg("name"))
 			{
@@ -350,28 +397,31 @@
     	{
     		$ResponseDOMDocument = $this->CreateResponse();
     		
-    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state != ?",
-    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE)
+    		$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=? AND state NOT IN(?,?)",
+    			array($this->GetArg("instanceid"), INSTANCE_STATE::PENDING_TERMINATE, INSTANCE_STATE::TERMINATED)
     		);
     		
-    		$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?) AND farmid=?",
-				array($instance_info['ami_id'], $instance_info['ami_id'], $this->GetArg("farmid"))
-			);
-			
-			$role_name = $this->DB->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($farm_ami_info['ami_id']));
+    		$DBFarmRole = DBFarmRole::LoadByID($instance_info['farm_roleid']);
 
-			$vhost_info = $this->DB->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1' AND role_name=?", 
-            	array($this->GetArg("farmid"), $role_name)
+			$vhost_info = $this->DB->GetRow("SELECT * FROM vhosts WHERE farmid=? AND issslenabled='1'", 
+            	array($this->GetArg("farmid"))
             );
             
             if ($vhost_info)
             {
-				$ResponseDOMDocument->documentElement->appendChild(
+				$vhost = $ResponseDOMDocument->createElement("virtualhost");
+				$vhost->setAttribute("name", $vhost_info['name']);
+            	
+            	$vhost->appendChild(
 					$ResponseDOMDocument->createElement("cert", $vhost_info['ssl_cert'])
 				);
-				$ResponseDOMDocument->documentElement->appendChild(
+				$vhost->appendChild(
 					$ResponseDOMDocument->createElement("pkey", $vhost_info['ssl_pkey'])
-				);            	
+				);
+
+				$ResponseDOMDocument->documentElement->appendChild(
+					$vhost
+				);
             }
             
             return $ResponseDOMDocument;
@@ -389,20 +439,20 @@
 			$RolesDOMNode = $ResponseDOMDocument->createElement('roles');
 			$ResponseDOMDocument->documentElement->appendChild($RolesDOMNode);
 			
-    		$sql_query = "SELECT ami_id FROM farm_amis WHERE farmid=?";
+    		$sql_query = "SELECT ami_id, id FROM farm_roles WHERE farmid=?";
 			$sql_query_args = array($this->GetArg("farmid"));
     		
 			// Filter by behaviour
 			if ($this->GetArg("behaviour"))
 			{
-				$sql_query .= " AND ami_id IN (SELECT ami_id FROM ami_roles WHERE alias=? AND iscompleted='1')";
+				$sql_query .= " AND ami_id IN (SELECT ami_id FROM roles WHERE alias=? AND iscompleted='1')";
 				array_push($sql_query_args, $this->GetArg("behaviour"));
 			}
 			
     		// Filter by role
 			if ($this->GetArg("role"))
 			{
-				$sql_query .= " AND ami_id IN (SELECT ami_id FROM ami_roles WHERE name=? AND iscompleted='1')";
+				$sql_query .= " AND ami_id IN (SELECT ami_id FROM roles WHERE name=? AND iscompleted='1')";
 				array_push($sql_query_args, $this->GetArg("role"));
 			}
 			
@@ -410,7 +460,7 @@
     		foreach ($farm_roles as $farm_role)
     		{
     			// Get full information about role from database
-    			$role_info = $this->DB->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($farm_role['ami_id']));
+    			$role_info = $this->DB->GetRow("SELECT * FROM roles WHERE ami_id=?", array($farm_role['ami_id']));
     			
     			// Create role node
     			$RoleDOMNode = $ResponseDOMDocument->createElement('role');
@@ -421,8 +471,8 @@
     			$RoleDOMNode->appendChild($HostsDomNode);
     			
     			// List instances (hosts)
-    			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=? AND state=?",
-    				array($this->GetArg("FarmID"), $role_info['ami_id'], INSTANCE_STATE::RUNNING)
+    			$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farm_roleid=? AND state=?",
+    				array($farm_role['id'], INSTANCE_STATE::RUNNING)
     			);
     			
     			// Add hosts to response

@@ -4,7 +4,7 @@
     	$paths = array(
     		/****************************** Basic Objects ***********************/
     		'Client'				=> SRCPATH.'/class.Client.php',
-    		'Farm'					=> SRCPATH.'/class.Farm.php',
+    		'DBFarm'				=> SRCPATH.'/class.DBFarm.php',
     		'DBEBSVolume'			=> SRCPATH.'/class.DBEBSVolume.php',
     		'DBEBSArray'			=> SRCPATH.'/class.DBEBSArray.php',
     		'AWSRegions'			=> SRCPATH.'/class.AWSRegions.php',
@@ -19,6 +19,10 @@
     		'ScalrAPICoreFactory'	=> SRCPATH.'/api/class.ScalrAPICoreFactory.php',
     		'ScalrAPICore'			=> SRCPATH.'/api/class.ScalrAPICore.php',
     		'ScalrAPI20090507'		=> SRCPATH.'/api/class.ScalrAPI20090507.php',
+    		'ScalrAPI20090707'		=> SRCPATH.'/api/class.ScalrAPI20090707.php',
+    		'ScalrAPI20090804'		=> SRCPATH.'/api/class.ScalrAPI20090804.php',
+    		'ScalrAPI20090814'		=> SRCPATH.'/api/class.ScalrAPI20090814.php',
+    		'ScalrAPI20091006'		=> SRCPATH.'/api/class.ScalrAPI20091006.php',
     		
     		/***************************** Scaling *******************************/
     		'IScalingAlgo'			=> SRCPATH.'/scaling/interface.IScalingAlgo.php',
@@ -30,6 +34,7 @@
     		'RAMScalingAlgo'		=> SRCPATH.'/scaling/class.RAMScalingAlgo.php',
     		'TimeScalingAlgo'		=> SRCPATH.'/scaling/class.TimeScalingAlgo.php',
     		'BaseScalingAlgo'		=> SRCPATH.'/scaling/class.BaseScalingAlgo.php',
+    		'HTTPResponseTimeScalingAlgo' => SRCPATH.'/scaling/class.HTTPResponseTimeScalingAlgo.php',
     	
     		'LAScalingSensor'		=> SRCPATH.'/scaling/class.LAScalingSensor.php',
     		'BWScalingSensor'		=> SRCPATH.'/scaling/class.BWScalingSensor.php',
@@ -37,6 +42,8 @@
     		'RAMScalingSensor'		=> SRCPATH.'/scaling/class.RAMScalingSensor.php',
     		'TimeScalingSensor'		=> SRCPATH.'/scaling/class.TimeScalingSensor.php',
     		'BaseScalingSensor'		=> SRCPATH.'/scaling/class.BaseScalingSensor.php',
+    		'HTTPResponseTimeScalingSensor'	=> SRCPATH.'/scaling/class.HTTPResponseTimeScalingSensor.php',
+    		
     	
     		'ScalingAlgo'			=> SRCPATH.'/scaling/class.ScalingAlgo.php',
     		'SensorFactory'			=> SRCPATH.'/scaling/class.SensorFactory.php',
@@ -56,6 +63,7 @@
     		'StartRebundleScalrMessage'			=> SRCPATH.'/messaging/messages/class.StartRebundleScalrMessage.php',
     		'VhostReconfigureScalrMessage'		=> SRCPATH.'/messaging/messages/class.VhostReconfigureScalrMessage.php',
     		'ScalarizrUpdateAvailableScalrMessage' => SRCPATH.'/messaging/messages/class.ScalarizrUpdateAvailableScalrMessage.php',
+    		'BasicScalrMessage' 				=> SRCPATH.'/messaging/messages/class.BasicScalrMessage.php',
     	
     		/******************* Environment objects ****************************/
     		'ScalrEnvironmentFactory'	=> SRCPATH.'/class.ScalrEnvironmentFactory.php',
@@ -72,8 +80,6 @@
     		'HostInitEvent' 		=> SRCPATH.'/events/class.HostInitEvent.php',
     		'HostUpEvent'			=> SRCPATH.'/events/class.HostUpEvent.php',
     		'IPAddressChangedEvent'	=> SRCPATH.'/events/class.IPAddressChangedEvent.php',
-    		'LAOverMaximumEvent'	=> SRCPATH.'/events/class.LAOverMaximumEvent.php',
-    		'LAUnderMinimumEvent'	=> SRCPATH.'/events/class.LAUnderMinimumEvent.php',
     		'MysqlBackupCompleteEvent'		=> SRCPATH.'/events/class.MysqlBackupCompleteEvent.php',
     		'MysqlBackupFailEvent'			=> SRCPATH.'/events/class.MysqlBackupFailEvent.php',
     		'MySQLReplicationFailEvent'		=> SRCPATH.'/events/class.MySQLReplicationFailEvent.php',
@@ -86,6 +92,9 @@
     		'EBSVolumeMountedEvent'	=> SRCPATH.'/events/class.EBSVolumeMountedEvent.php',
     		'BeforeInstanceLaunchEvent'		=> SRCPATH.'/events/class.BeforeInstanceLaunchEvent.php',
     		'BeforeHostTerminateEvent'		=> SRCPATH.'/events/class.BeforeHostTerminateEvent.php',
+    		'DNSZoneUpdatedEvent'	=> SRCPATH.'/events/class.DNSZoneUpdatedEvent.php',
+    		'RoleOptionChangedEvent'=> SRCPATH.'/events/class.RoleOptionChangedEvent.php',
+    		'EBSVolumeAttachedEvent'	=> SRCPATH.'/events/class.EBSVolumeAttachedEvent.php',
     	
     		/****************************** Structs ******************************/
     		'CONTEXTS'				=> SRCPATH."/structs/struct.CONTEXTS.php",
@@ -95,7 +104,7 @@
     		'APPCONTEXT'			=> SRCPATH."/types/enum.APPCONTEXT.php",
 			'FORM_FIELD_TYPE'		=> SRCPATH."/types/enum.FORM_FIELD_TYPE.php",
 			'SUBSCRIPTION_STATUS'	=> SRCPATH."/types/enum.SUBSCRIPTION_STATUS.php",
-			'INSTANCE_TYPE'			=> SRCPATH."/types/enum.INSTANCE_TYPE.php",
+			'INSTANCE_FLAVOR'		=> SRCPATH."/types/enum.INSTANCE_FLAVOR.php",
     		'X86_64_TYPE'			=> SRCPATH."/types/enum.X86_64_TYPE.php",
     		'I386_TYPE'				=> SRCPATH."/types/enum.I386_TYPE.php",
 			'INSTANCE_ARCHITECTURE'	=> SRCPATH."/types/enum.INSTANCE_ARCHITECTURE.php",
@@ -121,6 +130,8 @@
     		'EBS_ARRAY_SNAP_STATUS' => SRCPATH."/types/enum.EBS_ARRAY_SNAP_STATUS.php",
     		'MYSQL_STORAGE_ENGINE'	=> SRCPATH."/types/enum.MYSQL_STORAGE_ENGINE.php",
     		'CLIENT_SETTINGS'		=> SRCPATH."/types/enum.CLIENT_SETTINGS.php",
+    		'BASIC_MESSAGE_NAMES'	=> SRCPATH."/types/enum.BASIC_MESSAGE_NAMES.php",
+    		'RESERVED_ROLE_OPTIONS' => SRCPATH."/types/enum.RESERVED_ROLE_OPTIONS.php",
     	
     		/****************************** Observers ***************************/
 		    'EventObserver'			=> APPPATH.'/observers/abstract.EventObserver.php',
@@ -140,7 +151,16 @@
     		'RESTEventObserver'		=> APPPATH.'/observers/class.RESTEventObserver.php'
     	);
     	
-    	if (key_exists($class_name, $paths))
+    	if (key_exists($class_name, $paths)) 
+    	{
 			require_once $paths[$class_name];
+			return;
+    	}
+			
+		// Load packaged classes
+		if (strpos($class_name, "_") !== false) {
+			$filename = str_replace("_", "/", $class_name) . ".php";
+			require_once ($filename);
+		}
 	}
 ?>

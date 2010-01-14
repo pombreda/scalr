@@ -19,6 +19,7 @@
 				foreach ((array)$post_id as $clientid)
 				{
 					$db->Execute("UPDATE clients SET isactive=? WHERE id=?", array($flag, $clientid));
+					Scalr::FireInternalEvent("updateClient", Client::Load($clientid));
 					$i++;
 				}
 				
@@ -29,18 +30,22 @@
 			
 			case "delete":
 				
-				// Delete users
 				$i = 0;			
 				foreach ((array)$post_id as $clientid)
 				{
 					$i++;
+					
+					$Client = Client::Load($clientid);
+					Scalr::FireInternalEvent("beforeDeleteClient", $Client);
+					
 					$db->Execute("DELETE FROM clients WHERE id='{$clientid}'");
+					$db->Execute("DELETE FROM client_settings WHERE clientid='{$clientid}'");
 					
 					$farms = $db->GetAll("SELECT * FROM farms WHERE clientid='{$clientid}'");
 				    foreach ($farms as $farm)
 				    {
 					    $db->Execute("DELETE FROM farms WHERE id=?", array($farm["id"]));
-					    $db->Execute("DELETE FROM farm_amis WHERE farmid=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_roles WHERE farmid=?", array($farm["id"]));
 					    $db->Execute("DELETE FROM farm_instances WHERE farmid=?", array($farm["id"]));
 					    $db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farm["id"]));
                         $db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farm["id"]));
@@ -49,7 +54,9 @@
                         $db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farm["id"]));
 				    }
 				    
-				    $db->Execute("DELETE FROM ami_roles WHERE clientid='{$clientid}'");
+				    $db->Execute("DELETE FROM roles WHERE clientid='{$clientid}'");
+				    
+				    Scalr::FireInternalEvent("deleteClient", $Client);
 				}
 				
 				$okmsg = sprintf(_("%s clients deleted"), $i);
@@ -74,6 +81,11 @@
 	if (isset($req_overdue))
 	{
 		$display['grid_query_string'] .= "&overdue=1";
+	}
+	
+	if ($req_cancelled)
+	{
+		$display['grid_query_string'] .= "&cancelled=1";
 	}
 	
 	$display["title"] = _("Clients > Manage");

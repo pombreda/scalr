@@ -1,1 +1,1 @@
-Mysql replication recovered on {$event->InstanceInfo.instance_id} 
+Mysql replication recovered on {$event->DBInstance->InstanceID} 

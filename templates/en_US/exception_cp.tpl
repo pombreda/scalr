@@ -8,10 +8,8 @@
 }
 </style>
 {/literal}
-<br>
-{include file="inc/table_header.tpl" nofilter=1}
 <center>
-<div align="center" style="width: 600px; margin:50px; padding:30px;">
+<div align="center" style="width: 80%; margin:50px;">
 	<div style="font-size:24px; background-color:red;padding:10px; color:white;">Unrecoverable error</div>
     <div style="background-color: #f0f0f0; text-align:left;font-size:14px; color:black; padding:20px;">{$message}</div>
     {if $backtrace}
@@ -21,11 +19,14 @@
 	    </div>
 	{/if}
     <div style="height:2px; background-color:#CCCCCC; font-size:1px;"></div>
-    {if $post_serialized != ''}
-    	{include file="inc/table_footer.tpl" button2=1 button2_name='Retry' backbtn=1 page_data_options=0}
-    {else}
-		{include file="inc/table_footer.tpl" retry_btn=1 backbtn=1 page_data_options=0}
-	{/if}
+    <div class="WebtaTable_Footer" id="footer_button_table" style="padding-left:6px;padding-top:2px; padding-bottom:2px;">
+    	{if $post_serialized != ''}
+    		<input type="submit" style="margin-right:6px;" class="btn" id="cbtn_2" name="cbtn_2" value="Retry" />
+    	{else}
+    		<input type="button" style="margin-right:6px;" class="btn" name="retrybtn" value="Retry" onclick="window.location=get_url;return false;" />
+    		<input type="submit" style="margin-right:6px;" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />
+		{/if}
+    </div>
 </div>
 </center>
 {include file="inc/footer.tpl"}
