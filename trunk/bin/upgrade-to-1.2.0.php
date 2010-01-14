@@ -29,7 +29,7 @@
 			$this->Step9();
 			$this->Step10();
 			$this->Step11();
-			
+			$this->Step12();
 		}
 		
 		private function Prepare()
@@ -43,21 +43,7 @@
 			
 			$this->db->BeginTrans();
 			try
-			{
-				$this->db->Execute("CREATE TABLE `events` (
-				  `id` int(11) NOT NULL auto_increment,
-				  `farmid` int(11) default NULL,
-				  `type` varchar(25) default NULL,
-				  `dtadded` datetime default NULL,
-				  `message` varchar(255) default NULL,
-				  `ishandled` tinyint(1) default '0',
-				  `short_message` varchar(255) default NULL,
-				  `event_object` text,
-				  `event_id` varchar(36) default NULL,
-				  PRIMARY KEY  (`id`),
-				  KEY `farmid` (`farmid`)
-				) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;");
-				
+			{				
 				$this->db->Execute("alter table `farm_role_scripts` drop key `UniqueIndex`;");
 				$this->db->Execute("alter table `farm_instances` add column `farm_roleid` int(11) NULL after `dtshutdownscheduled`;");
 				$this->db->Execute("alter table `farm_role_options` add column `farm_roleid` int(11) NULL after `hash`;");
@@ -637,6 +623,103 @@
 					drop column `mysql_master_ebs_volume_id` ,
 					drop column `mysql_ebs_size` 
 				");
+			}
+			catch(Exception $e)
+			{
+				$this->db->RollbackTrans();
+				print "ERROR: {$e->getMessage()}\n";
+				$error = true;
+			}
+			
+			if (!$error)
+			{
+				$this->db->CommitTrans();
+				
+				print "OK.\n";
+			}
+		}
+		
+		private function Step12()
+		{
+			print "Step 12:\n";
+			
+			$this->db->BeginTrans();
+			try
+			{
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-ed3f6ea8', 'base', 'SHARED', 0, NULL, 1, '', NULL, 'Bare AMI that isn\'t involved in web serving. Suitable for batch job workers like media encoders etc.', '', 1, 4, 'base', 'm1.small', 'i386', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-f73f6eb2', 'lb-nginx', 'SHARED', 0, NULL, 1, '', NULL, 'Frontend web server/load balancer, running nginx. Proxies all requests to all instances of Application Server role.', '', 1, 5, 'www', 'm1.small', 'i386', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-d93f6e9c', 'app-apache', 'SHARED', 0, NULL, 1, '1 ', NULL, '<b>Apache2 + PHP5</b><br/>\r\nCan act as a backend (if farm contains load balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\n<a target=\"blank\" href=\'http://httpd.apache.org/\'>Apache  HTTP server.</a><br/>\r\n <a target=\"blank\" href=\'http://php.net\'>PHP</a><br/><br/>\r\n<b>Essential paths:</b><br/>\r\nWebroot:  <code>/var/www</code><br/>\r\nDefault virtual host config: <code>/etc/apache2/sites-enabled/000-default</code><br/>', '', 1, 5, 'app', 'm1.small', 'i386', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-e33f6ea6', 'app-apache64', 'SHARED', 0, NULL, 1, NULL, NULL, '<b>Apache2 + PHP5</b><br/>\r\nCan act as a backend (if farm contains Load Balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\n<a target=\"blank\" href=\'http://httpd.apache.org/\'>Apache  HTTP server.</a>\r\n<br/> <a target=\"blank\" href=\'http://php.net\'>PHP</a><br/><br/>\r\n<b>Essential paths:</b><br/>\r\nWebroot:  <code>/var/www</code><br/>\r\nDefault virtual host config: <code>/etc/apache2/sites-enabled/000-default</code><br/>', '', 1, 5, 'app', 'm1.large', 'x86_64', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-ef3f6eaa', 'base64', 'SHARED', 0, NULL, 1, NULL, NULL, 'Bare AMI that doesn\'t involved in web serving. Suitable for batch job workers like media encoders etc.', '', 1, 5, 'base', 'm1.large', 'x86_64', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));				
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-f13f6eb4', 'lb-nginx64', 'SHARED', 0, NULL, 1, NULL, NULL, 'Frontend web server/load balancer, running nginx. Proxies all requests to all instances of Application servers role.', '', 1, 5, 'www', 'm1.large', 'x86_64', NULL, 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-eb3f6eae', 'mysqllvm', 'SHARED', 0, NULL, 1, NULL, NULL, 'MySQL database server. Scalr automatically assigns master and slave roles, if multiple instances launched, and re-assigns during scaling or curing. Users LVM to quicker perform backup snapshots and support huge databases.', NULL, 1, 5, 'mysql', 'm1.small', 'i386', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:3306:3306:0.0.0.0/0'));
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-f53f6eb0', 'mysqllvm64', 'SHARED', 0, NULL, 1, NULL, NULL, 'MySQL database server. Scalr automatically assigns master and slave roles, if multiple instances launched, and re-assigns during scaling or curing. Uses LVM to quicker perform backup snapshots and support huge databases.', NULL, 1, 5, 'mysql', 'm1.large', 'x86_64', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:3306:3306:0.0.0.0/0'));
+				
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-db3f6e9e', 'app-rails', 'SHARED', 0, '', 1, NULL, '2008-09-22 08:05:56', '<b>Apache2 + mod_rails + Rails 2.1.1</b><br/>\r\nCan act as a backend (if farm contains load balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\n <a target=\"blank\" href=\'http://www.modrails.com/documentation/Users guide.html\'>Phusion Passenger</a><br/>\r\n <a target=\"blank\" href=\"http://revolutiononrails.blogspot.com/2007/04/plugin-release-actsasreadonlyable.html\">ActsAsReadonlyable</a>\r\n<br/><br/>\r\n<b>Essential paths:</b><br/>\r\nWebroot:  <code>/var/www</code> - symlinks to <code>/usr/rails/scalr-placeholder/public</code><br/>\r\nDefault virtual host config: <code>/etc/apache2/sites-enabled/000-default</code><br/>', '', 2, 5, 'app', 'm1.small', 'i386', '2008-09-22 07:58:46', 1, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-e93f6eac', 'memcached', 'SHARED', 0, NULL, 1, NULL, NULL, '<b>Memcached</b><br/><br/>\r\n\r\n<b>Notes</b><br/>\r\n Consumes up to 1.5GB of memory.<br/>\r\n By default only it allows connections from all instances in the same farm. External IPs can be added on the Options tab for a role.\r\n<br/><br/>\r\n<b>References:</b><br>\r\n <a target=_\"blank\" href=\'http://code.google.com/p/scalr/wiki/ScalingMemcached\'>Scaling memcached</a> \r\n <a target=\"_blank\" href=\'http://www.danga.com/memcached/\'>memcached: a distributed memory object caching system</a> ', NULL, 2, 5, 'memcached', 'm1.small', 'i386', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-e53f6ea0', 'app-rails64', 'SHARED', 0, NULL, 1, NULL, NULL, '<b>Apache2 + mod_rails + Rails 2.1.1</b><br/>\r\nCan act as a backend (if farm contains load balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\n <a target=\"blank\" href=\'http://www.modrails.com/documentation/Users guide.html\'>Phusion Passenger</a><br/>\r\n <a target=\"blank\" href=\"http://revolutiononrails.blogspot.com/2007/04/plugin-release-actsasreadonlyable.html\">ActsAsReadonlyable</a>\r\n<br/><br/>\r\n<b>Essential paths:</b><br/>\r\nWebroot:  <code>/var/www</code> - symlinks to <code>/usr/rails/scalr-placeholder/public</code><br/>\r\nDefault virtual host config: <code>/etc/apache2/sites-enabled/000-default</code><br/>', NULL, 1, 5, 'app', 'm1.small', 'x86_64', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-e73f6ea2', 'app-tomcat', 'SHARED', 0, NULL, 1, NULL, NULL, '<b>Tomcat 5.5</b><br/>\r\nCan act as a backend (if farm contains load balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\nâ€¢ <a target=\"blank\" href=\'http://tomcat.apache.org/tomcat-5.5-doc/index.html\'>The Apache Tomcat 5.5 Servlet/JSP Container</a>\r\n<br/><br/>\r\n<b>Essential paths:</b><br/>\r\nConfig: <code>/etc/tomcat5.5/</code>\r\nWebapps:  <code>/var/lib/tomcat5.5/webapps</code><br/>\r\nDefault context: <code>/var/lib/tomcat5.5/ROOT</code><br/>', NULL, 1, 5, 'app', 'm1.small', 'i386', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
+								
+				$this->db->Execute("INSERT INTO `roles` VALUES(null, 'ami-e13f6ea4', 'app-tomcat6', 'SHARED', 0, NULL, 1, NULL, NULL, '<b>Tomcat 6.0</b><br/>\r\nCan act as a backend (if farm contains load balancer role) or frontend web server.\r\n<br/><br/>\r\n<b>References:</b><br/>\r\nâ€¢ <a target=\"blank\" href=\'http://tomcat.apache.org/tomcat-6.0-doc/index.html\'>The Apache Tomcat 6.0 Servlet/JSP Container</a>\r\n<br/><br/>\r\n<b>Essential paths:</b><br/>\r\nConfig: <code>/usr/local/tomcat/conf</code>\r\nWebapps:  <code>/usr/local/tomcat/webapps</code><br/>\r\nDefault context: <code>/usr/local/tomcat/webapps/ROOT</code><br/>', NULL, 1, 7, 'app', 'm1.small', 'x86_64', NULL, 0, NULL, 1, NULL, NULL, 0, 'us-west-1', 22);");
+				$id = $this->db->Insert_Id();
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'udp:161:162:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:22:22:0.0.0.0/0'));
+				$this->db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($id, 'tcp:80:80:0.0.0.0/0'));
 			}
 			catch(Exception $e)
 			{
