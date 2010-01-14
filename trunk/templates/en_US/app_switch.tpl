@@ -33,6 +33,10 @@
 	{include file="inc/table_header.tpl"}
 		{include file="inc/intable_header.tpl" header="General" color="Gray"}
     	<tr>
+    		<td width="20%">{t}Application{/t}:</td>
+    		<td>{$zoneinfo.zone}</td>
+    	</tr>
+    	<tr>
     		<td width="20%">{t}Current Farm{/t}:</td>
     		<td>{$farminfo.name}</td>
     	</tr>

@@ -1,6 +1,6 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = {$smarty.session.uid};
@@ -74,8 +74,8 @@ Ext.onReady(function () {
 	var grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct",
         height: 500,
-        title: "Clients",
-        id: 'scripts_list',
+        title: "Script Templates",
+        id: 'scripts_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         tbar: ['&nbsp;&nbsp;Moderation phase:', new Ext.form.ComboBox({
@@ -90,7 +90,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.approval_state = record.data.value; 
+	        	store.baseParams.approval_state = combo.getValue(); 
 	        	store.load();
 	        }}
 	    }), '-', '&nbsp;&nbsp;Origin:', new Ext.form.ComboBox({
@@ -105,7 +105,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:150,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.origin = record.data.value; 
+	        	store.baseParams.origin = combo.getValue(); 
 	        	store.load();
 	        }}
 	    }), '-', {
@@ -136,7 +136,10 @@ Ext.onReady(function () {
 		
     	// Row menu
     	rowOptionsMenu: [
-			{id: "option.fork", 		text:'Fork', 			  	href: "/script_templates.php?task=fork&id={id}"},
+			{id: "option.execute", 		text:'Execute', 	href: "/execute_script.php?scriptid={id}"},
+			new Ext.menu.Separator({id: "option.execSep"}),
+      	             	
+			{id: "option.fork", 		text:'Fork', 		href: "/script_templates.php?task=fork&id={id}"},
 			new Ext.menu.Separator({id: "option.forkSep"}),
 			
 			{id: "option.info", 		text: 'View', 	href: "/script_info.php?id={id}"},
@@ -183,6 +186,14 @@ Ext.onReady(function () {
 			}
 			else if (item.id != 'option.info')
 			{
+				if (item.id == 'option.execute' || item.id == 'option.execSep')
+				{
+					if (uid == 0)
+						return false;
+					else
+						return true;
+				}
+
 				if ((data.clientid != 0 && data.clientid == uid) || uid == 0)
 				{
 					if (item.id == 'option.share' || item.id == 'option.shareSep')

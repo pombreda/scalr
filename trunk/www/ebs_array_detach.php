@@ -70,7 +70,7 @@
 		{
 			$DBEBSArray->FarmID = null;
 			$DBEBSArray->InstanceIndex = null;
-			$DBEBSArray->RoleName = '';
+			$DBEBSArray->FarmRoleID = null;
 		}
 		$DBEBSArray->Status = EBS_ARRAY_STATUS::DETACHING_VOLUMES;
 		$DBEBSArray->Save();

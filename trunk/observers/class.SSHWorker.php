@@ -22,17 +22,21 @@
 		 */
 		public function OnHostInit(HostInitEvent $event)
 		{			
-			$DBInstance = DBInstance::LoadByIID($event->InstanceInfo['instance_id']);
-			if ($DBInstance->IsSupported("0.5-1"))
+			if ($event->DBInstance->IsSupported("0.5-1"))
 			{
 				$this->Logger->info("Scalarizr instance. Skipping SSH observer...");
 				return true;
 			}
 			
 			// Get farm info and client info from database;
-			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+			$DBFarm = DBFarm::LoadByID($this->FarmID);
+						
+			// Get AMI info
+			$ssh_port = $this->DB->GetOne("SELECT default_ssh_port FROM roles WHERE ami_id=?", array($event->DBInstance->AMIID));
+			if (!$ssh_port)
+				$ssh_port = 22;
 			
-			$Client = Client::Load($farminfo["clientid"]);
+			$Client = Client::Load($DBFarm->ClientID);
 		
 			// Generate s3cmd config file
 			$s3cfg = CONFIG::$S3CFG_TEMPLATE;
@@ -47,13 +51,13 @@
 			
 			// Prepare private key for SSH connection
 			$priv_key_file = tempnam("/tmp", "AWSK");
-			$res = file_put_contents($priv_key_file, $farminfo["private_key"]);
+			$res = file_put_contents($priv_key_file, $DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY));
 			$this->Logger->debug("Creating temporary file for private key: {$res}");
 			
 			// Connect to SSH
 			$SSH2 = new SSH2();
 			$SSH2->AddPubkey("root", $pub_key_file, $priv_key_file);
-			if ($SSH2->Connect($event->ExternalIP, 22))
+			if ($SSH2->Connect($event->ExternalIP, $ssh_port))
 			{
 				// Upload keys and s3 config to instance
 				$res = $SSH2->SendFile("/etc/aws/keys/pk.pem", $Client->AWSPrivateKey, "w+", false);
@@ -96,9 +100,9 @@
 				@unlink($pub_key_file);
 				@unlink($priv_key_file);
 				
-				$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot upload ec2 keys to '{$event->InstanceInfo['instance_id']}' instance. Failed to connect to SSH '{$event->ExternalIP}:22'"));
+				$this->Logger->warn(new FarmLogMessage($this->FarmID, "Cannot upload ec2 keys to '{$event->DBInstance->InstanceID}' instance. Failed to connect to SSH '{$event->ExternalIP}:22'"));
 				
-				throw new Exception("Cannot upload keys on '{$event->InstanceInfo['instance_id']}'. Failed to connect to '{$event->ExternalIP}:22'.");
+				throw new Exception("Cannot upload keys on '{$event->DBInstance->InstanceID}'. Failed to connect to '{$event->ExternalIP}:22'.");
 			}
 		}
 	}

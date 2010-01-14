@@ -1,1 +1,1 @@
-Mysql replication fail on {$event->InstanceInfo.instance_id} 
+Mysql replication fail on {$event->DBInstance->InstanceID} 

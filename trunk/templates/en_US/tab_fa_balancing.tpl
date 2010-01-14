@@ -38,6 +38,15 @@
 			</tr>
 		</table>
 		<br />
+		<div style="border:1px solid #f9f9f9;background-color:#f9f9f9;padding:5px;">
+			<div style="padding-bottom:7px;">Availablility zones:</div>
+			{section name=zid loop=$avail_zones}
+	   			{if $avail_zones[zid] != ""}
+	   			<input type="checkbox" id="lb.avail_zone.{$avail_zones[zid]}" name="lb.avail_zone.{$avail_zones[zid]}" class="role_settings" value="1"> {$avail_zones[zid]}
+	   			{/if}
+	   		{/section}
+   		</div>
+   		<br />
 		<div id="lb.listeners.grid.container"></div>
        	{literal}
         <script language="Javascript" type="text/javascript">

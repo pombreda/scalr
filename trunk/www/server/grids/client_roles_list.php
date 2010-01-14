@@ -10,9 +10,9 @@
 		include("../../src/prepend.inc.php");
 		
 		if ($_SESSION['uid'] == 0)
-		   $sql = "SELECT * from ami_roles WHERE 1=1";
+		   $sql = "SELECT * from roles WHERE 1=1";
 		else
-		   $sql = "SELECT * from ami_roles WHERE (clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."'))";
+		   $sql = "SELECT * from roles WHERE (clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."'))";
 			
 		//Region filter
 		$sql .= " AND region='".$_SESSION['aws_region']."'";
@@ -80,7 +80,7 @@
 		foreach ($db->GetAll($sql) as $row)
 		{
 			if ($row['ami_id'] && $row['roletype'] != ROLE_TYPE::SHARED)
-				$row["isreplaced"] = $db->GetOne("SELECT id FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
+				$row["isreplaced"] = $db->GetOne("SELECT id FROM roles WHERE `replace`='{$row['ami_id']}'");
 			
 			if ($row['clientid'] == 0)
 				$row["client_name"] = "Scalr";
@@ -91,7 +91,7 @@
 				$row["client_name"] = "";
 			
 			if ($row["isreplaced"])
-				$infrole = $db->GetRow("SELECT * FROM ami_roles WHERE `replace`='{$row['ami_id']}'");
+				$infrole = $db->GetRow("SELECT * FROM roles WHERE `replace`='{$row['ami_id']}'");
 			else
 				$infrole = $row;
 						
@@ -107,7 +107,7 @@
 				
 			$row['id'] = ($row['isreplaced']) ? $row['isreplaced'] : $row['id'];
 			
-			if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM ami_roles WHERE ami_id='{$row['replace']}'") == ROLE_TYPE::SHARED)
+			if ($row["replace"] == "" || $db->GetOne("SELECT roletype FROM roles WHERE ami_id='{$row['replace']}'") == ROLE_TYPE::SHARED)
 	    	   $display["rows"][] = $row;
 			
 			$response["data"][] = $row;

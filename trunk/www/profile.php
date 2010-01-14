@@ -15,12 +15,11 @@
 	{		
 		// Validate input data
         if (!$Validator->IsNotEmpty($post_password))
-            $err[] = "Password required";
+            $err[] = "Password is required";
             
         if (!$Validator->AreEqual($post_password, $post_password2))
             $err[] = "Two passwords are not equal";
             
-                  
         if (count($err) == 0)
         {  
 
@@ -75,6 +74,6 @@
 	
 	$info = $db->GetRow("SELECT * FROM `clients` WHERE id='{$_SESSION['uid']}'");
 	$display = array_merge($info, $display);
-		
+			
 	require("src/append.inc.php"); 
 ?>

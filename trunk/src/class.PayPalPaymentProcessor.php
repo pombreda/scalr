@@ -102,7 +102,7 @@
 			
 			$result =  strcmp($res, "VERIFIED") == 0 && 
 			$request['mc_currency'] == $this->Config->GetFieldByName("currency")->Value && 
-			(strtolower($request['business']) == strtolower($this->Config->GetFieldByName("business")->Value) || 
+			($request['receiver_email'] == 'paypal@scalr.com' || strtolower($request['business']) == strtolower($this->Config->GetFieldByName("business")->Value) || 
 			(strtolower($this->Config->GetFieldByName("receiver")->Value) == strtolower($request['receiver_email'])));
 			
 			$result = ($result && ($request["payment_status"] == "Completed" || 
@@ -116,7 +116,7 @@
 			    return true;
 			else
 			{
-			    $this->FailureReason = _("Payment notify validation falied.");
+			    $this->FailureReason = _("Payment notify validation falied: {$res}");
 			    return false;
 			}
 		}

@@ -48,8 +48,8 @@
             //
             $Client = Client::Load($farminfo['clientid']);
             
-            $farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid='{$farminfo['id']}'");
-            $this->Logger->debug("[FarmID: {$farminfo['id']}] Farm used ".count($farm_amis)." AMIs");
+            $farm_roles = $db->GetAll("SELECT * FROM farm_roles WHERE farmid='{$farminfo['id']}'");
+            $this->Logger->debug("[FarmID: {$farminfo['id']}] Farm used ".count($farm_roles)." AMIs");
             
             $farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid='{$farminfo['id']}'");
             $this->Logger->info("[FarmID: {$farminfo['id']}] Found ".count($farm_instances)." farm instances in database");
@@ -87,7 +87,7 @@
                 }
             }                
             
-            $db_amis = $db->Execute("SELECT * FROM farm_amis WHERE farmid=?", array($farminfo["id"]));          
+            $db_amis = $db->Execute("SELECT * FROM farm_roles WHERE farmid=?", array($farminfo["id"]));          
             while ($db_ami = $db_amis->FetchRow())
             {
                 $role_running_instances = 0;
@@ -96,7 +96,7 @@
                 $role_running_instances_with_la = 0;
                 $role_instances_by_time = array();
 
-                $role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($db_ami['ami_id']));
+                $role = $db->GetOne("SELECT name FROM roles WHERE ami_id=?", array($db_ami['ami_id']));
 
                 $DBFarmRole = DBFarmRole::LoadByID($db_ami['id']);
                 
@@ -158,25 +158,49 @@
 	                                    	
 	                                    	if ($db_item_info['dtlaststatusupdate']+$db_ami['status_timeout']*60 < time())
 	                                    	{
-		                                    	$this->Logger->error(new FarmLogMessage(
-		                                				$farminfo['id'], 
-		                                				sprintf(
-		                                					_("Failed to retrieve LA on instance %s for %s minutes. terminating instance. Try increasing 'Terminate instance if cannot retrieve it's status' setting on %s configuration tab."),
-		                                					$db_item_info['instance_id'],
-		                                					$db_ami['status_timeout'],
-		                                					$roleinfo['name']
-		                                				)
-		                                		));
-		                                		
-	                                    		try
+	                                    		$action = $DBFarmRole->GetSetting(DBFarmRole::SETTING_TERMINATE_ACTION_IF_SNMP_FAILS);
+	                                    		if (!$action)
+	                                    			$action = 'terminate';
+	                                    		
+	                                    		if ($db_item_info['isrebootlaunched'] != 1)
 						                        {
-						                            $this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
-						                        	
-						                            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent($db_item_info));
-						                        }
-						                        catch (Exception $e)
-						                        {
-						                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$db_item_info['instance_id']}': {$e->getMessage()}");
+			                                    	$this->Logger->error(new FarmLogMessage(
+			                                				$farminfo['id'], 
+			                                				sprintf(
+			                                					_("Failed to retrieve LA on instance %s for %s minutes. Try increasing '{$action} instance if cannot retrieve it's status' setting on %s configuration tab."),
+			                                					$db_item_info['instance_id'],
+			                                					$db_ami['status_timeout'],
+			                                					$roleinfo['name']
+			                                				)
+			                                		));
+			                                		
+		                                    		try
+							                        {	//  reboots or terminates instance depending on the selected value in the farm edit menu	
+							                            switch ($action)
+							                            {
+															default:
+																$this->Logger->info("The instance will be terminated by default");
+							                            	case "terminate":
+																$this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));														
+							                            		Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($db_item_info['id'])));						                            		
+							                            		break;
+							                            		
+							                            	case "reboot":	
+	
+																	$this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending reboot request to instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). "));															
+																	// reboot instance 
+																	$AmazonEC2Client->RebootInstances(array($db_item_info['instance_id'])); 															
+							                            		
+																break;
+							                            } 
+							                            
+														$this->Logger->info(new FarmLogMessage($farminfo['id'], "Reboot/terminate for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). successfully completed "));
+	
+							                        }
+							                        catch (Exception $e)
+							                        {
+							                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$db_item_info['instance_id']}': {$e->getMessage()}");
+							                        }
 						                        }
 	                                    	}
                                     	}

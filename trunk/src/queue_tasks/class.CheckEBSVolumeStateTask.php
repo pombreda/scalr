@@ -49,8 +49,17 @@
 					try
 					{
 						// Get instance info fro database
-						$instanceinfo = $DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($DBEBSVolume->InstanceID));
-						$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
+						try
+						{
+							$DBInstance = DBInstance::LoadByIID($DBEBSVolume->InstanceID);
+						}
+						catch(Exception $e)
+						{
+							$DB->Execute("UPDATE farm_ebs SET state=?, instance_id='' WHERE id=?", array(FARM_EBS_STATE::AVAILABLE, $DBEBSVolume->ID));
+							return;	
+						}
+						
+						$farminfo = $DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBInstance->FarmID));
 						
 						$Client = Client::Load($farminfo['clientid']);										
 						
@@ -65,29 +74,16 @@
 							return false;
 						elseif ($volume->status == AMAZON_EBS_STATE::AVAILABLE)
 						{
-							if ($instanceinfo)
+							try
 							{
-								try
-								{
-									Scalr::AttachEBS2Instance($EC2Client, $instanceinfo, $farminfo, $DBEBSVolume);
-								}
-								catch(Exception $e)
-								{
-									LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
-										sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
-									));
-									return false;
-								}
+								Scalr::AttachEBS2Instance($EC2Client, $DBInstance, $farminfo, $DBEBSVolume);
 							}
-							else
+							catch(Exception $e)
 							{
-								// We cannot use DBEBSVolume->Save() in this case. Deadlock.
-								
-								$DB->Execute("UPDATE farm_ebs SET state=?, instance_id='' WHERE id=?", array(FARM_EBS_STATE::AVAILABLE, $DBEBSVolume->ID));
-								
-								//$DBEBSVolume->State = FARM_EBS_STATE::AVAILABLE;
-								//$DBEBSVolume->InstanceID = '';
-								//$DBEBSVolume->Save();
+								LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
+									sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
+								));
+								return false;
 							}
 						}
 						elseif ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->instanceId == $DBEBSVolume->InstanceID)

@@ -55,9 +55,11 @@
 
 			if (!$url || $url->Value == '')
 				return;
+
+			$DB = Core::GetDBInstance();
 				
 			// Event message
-			$message = urlencode($args[0]);
+			$message = urlencode($DB->GetOne("SELECT message FROM events WHERE event_id = ?", array($args[0]->GetEventID())));
 			
 			$ch = @curl_init();
 

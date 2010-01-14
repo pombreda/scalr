@@ -53,18 +53,13 @@
     			FARM_EBS_STATE::ATTACHED
     		));
     		
+    		$DBFarmRole = DBFarmRole::LoadByID($instance_info['farm_roleid']);
+    		
     		foreach ($volumes as $volume)
     		{
     			if ($volume['ismanual'] == 0)
-				{
-					$ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE (ami_id=? OR replace_to_ami=?) AND farmid=?",
-					array(
-						$instance_info['ami_id'],
-						$instance_info['ami_id'],
-						$instance_info['farmid']
-					));
-					
-					$mountpoint = $ami_info['ebs_mount'] ? $ami_info['ebs_mountpoint'] : "";
+				{					
+					$mountpoint = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT) ? $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT) : "";
 					$createfs = $volume["isfsexists"] ? 0 : 1;
 				}
 				else

@@ -42,7 +42,11 @@
 					'health.terminate_if_snmp_fails':1,
 					
 					'mysql.ebs.rotate':5,
-					'mysql.ebs.rotate_snaps':0
+					'mysql.ebs.rotate_snaps':0,
+					
+					'aws.instance_type':'',
+					'aws.availability_zone':''
+					
 			};
 			
 			/* DEPRACATED */
@@ -59,14 +63,6 @@
 				status_timeout: 20,
 				launch_timeout: (alias == 'mysql') ? 2400 : 600,
 						
-				placement: "",
-				i_type: "",
-				use_elastic_ips: false,
-				use_ebs: false,
-				ebs_size: 0,
-				ebs_snapid: '',
-				ebs_mount: false,
-				ebs_mountpoint: '/mnt/storage',
 				scaling_algos: {}
 			};
 	  	}

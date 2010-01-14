@@ -153,12 +153,12 @@
     		if ($post_attach_on_boot)
     		{
     			$DBEBSArray->AttachOnBoot = 1;
-    			$DBEBSArray->RoleName = $instanceinfo['role_name'];
+    			$DBEBSArray->FarmRoleID = $instanceinfo['farm_roleid'];
     		}
     		else
     		{
     			$DBEBSArray->AttachOnBoot = 0;
-    			$DBEBSArray->RoleName = "";
+    			$DBEBSArray->FarmRoleID = null;
     		}
     		
     		$DBEBSArray->Save();

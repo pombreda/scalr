@@ -14,24 +14,26 @@
 				<td colspan="2">When instance based on this role boots up:</td>
 			</tr>
 			<tr>
-				<td colspan="2"><input onclick="ShowEBSOptions(this.value);" type="radio" name="ebs_ctype" checked value="1" style="vertical-align:middle;"> Do not use EBS</td>
+				<td colspan="2"><input onclick="ShowEBSOptions(this.checked);" class="role_settings" type="checkbox" id="aws.use_ebs" name="aws.use_ebs" checked value="1" style="vertical-align:middle;"> Automatically attach EBS volume with the following options:</td>
 			</tr>
 			<tr>
-				<td colspan="2">
+				<td width="15%">Size: </td>
+				<td>
 					<div style="float:left;">
-						<input onclick="ShowEBSOptions(this.value);" type="radio" name="ebs_ctype" value="2" style="vertical-align:middle;"> Attach empty volume with size:
-						<input style="vertical-align:middle;" type="text" id="ebs_size" name="ebs_size" value="1" class="text" size="3"> GB
+						<input style="vertical-align:middle;" type="text" id="aws.ebs_size" disabled name="aws.ebs_size" value="1" class="role_settings text" size="3"> GB
 					</div>							    			
 				</td>
 			</tr>
 			<tr>
-				<td colspan="2"><input onclick="ShowEBSOptions(this.value);" type="radio" {if $snapshots|@count == 0}disabled{/if} name="ebs_ctype" value="3" style="vertical-align:middle;"> Attach volume from snapshot:
-					<select {if $snapshots|@count == 0}disabled{/if} style="vertical-align:middle;" id="ebs_snapid" name="ebs_snapid" class="text">
-					{section name=sid loop=$snapshots}
-					<option {if $snapId == $snapshots[sid]}selected{/if} value="{$snapshots[sid]}">{$snapshots[sid]}</option>
-					{sectionelse}
-					<option value="">No snapshots found</option>
-					{/section}
+				<td>Snapshot: </td>
+				<td>
+					<select disabled style="vertical-align:middle;" id="aws.ebs_snapid" name="aws.ebs_snapid" class="role_settings text">
+					<option value=""></option>
+					{foreach from=$snapshots key=key item=item}
+						<option {if $snapId == $key}selected{/if} value="{$key}">{$key} (Created: {$item.createdat} Size: {$item.size}GB)</option>
+					{foreachelse}
+						<option value="">No snapshots found</option>
+					{/foreach}
 					</select>
 				</td>
 			</tr>
@@ -39,7 +41,7 @@
 				<td colspan="2">
 					<div id="ebs_mount_options" style="display:none;">
 					<br />
-					<input type="checkbox" onclick="$('ebs_mountpoint').disabled = !this.checked;" id="ebs_mount" style="vertical-align:middle;"> Automatically mount device to <input type="text" class="text" id="ebs_mountpoint" disabled size="10" value="/mnt/storage"> mount point.
+					<input type="checkbox" class="role_settings" onclick="$('aws.ebs_mountpoint').disabled = !this.checked;" id="aws.ebs_mount" name="aws.ebs_mount" style="vertical-align:middle;"> Automatically mount device to <input type="text" class="role_settings text" id="aws.ebs_mountpoint" name="aws.ebs_mountpoint" disabled size="10" value="/mnt/storage"> mount point.
 					</div>
 				</td>
 			</tr>

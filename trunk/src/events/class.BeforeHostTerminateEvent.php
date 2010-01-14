@@ -2,13 +2,22 @@
 	
 	class BeforeHostTerminateEvent extends Event 
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
 		
 		public $SkipDeferredOperations = true;
 		
-		public function __construct($InstanceInfo)
+		public $ForceTerminate;
+		
+		public function __construct(DBInstance $DBInstance, $ForceTerminate = true)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
+			$this->ForceTerminate = $ForceTerminate;
 		}
 	}
 ?>

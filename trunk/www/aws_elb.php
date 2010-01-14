@@ -19,8 +19,23 @@
 	{
 		try
 		{
+			$roleid = $db->GetOne("SELECT farm_roleid FROM farm_role_settings WHERE name=? AND value=?",
+			array(
+				DBFarmRole::SETTING_BALANCING_NAME,
+				$req_name
+			));
+									
 			$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+			$AmazonELBClient->SetRegion($_SESSION['aws_region']);
 			$AmazonELBClient->DeleteLoadBalancer($req_name);
+			
+			if ($roleid)
+			{
+				$DBFarmRole = DBFarmRole::LoadByID($roleid);
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB, 0);
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME, "");
+				$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_NAME, "");
+			}
 			
 			$okmsg = _("Load balancer successfully removed");
 			UI::Redirect('/aws_elb.php');

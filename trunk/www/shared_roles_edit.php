@@ -29,7 +29,7 @@
 
 	    if ($post_ami_id)
 	    {
-	    	$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($post_ami_id, ROLE_TYPE::SHARED));
+	    	$info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND roletype=?", array($post_ami_id, ROLE_TYPE::SHARED));
 	    	if (!$info)
 	    	{
 	    		$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($post_region)); 
@@ -80,7 +80,7 @@
 		    	try
 		        {
 		           // Add ne role to database
-		           $db->Execute("INSERT INTO ami_roles SET 
+		           $db->Execute("INSERT INTO roles SET 
 		           		ami_id=?, 
 		           		roletype=?, 
 		           		clientid='0', 
@@ -127,12 +127,12 @@
 		    	try
 		        {
 		           // Add ne role to database
-		           $db->Execute("UPDATE ami_roles SET isstable=?, description=?, name=?, default_minLA=?, default_maxLA=?, alias=? WHERE ami_id=?", 
+		           $db->Execute("UPDATE roles SET isstable=?, description=?, name=?, default_minLA=?, default_maxLA=?, alias=? WHERE ami_id=?", 
 		           		array($isstable, $post_description, $post_name, $post_default_minLA, $post_default_maxLA, $post_alias, $post_ami_id)
 		           );
 		        
 	    	       // Add security rules
-	    	       $roleid = $db->GetOne("SELECT id FROM ami_roles WHERE ami_id=?", $post_ami_id);
+	    	       $roleid = $db->GetOne("SELECT id FROM roles WHERE ami_id=?", $post_ami_id);
 	    	       $db->Execute("DELETE FROM security_rules WHERE roleid=?", $roleid);
 	    	       foreach ($post_rules as $rule)
 	                    $db->Execute("INSERT INTO security_rules SET roleid=?, rule=?", array($roleid, $rule));
@@ -140,10 +140,6 @@
 	                    
 	                if ($info['name'] != $post_name)
 	                {
-	                	$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
-	                		array($post_name, $info['name'], $info['region'])
-	                	);
-	                	
 	                	$db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
 	                		array($post_name, $info['name'], $info['region'])
 	                	);
@@ -151,14 +147,6 @@
 	                	$db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND region=?",
 	                		array($post_name, $info['name'], $info['region'])
 	                	);
-	                	
-	                	$db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=? AND region=?",
-                        	array($post_name, $info['name'], $info['region'])
-                        );
-                        
-                        $db->Execute("UPDATE ebs_arrays SET role_name=? WHERE role_name=? AND region=?",
-                        	array($post_name, $info['name'], $info['region'])
-                        );
                         
                         $db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE region=?)",
                         	array($post_name, $info['name'], $info['region'])
@@ -243,7 +231,7 @@
 	
 	if ($req_ami_id)
 	{		
-		$info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
+		$info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
 		if ($info)
 		{
 		    $display["ami_id"] = $req_ami_id;

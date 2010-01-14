@@ -38,7 +38,7 @@
 		    	$Logger->debug("Checking and execute sync routines...");
 		    	
 		    	$sync_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? 
-	    			AND instance_id IN (SELECT prototype_iid FROM ami_roles WHERE iscompleted = '0')", 
+	    			AND instance_id IN (SELECT prototype_iid FROM roles WHERE iscompleted = '0')", 
 	    			array($farminfo['id'])
 	    		);
 	    		foreach ($sync_instances as $sync_instance)
@@ -67,11 +67,11 @@
 		    		{
 		    			$Logger->debug("Instance {$_SESSION['term_post']["sync_i"][$ami_id]} not found in database.");
 		    			
-		    			$err[] = "Instance {$_SESSION['term_post']["sync_i"][$ami_id]} not found in database.";
+		    			//$err[] = "Instance {$_SESSION['term_post']["sync_i"][$ami_id]} not found in database.";
 		    			continue;
 		    		}
 	
-		    		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?",
+		    		$roleinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id=?",
 		    			array($instance['ami_id'])
 		    		);
 		    		
@@ -80,7 +80,7 @@
 		    		{
 			    		$i = 1;
 		                $name = "{$roleinfo["name"]}-".date("Ymd")."01";
-		                $role = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));
+		                $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));
 		                if ($role)
 		                {
 			                while ($role)
@@ -92,7 +92,7 @@
 			                    	$name .= "-".date("Ymd")."{$istring}";
 			                    }
 			                        
-			                    $role = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));                    
+			                    $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted='1' AND clientid='{$farminfo['clientid']}'", array($name));                    
 			                    $i++;
 			                }
 		                }
@@ -108,13 +108,13 @@
 		    		{
 			    		// Add record for new ami to database
 		    			$db->Execute("INSERT INTO 
-			    			ami_roles (
+			    			roles (
 			    				`ami_id`, `name`, `roletype`, `clientid`, `prototype_iid`, `iscompleted`, 
 			    				`replace`, `default_minLA`, `default_maxLA`, `alias`, `instance_type`, 
-			    				`architecture`, `dtbuildstarted`, `rebundle_trap_received`, `region`) 
+			    				`architecture`, `dtbuildstarted`, `rebundle_trap_received`, `region`, `default_ssh_port`) 
 			    			SELECT 
 			    				'', ?, ?, ?, ?, '0', ?, default_minLA, default_maxLA, 
-			    				alias, instance_type, architecture, NOW(), '0', region FROM ami_roles WHERE ami_id=?", 
+			    				alias, instance_type, architecture, NOW(), '0', region, default_ssh_port FROM roles WHERE ami_id=?", 
 			    			array($rolename, ROLE_TYPE::CUSTOM, $farminfo['clientid'], $instance['instance_id'], $ami_id, $ami_id)
 			    		);
 			    		
@@ -168,7 +168,7 @@
     	$display["action"] = "Terminate";
         $display["num"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=?", $farminfo['id']);
         
-        $display["sync_count"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND instance_id IN (SELECT prototype_iid FROM ami_roles WHERE iscompleted = '0')", array($farminfo['id']));
+        $display["sync_count"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid=? AND instance_id IN (SELECT prototype_iid FROM roles WHERE iscompleted = '0')", array($farminfo['id']));
         
         $display["elastic_ips"] = $db->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farmid=?", array($farminfo['id']));
         
@@ -177,16 +177,16 @@
         // Synchronize before termination
         //
         $farm_launch_time = strtotime($farminfo['dtlaunched']);        
-        $outdated_farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE (UNIX_TIMESTAMP(dtlastsync) < ? OR dtlastsync IS NULL) AND farmid=?",
+        $outdated_farm_roles = $db->GetAll("SELECT * FROM farm_roles WHERE (UNIX_TIMESTAMP(dtlastsync) < ? OR dtlastsync IS NULL) AND farmid=?",
         	array($farm_launch_time, $farminfo['id'])
         );
-        foreach ($outdated_farm_amis as &$farm_ami)
+        foreach ($outdated_farm_roles as &$farm_ami)
         {
-        	$farm_ami['name'] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?",
+        	$farm_ami['name'] = $db->GetOne("SELECT name FROM roles WHERE ami_id=?",
         		array($farm_ami['ami_id'])
         	);
         	
-        	$farm_ami['alias'] = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?",
+        	$farm_ami['alias'] = $db->GetOne("SELECT alias FROM roles WHERE ami_id=?",
         		array($farm_ami['ami_id'])
         	);
         	
@@ -200,14 +200,14 @@
         	);
         	
         	$farm_ami['running'] = $db->GetRow("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=? 
-    			AND instance_id IN (SELECT prototype_iid FROM ami_roles WHERE iscompleted = '0')", 
+    			AND instance_id IN (SELECT prototype_iid FROM roles WHERE iscompleted = '0')", 
     			array($farminfo['id'], $farm_ami['ami_id'])
     		);
         }
         
-        $display['outdated_farm_amis'] = $outdated_farm_amis;
+        $display['outdated_farm_roles'] = $outdated_farm_roles;
         
-        if (count($outdated_farm_amis) == 0)
+        if (count($outdated_farm_roles) == 0)
         	$display["term_step"] = 2;
     }
     

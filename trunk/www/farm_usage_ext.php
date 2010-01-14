@@ -22,7 +22,7 @@
 	$info["bw_in"] = ($info["bw_in"] > 1024) ? round($info["bw_in"]/1024, 2)."GB" : round($info["bw_in"], 2)."MB";
 	$info["bw_out"] = ($info["bw_out"] > 1024) ? round($info["bw_out"]/1024, 2)."GB" : round($info["bw_out"], 2)."MB";
 	
-	$Reflect = new ReflectionClass("INSTANCE_TYPE");
+	$Reflect = new ReflectionClass("INSTANCE_FLAVOR");
 	$ReflectCost = new ReflectionClass("INSTANCE_COST");
 	foreach ($Reflect->getConstants() as $n=>$v)
 	{

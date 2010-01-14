@@ -3,8 +3,8 @@
 	class DBEBSVolume
 	{
 		public $ID;
-		public $FarmID;
-		public $RoleName;
+		public $FarmID;		
+		public $FarmRoleID;
 		public $VolumeID;
 		public $State;
 		public $InstanceID;
@@ -24,7 +24,7 @@
 		private static $FieldPropertyMap = array(
 			'id' 			=> 'ID',
 			'farmid'		=> 'FarmID',
-			'role_name'		=> 'RoleName',
+			'farm_roleid'	=> 'FarmRoleID',			
 			'volumeid'		=> 'VolumeID',
 			'state' 		=> 'State',
 			'instance_id'	=> 'InstanceID',

@@ -1,6 +1,6 @@
 	function LoadStatsImage(farmid, watchername, type, role_name, hash)
 	{
-		var url = '/server/statistics.php?task=get_stats_image_url&farmid='+farmid+'&watchername='+watchername+'&graph_type='+type+'&role_name='+role_name; 
+		var url = '/server/statistics_proxy.php?task=get_stats_image_url&farmid='+farmid+'&watchername='+watchername+'&graph_type='+type+'&role_name='+role_name; 
 		new Ajax.Request(url,
 		{ 
 			method: 'get',

@@ -1,1 +1,1 @@
-Farm {$event->Farm.name} (ID: {$event->Farm.id}) launched
+Farm {$event->DBFarm->Name} (ID: {$event->DBFarm->ID}) launched

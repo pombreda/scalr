@@ -7,7 +7,7 @@
 		public $VhostName;
 		public $IsSSLVhost;
 		
-		public function __construct($vhost_name, $is_ssl_vhost)
+		public function __construct($vhost_name = "", $is_ssl_vhost = "")
 		{
 			parent::__construct();
 			

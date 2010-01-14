@@ -11,7 +11,7 @@
 		public function GetValue(DBFarmRole $DBFarmRole)
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($DBFarmRole->FarmID));
-			$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($DBFarmRole->AMIID));
+			$farm_ami_info = $this->DB->GetRow("SELECT * FROM farm_roles WHERE ami_id=?", array($DBFarmRole->AMIID));
 			
 			$Client = Client::Load($farminfo['clientid']);
 			$AmazonSQS = AmazonSQS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);

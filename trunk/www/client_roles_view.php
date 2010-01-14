@@ -18,7 +18,9 @@
 	
 	if ($req_task == 'abort')
 	{
-		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($req_id));
+		//TODO: !!!!
+		
+		$roleinfo = $db->GetRow("SELECT * FROM roles WHERE id=?", array($req_id));
 		if ($roleinfo['clientid'] != $_SESSION["uid"] && $_SESSION["uid"] != 0)
 			UI::Redirect("client_roles_view.php");
 			
@@ -38,20 +40,20 @@
 			
 			try
 			{
-				$db->Execute("UPDATE farm_amis SET replace_to_ami = '' WHERE replace_to_ami=?", 
+				$db->Execute("UPDATE farm_roles SET replace_to_ami = '' WHERE replace_to_ami=?", 
 					array($roleinfo['ami_id'])
 				);
 				
 				if ($roleinfo['ami_id'])
 				{
-					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=? 
+					$db->Execute("UPDATE roles SET `replace` = '', iscompleted='2', fail_details=? 
 						WHERE id=?",
 						array(_("Rebundle complete, but the rebundled AMI is not operable by Scalr."), $roleinfo["id"])
 					);
 				}
 				else
 				{
-					$db->Execute("UPDATE ami_roles SET `replace` = '', iscompleted='2', fail_details=?, prototype_iid='' 
+					$db->Execute("UPDATE roles SET `replace` = '', iscompleted='2', fail_details=?, prototype_iid='' 
 						WHERE id=?",
 						array(_("Canceled by user"), $roleinfo["id"])
 					);
@@ -114,8 +116,8 @@
 			{
 				foreach($post_id as $roleid)
 				{
-					$info = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid=?", array($roleid, $_SESSION['uid']));
-					$display['roles'][$info['ami_id']] = $info;
+					$info = $db->GetRow("SELECT * FROM roles WHERE id=? AND clientid=?", array($roleid, $_SESSION['uid']));
+					$display['roles'][$info['id']] = $info;
 				}
 				$display['title'] = 'Roles removal confirmation';
 				
@@ -130,9 +132,9 @@
 				foreach ((array)$post_id as $k=>$v)
 				{
 					if ($_SESSION["uid"] != 0)
-						$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v));
+						$roleinfo = $db->GetRow("SELECT * FROM roles WHERE id=? AND clientid='{$_SESSION['uid']}'", array($v));
 				    else 
-						$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($v));
+						$roleinfo = $db->GetRow("SELECT * FROM roles WHERE id=?", array($v));
 				     
 				    if ($roleinfo && $roleinfo["iscompleted"] != 0)
 				    {
@@ -140,7 +142,7 @@
 					    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($roleinfo['region'])); 
 						$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 				    	
-				    	$info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=?", array($roleinfo["ami_id"]));
+				    	$info = $db->GetRow("SELECT * FROM farm_roles WHERE ami_id=?", array($roleinfo["ami_id"]));
 	    			    if (!$info)
 	    			    {
 	    			        if ($post_remove_image[$roleinfo['ami_id']] || $post_dereg_ami[$roleinfo['ami_id']])
@@ -190,7 +192,7 @@
 		    			    	}
 	    			        }
 	    			        
-	        				$db->Execute("DELETE FROM ami_roles WHERE id=?", array($v));
+	        				$db->Execute("DELETE FROM roles WHERE id=?", array($v));
 	        				$i++;	
 	    			    }
 	    			    else

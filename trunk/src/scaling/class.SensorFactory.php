@@ -6,6 +6,8 @@
 		const SQS_SENSOR = 'SQSScalingSensor';
 		const RAM_SENSOR = 'RAMScalingSensor';
 		const TIME_SENSOR = 'TimeScalingSensor';
+		const HTTP_RESPONSE_TIME_SENSOR = 'HTTPResponseTimeScalingSensor';
+		
 		
 		private static $SensorsCache = array();
 		

@@ -17,7 +17,7 @@
 		if (!$farminfo)
 			throw new Exception(_("Farm not found in database"));
 		
-		$sql = "SELECT * from farm_amis WHERE farmid='{$farminfo['id']}'";
+		$sql = "SELECT * from farm_roles WHERE farmid='{$farminfo['id']}'";
 			
 		if ($get_ami_id)
 		{
@@ -51,10 +51,23 @@
 		
 		foreach ($db->GetAll($sql) as $row)
 		{
-			$row["name"] = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$row['ami_id']}'");
+			$row["name"] = $db->GetOne("SELECT name FROM roles WHERE ami_id='{$row['ami_id']}'");
 			$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id='{$row["ami_id"]}' AND status != ? AND farmid=?", array(ZONE_STATUS::DELETED, $farminfo['id']));
 			$row["r_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state=? AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'", array(INSTANCE_STATE::RUNNING));
 			$row["p_instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE state IN (?,?) AND farmid='{$row['farmid']}' AND ami_id='{$row['ami_id']}'", array(INSTANCE_STATE::PENDING, INSTANCE_STATE::INIT));
+			
+			$DBFarmRole = DBFarmRole::LoadByID($row['id']);
+			$row['min_count'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES);
+			$row['max_count'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES);
+			$row['avail_zone'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE);
+			if (!$row['avail_zone'])
+				$row['avail_zone'] = 'Choose randomly';
+			
+			$row['shortcuts'] = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farm_roleid=? AND ismenuitem='1'",
+				array($row['id'])
+			);
+			foreach ($row['shortcuts'] as &$shortcut)
+				$shortcut['name'] = $db->GetOne("SELECT name FROM scripts WHERE id=?", array($shortcut['scriptid']));
 			
 			$response["data"][] = $row;
 		}

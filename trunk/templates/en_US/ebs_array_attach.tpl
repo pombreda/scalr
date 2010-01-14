@@ -1,23 +1,6 @@
 {include file="inc/header.tpl"}
 	{include file="inc/table_header.tpl"}
     	{include file="inc/intable_header.tpl" intable_first_column_width="10%" header="Attach to instance" color="Gray"}
-        <!-- 
-        <tr>
-    		<td>Volume:</td>
-    		<td>
-    			{if !$volumeId}
-	    			<select name="volumeId" id="volumeId" class="text" onchange="$('volid').innerHTML = this.value;">
-	    			{section name=vid loop=$volumes}
-						<option value="{$volumes[vid]->volumeId}">{$volumes[vid]->volumeId}</option>
-					{/section}
-					</select>
-				{else}
-					{$volumeId}
-					<input type="hidden" name="volumeId" value="{$volumeId}" />
-				{/if}
-    		</td>
-    	</tr>
-    	-->
         <tr>
     		<td>Instance:</td>
     		<td>

@@ -2,13 +2,26 @@
 	
 	class NewMysqlMasterUpEvent extends Event
 	{
-		public $InstanceInfo;
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $DBInstance;
 		public $SnapURL;
 		
-		public function __construct($InstanceInfo, $SnapURL)
+		/**
+		 * 
+		 * @var DBInstance
+		 */
+		public $OldMasterInstance;
+		
+		public function __construct(DBInstance $DBInstance, $SnapURL, DBInstance $OldMasterInstance)
 		{
-			$this->InstanceInfo = $InstanceInfo;
+			parent::__construct();
+			
+			$this->DBInstance = $DBInstance;
 			$this->SnapURL = $SnapURL;
+			$this->OldMasterInstance = $OldMasterInstance;
 		}
 	}
 ?>

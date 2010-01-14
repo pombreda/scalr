@@ -18,8 +18,8 @@
 	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Statistics");
 	$display["farminfo"] = $farminfo;
 
-	$display["roles"] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis 
-		INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id 
+	$display["roles"] = $db->GetAll("SELECT farm_roles.*, roles.name FROM farm_roles 
+		INNER JOIN roles ON roles.ami_id = farm_roles.ami_id 
 		WHERE farmid=?", array($farminfo['id'])
 	);
 		

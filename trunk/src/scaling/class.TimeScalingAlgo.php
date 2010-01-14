@@ -46,7 +46,7 @@
 			
 			$scaling_period = $DB->GetRow("SELECT * FROM farm_role_scaling_times WHERE
 				'{$sensor_value[0]}' >= start_time AND
-				'{$sensor_value[0]}' <= end_time AND
+				'{$sensor_value[0]}' <= end_time-10 AND
 				INSTR(days_of_week, '{$sensor_value[1]}') != 0 AND
 				farm_roleid = '{$DBFarmRole->ID}'
 			");

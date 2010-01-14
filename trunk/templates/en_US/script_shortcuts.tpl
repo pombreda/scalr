@@ -1,7 +1,6 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -40,7 +39,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Script shortcuts",
-        id: 'scripts_list2',
+        id: 'scripts_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 

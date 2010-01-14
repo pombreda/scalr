@@ -1,5 +1,4 @@
 {include file="inc/header.tpl" form_action="script_templates.php"}
-	<br />
 	<div style="position:relative;width:auto;">
 		<div id="script_loader" align="center" style="display:none;position:absolute;top:7px;left:7px;background-color:#F0F0F0;right:7px;bottom:7px;vertical-align: middle;">
 			<div align="center" style="position: absolute;left:50%; top: 50%;display: table-cell; vertical-align: middle;">

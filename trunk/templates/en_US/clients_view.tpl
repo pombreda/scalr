@@ -1,7 +1,6 @@
 {include file="inc/header.tpl"}
-<br>
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -60,7 +59,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Clients",
-        id: 'clients_list1',
+        id: 'clients_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
@@ -75,7 +74,9 @@ Ext.onReady(function () {
 			{header: "Farms", width: 70, dataIndex: 'farms', renderer:farmRenderer, sortable: false},
 			{header: "Custom roles", width: 70, dataIndex: 'roles', renderer:roleRenderer, sortable: false},
 			{header: "Applications", width: 70, dataIndex: 'apps', renderer:appRenderer, sortable: false},
+			{header: "Running servers", width: 70, dataIndex: 'instances', sortable: false},
 			{header: "Farms limit", width: 70, dataIndex: 'farms_limit', renderer: limitRenderer, sortable: false, hidden:true},
+			{header: "Added at", width: 70, dataIndex: 'dtadded', sortable: true, hidden:true},
 			{header: "Comment", width: 50, dataIndex: 'comments', renderer:commentRenderer, sortable: false, hidden:true, align:'center'},
 			{header: "Active", width: 70, dataIndex: 'isactive', renderer:isactiveRenderer, sortable: false, align:'center'}
 		],

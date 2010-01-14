@@ -37,20 +37,20 @@
 			try
 			{
 				// If we need replace old instance to new one
-				if ($event->InstanceInfo["replace_iid"])
+				if ($event->DBInstance->ReplaceIID)
 				{
 					$this->Logger->debug("Going to termination old instance...");
 					
 					$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 					
-					$this->DB->Execute("UPDATE farm_instances SET replace_iid='' WHERE id='{$event->InstanceInfo['id']}'");
+					$this->DB->Execute("UPDATE farm_instances SET replace_iid='' WHERE id='{$event->DBInstance->ID}'");
 
 					// Get information about replacement instance from database
-					$old_instance = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id='{$event->InstanceInfo["replace_iid"]}'");
+					$old_instance = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id='{$event->DBInstance->ReplaceIID}'");
 
 					// Update elastic IP
 					$this->DB->Execute("UPDATE elastic_ips SET state='1', instance_id=? WHERE instance_id=? AND farmid=?",
-						array($event->InstanceInfo['instance_id'], $old_instance['instance_id'], $this->FarmID)
+						array($event->DBInstance->InstanceID, $old_instance['instance_id'], $this->FarmID)
 					);
 					
 					$this->Logger->debug("Old instance: {$old_instance['id']}.");
@@ -58,16 +58,7 @@
 					if ($old_instance)
 					{
 						$this->Logger->info(new FarmLogMessage($old_instance["farmid"], "Scheduled termination for instance '{$old_instance["instance_id"]}' ({$old_instance["external_ip"]}). It will be terminated in 3 minutes."));
-						Scalr::FireEvent($old_instance["farmid"], new BeforeHostTerminateEvent($old_instance));
-						
-						/*
-						// Terminate old instance
-						$res = $EC2Client->TerminateInstances(array($old_instance["instance_id"]));
-						if ($res instanceof SoapFault)
-							$this->Logger->fatal("Cannot terminate instance '{$old_instance["instance_id"]}' ({$res->faultString}). Please do it manualy.");
-						else
-							$this->Logger->warn("Instance '{$old_instance["instance_id"]}' has been swapped with the instance {$event->InstanceInfo['instance_id']}");
-						*/
+						Scalr::FireEvent($old_instance["farmid"], new BeforeHostTerminateEvent(DBInstance::LoadByID($old_instance['id']), true));
 					}
 				}
 			}
@@ -89,13 +80,13 @@
 			
 			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 			
-			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+			if ($event->DBInstance->State == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
     			{    				
-    				$this->Logger->info("Terminating '{$event->InstanceInfo["instance_id"]}' instance.");
+    				$this->Logger->info("Terminating '{$event->DBInstance->InstanceID}' instance.");
     				
-    				$response = $EC2Client->TerminateInstances(array($event->InstanceInfo["instance_id"]));
+    				$response = $EC2Client->TerminateInstances(array($event->DBInstance->InstanceID));
     					
     				if ($response instanceof SoapFault)
     					$this->Logger->warn($response->faultstring);
@@ -119,11 +110,11 @@
 			
 			$EC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
 
-			if ($event->InstanceInfo['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+			if ($event->DBInstance->State == INSTANCE_STATE::PENDING_TERMINATE)
 			{
 				try
     			{    				    				
-    				$response = $EC2Client->TerminateInstances(array($event->InstanceInfo["instance_id"]));
+    				$response = $EC2Client->TerminateInstances(array($event->DBInstance->InstanceID));
     					
     				if ($response instanceof SoapFault)
     					$this->Logger->warn($response->faultstring);
@@ -149,8 +140,8 @@
 			if ($farminfo['status'] == FARM_STATUS::SYNCHRONIZING)
 			{
 				// Do not terminate pending terminate instances.
-				$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state != ?", 
-					array($this->FarmID, INSTANCE_STATE::PENDING_TERMINATE)
+				$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state NOT IN (?,?)", 
+					array($this->FarmID, INSTANCE_STATE::PENDING_TERMINATE, INSTANCE_STATE::TERMINATED)
 				);
 			}
 			else
@@ -180,7 +171,21 @@
     			}
             }
 		    
-		    $this->DB->Execute("DELETE FROM farm_instances WHERE farmid=? AND state=?", array($this->FarmID, INSTANCE_STATE::PENDING));
+		    $this->DB->Execute("UPDATE farm_instances SET state = ? WHERE farmid=? AND state=?", 
+				array(INSTANCE_STATE::TERMINATED, $this->FarmID, INSTANCE_STATE::PENDING)
+			);
+		}
+		
+		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
+		{
+			if ($event->ForceTerminate)
+			{ 
+				$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
+				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+				
+				$this->Logger->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$event->DBInstance->InstanceID}'..."));
+                $AmazonEC2Client->TerminateInstances(array($event->DBInstance->InstanceID));
+			}
 		}
 	}
 ?>

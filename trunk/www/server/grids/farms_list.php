@@ -58,8 +58,8 @@
 		
 		foreach ($db->GetAll($sql) as $row)
 		{
-			$row["instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid='{$row['id']}'");
-			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM farm_amis WHERE farmid='{$row['id']}'");
+			$row["instances"] = $db->GetOne("SELECT COUNT(*) FROM farm_instances WHERE farmid='{$row['id']}' AND state != '".INSTANCE_STATE::TERMINATED."'");
+			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM farm_roles WHERE farmid='{$row['id']}'");
 			$row["sites"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$row['id']}' AND status != ?", array(ZONE_STATUS::DELETED));
 			
 			$row['dtadded'] = date("M j, Y H:i:s", strtotime($row["dtadded"]));
@@ -67,13 +67,13 @@
 			if ($_SESSION['uid'] == 0)
 				$row['client_email'] = $db->GetOne("SELECT email FROM clients WHERE id='{$row['clientid']}'"); 
 				
-			$row["havemysqlrole"] = (bool)$db->GetOne("SELECT id FROM farm_amis WHERE ami_id IN (SELECT ami_id FROM ami_roles WHERE alias='mysql') AND farmid='{$row['id']}'");
+			$row["havemysqlrole"] = (bool)$db->GetOne("SELECT id FROM farm_roles WHERE ami_id IN (SELECT ami_id FROM roles WHERE alias='mysql') AND farmid='{$row['id']}'");
 			
 			$row['status_txt'] = FARM_STATUS::GetStatusName($row['status']);
 			
 			if ($row['status'] == FARM_STATUS::RUNNING)
 			{
-				$row['shortcuts'] = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND ami_id IS NULL AND ismenuitem='1'",
+				$row['shortcuts'] = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND (farm_roleid IS NULL OR farm_roleid='0') AND ismenuitem='1'",
 					array($row['id'])
 				);
 				foreach ($row['shortcuts'] as &$shortcut)

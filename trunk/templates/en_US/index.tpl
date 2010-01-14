@@ -1,30 +1,7 @@
 {include file="inc/header.tpl"}
-    {if $smarty.session.uid != 0}
-	    {include file="inc/table_header.tpl"}
-	    	{include file="inc/intable_header.tpl" header="Wizards" color="Gray"}
-	    	<tr>
-	    	   <td colspan="2"><img src="/images/wizard.png" style="vertical-align:middle;">&nbsp;<a href="app_wizard.php">Create new application</a></td>
-	    	</tr>
-	    	{include file="inc/intable_footer.tpl" color="Gray"}
-		{include file="inc/table_footer.tpl" disable_footer_line=1}
-		<br />
-		<br />
-		{include file="inc/table_header.tpl" nofilter=1}
-		<table>
-		<tr><td><br /><div id="index_menu_div">{$index_menu}</div><br /><br /></td></tr>
-		</table>
-		{include file="inc/table_footer.tpl" disable_footer_line=1}
-	{else}
+    {if $smarty.session.uid == 0}
 	<table width="100%" border="0">
 		<tr valign="top">
-			<td width="350">
-				{include file="inc/table_header.tpl" nofilter=1}
-				<table>
-				<tr><td><br /><div id="index_menu_div">{$index_menu}</div><br /><br /></td></tr>
-				</table>
-				{include file="inc/table_footer.tpl" disable_footer_line=1}
-			</td>
-			<td></td>
 			<td>
 				{include file="inc/table_header.tpl" nofilter=1}
 					{include file="inc/intable_header.tpl" header="Clients" color="Gray"}

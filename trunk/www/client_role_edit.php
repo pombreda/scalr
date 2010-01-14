@@ -11,7 +11,7 @@
 	{
 		$display["id"] = $req_id;
 		
-		$info = $db->GetRow("SELECT * FROM ami_roles WHERE id=? AND clientid=?", array($req_id, $_SESSION['uid']));
+		$info = $db->GetRow("SELECT * FROM roles WHERE id=? AND clientid=?", array($req_id, $_SESSION['uid']));
 		
 		if ($_SESSION['uid'] != $info['clientid'])
 			UI::Redirect("client_roles_view.php");
@@ -21,6 +21,7 @@
 		    $display = array_merge($display, $info);
 		    $display["arch"] = $info["architecture"];
 		    $display["alias"] = ROLE_ALIAS::GetTypeByAlias($display["alias"]);
+		    $display["default_SSH_port"] = $info['default_ssh_port'];
 		    		    
 		    $options = $db->GetAll("SELECT * FROM role_options WHERE ami_id=?", array($info['ami_id']));
 		    
@@ -43,6 +44,12 @@
 		    	$display['role_options_dataform'] = json_encode($role_options);
 		    }
 		    
+		    if ($req_task == 'switch')
+		    {
+		    	$display["title"] = _("Client role&nbsp;&raquo;&nbsp;Switch to new AMI");
+		    	
+		    	$template_name = 'switch_client_role.tpl';
+		    }
 		    if ($req_task == 'share')
 		    {
 			    $Client = Client::Load($_SESSION['uid']);
@@ -103,12 +110,46 @@
 	    		UI::Redirect("client_roles_view.php");
 	    }
 	    
+	    if ($req_task == 'switch')
+	    {
+	    	if (!$post_new_ami_id)
+	    		$err[] = _("Please specify new AMI id");
+	    		
+	    	$Client = Client::Load($_SESSION['uid']);
+		
+			try
+	    	{
+		   		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($info['region'])); 
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		   		
+				try
+				{
+		   			$DescribeImagesType = new DescribeImagesType();
+		   			$DescribeImagesType->imagesSet->item[] = array("imageId" => $post_new_ami_id);
+		   			$amazon_ami_info = $AmazonEC2Client->DescribeImages($DescribeImagesType);
+				}
+				catch(Exception $e)
+				{
+					$err[] = sprintf(_("Cannot use %s AMI (%s)"), $post_new_ami_id, $e->getMessage());
+				}
+		   		
+				$name = $db->GetOne("SELECT id FROM roles WHERE ami_id=?", array($post_new_ami_id));
+				if ($name)
+					$err[] = sprintf(_("AMI %s already registered in scalr database. Role name: %s"), $post_new_ami_id, $name);
+	    	}
+	    	catch(Exception $e)
+	    	{
+	    		$errmsg = $e->getMessage();
+	    		UI::Redirect("client_roles_view.php");
+	    	}
+	    }
+	    
 		if ($post_name != $info['name'] && $req_task == 'share')
 		{
 			if (!preg_match("/^[A-Za-z0-9-]+$/", $post_name))
             	$err[] = _("Allowed chars for role name is [A-Za-z0-9-]");
             	
-            $chk = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted != '2' AND ami_id != ?", 
+            $chk = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted != '2' AND ami_id != ?", 
             	array($post_name, $info['ami_id'])
             );
             if ($chk)
@@ -118,126 +159,127 @@
 	    if (count($err) == 0)
 	    {    		
 	        $db->BeginTrans();	    	
-	        $info = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($req_id));
+	        $info = $db->GetRow("SELECT * FROM roles WHERE id=?", array($req_id));
 	        
-	        $HTMLPurifier_Config = HTMLPurifier_Config::createDefault();
-		    $HTMLPurifier_Config->set('HTML', 'Allowed', 'a[href|title],b,i,p,div,span');
-		    $HTMLPurifier_Config->set('Cache', 'DefinitionImpl', null);	    
-			$HTMLPurifier_Config->set('Core', 'CollectErrors', true);
-			    	
-			$purifier = new HTMLPurifier($HTMLPurifier_Config);
-			$description = $purifier->purify($post_description);	        
-			
-			if ($post_name != $info['name'] && $req_task == 'share')
-			{
-				$db->Execute("UPDATE elastic_ips SET role_name=? WHERE role_name=? farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-                );
-                
-                $db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-                );
-                
-                $db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-                );
-                
-                $db->Execute("UPDATE farm_ebs SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-				);
-
-				$db->Execute("UPDATE ebs_arrays SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-				);
+	        if ($req_task == 'switch')
+	        {
+				Logger::getLogger("RoleSwitch")->warn("Role with AMI {$info['ami_id']} (RoleName: {$info['name']}) switchd to the new AMI: {$post_new_ami_id}");
+	        	
+	        	$db->Execute("UPDATE farm_roles SET ami_id='{$post_new_ami_id}' WHERE ami_id='{$info['ami_id']}' AND farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')");
+				$db->Execute("UPDATE zones SET ami_id='{$post_new_ami_id}' WHERE ami_id='{$info['ami_id']}' AND clientid='{$_SESSION['uid']}'");                        		
+	        }
+	        else
+	        {
+	       	
+		        $HTMLPurifier_Config = HTMLPurifier_Config::createDefault();
+			    $HTMLPurifier_Config->set('HTML', 'Allowed', 'a[href|title],b,i,p,div,span');
+			    $HTMLPurifier_Config->set('Cache', 'DefinitionImpl', null);	    
+				$HTMLPurifier_Config->set('Core', 'CollectErrors', true);
+				    	
+				$purifier = new HTMLPurifier($HTMLPurifier_Config);
+				$description = $purifier->purify($post_description);	        
 				
-				$db->Execute("UPDATE vhosts SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
-					array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
-				);
-				
-				$db->Execute("UPDATE ami_roles SET name=? WHERE id=?", 
-	           		array($post_name, $req_id)
-	            );
-	            
-	            $info['name'] = $post_name;
-			}
+				if ($post_name != $info['name'] && $req_task == 'share')
+				{
+					$db->Execute("UPDATE zones SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+	                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
+	                );
+	                
+	                $db->Execute("UPDATE farm_instances SET role_name=? WHERE role_name=? AND farmid IN (SELECT id FROM farms WHERE clientid=? AND region=?)",
+	                	array($post_name, $info['name'], $_SESSION['uid'], $info['region'])
+	                );
+	                								
+					$db->Execute("UPDATE roles SET name=? WHERE id=?", 
+		           		array($post_name, $req_id)
+		            );
+		            
+		            $info['name'] = $post_name;
+				}
+							
+		        try
+		        {
+					if (!$post_default_minLA)
+						$post_default_minLA = 2;
 						
-	        try
-	        {
-	           // Add ne role to database
-	           $db->Execute("UPDATE ami_roles SET default_minLA=?, default_maxLA=?, description=? WHERE id=?", 
-	           		array($post_default_minLA, $post_default_maxLA, $description, $req_id)
-	           );
-	        
-    	       $roleid = $req_id;
-	        }
-	        catch (Exception $e)
-	        {
-	            $db->RollbackTrans();
-	        	throw new ApplicationException($e->getMessage(), E_ERROR);
-	        }
-	        
-	        $okmsg = _("Role successfully updated");
-		    		    
-		    try
-		    {
-			    // Save role options
-			    $options = json_decode($post_role_options_dataform, true);
-			    $opt_names = array("''"); 
-			    if (count($options) > 0)
+					if (!$post_default_maxLA)
+						$post_default_maxLA = 5;
+		        	
+		        	// Add ne role to database
+		           $db->Execute("UPDATE roles SET default_minLA=?, default_maxLA=?, description=?, default_ssh_port=? WHERE id=?", 
+		           		array($post_default_minLA, $post_default_maxLA, $description, $req_default_SSH_port, $req_id)
+		           );
+		        
+	    	       $roleid = $req_id;
+		        }
+		        catch (Exception $e)
+		        {
+		            $db->RollbackTrans();
+		        	throw new ApplicationException($e->getMessage(), E_ERROR);
+		        }
+		        
+		        $okmsg = _("Role successfully updated");
+			    		    
+			    try
 			    {
-			    	foreach ($options as $option)
-			    	{
-				    	if (!$option['name'] || !$option['type'])
-				    		continue;
-			    		
-				    	if ($option['type'] == FORM_FIELD_TYPE::SELECT)
+				    // Save role options
+				    $options = json_decode($post_role_options_dataform, true);
+				    $opt_names = array("''"); 
+				    if (count($options) > 0)
+				    {
+				    	foreach ($options as $option)
 				    	{
-				    		$option['defval'] = array();
-				    		foreach ($option['options'] as $opt)
-				    		{
-				    			if ($opt[3])
-				    				array_push($option['defval'], $opt[0]);
-				    		}
+					    	if (!$option['name'] || !$option['type'])
+					    		continue;
 				    		
-				    		$option['defval'] = implode(",", $option['defval']);
+					    	if ($option['type'] == FORM_FIELD_TYPE::SELECT)
+					    	{
+					    		$option['defval'] = array();
+					    		foreach ($option['options'] as $opt)
+					    		{
+					    			if ($opt[3])
+					    				array_push($option['defval'], $opt[0]);
+					    		}
+					    		
+					    		$option['defval'] = implode(",", $option['defval']);
+					    	}
+					    		
+					    	$db->Execute("INSERT INTO role_options SET 
+					    		name=?, type=?, isrequired=?, defval=?, allow_multiple_choice=?, options=?, ami_id=?, hash=?
+					    		ON DUPLICATE KEY UPDATE type=?, isrequired=?, defval=?, allow_multiple_choice=?, options=?
+					    	", array(
+					    		// For insertion
+					    		$option['name'],
+					    		$option['type'],
+					    		$option['required'],
+					    		$option['defval'],
+					    		(int)$option['allow_multiple_choise'],
+					    		json_encode($option['options']),
+					    		$info['ami_id'],
+					    		preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($option['name'])),
+					    		
+					    		// For update
+					    		$option['type'],
+					    		$option['required'],
+					    		$option['defval'],
+					    		(int)$option['allow_multiple_choise'],
+					    		json_encode($option['options'])
+					    	));
+					    					    	
+					    	array_push($opt_names, "'{$option['name']}'");
 				    	}
-				    		
-				    	$db->Execute("INSERT INTO role_options SET 
-				    		name=?, type=?, isrequired=?, defval=?, allow_multiple_choice=?, options=?, ami_id=?, hash=?
-				    		ON DUPLICATE KEY UPDATE type=?, isrequired=?, defval=?, allow_multiple_choice=?, options=?
-				    	", array(
-				    		// For insertion
-				    		$option['name'],
-				    		$option['type'],
-				    		$option['required'],
-				    		$option['defval'],
-				    		(int)$option['allow_multiple_choise'],
-				    		json_encode($option['options']),
-				    		$info['ami_id'],
-				    		preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($option['name'])),
-				    		
-				    		// For update
-				    		$option['type'],
-				    		$option['required'],
-				    		$option['defval'],
-				    		(int)$option['allow_multiple_choise'],
-				    		json_encode($option['options'])
-				    	));
-				    					    	
-				    	array_push($opt_names, "'{$option['name']}'");
-			    	}
+				    }
+				    
+				    // Remove removed options from database
+				    $db->Execute("DELETE FROM role_options WHERE ami_id=? AND name NOT IN (".implode(",", $opt_names).")", 
+				    	array($info['ami_id'])
+				    );
 			    }
-			    
-			    // Remove removed options from database
-			    $db->Execute("DELETE FROM role_options WHERE ami_id=? AND name NOT IN (".implode(",", $opt_names).")", 
-			    	array($info['ami_id'])
-			    );
-		    }
-		    catch(Exception $e)
-		    {
-		    	$db->RollbackTrans();
-		        throw new ApplicationException($e->getMessage(), E_ERROR);
-		    }
+			    catch(Exception $e)
+			    {
+			    	$db->RollbackTrans();
+			        throw new ApplicationException($e->getMessage(), E_ERROR);
+			    }
+	        }
 
 		    if ($req_task == 'share')
 	    	{
@@ -301,7 +343,7 @@
 					
 					if (!$errmsg && count($err) == 0)
 					{
-						$db->Execute("UPDATE ami_roles SET approval_state=?, roletype=? WHERE id=?",
+						$db->Execute("UPDATE roles SET approval_state=?, roletype=? WHERE id=?",
 							array(APPROVAL_STATE::PENDING, ROLE_TYPE::SHARED, $info['id'])
 						);
 						
@@ -327,7 +369,7 @@
 						//
 						// Send mail to admins
 						//		
-						$cnt = (int)$db->GetOne("SELECT COUNT(*) FROM ami_roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::PENDING));
+						$cnt = (int)$db->GetOne("SELECT COUNT(*) FROM roles WHERE iscompleted='1' AND roletype=? AND approval_state=? AND clientid != 0", array(ROLE_TYPE::SHARED, APPROVAL_STATE::PENDING));
 						$lnk = "http://{$_SERVER['HTTP_HOST']}/client_roles_view.php?type=SHARED&approval_state=Pending";
 						
 						$emails = explode("\n", CONFIG::$TEAM_EMAILS);

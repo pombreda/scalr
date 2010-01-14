@@ -6,7 +6,7 @@
 </style>
 {/literal}
 <div id="search-ct"></div> 
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -117,7 +117,7 @@ Ext.onReady(function () {
     var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
 	var grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct",
-        id: "logs_list2",
+        id: 'logs_list_'+GRID_VERSION,
         height: 550,
         title: "System Log {/literal}({$table_title_text}){literal}",
         store: store,

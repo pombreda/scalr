@@ -47,8 +47,6 @@
 		public static function GetConfigurationForm($clientid = null)
 		{
 			$ConfigurationForm = new DataForm();
-			$ConfigurationForm->AppendField( new DataFormField(self::PROPERTY_MIN_SIZE, FORM_FIELD_TYPE::TEXT, "Minimum queue size", null, null, 10));
-			$ConfigurationForm->AppendField( new DataFormField(self::PROPERTY_MAX_SIZE, FORM_FIELD_TYPE::TEXT, "Maximum queue size", null, null, 10));
 			
 			if ($clientid)
 			{
@@ -73,6 +71,9 @@
 			
 			if (!$clientid || $err)
 				$ConfigurationForm->AppendField( new DataFormField(self::PROPERTY_QUEUE_NAME, FORM_FIELD_TYPE::TEXT, "Queue name", null, null, ""));
+			
+			$ConfigurationForm->AppendField( new DataFormField(self::PROPERTY_MAX_SIZE, FORM_FIELD_TYPE::TEXT, "Maximum queue size", null, null, 10));
+			$ConfigurationForm->AppendField( new DataFormField(self::PROPERTY_MIN_SIZE, FORM_FIELD_TYPE::TEXT, "Minimum queue size", null, null, 10));
 			
 			return $ConfigurationForm;
 		}

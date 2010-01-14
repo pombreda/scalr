@@ -21,7 +21,7 @@
 		if (!$new_farminfo || $new_farminfo['clientid'] != $zoneinfo['clientid'])
 			UI::Redirect("sites_view.php");
 			
-		$new_roleinfo = $db->GetRow("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=? and farm_amis.ami_id=?", array($post_new_farmid, $post_new_amiid));
+		$new_roleinfo = $db->GetRow("SELECT farm_roles.*, roles.name FROM farm_roles INNER JOIN roles ON roles.ami_id = farm_roles.ami_id WHERE farmid=? and farm_roles.ami_id=?", array($post_new_farmid, $post_new_amiid));
 		if (!$new_roleinfo)
 			UI::Redirect("sites_view.php");
 			
@@ -47,8 +47,8 @@
 			{
 				$Logger->info(_("Updating vhost in database"));
 				
-				$db->Execute("UPDATE vhosts SET farmid=?, role_name=? WHERE id=?",
-					array($post_new_farmid, $new_roleinfo['name'], $vhostinfo['id'])
+				$db->Execute("UPDATE vhosts SET farmid=?, farm_roleid=? WHERE id=?",
+					array($post_new_farmid, $new_roleinfo['id'], $vhostinfo['id'])
 				);
 			}
 			
@@ -64,11 +64,11 @@
 			
 			foreach ($instances as $instance)
     		{
-    		    $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+    		    $ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($instance['ami_id']));
     		    
     			try
 				{
-					$DBFarmRole = DBFarmRole::Load($instance['famrid'], $instance['ami_id']);
+					$DBFarmRole = DBFarmRole::LoadByID($instance['farm_roleid']);
 					$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
 				}
 				catch(Exception $e)
@@ -95,7 +95,7 @@
 				$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($post_new_farmid));
 				foreach ((array)$instances as $instance)
 				{
-					$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+					$alias = $db->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($instance['ami_id']));
 					if ($alias != ROLE_ALIAS::APP && $alias != ROLE_ALIAS::WWW)
 						continue;
 						
@@ -103,10 +103,7 @@
 						continue;
 					
 					$DBInstance = DBInstance::LoadByID($instance['id']);
-					$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
-						$zoneinfo['zone'], 
-						$vhostinfo['issslenabled']
-					));
+					$DBInstance->SendMessage(new VhostReconfigureScalrMessage());
 				}
 			}
 		}
@@ -144,12 +141,13 @@
 	$display['role_name'] = $zoneinfo['role_name'];
 	$display['ami_id'] = $zoneinfo['ami_id'];
 	$display['application'] = $req_application;
+	$display['zoneinfo'] = $zoneinfo;
 	
-	$display['roles'] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farminfo['id']));
+	$display['roles'] = $db->GetAll("SELECT farm_roles.*, roles.name FROM farm_roles INNER JOIN roles ON roles.ami_id = farm_roles.ami_id WHERE farmid=?", array($farminfo['id']));
 
 	$display['farms'] = $db->GetAll("SELECT * FROM farms WHERE clientid=? AND status IN(?,?)", array($farminfo['clientid'], FARM_STATUS::RUNNING, FARM_STATUS::TERMINATED));
 	foreach ($display['farms'] as &$farm)
-		$farm['roles'] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?", array($farm['id']));
+		$farm['roles'] = $db->GetAll("SELECT farm_roles.*, roles.name FROM farm_roles INNER JOIN roles ON roles.ami_id = farm_roles.ami_id WHERE farmid=?", array($farm['id']));
 	
 	require("src/append.inc.php");
 ?>

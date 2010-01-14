@@ -16,7 +16,7 @@
 		public $InstanceIndex = 1;
 		public $AttachOnBoot;
 		public $FarmID;
-		public $RoleName;
+		public $FarmRoleID;
 		public $Region;
 		
 		private $Client;
@@ -37,7 +37,7 @@
 			'instance_index'=> 'InstanceIndex',
 			'attach_on_boot'=> 'AttachOnBoot',
 			'farmid'		=> 'FarmID',
-			'role_name'		=> 'RoleName',
+			'farm_roleid'	=> 'FarmRoleID',
 			'region'		=> 'Region'
 		);
 		

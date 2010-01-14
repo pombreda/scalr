@@ -6,7 +6,7 @@
 {/literal}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="search-ct"></div> 
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -18,7 +18,7 @@ Ext.onReady(function () {
 	
 	// ---- Init search form
 	var searchPanel = new Ext.FormPanel({
-		style: 'margin:5px 5px 15px 5px',
+		style: 'margin-bottom:5px;margin-top:5px;',
 		renderTo: document.body,
         labelWidth: 150,
         frame:true,
@@ -107,7 +107,7 @@ Ext.onReady(function () {
     var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
 	var grid = new Ext.ux.scalr.GridViewer({
         renderTo: "maingrid-ct",
-        id: "scripting_logs_list3",
+        id: 'scripting_logs_list_'+GRID_VERSION,
         height: 550,
         title: "Scripting Log {/literal}({$table_title_text}){literal}",
         store: store,

@@ -1,6 +1,10 @@
 
-	function SendRequestWithConfirmation(RequestObject, ConfirmText, ProgressText, IconClass, OnError, OnSuccess)
+	function SendRequestWithConfirmation(RequestObject, ConfirmText, ProgressText, IconClass, OnError, OnSuccess, URL)
 	{
+		var REQ_URL = '/server/ajax-ui-server.php';
+		if (URL)
+				REQ_URL = URL;
+		
 		Ext.MessageBox.show({
 			title:'Confirm',
 			msg: ConfirmText,
@@ -16,7 +20,7 @@
 			Ext.MessageBox.show({
 			    msg: ProgressText,
 			    progressText: 'Processing...',
-			    width:300,
+			    width:450,
 			    wait:true,
 			    waitConfig: {interval:200},
 			    icon:IconClass, //'ext-mb-info', //custom class in msg-box.html
@@ -26,10 +30,13 @@
 			if (window.TID)
 				RequestObject.decrease_mininstances_setting = 1;
 			
+			if (window.TIF)
+				RequestObject.force_terminate = 1;
+			
 			$('Webta_ErrMsg').style.display = 'none';
 
 			Ext.Ajax.request({
-			   url: '/server/ajax-ui-server.php',
+			   url: REQ_URL,
 			   success: function(response,options){
 			   	
 			   		eval('var result = '+response.responseText+';');

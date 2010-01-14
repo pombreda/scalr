@@ -54,14 +54,14 @@
 	{/literal}
 	</script>
 	<div style="float:right;margin-right:20px;">
-		<img src="/images/dhtmlxtree/csh_vista/folderOpen_scripting.gif" style="vertical-align:middle;"><a href="configure_event_notifications.php?farmid={$farminfo.id}">Configure event notifications</a>
+		<img src="/images/dhtmlxtree/csh_vista/folderOpen_scripting.gif" style="vertical-align:middle;"><a href="configure_event_notifications.php?farmid={$farminfo.id}">Configure / RSS Feed</a>
 	</div>	
 	{include file="inc/table_header.tpl" nofilter=1 table_header_text="Events timeline"}
     	<div id="my-timeline" style="height: 250px; border: 1px solid #aaa"></div>
 	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
 	<br />
 	<link rel="stylesheet" href="css/grids.css" type="text/css" />
-	<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+	<div id="maingrid-ct" class="ux-gridviewer"></div>
 	<script type="text/javascript">
 	var uid = '{$smarty.session.uid}';	
 	{literal}
@@ -88,8 +88,8 @@
 		var grid = new Ext.ux.scalr.GridViewer({
 	        renderTo: "maingrid-ct",
 	        height: 500,
-	        title: "Events list",
-	        id: 'farm_events_list',
+	        title: "Events list {/literal}({$table_title_text}){literal}",
+	        id: 'farm_events_list_'+GRID_VERSION,
 	        store: store,
 	        maximize: true,
 	        viewConfig: { 
@@ -110,35 +110,5 @@
 		return;
 	});
 	{/literal}
-	</script>
-	
-    <!-- 
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" width="100%" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Date</th>
-			<th>Event</th>
-			<th>Message</th>
-		</tr>
-	</thead>
-	<tbody>
-	{section name=id loop=$rows}
-	<tr id='tr_{$smarty.section.id.iteration}'>
-	
-		<td class="Item" valign="top" nowrap>{$rows[id].dtadded}</td>
-		<td class="Item" valign="top" nowrap>{$rows[id].type}</td>
-		<td class="Item" valign="top">{$rows[id].message|nl2br}</td>
-	</tr>
-	{sectionelse}
-	<tr>
-		<td colspan="3" align="center">No events found</td>
-	</tr>
-	{/section}
-	<tr>
-		<td colspan="3" align="center">&nbsp;</td>
-	</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" colspan=9 disable_footer_line=1}
-	 -->	
+	</script>	
 {include file="inc/footer.tpl"}

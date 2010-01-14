@@ -76,7 +76,7 @@
 		
 	$display["add"] = array(1, 2, 3, 4, 5);
 		
-	$display["help"] = _("You can use a %hostname% tag, which will be replaced with full zone hostname.");
+	$display["help"] = _("Default DNS records will be automatically added to all your new Application DNS Zones - If you want to edit existing zone, you should go to Applications -> View and choose the 'Edit DNS zone' option. You can use the %hostname% tag, which will be replaced with full zone hostname.");
 	
 	require("src/append.inc.php"); 
 ?>

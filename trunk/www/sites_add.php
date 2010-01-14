@@ -1,12 +1,12 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Applications&nbsp;&raquo;&nbsp;Add / Edit";
-	
+	$display["title"] = "Webtasites&nbsp;&raquo;&nbsp;Add / Edit";
+
 	if ($_SESSION["_POST"] && $post_vhost_page)
 	{
-		$Validator = new Validator();
-		
+	    $Validator = new Validator(); 
+	
 		if (!$Validator->IsNotEmpty($post_document_root_dir))
 			$err[] = _("Document root required");
 			
@@ -46,20 +46,20 @@
 		@extract($_POST, EXTR_PREFIX_ALL, "post");
 		@extract($_POST, EXTR_PREFIX_ALL, "req");
 	}
-	
+
 	if ($_POST) 
 	{
 		$ZoneControler = new DNSZoneControler();
-	    		
+
 		if ($post_ezone && $post_formadded)	
-		{
+		{  
 		    if ($_SESSION["uid"] != 0)
     		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid='{$_SESSION['uid']}'", array($post_ezone));
     		else
     		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($post_ezone));
     		  
-    		if (!$zoneinfo)
-		      UI::Redirect("sites_view.php");
+			if (!$zoneinfo)
+					UI::Redirect("sites_view.php");			
 		    
 		    $err = array();
 		    
@@ -71,40 +71,107 @@
 		    
 		    $post_zone['soa_expire'] = ((int)$post_zone['soa_expire'] == 0) ? 3600000 : (int)$post_zone['soa_expire'];
 		     
+		 
 		    try
-			{
-			    $db->Execute("UPDATE zones SET soa_expire = ?, soa_owner = ? WHERE id=?",
-			    	array($post_zone['soa_expire'], $post_zone['soa_owner'], $zoneinfo['id'])
-			    );
-				
-				foreach ((array)$post_zone["records"] as $k=>$v)
+			{   
+				if(!isset($post_setup_google_apps_mx_records))
 				{
-					if ($v["rkey"] != '' || $v["rvalue"] != '')
+					$db->Execute("UPDATE zones SET soa_expire = ?, soa_owner = ? WHERE id=?",
+			    		array($post_zone['soa_expire'], $post_zone['soa_owner'], $zoneinfo['id'])
+					);
+					
+					foreach ((array)$post_zone["records"] as $k=>$v)
 					{
-						//
-						// Validate Record
-						//
-						$GLOBALS['warnings'] = array();
-						
-						$reflection = new ReflectionClass("{$v['rtype']}DNSRecord");
-						if ($v['rtype'] == 'MX')
-							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"]);
-						elseif($v['rtype'] == 'SRV')
-							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
-						else
-							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
-						
-						if ($c->__toString() == "")
+						if ($v["rkey"] != '' || $v["rvalue"] != '')
 						{
-							$err = array_merge($GLOBALS['warnings'], $err);
+							//
+							// Validate Record
+							//
+							$GLOBALS['warnings'] = array();
+							
+							$reflection = new ReflectionClass("{$v['rtype']}DNSRecord");
+							if ($v['rtype'] == 'MX')
+								$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"]);
+							elseif($v['rtype'] == 'SRV')
+								$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
+							else
+								$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
+							
+							if ($c->__toString() == "")
+							{
+								$err = array_merge($GLOBALS['warnings'], $err);
+							}
+							else
+								$db->Execute("UPDATE records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `rweight`=?, `rport`=? WHERE id=?", array($v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"], (int)$v["rweight"], (int)$v["rport"], $k));
 						}
 						else
-							$db->Execute("UPDATE records SET `rtype`=?, `ttl`=?, `rpriority`=?, `rvalue`=?, `rkey`=?, `rweight`=?, `rport`=? WHERE id=?", array($v["rtype"], $v["ttl"], (int)$v["rpriority"], $v["rvalue"], $v["rkey"], (int)$v["rweight"], (int)$v["rport"], $k));
+							$db->Execute("DELETE FROM records WHERE id=?", array($k));
 					}
-					else
-						$db->Execute("DELETE FROM records WHERE id=?", array($k));
 				}
-				
+				// add google apps records					
+				else
+				{	
+					$recordsinfo = $db->GetOne("SELECT id FROM records 
+								WHERE zoneid = ? AND rtype = 'MX' AND
+								LOWER(rvalue) = LOWER('ASPMX.L.GOOGLE.COM.')",array($zoneinfo["id"])
+										);
+					
+					if(!$recordsinfo)
+					{
+						$post_add = array();
+						$post_add[] = array(
+								'rkey' => '@', 
+								'ttl' => '3600', 
+								'rtype' => 'MX', 
+								'rpriority' => '1', 
+								'rweight' => '0',
+								'rport' => '0',
+								'issystem' => '0',
+								'rvalue' =>'ASPMX.L.GOOGLE.COM.'
+								);
+						$post_add[] = array(
+								'rkey' => '@', 
+								'ttl' => '3600', 
+								'rtype' => 'MX', 
+								'rpriority' => '5', 
+								'rweight' => '0',
+								'rport' => '0',
+								'issystem' => '0',
+								'rvalue' =>'ALT1.ASPMX.L.GOOGLE.COM.'
+								);
+						$post_add[] = array(
+								'rkey' => '@', 
+								'ttl' => '3600', 
+								'rtype' => 'MX', 
+								'rpriority' => '5', 
+								'rweight' => '0',
+								'rport' => '0',
+								'issystem' => '0',
+								'rvalue' =>'ALT2.ASPMX.L.GOOGLE.COM.'
+								);
+						$post_add[] = array(
+								'rkey' => '@', 
+								'ttl' => '3600', 
+								'rtype' => 'MX', 
+								'rpriority' => '10', 
+								'rweight' => '0',
+								'rport' => '0',
+								'issystem' => '0',
+								'rvalue' =>'ASPMX2.GOOGLEMAIL.COM.'
+								);
+						$post_add[] = array(
+								'rkey' => '@', 
+								'ttl' => '3600', 
+								'rtype' => 'MX', 
+								'rpriority' => '10', 
+								'rweight' => '0',
+								'rport' => '0',
+								'issystem' => '0',
+								'rvalue' =>'ASPMX3.GOOGLEMAIL.COM.'
+								);
+					}
+				}
+			
 				foreach ((array)$post_add as $k=>$v)
 				{
 					if ($v["rkey"] != '' || $v["rvalue"] != '')
@@ -121,10 +188,12 @@
 							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"], $v["rpriority"], $v["rweight"], $v["rport"]);
 						else
 							$c = $reflection->newInstance($v["rkey"], $v["rvalue"], $v["ttl"]);
-						
 						if ($c->__toString() == "")
-							$err = array_merge($GLOBALS['warnings'], $err);
-						else
+						{
+							$err = array_merge($GLOBALS['warnings'], $err); 
+						}
+						else	
+						{
 							$db->Execute("INSERT INTO records SET 
 								zoneid=?, 
 								`rtype`=?, 
@@ -132,7 +201,8 @@
 								`rpriority`=?, 
 								`rvalue`=?, 
 								`rkey`=?, 
-								`rweight`=?, 
+								`rweight`=?,
+								`issystem`='0', 
 								`rport`=?", 
 							array(
 								$zoneinfo["id"], 
@@ -144,9 +214,10 @@
 								(int)$v["rweight"], 
 								(int)$v["rport"]
 							));
+						}
 					}
 				}
-								
+							
 				if (count($err) == 0)
 				{
 					$db->CommitTrans();
@@ -179,7 +250,12 @@
 			if (!$errmsg)
 			{
 				$okmsg = _("Zone successfully updated");
-				UI::Redirect("sites_view.php");	
+				
+				if (isset($post_setup_google_apps_mx_records) == true)
+					UI::Redirect("sites_add.php?ezone={$zoneinfo["zone"]}");
+				else 
+					UI::Redirect("sites_view.php");				
+				
 			}
 		}
 		elseif ($post_domainname && $post_formadded)
@@ -187,15 +263,16 @@
 			if ($_SESSION["uid"] == 0)
 				UI::Redirect("index.php");
 		    
-			if (stristr($post_domainname, "scalr.net"))
+			if (stristr($post_domainname, "scalr.net") && $_SESSION['uid'] != 263)
 				$err[] = _("You cannot use *.scalr.net as your application");
 				
 		    $status = false;
 			$post_hostname = $post_domainname;
 			
-			$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
-			
-			if ($roleinfo['alias'] == ROLE_ALIAS::APP || $roleinfo['alias'] == ROLE_ALIAS::WWW)
+						
+			$DBFarmRole = DBFarmRole::Load($post_farmid, $post_ami_id);
+						
+			if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::APP || $DBFarmRole->GetRoleAlias() == ROLE_ALIAS::WWW)
 			{
 				try
 				{					
@@ -209,39 +286,34 @@
 							ssl_cert			= ?,
 							ssl_pkey			= ?,
 							aliases				= ?,
-							role_name		 	= ?
+							farm_roleid		 	= ?
 						", 
 						array($post_domainname, $_SESSION["vhost_settings"]["document_root_dir"], 
 							$_SESSION["vhost_settings"]["server_admin"], $_SESSION["vhost_settings"]["issslenabled"], $post_farmid, 
 							$_SESSION["vhost_settings"]["logs_dir"], 
 							$_SESSION["vhost_settings"]["ssl_cert"], $_SESSION["vhost_settings"]["ssl_pkey"], 
 							$_SESSION["vhost_settings"]["aliases"],
-							$roleinfo['name']
+							$DBFarmRole->ID
 						)
 					);
-					
-					$zone_ami_info = $roleinfo;
 					
 					$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($post_farmid));
 					$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?", array($post_farmid));
 					foreach ((array)$instances as $instance)
 					{
-						$alias = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+						$alias = $db->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($instance['ami_id']));
 						if ($alias != ROLE_ALIAS::APP && $alias != ROLE_ALIAS::WWW)
 							continue;
 							
-						if ($zone_ami_info['alias'] == ROLE_ALIAS::APP && $zone_ami_info['ami_id'] != $instance['ami_id'])
+						if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::APP && $DBFarmRole->ID != $instance['farm_roleid'])
 							continue;
 						
 						$DBInstance = DBInstance::LoadByID($instance['id']);
-						$DBInstance->SendMessage(new VhostReconfigureScalrMessage(
-							$post_domainname, 
-							$_SESSION["vhost_settings"]["issslenabled"]
-						));
+						$DBInstance->SendMessage(new VhostReconfigureScalrMessage());
 					}
 				}
 				catch(Exception $e)
-				{
+				{					
 					$Logger->fatal($e->getMessage());
 				}
 			}
@@ -264,14 +336,14 @@
 			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($post_farmid, INSTANCE_STATE::RUNNING));
     		foreach ($instances as $instance)
     		{
-    		    $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+    		    $ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($instance['ami_id']));
 
-    		    $DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
-    		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
+    		    $iDBFarmRole = DBFarmRole::LoadByID($instance['farm_roleid']);
+    		    if ($iDBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
     		    {
-    		    	$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
+    		    	$skip_main_a_records = ($iDBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
     		    	
-    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $roleinfo["name"], $ami_info['alias'], $skip_main_a_records);
+    		    	$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instance, $iDBFarmRole->GetRoleName(), $ami_info['alias'], $skip_main_a_records);
     		    	$records = array_merge($records, $instance_records);
     		    }
     		}
@@ -328,7 +400,7 @@
 					$post_farmid, 
 					$post_ami_id, 
 					$_SESSION["uid"], 
-					$roleinfo['name'], 
+					$DBFarmRole->GetRoleName(), 
 					ZONE_STATUS::PENDING)
 				);
 				$zoneid = $db->Insert_ID();
@@ -385,42 +457,58 @@
 					
 					TaskQueue::Attach(QUEUE_NAME::CREATE_DNS_ZONE)->AppendTask(new CreateDNSZoneTask($zoneid));
 					
-					$okmsg = "Application succesfuly created. DNS zone for {$post_domainname} will be created in a few minutes. Until then, {$post_domainname} will not be resolving.";
+					$okmsg = "Application successfully created. DNS zone for {$post_domainname} will be created in a few minutes. Until then, {$post_domainname} will not resolve.";
 				    UI::Redirect("sites_view.php");
 				}
     		}
 		}
 	}
-	
+
 	if ($post_ezone || $req_ezone)
-	{
+	{	// First load if $req_ezone exists
 		$zone = ($post_ezone) ? $post_ezone : $req_ezone;
 		
 		if ($_SESSION["uid"] != 0)
-		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid='{$_SESSION['uid']}'", array($zone));
+		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid='{$_SESSION['uid']}'", array($zone));		  
 		else
 		  $zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($zone));
-		  
+	
 		if (!$zoneinfo)
-			UI::Redirect("sites_view.php");
+			UI::Redirect("sites_view.php"); 
+		
 		
 		$records = $db->GetAll("SELECT * FROM records WHERE zoneid='{$zoneinfo["id"]}' ORDER BY rtype ASC, issystem DESC");
+	
+		//Check ASPMX.L.GOOGLE.COM. availability to en/desable button		
 		
-		$display["zone"] = $zoneinfo;
+		$googleArray = array('aspmx.l.google.com.','alt1.aspmx.l.google.com.','alt2.aspmx.l.google.com.',
+							'aspmx2.googlemail.com.','aspmx3.googlemail.com.');		
+
+		foreach($records as $record)
+		{
+			if (in_array(strtolower($record["rvalue"]), $googleArray)) 
+			{
+				$display["disable_btn_setup_google_apps_mx"] = true;
+				break;
+			}		
+		}		
+			
+		$display["zone"] = $zoneinfo;		
 		$display["zone"]["records"] = $records;
 		$display["domainname"] = $display["zone"]["zone"];
+		
 	}
 	else
-	{
-		$display = array_merge($display, $_POST);
-		$display["zone"] = $_POST;
-		
+	{ // Run farm, or create new one...
+		$display = array_merge($display, $_POST); 
+		$display["zone"] = $_POST;   
+	    
 		if ($post_domainname)
 		{
 			$db_chk = $db->GetRow("SELECT * FROM zones WHERE zone=?", array($post_domainname));
 			if (!$db_chk["id"])
 			{
-				if (stristr($post_domainname, "scalr.net"))
+				if (stristr($post_domainname, "scalr.net") && $_SESSION['uid'] != 263)
 				{
 					$errmsg = _("You cannot use *.scalr.net as your application");
 					$display["domainname"] = false;
@@ -434,10 +522,10 @@
 				$errmsg = sprintf(_("DNS zone for %s already exists"), $post_domainname);
 			}
 		}
-		
+	
 		$display["ami_id"] = $post_ami_id;
 		
-		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
+		$roleinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($post_ami_id));
 		
 		if (($roleinfo['alias'] == ROLE_ALIAS::APP || $roleinfo['alias'] == ROLE_ALIAS::WWW) && !$_SESSION["vhost_settings"])
 		{
@@ -452,8 +540,12 @@
 			$display["vhost"]["logs_dir"] = CONFIG::$APACHE_LOGS_DIR;
 			$display["button2_name"] = "Next";
 			
-			$display["can_use_ssl"] = !(bool)$db->GetOne("SELECT id FROM vhosts WHERE issslenabled='1' AND farmid=? AND name!=? AND role_name!=?",
-				array($zoneinfo['farmid'], $post_domainname, $roleinfo['name'])
+			$farmid = ($zoneinfo['farmid']) ? $zoneinfo['farmid'] : $post_farmid;
+			
+			$DBFarmRole = DBFarmRole::Load($farmid, $post_ami_id);
+			
+			$display["can_use_ssl"] = !(bool)$db->GetOne("SELECT id FROM vhosts WHERE issslenabled='1' AND farmid=? AND name!=? AND farm_roleid!=?",
+				array($farmid, $post_domainname, $DBFarmRole->ID)
 			);
 			
 			$_SESSION['_POST'] = $_POST;
@@ -487,14 +579,14 @@
 		$records = array();
 		if (count($display["zone"]["records"]) == 0)
 		{
-    		$roleinfo = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($post_ami_id));
+    		$roleinfo = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($post_ami_id));
     		
 			$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND state=? AND isactive='1'", array($display["farm"]["id"], INSTANCE_STATE::RUNNING));
     		foreach ($instances as $instance)
     		{
-    			$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance['ami_id']));
+    			$ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($instance['ami_id']));
     			
-    			$DBFarmRole = DBFarmRole::Load($instance['farmid'], $instance['ami_id']);
+    			$DBFarmRole = DBFarmRole::LoadByID($instance['farm_roleid']);
     		    if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_EXCLUDE_FROM_DNS) != 1)
     		    {    			
     				$skip_main_a_records = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB) == 1) ? true : false;
@@ -522,17 +614,16 @@
     		    
 		$display["zone"]["records"] = $records;
 		
-		$display["roles"] = $db->GetAll("SELECT * FROM ami_roles WHERE iscompleted='1' AND ami_id IN (SELECT ami_id FROM farm_amis WHERE farmid=?)", array($req_farmid));
-	}
-	
+		$display["roles"] = $db->GetAll("SELECT * FROM roles WHERE iscompleted='1' AND ami_id IN (SELECT ami_id FROM farm_roles WHERE farmid=?)", array($req_farmid));
+	}	
+
 	$display["add"] = array(1, 2, 3, 4, 5);
 	$display["def_sn"] = date("Ymd")."01";
 	$display["ezone"] = ($_GET["ezone"]) ? $_GET["ezone"] : $_POST["ezone"];
 	$display["def_soa_owner"] = CONFIG::$DEF_SOA_OWNER;
 	$display["def_soa_parent"] = CONFIG::$DEF_SOA_PARENT;
-
-	if ($display["ezone"])
-		$display["help"] = sprintf(_("Scalr nameservers support <a href=\"http://en.wikipedia.org/wiki/DNS_zone_transfer\" target=\"_blank\">DNS zone transfers</a>. If you want to deploy your own backup DNS, click <a href=\"dns_zone_config.php?zone=%s\">here</a> to configure IP adresses of your DNS servers."), $display["ezone"]);
 		
+if ($display["ezone"])	
+	$display["help"] = sprintf(_("If you wish to create default DNS entries to appear in every zone you create, go to Settings -> Default DNS Settings"), $display["ezone"]);
 	require("src/append.inc.php"); 
 ?>

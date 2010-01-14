@@ -1,5 +1,4 @@
 {include file="inc/header.tpl"}
-<br />
 {include file="inc/table_header.tpl" nofilter=1}
 	<input type="hidden" name="farmid" value="{$farminfo.id}" />
     {include file="inc/intable_header.tpl" header="RSS feed settings" color="Gray"}

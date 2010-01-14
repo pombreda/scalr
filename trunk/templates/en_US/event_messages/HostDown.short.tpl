@@ -1,1 +1,1 @@
-{$event->InstanceInfo.instance_id}({$event->InstanceInfo.role_name}) Down
+{$event->DBInstance->InstanceID}({$event->DBInstance->RoleName}) Down

@@ -61,7 +61,25 @@
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
+		{include file="inc/intable_header.tpl" header="Date &amp; Time settings" color="Gray"}
+		<tr>
+			<td>{t}Timezone{/t}:</td>
+			<td>
+				<select name="system.timezone" class="text">
+				{section name=id loop=$timezones}
+					<option {if $timezone == $timezones[id]}selected{/if} value="{$timezones[id]}">{$timezones[id]}</option>
+				{/section}
+				</select>
+			</td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
+		
 		{include file="inc/intable_header.tpl" header="RSS feed settings" color="Gray"}
+		<tr>
+			<td colspan="2">
+				Each farm has an events and notifications page. You can get these events outside of Scalr on an RSS reader with the below credentials.
+			</td>
+		</tr>
 		<tr>
 			<td>{t}Login{/t}:</td>
 			<td><input name="rss_login" type="text" class="text" id="rss_login" value="{$rss_login}"></td>

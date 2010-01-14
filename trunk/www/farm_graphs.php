@@ -24,7 +24,8 @@
         
     try
     {
-    	$Watcher = new SNMPWatcher("", $farminfo['id']);
+    	$Watcher = new SNMPWatcher();
+    	$Watcher->SetConfig("", $farminfo['id']);
     	$Watcher->PlotGraphic(strtoupper($req_type)."SNMP", $req_img);
     }
     catch(Exception $e)

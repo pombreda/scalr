@@ -1,7 +1,7 @@
 {include file="inc/header.tpl"}
 	<link rel="stylesheet" type="text/css" href="/js/highlight/styles/default.css" />
 	<link rel="stylesheet" type="text/css" href="/js/highlight/styles/sunburst.css" />
-	<br />
+
 	<div style="position:relative;width:auto;">
 	<script language="javascript" type="text/javascript" src="/js/highlight/highlight.js"></script>
 	<script language="javascript">

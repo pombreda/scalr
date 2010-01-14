@@ -30,7 +30,7 @@
         if (!preg_match("/^[A-Za-z0-9-]+$/", $post_name))
 			$err[] = _("Allowed chars for role name is [A-Za-z0-9-]");
 		
-		if ($db->GetOne("SELECT id FROM ami_roles WHERE name=? AND (clientid='0' OR clientid='{$_SESSION['uid']}') AND id != ? AND iscompleted != 2", array($post_name, (int)$post_id)))
+		if ($db->GetOne("SELECT id FROM roles WHERE name=? AND (clientid='0' OR clientid='{$_SESSION['uid']}') AND id != ? AND iscompleted != 2", array($post_name, (int)$post_id)))
 			$err[] = sprintf(_("Role with name %s already exists"), $post_name);
 		
 	    if (!$Validator->IsNumeric($post_default_minLA) || $post_default_minLA <= 0)
@@ -61,15 +61,15 @@
 	            	$db->BeginTrans();
 	            	try
 	                {
-		            	$instance_ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));  
+		            	$instance_ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($instance_info["ami_id"]));  
 		            	$alias = $instance_ami_info["alias"];
 		                $architecture = $instance_ami_info["architecture"];
 		                $instance_type = $instance_ami_info["instance_type"];
 		                $ami_info = $instance_ami_info;
 	                	
-	                	$old_roleid = $db->GetOne("SELECT id FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));
+	                	$old_roleid = $db->GetOne("SELECT id FROM roles WHERE ami_id=?", array($instance_info["ami_id"]));
 		                
-		                $farm_ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+		                $farm_ami_info = $db->GetRow("SELECT * FROM farm_roles WHERE ami_id=? AND farmid=?", 
 							array($instance_info["ami_id"], $instance_info['farmid'])
 						);
 						
@@ -77,12 +77,12 @@
 							$instance_type = $farm_ami_info["instance_type"];
 						
 						if (!$instance_type)
-							$instance_type = $db->GetOne("SELECT instance_type FROM ami_roles WHERE ami_id=?", array($instance_info["ami_id"]));
+							$instance_type = $db->GetOne("SELECT instance_type FROM roles WHERE ami_id=?", array($instance_info["ami_id"]));
 		                
 		                // Update last synchronization date
                 		$db->Execute("UPDATE farm_instances SET dtlastsync=? WHERE id=?", array(time(), $instance_info['id']));
 		                
-		                $db->Execute("INSERT INTO ami_roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
+		                $db->Execute("INSERT INTO roles SET name=?, roletype=?, clientid=?, prototype_iid=?, 
 		                	iscompleted='0', default_minLA=?, default_maxLA=?, alias=?, architecture=?, 
 		                	instance_type=?, dtbuildstarted=NOW(), region=?", 
 		                	array($post_name, ROLE_TYPE::CUSTOM, $_SESSION['uid'], $instance_info['instance_id'], 
@@ -133,17 +133,20 @@
 	       $instance_info = $db->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($rowz[$pk]->instancesSet->item->instanceId));
 	       if ($instance_info)
 	       {
-				$farm_role_info = $db->GetRow("SELECT * FROM farm_amis WHERE ami_id=? AND farmid=?", 
+				$farm_role_info = $db->GetRow("SELECT * FROM farm_roles WHERE ami_id=? AND farmid=?", 
 					array($rowz[$pk]->instancesSet->item->imageId, $instance_info['farmid'])
 				);
 				
 				if ($farm_role_info)
 					$rowz[$pk]->RoleInfo = array('min' => $farm_role_info['min_LA'], 'max' => $farm_role_info['max_LA']);
+					
+				$rowz[$pk]->FarmID = $instance_info['farmid'];
+				$rowz[$pk]->FarmName = $db->GetOne("SELECT name FROM farms WHERE id=?", array($instance_info['farmid']));
 	       }
 	    	
-	       $rowz[$pk]->Role = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($instance_info['ami_id']));
+	       $rowz[$pk]->Role = $db->GetOne("SELECT name FROM roles WHERE ami_id=?", array($instance_info['ami_id']));
 	       
-	       if ($rowz[$pk]->Role && !$db->GetOne("SELECT id FROM ami_roles WHERE iscompleted='0' AND prototype_iid='{$rowz[$pk]->instancesSet->item->instanceId}'"))
+	       if ($rowz[$pk]->Role && !$db->GetOne("SELECT id FROM roles WHERE iscompleted='0' AND prototype_iid='{$rowz[$pk]->instancesSet->item->instanceId}'"))
 	           $display["rows"][] = $rowz[$pk];
 	    }
 	}

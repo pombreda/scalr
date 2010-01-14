@@ -16,6 +16,7 @@
 	$display['title'] = 'Elastic Load Balancer details';
 	
 	$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+	$AmazonELBClient->SetRegion($_SESSION['aws_region']);
 
 	$info = $AmazonELBClient->DescribeLoadBalancers(array($req_name));
 	$elb = $info->DescribeLoadBalancersResult->LoadBalancerDescriptions->member;

@@ -108,7 +108,7 @@
 		// Regular keys
 		foreach($_POST as $k => $v)
 		{
-			if (!in_array($k, array('pass', 'pass2', 'logger_password')))
+			if (!in_array($k, array('pass', 'admin_password', 'logger_password')))
 				$db->Execute("REPLACE INTO config SET `value`=?, `key`=?", array(stripslashes($v), $k));
 		}
 		

@@ -59,7 +59,7 @@
 		 			    //
 						// Load menu
 						//
-						Core::load("XMLNavigation", $sub_src_dir);
+						//Core::load("XMLNavigation", $sub_src_dir);
 						require("{$sub_src_dir}/navigation.inc.php");
 						
 						$post_serialized = self::SerializePOST($_POST);

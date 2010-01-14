@@ -1,6 +1,6 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -38,6 +38,10 @@ Ext.onReady(function () {
     	return value;
     }
 
+	function domainRenderer(value, p, record) {
+		return '<a target="_blank" href="http://'+record.data.zone+'">'+record.data.zone+'</a>';
+	}
+
 	function farmRenderer(value, p, record) {
 		return '<a href="/farms_view.php?farmid='+record.data.farmid+'">'+record.data.farm_name+'</a>';
 	}
@@ -51,7 +55,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Applications",
-        id: 'apps_list',
+        id: 'apps_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
@@ -60,7 +64,7 @@ Ext.onReady(function () {
 
         // Columns
         columns:[
-			{header: "Domain name", width: 100, dataIndex: 'zone', sortable: true},
+			{header: "Domain name", width: 100, dataIndex: 'zone', renderer:domainRenderer, sortable: true},
 			{header: "Farm", width: 100, dataIndex: 'farm_name', renderer:farmRenderer, sortable: false},
 			{header: "Role", width: 100, dataIndex: 'role_name', renderer:roleRenderer, sortable: true},
 			{header: "DNS Zone status", width: 50, dataIndex: 'string_status', renderer: renderStatus, sortable: false}
@@ -70,7 +74,8 @@ Ext.onReady(function () {
 		
     	// Row menu
     	rowOptionsMenu: [
-			{id: "option.edit", 		text:'Edit DNS Zone', 			  	href: "/sites_add.php?ezone={zone}"},
+			{id: "option.edit", 		text:'Edit DNS Zone', 		href: "/sites_add.php?ezone={zone}"},
+			{id: "option.ZoneSettings", text:'Settings', 			href: "/app_zone_settings.php?zoneid={id}"},
 			new Ext.menu.Separator({id: "option.editSep"}),
 			{id: "option.switch", 	text: 'Switch application to another farm / role', 	href: "/app_switch.php?application={zone}"},
 			{id: "option.configureVhost", 	text: 'Configure apache virtual host', 	href: "/vhost.php?name={zone}"}
@@ -107,9 +112,9 @@ Ext.onReady(function () {
 		withSelected: {
 			menu: [
 				{text: "Delete", value: "delete", handler:function(){
-
+					
 					var zones = grid.getSelectionModel().selections.keys;
-
+					
 					SendRequestWithConfirmation(
 						{
 							action: 'RemoveApplications', 

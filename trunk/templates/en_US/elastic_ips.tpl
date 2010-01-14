@@ -1,15 +1,14 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
 
 var regions = [
-{section name=id loop=$regions}
-	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
-{/section}
+{foreach from=$regions name=id key=key item=item}
+	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
+{/foreach}
 ];
 
 var region = '{$smarty.session.aws_region}';
@@ -69,7 +68,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Elastic IPs",
-        id: 'eips_list',
+        id: 'eips_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
@@ -78,7 +77,7 @@ Ext.onReady(function () {
 
         enableFilter: false,
         
-		tbar: [{text: 'Region:'}, new Ext.form.ComboBox({
+		tbar: [{text: 'Location:'}, new Ext.form.ComboBox({
 			allowBlank: false,
 			editable: false, 
 	        store: regions,
@@ -90,7 +89,7 @@ Ext.onReady(function () {
 	        selectOnFocus:false,
 	        width:100,
 	        listeners:{select:function(combo, record, index){
-	        	store.baseParams.region = record.data.value; 
+	        	store.baseParams.region = combo.getValue(); 
 	        	store.load();
 	        }}
 	    })],

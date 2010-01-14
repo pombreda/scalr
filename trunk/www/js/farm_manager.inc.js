@@ -330,15 +330,9 @@
     		if (typeof(window.RoleTabsPanel.items.items[i]) == 'object')
     		{
     			if (window.RoleTabsPanel.items.items[i].id != skip_tab)
-    				window.RoleTabsPanel.hideTabStripItem(i);
+    				window.RoleTabsPanel.hideTabStripItem(window.RoleTabsPanel.items.items[i]);
     		}
     	}
-    	
-    	/*
-    	window.RoleTabsPanel.items.each(function(item){
-    		item.hideTabStripItem(item);
-    	});
-    	*/
     }
     
     
@@ -348,7 +342,7 @@
     	{
     		if (typeof(window.RoleTabsPanel.items.items[i]) == 'object')
     		{
-    			window.RoleTabsPanel.unhideTabStripItem(i);
+    			window.RoleTabsPanel.unhideTabStripItem(window.RoleTabsPanel.items.items[i]);
     		}
     	}
     }
@@ -376,26 +370,38 @@
             return false;
     }
     		            	            
-    function ShowEBSOptions(ctype)
+    function ShowEBSOptions(ischecked)
     {
-    	if (ctype == 1)
+    	if (!ischecked)
     	{
     		$('ebs_mount_options').style.display = 'none';
-    		$('ebs_size').disabled = true;
-    		$('ebs_snapid').disabled = true;
+    		$('aws.ebs_size').disabled   = true;
+    		$('aws.ebs_snapid').disabled = true;
     	}
-    	else if (ctype == 2)
+    	else
     	{
     		$('ebs_mount_options').style.display = '';
-    		$('ebs_size').disabled = false;
-    		$('ebs_snapid').disabled = true;
+    		$('aws.ebs_size').disabled   = false;
+    		$('aws.ebs_snapid').disabled = false;
     	}
-    	else if (ctype == 3)
-    	{
-    		$('ebs_mount_options').style.display = '';
-    		$('ebs_size').disabled = true;
-    		$('ebs_snapid').disabled = false;
-    	}
+    	
+    	$('aws.ebs_mountpoint').disabled = !$('aws.ebs_mount').checked;
+    }
+    
+    function ShowMTAOptions(ischecked)    
+    {
+        if(!ischecked)
+        {        
+            $('mta_options').style.display      = 'none';
+            $('mta.gmail.login').disabled       = true;
+            $('mta.gmail.password').disabled    = true;
+        }
+        else 
+        {   
+            $('mta_options').style.display      = '';
+            $('mta.gmail.login').disabled       = false;
+            $('mta.gmail.password').disabled    = false;
+        }       
     }
     
     function ViewTemplateSource()

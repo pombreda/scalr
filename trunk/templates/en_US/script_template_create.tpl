@@ -90,12 +90,32 @@
     					<td width="5">&nbsp;</td>
     					<td>
     						<b>{t}Built-in variables{/t}:</b><br>
-    						{section name=id loop=$sys_vars}
-    						<span onclick="AddVarToScript('{$sys_vars[id]}');" title="Click to add variable to script" style="cursor:pointer;margin-right:5px;white-space:nowrap">%{$sys_vars[id]}%</span>
-    						{/section}
+    						{foreach name=id from=$sys_vars key=item_name item=item}
+    						<span onclick="AddVarToScript('{$item_name}');" title="Click to add variable to script" style="cursor:pointer;margin-right:5px;white-space:nowrap">%{$item_name}%</span>
+    						{/foreach}
+    						<br />
+    						{foreach name=id from=$sys_vars key=item_name item=item}
+    							{if $item|@is_array}
+    							<br />
+    							<span style="font-size:10px;font-style:italic;">Built-in %{$item_name}% variable avaiable only if script executed on
+    							{if !$item.EventName|is_array} 
+    								{$item.EventName} event.
+    							{else}
+    								{section name=idd loop=$item.EventName}
+    									{if !$smarty.section.idd.last}
+    										{$item.EventName[idd]},
+    									{else}
+    										{$item.EventName[idd]}
+    									{/if} 
+    								{/section}
+    								events.
+    							{/if} 
+    							</span>
+    							{/if}
+    						{/foreach}
     						<!--
     						<br><br>
-    						<i>{t}Built-in %mountpoint% variable avaiable only if script executed on EBSVolumeMounted event.{/t}</i>
+    						
     						 -->
     						<br><br>
     						{t}You may use own variables as %variable%. Variable values can be set for each role in farm settings.{/t}

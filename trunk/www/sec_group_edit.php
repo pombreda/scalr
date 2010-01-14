@@ -4,6 +4,9 @@
 	if ($_SESSION["uid"] == 0)
 	   UI::Redirect("index.php");
 	
+	if ($req_role_name)
+		$req_name = CONFIG::$SECGROUP_PREFIX.$req_role_name;
+	   
 	if (!$req_name || (!stristr($req_name, CONFIG::$SECGROUP_PREFIX) && !$_SESSION['sg_show_all']))
 	{
 	    $errmsg = "Please select security group from list";
@@ -11,7 +14,7 @@
 	}
 	
 	
-	$display["title"] = "Security group&nbsp;&raquo;&nbsp;Edit";
+	$display["title"] = "Security group&nbsp;&raquo;&nbsp;Edit group '{$req_name}'";
 	
 	$display["group_name"] = $req_name;	
 	
@@ -35,7 +38,7 @@
 	catch(Exception $e)
 	{
 		$errmsg = $e->getMessage();
-		UI::Redirect("sec_group_view.php");
+		UI::Redirect("sec_groups_view.php");
 	}
 
 	$group_rules = array();

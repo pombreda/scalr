@@ -35,7 +35,7 @@
     		<td>
     		<select id="instance_id" name="instance_id" onChange="SetDefaultInfo(this.value);">
     		{section name=id loop=$rows}
-    		    <option value="{$rows[id]->instancesSet->item->instanceId}">{$rows[id]->instancesSet->item->instanceId} - {$rows[id]->Role} ({$rows[id]->instancesSet->item->imageId})</option>
+    		    <option value="{$rows[id]->instancesSet->item->instanceId}">{$rows[id]->instancesSet->item->instanceId} - {$rows[id]->Role} ({$rows[id]->instancesSet->item->imageId}) - Farm: {$rows[id]->FarmID} ({$rows[id]->FarmName})</option>
     		{/section}
     		</select>
     		</td>

@@ -6,12 +6,25 @@
 		public $IsActive;
 		public $Email;
 		public $Fullname;
+		public $AddDate;
+		public $IsBilled;
 		public $AWSAccountID;
 		public $AWSAccessKeyID;
 		public $AWSAccessKey;
 		public $AWSPrivateKey;
 		public $AWSCertificate;
 		public $FarmsLimit = 0;
+		public $Organization;
+		public $Country;
+		public $State;
+		public $City;
+		public $ZipCode;
+		public $Address1;
+		public $Address2;
+		public $Phone;
+		public $Fax;
+		public $Comments;
+  			
 		
 		public $ScalrKeyID;
 		private $ScalrKey;
@@ -29,6 +42,18 @@
 			'farms_limit'	=> 'FarmsLimit',
 			'scalr_api_keyid' => 'ScalrKeyID',
 			'scalr_api_key' => 'ScalrKey',
+			'dtadded'		=> 'AddDate',
+			'isbilled'		=> 'IsBilled',
+			'org' => 'Organization',
+  			'country' => 'Country',
+  			'state' => 'State',
+  			'city' => 'City',
+  			'zipcode' => 'ZipCode',
+  			'address1' => 'Address1',
+  			'address2' => 'Address2',
+  			'phone' => 'Phone',
+  			'fax' => 'Fax',
+			'comments' => 'Comments'		
 		);
 		
 		/**
@@ -100,11 +125,17 @@
 				}
 				else
 				{
-					$Client->AWSPrivateKey = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-			    	$Client->AWSCertificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+					if ($clientinfo["aws_private_key_enc"])
+						$Client->AWSPrivateKey = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
 			    	
-			    	$Client->AWSAccessKeyID = $Crypto->Decrypt($clientinfo["aws_accesskeyid"], $cpwd);
-			    	$Client->AWSAccessKey = $Crypto->Decrypt($clientinfo["aws_accesskey"], $cpwd);
+					if ($clientinfo["aws_certificate_enc"])
+						$Client->AWSCertificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
+			    	
+			    	if ($clientinfo["aws_accesskeyid"])
+			    		$Client->AWSAccessKeyID = $Crypto->Decrypt($clientinfo["aws_accesskeyid"], $cpwd);
+			    		
+			    	if ($clientinfo["aws_accesskey"])
+			    		$Client->AWSAccessKey = $Crypto->Decrypt($clientinfo["aws_accesskey"], $cpwd);
 				}
 				
 				self::$ClientsCache[$id] = $Client;
@@ -138,7 +169,7 @@
 		{
 			$db = Core::GetDBInstance();
 			
-			$clientid = $db->GetRow("SELECT id FROM clients WHERE email=?", array($email));
+			$clientid = $db->GetOne("SELECT id FROM clients WHERE email=?", array($email));
 			if (!$clientid)
 				throw new Exception(sprintf(_("Client with email=%s not found in database"), $email));
 				
@@ -155,6 +186,27 @@
 		{
 			return $this->DB->GetOne("SELECT value FROM client_settings WHERE clientid=? AND `key`=?",
 				array($this->ID, $name)
+			);
+		}
+		
+		/**
+		 * Set client setting
+		 * @param string $name
+		 * @param mixed $value
+		 * @return void
+		 */
+		public function SetSettingValue($name, $value)
+		{
+			$this->DB->Execute("REPLACE INTO client_settings SET `key`=?, `value`=?, clientid=?",
+				array($name, $value, $this->ID)
+			);
+		}
+
+		public function ClearSettings ($filter)
+		{
+			$this->DB->Execute(
+				"DELETE FROM client_settings WHERE `key` LIKE '{$filter}' AND clientid = ?",
+				array($this->ID)
 			);
 		}
 	}

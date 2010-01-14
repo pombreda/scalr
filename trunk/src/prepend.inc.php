@@ -73,7 +73,11 @@
 	define("CF_SMARTYBIN_PATH", CACHEPATH."/smarty_bin/".LOCALE);
 	define("CF_SMARTYCACHE_PATH", CACHEPATH."/smarty/".LOCALE);
 	
-	// require autoload definition
+	// Require autoload definition
+	$classpath[] = dirname(__FILE__);
+	$classpath[] = dirname(__FILE__) . "/Lib/ZF";
+	set_include_path(get_include_path() . PATH_SEPARATOR . join(PATH_SEPARATOR, $classpath));
+
 	require_once (SRCPATH."/autoload.inc.php");
 
 	// require sanitizer
@@ -98,6 +102,8 @@
 	require_once(SRCPATH."/queue_tasks/class.CreateDNSZoneTask.php");
 	require_once(SRCPATH."/queue_tasks/class.DeleteDNSZoneTask.php");
 	
+		
+	
 	// All uncaught exceptions will raise ApplicationException
 	function exception_handler($exception) 
 	{
@@ -105,6 +111,7 @@
 	}
 	set_exception_handler("exception_handler");
 		
+	
 	////////////////////////////////////////
 	// LibWebta		                      //
 	////////////////////////////////////////
@@ -129,10 +136,13 @@
 	Core::Load("NET/API/AWS/AmazonSQS");
 	Core::Load("NET/API/AWS/AmazonCloudFront");
 	Core::Load("NET/API/AWS/AmazonELB");
+	Core::Load("NET/API/AWS/AmazonRDS");
+	Core::Load("NET/API/AWS/AmazonCloudWatch");
+	Core::Load("NET/API/AWS/AmazonVPC");
 	Core::Load("NET/SNMP");
 	
 	Core::Load("DNSZoneController", SRCPATH);
-			
+
 	$cfg = parse_ini_file(APPPATH."/etc/config.ini", true);
 	if (!count($cfg)) { 
 		die(_("Cannot parse config.ini file")); 
@@ -150,13 +160,18 @@
 		throw new Exception("Service is temporary not available. Please try again in a minute.");
 		//TODO: Notify about this.		
 	}
-	
+
+
+	$ADODB_CACHE_DIR = CACHEPATH."/adodb";
+			
 	// Select config from db
-	foreach ($db->GetAll("select * from config") as $rsk)
+	foreach ($db->CacheGetAll(3600, "SELECT * FROM config") as $rsk)
+	//foreach ($db->GetAll("SELECT * FROM config") as $rsk)
 		$cfg[$rsk["key"]] = $rsk["value"];
 		
+
 	$ConfigReflection = new ReflectionClass("CONFIG");
-		
+	
 	// Define Constants and paste config into CONFIG struct
 	foreach ($cfg as $k=>$v) 
 	{ 	
@@ -186,11 +201,13 @@
 	
 	unset($cfg);
 	
+
 	// Define log4php contants
 	define("LOG4PHP_DIR", LIBPATH.'/IO/Logging/log4php/src/main/php');
 	define("LOG4PHP_CONFIGURATION", APPPATH.'/etc/log4php.xml');
 	define("LOG4PHP_CONFIGURATOR_CLASS", 'LoggerDOMConfiguratorScalr');
-		
+	
+
 	// Require log4php stuff
 	require_once (SRCPATH.'/class.FarmLogMessage.php');
 	require_once (SRCPATH.'/class.ScriptingLogMessage.php');
@@ -201,11 +218,13 @@
 	require_once (SRCPATH.'/class.LoggerAppenderScalr.php');
 	require_once (SRCPATH.'/class.LoggerAppenderEmergMail.php');
 	require_once (SRCPATH.'/class.LoggerDOMConfiguratorScalr.php');
+	require_once (SRCPATH.'/class.LoggerFilterCategoryMatch.php');
 
 	require_once(LOG4PHP_DIR . '/LoggerManager.php');
 		
 	// Get Global Logger intance
 	$Logger = LoggerManager::getLogger('Application');
+	
 
 	// Define json_encode function if extension not installed
 	if (!function_exists("json_encode"))
@@ -237,6 +256,16 @@
 		}
 		else
 			$Smarty->caching = true;
+			
+		$Smarty->register_function('get_static_url', 'get_static_url');
+		function get_static_url($params, &$smarty)
+		{
+			$domains = array($_SERVER['HTTP_HOST']);
+			$h = crc32($params['path']);
+			$n = (abs($h) % count($domains));
+			
+			return "http://{$domains[$n]}{$params['path']}";
+		}
 	}
 	
 	// PHPSmartyMailer init
@@ -303,37 +332,53 @@
     RoleScalingManager::RegisterScalingAlgo(new LAScalingAlgo());
     RoleScalingManager::RegisterScalingAlgo(new SQSScalingAlgo());
     RoleScalingManager::RegisterScalingAlgo(new RAMScalingAlgo());
-    	
+    RoleScalingManager::RegisterScalingAlgo(new HTTPResponseTimeScalingAlgo());
+    
+    $ReflectEVENT_TYPE = new ReflectionClass("EVENT_TYPE");
+    $event_types = $ReflectEVENT_TYPE->getConstants();
+    foreach ($event_types as $event_type)
+    {
+    	if (class_exists("{$event_type}Event"))
+    	{
+    		$ReflectClass = new ReflectionClass("{$event_type}Event");
+    		$retval = $ReflectClass->getMethod("GetScriptingVars")->invoke(null);
+    		if (!empty($retval))
+    		{
+    			foreach ($retval as $k=>$v)
+    			{
+    				if (!CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k])
+    				{
+	    				CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
+	    					"PropName"	=> $v,
+	    					"EventName" => "{$event_type}"
+	    				);
+    				}
+    				else
+    				{
+    					if (!is_array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']))
+    						$events = array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']);
+    					else
+    						$events = CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName'];
+    						
+    					$events[] = $event_type;
+    					
+    					CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
+	    					"PropName"	=> $v,
+	    					"EventName" => $events
+	    				);
+    				}
+    			}
+    		}
+    	}
+    }
+    
 	//
 	// Select AWS regions
 	//
-	
-	$display['regions'] = AWSRegions::GetList();
-	
-	define("TENDER_APIKEY", "ebc97df2196a3ac625c1d7a45f6644e9b0b397a548eabb3e479baf05b30f79bd46ed254c76cc4dde1bd8bab0f742ee11b0a68aec0165c69008d4a78e9614b0dd");
-	define("TENDER_SITEKEY", "scalr");
-	
-	function GenerateTenderMultipassToken($data)
+	$regions = array();
+	foreach (AWSRegions::GetList() as $region)
 	{
-		$salted = TENDER_APIKEY . TENDER_SITEKEY;
-		$hash = hash('sha1',$salted,true);
-		$saltedHash = substr($hash,0,16);
-		$iv = "OpenSSL for Ruby";
-			
-		// double XOR first block
-		for ($i = 0; $i < 16; $i++)
-		{
-			$data[$i] = $data[$i] ^ $iv[$i];
-		}
-	
-		$pad = 16 - (strlen($data) % 16);
-		$data = $data . str_repeat(chr($pad), $pad);
-	    
-		$cipher = mcrypt_module_open(MCRYPT_RIJNDAEL_128,'','cbc','');
-		mcrypt_generic_init($cipher, $saltedHash, $iv);
-		$encryptedData = mcrypt_generic($cipher,$data);
-		mcrypt_generic_deinit($cipher);
-	
-		return urlencode(base64_encode($encryptedData));
+		$regions[$region] = AWSRegions::GetName($region);	
 	}
+	$display['regions'] = $regions;	
 ?>

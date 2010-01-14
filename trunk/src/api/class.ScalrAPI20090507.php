@@ -55,7 +55,7 @@
 			$response->RoleSet = new stdClass();
 			$response->RoleSet->Item = array();
 			
-			$sql = "SELECT * FROM ami_roles WHERE iscompleted='1' AND (clientid='0' OR clientid='{$this->Client->ID}') AND region={$this->DB->qstr($Region)}";
+			$sql = "SELECT * FROM roles WHERE iscompleted='1' AND (clientid='0' OR clientid='{$this->Client->ID}') AND region={$this->DB->qstr($Region)}";
 			
 			if ($AmiID)
 				$sql .= " AND ami_id={$this->DB->qstr($AmiID)}";
@@ -125,7 +125,7 @@
 				$itm->Statistics->{"BandwidthOut"} = round($row["bw_out"], 2);
 				$itm->Statistics->{"BandwidthTotal"} = (int)($row["bw_out"]+$row["bw_in"]);
 				
-				$Reflect = new ReflectionClass("INSTANCE_TYPE");
+				$Reflect = new ReflectionClass("INSTANCE_FLAVOR");
 				foreach ($Reflect->getConstants() as $n=>$v)
 				{
 					$field = str_replace(".", "_", $v);
@@ -143,7 +143,7 @@
 		 * @return object
 		 * @todo: More checks and better validation
 		 */
-		public function ExecuteScript($ScriptID, $Timeout, $Async, $FarmID, $RoleName = null, $InstanceID = null)
+		public function ExecuteScript($ScriptID, $Timeout, $Async, $FarmID, $FarmRoleID = null, $InstanceID = null)
 		{			
 			$response = $this->CreateInitialResponse();
 			
@@ -154,12 +154,11 @@
 			if (!$farminfo)
 				throw new Exception(sprintf("Farm #%s not found", $FarmID));
 			
-			/* * */
-			if ($RoleName)
+			/* * */			
+			if ($InstanceID && !$FarmRoleID)
 			{
-				$ami_id = $this->DB->GetOne("SELECT ami_id FROM ami_roles WHERE name=? AND iscompleted='1' AND (clientid=? OR clientid='0')",
-					array($RoleName, $this->Client->ID)
-				);
+				$DBInstance = DBInstance::LoadByIID($InstanceID);
+				$FarmRoleID = $DBInstance->FarmRoleID;
 			}
 			
 			$config = array(); //TODO:	
@@ -179,7 +178,7 @@
 			$this->DB->Execute("INSERT INTO farm_role_scripts SET
 				scriptid	= ?,
 				farmid		= ?,
-				ami_id		= ?,
+				farm_roleid	= ?,
 				params		= ?,
 				event_name	= ?,
 				target		= ?,
@@ -188,8 +187,10 @@
 				issync		= ?,
 				ismenuitem	= ?
 			", array(
-				$scriptid, $farmid, $ami_id, serialize($config), $event_name, $target, $version, $timeout, $issync, 0
+				$scriptid, $farmid, $FarmRoleID, serialize($config), $event_name, $target, $version, $timeout, $issync, 0
 			));
+			
+			$farm_rolescript_id = $this->DB->Insert_ID();
 			
 			switch($target)
 			{
@@ -203,8 +204,8 @@
 					
 				case SCRIPTING_TARGET::ROLE:
 					
-					$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND ami_id=? AND farmid=?",
-						array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $ami_id, $farmid)
+					$instances = $this->DB->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND farm_roleid=?",
+						array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $FarmRoleID)
 					);
 					
 					break;
@@ -228,7 +229,7 @@
 					$DBInstance = DBInstance::LoadByID($instance['id']);
 					$DBInstance->SendMessage(new EventNoticeScalrMessage(
 						$instance['internal_ip'],
-						$this->DB->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id'])),
+						"FRSID-{$farm_rolescript_id}",
 						$instance['role_name'],
 						$event_name
 					));

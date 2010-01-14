@@ -1,7 +1,6 @@
 {include file="inc/header.tpl"}
-<br />
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
 var uid = '{$smarty.session.uid}';
@@ -49,7 +48,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Process list",
-        id: 'process_list',
+        id: 'process_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
@@ -75,25 +74,4 @@ Ext.onReady(function () {
 });
 {/literal}
 </script>
-<!-- 
-    {include file="inc/table_header.tpl" show_reload_icon=1 reload_action='ReloadPage();' nofilter=1}
-    <table class="Webta_Items" rules="groups" frame="box" cellpadding="4" id="Webta_Items">
-	<thead>
-		<tr>
-			<th>Process</th>
-			<th width="150">RAM Usage</th>
-			<th width="150">Type</th>
-			<th width="150" nowrap>Status</th>
-		</tr>
-	</thead>
-	<tbody id="table_body_list">
-		<tr id="table_loader">
-			<td colspan="30" align="center">
-				<img style="vertical-align:middle;" src="/images/snake-loader.gif"> Loading process list. Please wait...
-			</td>
-		</tr>
-	</tbody>
-	</table>
-	{include file="inc/table_footer.tpl" disable_footer_line=1}
- -->
 {include file="inc/footer.tpl"}

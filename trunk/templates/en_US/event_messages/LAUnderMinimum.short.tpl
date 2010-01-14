@@ -1,1 +1,0 @@
-LA for {$event->RoleInfo.name} is under minimum

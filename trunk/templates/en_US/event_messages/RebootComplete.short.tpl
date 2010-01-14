@@ -1,1 +1,1 @@
-{$event->InstanceInfo.external_ip} rebooted 
+{$event->DBInstance->ExternalIP} rebooted 

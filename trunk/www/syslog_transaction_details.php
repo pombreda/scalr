@@ -12,6 +12,15 @@
 	   
 	$display["grid_query_string"] .= "&trnid={$req_trnid}";
 	$display["grid_query_string"] .= "&strnid={$req_strnid}";
-	   		
+
+    $severities = array(
+		array('hideLabel' => true, 'boxLabel'=> 'Fatal error', 'name' => 'severity[]', 'inputValue' => 'FATAL', 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Error', 'name' => 'severity[]','inputValue'=> 'ERROR', 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Warning', 'name' => 'severity[]', 'inputValue'=> 'WARN', 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Information','name' => 'severity[]', 'inputValue'=> 'INFO', 'checked'=> true),
+		array('hideLabel' => true, 'boxLabel'=> 'Debug', 'name' => 'severity[]', 'inputValue'=> 'DEBUG', 'checked'=> false)
+	);
+	$display["severities"] = json_encode($severities);
+	
 	require("src/append.inc.php");
 ?>

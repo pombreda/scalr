@@ -16,7 +16,7 @@
 			</tr>
 			<tr>
 				<td>
-					<input type="checkbox" id="use_elastic_ips" name="use_elastic_ips" value="1"> Use Elastic IPs
+					<input type="checkbox" class="role_settings" id="aws.use_elastic_ips" name="aws.use_elastic_ips" value="1"> Use Elastic IPs
 				</td>
 			</tr>
 		</tbody>

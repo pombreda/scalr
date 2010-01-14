@@ -4,24 +4,26 @@
 	    
 	if ($get_task == "download_private_key")
 	{
-	    if ($_SESSION['uid'] != 0)
-	       $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($get_id, $_SESSION['uid']));
-	    else 
-	       $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($get_id));
-	       
-	    if (!$farminfo)
+	    try
 	    {
-	        $errmsg = _("Farm not found");
+	    	$DBFarm = DBFarm::LoadByID($get_id);
+	    	if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+	    		throw new Exception("Farm not found");
+	    }
+	    catch(Exception $e)
+	    {
+	    	$errmsg = _("Farm not found");
 	        UI::Redirect("farms_view.php");
 	    }
-	    
+
+	    	    
 	    header('Pragma: private');
 		header('Cache-control: private, must-revalidate');
 	    header('Content-type: plain/text');
-        header('Content-Disposition: attachment; filename="'.$farminfo["name"].'.pem"');
-        header('Content-Length: '.strlen($farminfo['private_key']));
+        header('Content-Disposition: attachment; filename="'.$DBFarm->Name.'.pem"');
+        header('Content-Length: '.strlen($DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY)));
 
-        print $farminfo['private_key'];
+        print $DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY);
         exit();
 	}
 		
@@ -48,9 +50,9 @@
 	    $status = (int)$req_status;
 	    $display['grid_query_string'] .= "&status={$status}";
 	}
-		
-	$display["title"] = _("Farms > View");	
-	$display["help"] = _("This is a list of all your Server Farms. A Server Farm is a logical group of EC2 machines that serve your application. It can include load balancers, databases, web severs, and other custom servers. Servers in these farms can be redundant, self curing, and auto-scaling.");
+	
+	$display["title"] = _("Server Farms > View");	
+	$display["help"] = _("This is a list of all your Server Farms. A Server Farm is a logical group of EC2 machines that serve your application. It can include load balancers, databases, web servers, and other custom servers. Servers in these farms can be redundant, self curing, and auto-scaling.");
 	
 	require_once ("src/append.inc.php");
 ?>

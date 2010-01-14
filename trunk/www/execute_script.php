@@ -4,20 +4,33 @@
     
 	$farmid = (int)$req_farmid;
 	
-	$farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
+	if ($farmid)
+	{
+		$farminfo = $db->GetRow("SELECT id, name, clientid FROM farms WHERE id=?", array($farmid));
+		
+		$display['farminfo'] = $farminfo;
+		
+		if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $farminfo['clientid'])
+			UI::Redirect("farms_view.php");
+	}
+	else
+	{
+		$display['farms'] = $db->GetAll("SELECT name, id FROM farms WHERE clientid=?", array($_SESSION['uid']));
+		$farmid = $display['farms'][0]['id'];
+	}
 	
-	if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $farminfo['clientid'])
-		UI::Redirect("farms_view.php");
-			
+	if ($req_scriptid)
+		$display['scriptid'] = (int)$req_scriptid;
+	
 	// Get list of roles
-	$display['roles'] = $db->GetAll("SELECT farm_amis.*, ami_roles.name FROM farm_amis INNER JOIN 
-		ami_roles ON ami_roles.ami_id = farm_amis.ami_id WHERE farmid=?",
+	$display['roles'] = $db->GetAll("SELECT farm_roles.*, roles.name FROM farm_roles INNER JOIN 
+		roles ON roles.ami_id = farm_roles.ami_id WHERE farmid=?",
 		array($farmid)
 	);
 
 	// Get list of instances
-	$display['instances'] = $db->GetAll("SELECT *, ami_roles.name FROM farm_instances INNER JOIN 
-		ami_roles ON ami_roles.ami_id = farm_instances.ami_id WHERE farmid=?",
+	$display['instances'] = $db->GetAll("SELECT *, roles.name FROM farm_instances INNER JOIN 
+		roles ON roles.ami_id = farm_instances.ami_id WHERE farmid=?",
 		array($farmid)
 	);
 	
@@ -31,9 +44,19 @@
 		}
 	}
 	
+	if (!$display['target'] && $req_farm_roleid)
+	{
+		$ami_info = $db->GetRow("SELECT * FROM farm_roles WHERE id=?", array($req_farm_roleid));
+		if ($ami_info)
+		{
+			$display['target'] = SCRIPTING_TARGET::ROLE;
+			$display['ami_id'] = $req_ami_id;
+		}
+	}
+	
 	if (!$display['target'] && $req_ami_id)
 	{
-		$ami_info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND ami_id=?", array($farmid, $req_ami_id));
+		$ami_info = $db->GetRow("SELECT * FROM farm_roles WHERE farmid=? AND ami_id=?", array($farmid, $req_ami_id));
 		if ($ami_info)
 		{
 			$display['target'] = SCRIPTING_TARGET::ROLE;
@@ -99,7 +122,7 @@
 			if (count($err) == 0)
 			{
 				$scriptid = (int)$req_scriptid;
-				$ami_id = $display['ami_id'];
+				$farm_roleid = (int)$req_farm_roleid;
 				$config = $req_config;
 				$event_name = 'CustomEvent-'.date("YmdHi").'-'.rand(1000,9999);
 				$target = $display['target'];
@@ -113,7 +136,7 @@
 					
 					$db->Execute("UPDATE farm_role_scripts SET
 						scriptid	= ?,
-						ami_id		= ?,
+						farm_roleid	= ?,
 						params		= ?,
 						target		= ?,
 						version		= ?,
@@ -122,7 +145,7 @@
 					WHERE farmid=? AND event_name=?
 					", array(
 						$scriptid,
-						$ami_id,
+						$farm_roleid,
 						serialize($config),
 						$target,
 						$version,
@@ -139,7 +162,7 @@
 					$db->Execute("INSERT INTO farm_role_scripts SET
 						scriptid	= ?,
 						farmid		= ?,
-						ami_id		= ?,
+						farm_roleid	= ?,
 						params		= ?,
 						event_name	= ?,
 						target		= ?,
@@ -150,7 +173,7 @@
 					", array(
 						$scriptid,
 						$farmid,
-						$ami_id,
+						$farm_roleid,
 						serialize($config),
 						$event_name,
 						$target,
@@ -159,6 +182,8 @@
 						$issync,
 						(isset($post_create_menu_link)) ? 1 : 0
 					));
+					
+					$farm_rolescript_id = $db->Insert_ID();
 					
 					switch($target)
 					{
@@ -172,8 +197,8 @@
 							
 						case SCRIPTING_TARGET::ROLE:
 							
-							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND ami_id=? AND farmid=?",
-								array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $ami_id, $farmid)
+							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND farm_roleid=?",
+								array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $farm_roleid)
 							);
 							
 							break;
@@ -199,6 +224,8 @@
 				UI::Redirect("farms_view.php");
 			}
 			
+			$farm_rolescript_id = $info['id'];
+			
 			$event_name = $info['event_name'];
 			
 			switch($info['target'])
@@ -213,8 +240,8 @@
 					
 				case SCRIPTING_TARGET::ROLE:
 					
-					$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND ami_id=? AND farmid=?",
-						array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $info['ami_id'], $info['farmid'])
+					$instances = $db->GetAll("SELECT * FROM farm_instances WHERE state IN (?,?) AND farm_roleid=?",
+						array(INSTANCE_STATE::INIT, INSTANCE_STATE::RUNNING, $info['farm_roleid'])
 					);
 					
 					break;
@@ -231,7 +258,7 @@
 				$DBInstance = DBInstance::LoadByID($instance['id']);
 				$DBInstance->SendMessage(new EventNoticeScalrMessage(
 					$instance['internal_ip'],
-					$db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instance['ami_id'])),
+					"FRSID-{$farm_rolescript_id}",
 					$instance['role_name'],
 					$event_name
 				));
@@ -268,7 +295,7 @@
 		if ($info['ami_id'])
 		{
 			$display['target'] == SCRIPTING_TARGET::ROLE;
-			$display['ami_id'] = $info['ami_id'];
+			$display['farm_roleid'] = $info['farm_roleid'];
 		}
 		
 		$display['values'] = json_encode(unserialize($info['params']));

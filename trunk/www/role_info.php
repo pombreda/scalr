@@ -2,14 +2,14 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($req_ami_id)
-		$req_id = $db->GetOne("SELECT id FROM ami_roles WHERE ami_id=?", array($req_ami_id));
+		$req_id = $db->GetOne("SELECT id FROM roles WHERE ami_id=?", array($req_ami_id));
 	
 	$id = (int)$req_id;
 	
 	$display['title'] = _("Role information");
 	
 	// Get role information
-	$role_info = $db->GetRow("SELECT * FROM ami_roles WHERE id=?", array($id));
+	$role_info = $db->GetRow("SELECT * FROM roles WHERE id=?", array($id));
 	if (!$role_info)
 		UI::Redirect("client_roles_view.php");
 	

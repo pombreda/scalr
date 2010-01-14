@@ -1,6 +1,6 @@
 {include file="inc/header.tpl"}
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer" style="padding: 5px;"></div>
+<div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
@@ -16,7 +16,7 @@ Ext.onReady(function () {
 				{name: 'id', type: 'int'},
 				{name: 'clientid', type: 'int'},
 	            {name: 'dtadded', type: 'date'},
-	            'name', 'status', 'region', 'instances', 'roles', 'sites','client_email','havemysqlrole'
+	            'name', 'status', 'region', 'instances', 'roles', 'sites','client_email','havemysqlrole','shortcuts'
 	        ]
 	    }),
 	    remoteSort: true,
@@ -66,7 +66,7 @@ Ext.onReady(function () {
         renderTo: "maingrid-ct",
         height: 500,
         title: "Farms",
-        id: 'farms_list',
+        id: 'farms_list_'+GRID_VERSION,
         store: store,
         maximize: true,
         viewConfig: { 
@@ -84,13 +84,29 @@ Ext.onReady(function () {
 				{/if}
 			{literal}
 			{header: "Farm Name", width: 50, dataIndex: 'name', sortable: true},
-			{header: "Region", width: 30, dataIndex: 'region', sortable: true},
+			{header: "Location", width: 30, dataIndex: 'region', sortable: true},
 			{header: "Added", width: 50, dataIndex: 'dtadded', renderer: renderers.dateMjY, sortable: true}, 
 			{header: "Roles", width: 30, dataIndex: 'roles', renderer: rolesRenderer, sortable: false},
 			{header: "Instances", width: 30, dataIndex: 'instances', renderer: instancesRenderer, sortable: false},
 			{header: "Applications", width: 30, dataIndex: 'sites', renderer: sitesRenderer, sortable: false},
 			{header: "Status", width: 30, dataIndex: 'status', renderer: renderStatus, sortable: true}
 		],
+
+		/*
+ 		{/literal}
+		{if $rows[id].shortcuts|@count}
+	   		{literal}
+	   		new Ext.menu.Separator({id: "option.shortcutsSep"}),
+	   		{/literal}
+	   		{assign var=shortcuts value=$rows[id].shortcuts}
+	   		{section name=sid loop=$shortcuts}
+	   			{literal}
+	   			{id: "option."+(Math.random()*100000),		text: 'Execute {/literal}&laquo;{$shortcuts[sid].name}&raquo;{literal}', href: "execute_script.php?farmid={id}&task=execute&script={/literal}{$shortcuts[sid].event_name}{literal}"},
+	   			{/literal}
+	   		{/section}
+	   	{/if}
+		{literal}
+ 		*/
 		
     	// Row menu
     	rowOptionsMenu: [
@@ -113,25 +129,14 @@ Ext.onReady(function () {
 
 			{id: "option.mysql",		text: 'MySQL status', 			href: "/farm_mysql_info.php?farmid={id}"},
 			{id: "option.script",		text: 'Execute script', 		href: "/execute_script.php?farmid={id}"},
-
-			{/literal}
-			{if $rows[id].shortcuts|@count}
-		   		{literal}
-		   		new Ext.menu.Separator({id: "option.shortcutsSep"}),
-		   		{/literal}
-		   		{assign var=shortcuts value=$rows[id].shortcuts}
-		   		{section name=sid loop=$shortcuts}
-		   			{literal}
-		   			{id: "option."+(Math.random()*100000),		text: 'Execute {/literal}&laquo;{$shortcuts[sid].name}&raquo;{literal}', href: "execute_script.php?farmid={id}&task=execute&script={/literal}{$shortcuts[sid].event_name}{literal}"},
-		   			{/literal}
-		   		{/section}
-		   	{/if}
-			{literal}
+			
 			new Ext.menu.Separator({id: "option.logsSep"}),
 			{id: "option.logs",			text: 'View log', 				href: "/logs_view.php?farmid={id}"},
 			new Ext.menu.Separator({id: "option.editSep"}),
 			{id: "option.edit",			text: 'Edit', 					href: "/farms_add.php?id={id}"},
-			{id: "option.delete",		text: 'Delete', 				href: "/farm_delete.php?id={id}"}
+			{id: "option.delete",		text: 'Delete', 				href: "/farm_delete.php?id={id}"},
+			
+			new Ext.menu.Separator({id: "option.scSep"})
      	],
      	getRowOptionVisibility: function (item, record) {
 			var data = record.data;
@@ -141,6 +146,9 @@ Ext.onReady(function () {
 
 			if (item.id == "option.terminateFarm")
 				return (data.status == 1);
+
+			if (item.id == "option.scSep")
+				return (data.shortcuts.length > 0);
 			
 			if (item.id == "option.viewMap" || 
 					item.id == "option.viewMapSep" || 
@@ -162,6 +170,48 @@ Ext.onReady(function () {
 			}
 			else
 				return true;
+		},
+		
+		listeners:{
+			'beforeshowoptions': {fn: function (grid, record, romenu, ev) {
+				romenu.record = record;
+				var data = record.data;
+
+				romenu.items.each(function (item) {
+					if (item.isshortcut) {
+						item.parentMenu.remove(item);
+					}
+				});			
+				
+
+				if (data.shortcuts.length > 0)
+				{
+					for (i in data.shortcuts)
+					{
+						if (typeof(data.shortcuts[i]) != 'function')
+						{
+							romenu.add({
+								//id:'option.'+(Math.random()*100000),
+								isshortcut:1,
+								xmenu:romenu,
+								text:'Execute '+data.shortcuts[i].name,
+								href:'execute_script.php?farmid='+data.shortcuts[i].farmid+'&task=execute&script='+data.shortcuts[i].event_name
+							});
+						}
+					}
+				}
+				/*
+				else
+				{
+					var rows = romenu.items.items;
+					for (k in rows)
+					{
+						if (rows[k].isshortcut == 1)
+							romenu.remove(rows[k]);
+					}
+				}
+				*/
+			}}
 		}
     });
     grid.render();

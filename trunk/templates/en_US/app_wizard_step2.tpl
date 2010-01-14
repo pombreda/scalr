@@ -10,9 +10,10 @@
     <script language="javascript" type="text/javascript" src="/js/dhtmlxtree/dhtmlXCommon.js"></script>
 	<script type="text/javascript" src="js/class.NewPopup.js"></script>
 	{include file="inc/table_header.tpl"}
-    {include file="inc/intable_header.tpl" header="Step 2 - New application will use the following roles" color="Gray"}
+    {include file="inc/intable_header.tpl" header="Setup Architecture (Step 2 of 3)" color="Gray"}
 	<tr valign="top">
 		<td colspan="6">
+			<p>Select the Roles you would like to use as components of your architecture. You will later customize these components into your own Custom Roles. The 'www' Role is an nginx load balancer, 'app' runs Apache, and 'mysqllvm' runs mysql for your database. If you would like to build a Role from scratch, use the 'base' Role.</p>
 			<div style="padding:5px;">
 				<div id="inventory_tree" style="width:250px;height:300px;overflow-x:hidden;"></div>
 			</div>

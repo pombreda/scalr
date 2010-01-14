@@ -19,7 +19,7 @@
 		$row["bw_in"] = ($row["bw_in"] > 1024) ? round($row["bw_in"]/1024, 2)."GB" : round($row["bw_in"], 2)."MB";
 		$row["bw_out"] = ($row["bw_out"] > 1024) ? round($row["bw_out"]/1024, 2)."GB" : round($row["bw_out"], 2)."MB";
 		
-		$Reflect = new ReflectionClass("INSTANCE_TYPE");
+		$Reflect = new ReflectionClass("INSTANCE_FLAVOR");
 		foreach ($Reflect->getConstants() as $n=>$v)
 		{
 			$name = str_replace(".", "_", $v);

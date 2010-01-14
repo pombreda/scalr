@@ -155,11 +155,18 @@
 
 							var int_s_time = parseInt(form_values.ts_s_time.replace(/\D/g,''));
 							var int_e_time = parseInt(form_values.ts_e_time.replace(/\D/g,''));
+
+							if (form_values.ts_s_time.indexOf('AM') && int_s_time >= 1200)
+								int_s_time = int_s_time-1200;
+
+							if (form_values.ts_e_time.indexOf('AM') && int_e_time >= 1200)
+								int_e_time = int_e_time-1200;
+							
 							if (form_values.ts_s_time.indexOf('PM') != -1)
 								int_s_time = int_s_time+1200;
+
 							if (form_values.ts_e_time.indexOf('PM') != -1)
 								int_e_time = int_e_time+1200;
-
 							
 							if (int_e_time <= int_s_time)
 							{

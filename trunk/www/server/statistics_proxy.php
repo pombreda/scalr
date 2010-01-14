@@ -1,5 +1,5 @@
 <?
-    print file_get_contents("http://stats.scalr.net/server/statistics.php?".http_build_query($_REQUEST));
+    print @file_get_contents("http://stats.scalr.net/server/statistics.php?".http_build_query($_REQUEST));
 
 	/*
 	require(dirname(__FILE__)."/../../src/prepend.inc.php");

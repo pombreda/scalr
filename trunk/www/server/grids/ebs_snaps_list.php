@@ -14,6 +14,9 @@
 		
 		$Client = Client::Load($_SESSION['uid']);
 		
+		if (!$_SESSION['aws_region'])
+			$_SESSION['aws_region'] = AWSRegions::US_EAST_1;
+		
 		if ($req_volumeid)
 	    {
 	    	try
@@ -44,13 +47,32 @@
 		{		
 			$pv->startTime = date("Y-m-d H:i:s", strtotime($pv->startTime));
 			$item = $pv;	
-			
-			$info = $db->GetRow("SELECT * FROM ebs_snaps_info WHERE snapid=?", array(
-				$item->snapshotId
-			));
-			
-			$item->comment = $info['comment'];
-			$item->is_array_snapshot = ($info['arraysnapshotid'] > 0) ? true : false;
+						
+			if ($pv->ownerId != $Client->AWSAccountID)
+			{
+				$item->comment = $pv->description;
+				$item->owner = $pv->ownerId;
+				
+				if (!$req_show_public_snapshots)
+					continue;
+			}
+			else
+			{
+				$info = $db->GetRow("SELECT * FROM ebs_snaps_info WHERE snapid=?", array(
+					$item->snapshotId
+				));	
+				
+				$item->comment = $info['comment'];
+				$item->is_array_snapshot = ($info['arraysnapshotid'] > 0) ? true : false;
+				
+				$item->owner = $Client->Fullname;
+			}
+
+			if ($req_query)
+			{
+				if (!stristr($item->comment, $req_query) && !stristr($item->snapshotId, $req_query) && !stristr($item->owner, $req_query))
+					continue;
+			}
 			
 			$item->progress = (int)preg_replace("/[^0-9]+/", "", $item->progress);
 			
@@ -86,6 +108,8 @@
 		
 		$snaps = (count($snaps) > $limit) ? array_slice($snaps, $start, $limit) : $snaps;
 		
+		$response['data'] = array();
+		
 		foreach ($snaps as $snap)
 		{
 			$row = array(
@@ -95,7 +119,8 @@
 				'time'				=> $snap->startTime,
 				'comment'			=> $snap->comment,
 				'is_array_snapshot'	=> $snap->is_array_snapshot,
-				'progress'			=> $snap->progress
+				'progress'			=> $snap->progress,
+				'owner'				=> $snap->owner
 			);
 			
 			$response['data'][] = $row;

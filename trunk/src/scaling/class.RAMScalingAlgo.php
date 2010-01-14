@@ -58,7 +58,7 @@
 			$sensor_value = $RAMSensor->GetValue($DBFarmRole);
 			$this->Logger->info("RAMScalingAlgo({$DBFarmRole->FarmID}, {$DBFarmRole->AMIID}) Sensor returned value: {$sensor_value}.");
 			
-			if ($sensor_value > $this->GetProperty(self::PROPERTY_MAX_RAM))
+			if ($sensor_value < $this->GetProperty(self::PROPERTY_MIN_RAM))
 			{
 				if($DBFarmRole->GetRunningInstancesCount() < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES) 
 					&& $DBFarmRole->GetPendingInstancesCount() == 0)
@@ -66,7 +66,7 @@
 				else
 					return ScalingAlgo::NOOP;
 			}
-			elseif ($sensor_value < $this->GetProperty(self::PROPERTY_MIN_RAM))
+			elseif ($sensor_value > $this->GetProperty(self::PROPERTY_MAX_RAM))
 			{
 				if ($DBFarmRole->GetRunningInstancesCount() > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
 					return ScalingAlgo::DOWNSCALE;

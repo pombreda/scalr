@@ -1,7 +1,6 @@
 <? 
 	require("src/prepend.inc.php"); 
     $display['load_extjs'] = true;
-    //$display['no_extjs_style'] = true;
     
 	set_time_limit(360);
 		
@@ -20,11 +19,11 @@
     {
         $uid = $_SESSION['uid'];
     }
-	
+    
     $Client = Client::Load($uid);
     
     $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
-        AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
+        AND farm_roleid IN (SELECT id FROM farm_roles WHERE farmid IN (SELECT id FROM farms WHERE clientid=?))",
         array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $Client->ID)
     );
     
@@ -36,7 +35,7 @@
     
     $avail_slots = $i_limit - $used_slots;
     if ($avail_slots <= 5)
-    	$display["warnmsg"] = sprintf(_("You have %s spare instances available on your account."), $avail_slots);
+    	$display["warnmsg"] = sprintf(_("You have %s <a href='http://wiki.scalr.net/What_is.../Spare_instances'>spare instances</a> available on your account."), $avail_slots);
     
     if ($req_farmid)
 	{
@@ -89,9 +88,15 @@
 	foreach ($rowz as $pk=>$pv)
 	{		
 		if ($pv->status == 'completed')
-			$display['snapshots'][] = $pv->snapshotId;
+			$display['snapshots'][(string)$pv->snapshotId] = array(
+				"snapid" 	=> (string)$pv->snapshotId,
+				"createdat"	=> date("M j, Y H:i:s", strtotime((string)$pv->startTime)),
+				"size"		=> (string)$pv->volumeSize
+			);
 	}
-    
+	
+	ksort($display['snapshots']);
+	
 	//Get List of registered Scaling Algorithms
 	$display['scaling_algos'] = array();
 	foreach (RoleScalingManager::$ScalingAlgos as $Algo)
@@ -109,28 +114,37 @@
 	
     if ($req_id)
     {
-        $display["farminfo"] = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
-        
-        if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $display["farminfo"]["clientid"])
-            UI::Redirect("farms_view.php");
-        
-        if (!$display["farminfo"])
+        try
         {
-            $errmsg = _("Farm not found");
-            UI::Redirect("farms_view.php");
+	    	$display["farminfo"] = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
+	        $DBFarm = DBFarm::LoadByID($req_id);
+	        
+	        if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $DBFarm->ClientID)
+	            UI::Redirect("farms_view.php");
+	        
+	        if (!$display["farminfo"])
+	        {
+	            $errmsg = _("Farm not found");
+	            UI::Redirect("farms_view.php");
+	        }
+        }
+        catch(Exception $e)
+        {
+        	$errmsg = _("Farm not found");
+	        UI::Redirect("farms_view.php");
         }
         
-        $servers = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=? ORDER BY launch_index ASC", array($req_id));
+        $servers = $db->GetAll("SELECT * FROM farm_roles WHERE farmid=? ORDER BY launch_index ASC", array($DBFarm->ID));
         $display['roles'] = array();
         foreach ($servers as &$row)
         {
-            $ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($row['ami_id']));
+            $ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($row['ami_id']));
             if (!$ami_info)
             	continue;
             
         	$row["role"] = $ami_info["name"];
         	
-        	$scripts = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND ami_id=?", array($display["farminfo"]["id"], $row['ami_id']));
+        	$scripts = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farm_roleid=?", array($row['id']));
 			$scripts_object = new stdClass();
 			foreach ($scripts as $script)
 			{
@@ -173,14 +187,6 @@
         			'reboot_timeout'	=> $row['reboot_timeout'],
         			'launch_timeout'	=> $row['launch_timeout'],
         			'status_timeout'	=> $row['status_timeout'],
-        			'placement'			=> ($row['avail_zone']) ? $row['avail_zone'] : "",
-        			'i_type'			=> $row['instance_type'],
-        			'use_elastic_ips'	=> ($row['use_elastic_ips'] == 1) ? true : false,
-        			'use_ebs'			=> ($row['use_ebs'] == 1) ? true : false,
-        			'ebs_size'			=> ($row['ebs_snapid']) ? 0 : $row['ebs_size'],
-        			'ebs_snapid'		=> $row['ebs_snapid'],
-        			'ebs_mount'			=> ($row['ebs_mount'] == 1) ? true : false,
-        			'ebs_mountpoint'	=> $row['ebs_mountpoint']
         	));
         	
         	$scaling_algo_props = array();
@@ -216,13 +222,13 @@
         	{
         		$display['farm_mysql_role'] = $ami_info['ami_id'];
         		
-        		$role['options']['mysql_bundle_every'] = $display["farminfo"]['mysql_rebundle_every'] ? $display["farminfo"]['mysql_rebundle_every'] : 48;
-				$role['options']['mysql_make_backup_every'] = $display["farminfo"]['mysql_bcp_every'] ? $display["farminfo"]['mysql_bcp_every'] : 180;
-				$role['options']['mysql_make_backup'] = ($display["farminfo"]['mysql_bcp'] == 1) ? true : false;
-				$role['options']['mysql_bundle'] = ($display["farminfo"]['mysql_bundle'] == 1) ? true : false;
+        		$role['options']['mysql_bundle_every'] = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY) ? $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY) : 48;
+				$role['options']['mysql_make_backup_every'] = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY) ? $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY) : 180;
+				$role['options']['mysql_make_backup'] = ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BCP_ENABLED)) ? true : false;
+				$role['options']['mysql_bundle'] = ($DBFarm->GetSetting(DBFarm::SETTING_MYSQL_BUNDLE_ENABLED)) ? true : false;
 				
-				$role['options']['mysql_data_storage_engine'] = $display["farminfo"]['mysql_data_storage_engine'] ? $display["farminfo"]['mysql_data_storage_engine'] : 'lvm';
-				$role['options']['mysql_ebs_size'] = $display["farminfo"]['mysql_ebs_size'] ? $display["farminfo"]['mysql_ebs_size'] : 100;
+				$role['options']['mysql_data_storage_engine'] = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE) ? $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE) : 'lvm';
+				$role['options']['mysql_ebs_size'] = $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE) ? $DBFarm->GetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE) : 100;
         	}
         	array_push($display['roles'], $role);
         }
@@ -266,13 +272,18 @@
     $display["32bit_types"] = array_values($r->getConstants());
     unset($r);
     
-    $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM ami_roles WHERE roletype=? OR (roletype=? and clientid=?)", 
+    $display["roles_descr"] = $db->GetAll("SELECT ami_id, name, description FROM roles WHERE roletype=? OR (roletype=? and clientid=?)", 
     	array(ROLE_TYPE::SHARED, ROLE_TYPE::CUSTOM, $uid)
     );
     
     if ($req_configure == 1)
+    {
     	$display["ami_id"] = $req_ami_id;
+    	$display["return_to"] = $req_return_to;
+    }
     
+    
+    	
     /**
      * Tabs
      */

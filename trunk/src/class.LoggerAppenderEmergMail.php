@@ -124,6 +124,11 @@ class LoggerAppenderEmergMail extends LoggerAppenderSkeleton {
     	if ($this->layout !== null)
             $this->body = $this->layout->format($event);
             
+        if (stristr($this->body, "AWS was not able to validate the provided access credentials") || 
+        	stristr($this->body, "The X509 Certificate you provided does not exist in our records") ||
+        	stristr($this->body, "You are not subscribed to this service")
+        )
+        return;
             
    		$from = $this->from;
         $to = $this->to;

@@ -5,10 +5,7 @@
 		const HOST_DOWN	= "HostDown";
 		const HOST_CRASH	= "HostCrash";
 		const HOST_INIT 	= "HostInit";
-		
-		const LA_OVER_MAXIMUM	= "LAOverMaximum";
-		const LA_UNDER_MINIMUM	= "LAUnderMinimum";
-		
+				
 		const REBUNDLE_COMPLETE	= "RebundleComplete";
 		const REBUNDLE_FAILED	= "RebundleFailed";
 		
@@ -33,14 +30,14 @@
 		
 		const DNS_ZONE_UPDATED = "DNSZoneUpdated";
 		
+		const EBS_VOLUME_ATTACHED = "EBSVolumeAttached";
+		
 		public static function GetEventDescription($event_type)
 		{
 			$descriptions = array(
 				self::HOST_UP 			=> _("Instance started and configured."),
 				self::HOST_DOWN 		=> _("Instance terminated."),
 				self::HOST_CRASH 		=> _("Instance crashed inexpectedly."),
-				self::LA_OVER_MAXIMUM 	=> _("Cumulative load average for a role is higher than maxLA setting."),
-				self::LA_UNDER_MINIMUM 	=> _("Cumulative LA for a role is lower than minLA setting."),
 				self::REBUNDLE_COMPLETE => _("\"Synchronize to all\" or custom role creation competed successfully."),
 				self::REBUNDLE_FAILED 	=> _("\"Synchronize to all\" or custom role creation failed."),
 				self::REBOOT_BEGIN 		=> _("Instance being rebooted."),
@@ -57,7 +54,8 @@
 				self::EBS_VOLUME_MOUNTED			=> _("Single EBS volume or array of EBS volumes attached and mounted to instance."),
 				self::BEFORE_INSTANCE_LAUNCH		=> _("New instance will be launched in a few minutes"),
 				self::BEFORE_HOST_TERMINATE			=> _("Instance will be terminated in 3 minutes"),
-				self::DNS_ZONE_UPDATED				=> _("DNS zone updated")
+				self::DNS_ZONE_UPDATED				=> _("DNS zone updated"),
+				self::EBS_VOLUME_ATTACHED			=> _("EBS volume attached to instance."),
 			);
 			
 			return $descriptions[$event_type];

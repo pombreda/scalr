@@ -1,17 +1,55 @@
 {if $DataForm}
-	<table width="100%">
+	<table>
 	{assign var=fields value=$DataForm->ListFields()}
 	{foreach from=$fields key=key item=field}
 		    {if ($field->FieldType == 'text')}
-			<tr valign="top">
-				<td style="vertical-align:middle;">{$field->Title}: {if $field->IsRequired}*{/if}</td>
-				<td style="padding-left:10px;">
-					<input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/>
-					{if $field->Hint}
-						<span class="Webta_Ihelp">{$field->Hint}</span>
-					{/if}				
-				</td>
-			</tr>
+		    	{if $field->Name == 'scaling.ram.max'}
+		    	<tr valign="top">
+					<td colspan="2">
+						Scale in (release instances) when free RAM goes over <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> MB
+					</td>
+				</tr>
+				{elseif $field->Name == 'scaling.ram.min'}
+				<tr valign="top">
+					<td colspan="2">
+						Scale out (add more instances) when free RAM goes under <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> MB
+					</td>
+				</tr>
+				{elseif $field->Name == 'scaling.sqs.min'}
+				<tr valign="top">
+					<td colspan="2">
+						Scale in (release instances) when <span id="sqs_scaling_qn">queue size</span> goes under <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> items
+					</td>
+				</tr>
+				{elseif $field->Name == 'scaling.sqs.max'}
+				<tr valign="top">
+					<td colspan="2">
+						Scale out (add more instances) when <span id="sqs_scaling_qn">queue size</span> goes over <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> items
+					</td>
+				</tr>
+				{elseif $field->Name == 'scaling.bw.max'}
+				<tr valign="top">
+					<td colspan="2">
+						Scale out (add more instances) when average bandwidth usage on role is more than <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> mb/s
+					</td>
+				</tr>
+				{elseif $field->Name == 'scaling.bw.min'}
+				<tr valign="top">
+					<td colspan="2">
+						Scale in (release instances) when average bandwidth usage on role is less than <input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/> mb/s
+					</td>
+				</tr>
+		    	{else}
+				<tr valign="top">
+					<td style="vertical-align:middle;" width="1%" nowrap="nowrap">{$field->Title}: {if $field->IsRequired}*{/if}</td>
+					<td style="padding-left:10px;" width="100%">
+						<input type="text" size="5" class="scaling_options text" id="{$field->Name}" name="{$field->Name}" value="{$field->Value}"/>
+						{if $field->Hint}
+							<span class="Webta_Ihelp">{$field->Hint}</span>
+						{/if}				
+					</td>
+				</tr>
+				{/if}
 			{elseif ($field->FieldType == 'textarea')}
 			<tr valign="top">
 				<td style="vertical-align:middle;">{$field->Title}: {if $field->IsRequired}*{/if}</td>

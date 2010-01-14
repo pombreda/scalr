@@ -11,10 +11,10 @@
 	}
 	elseif ($req_task == "delete")
 	{
-	    $info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
+	    $info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
 	    if ($info)
 	    {
-	        $db->Execute("DELETE FROM ami_roles WHERE id='{$info['id']}'");
+	        $db->Execute("DELETE FROM roles WHERE id='{$info['id']}'");
 	        $db->Execute("DELETE FROM security_rules WHERE roleid='{$info['id']}'");
 	        
 	        $okmsg = _("Role successfully unassigned from AMI");
@@ -35,7 +35,7 @@
 	$paging = new SQLPaging();
 	$paging->ItemsOnPage = 20;
 	
-	$sql = "SELECT * FROM ami_roles WHERE roletype='".ROLE_TYPE::SHARED."' AND clientid='0' AND region='".$_SESSION['aws_region']."'";
+	$sql = "SELECT * FROM roles WHERE roletype='".ROLE_TYPE::SHARED."' AND clientid='0' AND region='".$_SESSION['aws_region']."'";
 		
 	$paging->SetSQLQuery($sql);
 	$paging->ApplyFilter($_POST["filter_q"], array("zone"));
@@ -82,7 +82,7 @@
 		}
 		
 		$row["type"] = ROLE_ALIAS::GetTypeByAlias($row['alias']);
-		$row['farmsCount'] = $db->GetOne("SELECT COUNT(farmid) FROM farm_amis WHERE ami_id=?", array($row['ami_id']));
+		$row['farmsCount'] = $db->GetOne("SELECT COUNT(farmid) FROM farm_roles WHERE ami_id=?", array($row['ami_id']));
 	}
 	
 	$display["page_data_options"] = array();

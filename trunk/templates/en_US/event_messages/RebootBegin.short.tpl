@@ -1,1 +1,1 @@
-{$event->InstanceInfo.external_ip} reboot start 
+{$event->DBInstance->ExternalIP} reboot start 

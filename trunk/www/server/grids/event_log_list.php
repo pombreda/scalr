@@ -10,13 +10,25 @@
 		include("../../src/prepend.inc.php");
 	
 		if ($_SESSION["uid"] != 0)
-			$auth_sql = " AND (SELECT clientid FROM farms WHERE id = logentries.farmid) = '{$_SESSION["uid"]}'";
+		{
+			$farms = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array($_SESSION['uid']));
+			$frms = array();
+			foreach ($farms as $f)
+				array_push($frms, $f['id']);	
+				
+			$frms = implode(',', array_values($frms));
+			
+			if ($frms == '')
+				$frms = '0';
+			
+			$auth_sql = " AND farmid IN ({$frms})";
+		}
 		
 		$sql = "SELECT * from logentries WHERE id > 0 {$auth_sql}";
 	
-		if ($get_iid)
+		if ($req_iid)
 		{
-			$iid = preg_replace("/[^A-Za-z0-9-]+/si", "", $get_iid);
+			$iid = preg_replace("/[^A-Za-z0-9-]+/si", "", $req_iid);
 			$sql  .= " AND serverid = '{$iid}'";
 		}
 		
@@ -40,7 +52,7 @@
 		if ($req_query)
 		{
 			$filter = mysql_escape_string($req_query);
-			foreach(array("message") as $field)
+			foreach(array("message","serverid","source") as $field)
 			{
 				$likes[] = "$field LIKE '%{$filter}%'";
 			}

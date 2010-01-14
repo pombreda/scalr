@@ -20,7 +20,7 @@
 	
 		function SetOptions(opt_value)
 		{
-			$('ami_id').disabled = true;
+			$('farm_roleid').disabled = true;
 			
 			if ($('iid'))
 				$('iid').disabled = true;
@@ -32,7 +32,7 @@
 			}
 			
 			if (opt_value == 'role')
-				$('ami_id').disabled = false;
+				$('farm_roleid').disabled = false;
 				
 			if (opt_value == 'instance')
 			{
@@ -190,24 +190,33 @@
 		</div>
 	{include file="inc/table_header.tpl" nofilter=1}
 		{include file="inc/intable_header.tpl" header="Target" color="Gray"}
-        <tr>
-			<td colspan="2"><input onclick="SetOptions(this.value);" type="radio" name="target" {if $target == 'farm'}checked{/if} value="farm" style="vertical-align:middle;"> 
-			On all instances of this farm
+        <tr style="height:40px;">
+			<td colspan="2"><input onclick="SetOptions(this.value);" type="radio" name="target" {if $target == 'farm'}checked{/if} value="farm" style="vertical-align:middle;">
+			{if $farminfo} 
+				On all instances of this farm ({$farminfo.name})
+			{else}
+				On all instances on farm
+				<select id="farmid" name="farmid" class="text" onchange="document.location='execute_script.php?farmid='+this.value+'&scriptid={$scriptid}'" style="vertical-align:middle;">
+				 	{section name=id loop=$farms}
+				 		<option {if $farmid == $farms[id].id}selected{/if} value="{$farms[id].id}">{$farms[id].name}</option>
+				 	{/section}
+				 </select>
+			{/if}
 			</td>
 		</tr>
-		<tr>
+		<tr style="height:40px;">
 			<td colspan="2">
 				<input type="radio" onclick="SetOptions(this.value);" name="target" {if $target == 'role'}checked{/if} value="role" style="vertical-align:middle;"> 
 				 On all instances of this role
-				 <select id="ami_id" name="ami_id" class="text" style="vertical-align:middle;">
+				 <select id="farm_roleid" name="farm_roleid" class="text" style="vertical-align:middle;">
 				 	{section name=id loop=$roles}
-				 		<option {if $ami_id == $roles[id].ami_id}selected{/if} value="{$roles[id].ami_id}">{$roles[id].name} ({$roles[id].ami_id})</option>
+				 		<option {if $ami_id == $roles[id].ami_id || $farm_roleid == $roles[id].id}selected{/if} value="{$roles[id].id}">{$roles[id].name} ({$roles[id].ami_id})</option>
 				 	{/section}
 				 </select>
 			</td>
 		</tr>
 		{if $instances|@count > 0 && $task != 'edit'}
-    	<tr>
+    	<tr style="height:40px;">
     		<td colspan="2">
     			<input type="radio" onclick="SetOptions(this.value);" {if $target == 'instance'}checked{/if} name="target" value="instance" style="vertical-align:middle;">
     			On this instance only

@@ -34,17 +34,7 @@ var RoleTab = Class.create();
                            				
                            				reboot_timeout: $('reboot_timeout'),
                            				launch_timeout: $('launch_timeout'),
-                           				status_timeout: $('status_timeout'),
-                           														
-										pt_placement: $('availZone'),
-                           				pt_type	: $('iType'),
-                           				
-                           				elastic_ips : $('use_elastic_ips'),
-                           				
-                           				ebs_snapid: $('ebs_snapid'),
-                           				ebs_size: $('ebs_size'),
-                           				ebs_mount: $('ebs_mount'),
-                           				ebs_mountpoint: $('ebs_mountpoint')
+                           				status_timeout: $('status_timeout')
                            			};
                            		},
                            		
@@ -143,39 +133,9 @@ var RoleTab = Class.create();
             								this.CurrentRoleObject.options.scaling_algos['scaling.time.periods'] = a;           								            									
             							}, this);
                         			}                           
-                        			
-                           			/** Options **/
-                           			
-                           			this.CurrentRoleObject.options.placement = this.elements.pt_placement.value; 
-                           			this.CurrentRoleObject.options.i_type = this.elements.pt_type.value;
-                           				
-                           			this.CurrentRoleObject.options.use_elastic_ips = this.elements.elastic_ips.checked;
-                           			
+                        			                           			
                            			/** EBS **/
-                           			this.CurrentRoleObject.options.use_ebs = false;
-                           			this.CurrentRoleObject.options.ebs_size = '';
-                           			this.CurrentRoleObject.options.ebs_snapid = '';
-                           			
-                 					this.CurrentRoleObject.options.ebs_mount = this.elements.ebs_mount.checked;
-                 					this.CurrentRoleObject.options.ebs_mountpoint = this.elements.ebs_mountpoint.value;
-                 					                           			
-                           			var elems = $('itab_contents_ebs_n').select('[name="ebs_ctype"]');
-                           			for (var i = 0; i < elems.length; i++)
-                           			{
-                           				if (elems[i].checked == true)
-                           				{
-                           					if (elems[i].value == '2')
-                           					{
-                           						this.CurrentRoleObject.options.use_ebs = true;
-                           						this.CurrentRoleObject.options.ebs_size = this.elements.ebs_size.value;
-                           					}
-                           					else if (elems[i].value == '3')
-                           					{
-                           						this.CurrentRoleObject.options.use_ebs = true;
-                           						this.CurrentRoleObject.options.ebs_snapid = this.elements.ebs_snapid.value;
-                           					}
-                           				}
-                           			}
+                        			ShowEBSOptions($('aws.use_ebs').checked);
                            			
                            			/*********/
                            			
@@ -290,14 +250,21 @@ var RoleTab = Class.create();
                            		{
 									var n = number.toString().split("");
 									
-                           			if (number < 1200)
+									var retval = "";
+									
+                           			if (number < 1300)
                            			{
-                           				if (number < 1000)
+                           				
+                           				if (number < 100)
                            				{
-                           					return n[0]+":"+n[1]+n[2]+" AM";
+                           					retval = "12:"+n[0]+n[1]+" AM";
+                           				}
+                           				else if (number < 1000)
+                           				{
+                           					retval = n[0]+":"+n[1]+n[2]+" AM";
                            				}
                            				else
-                           					return n[0]+n[1]+":"+n[2]+n[3]+" AM";
+                           					retval = n[0]+n[1]+":"+n[2]+n[3]+" AM";
                            			}
                            			else
                            			{
@@ -306,11 +273,13 @@ var RoleTab = Class.create();
                            				
                            				if (number < 1000)
                            				{
-                           					return n[0]+":"+n[1]+n[2]+" PM";
+                           					retval = n[0]+":"+n[1]+n[2]+" PM";
                            				}
                            				else
-                           					return n[0]+n[1]+":"+n[2]+n[3]+" PM";
+                           					retval = n[0]+n[1]+":"+n[2]+n[3]+" PM";
                            			}
+                           			
+                           			return retval;
                            		},
                            		
                            		SetCurrentRoleObject: function(ami_id, add_to_farm)
@@ -603,6 +572,21 @@ var RoleTab = Class.create();
 	                           				this.elements.launch_timeout.value = this.CurrentRoleObject.options.launch_timeout;
 	                           				this.elements.status_timeout.value = this.CurrentRoleObject.options.status_timeout;
 	                           				
+	                           				//TODO: Do this only if arch changed...
+	                           				// Clear all types
+	                           				var el = $('aws.instance_type'); 
+											while(el.firstChild) { 
+												el.removeChild(el.firstChild); 
+											}
+																						
+											for (var i = 0; i < i_types[this.CurrentRoleObject.arch].length; i ++)
+											{
+												var opt = document.createElement("OPTION");
+												opt.value = i_types[this.CurrentRoleObject.arch][i];
+												opt.innerHTML = i_types[this.CurrentRoleObject.arch][i];
+												$('aws.instance_type').appendChild(opt); 
+											}
+	                           				
 	                           			
 	                           				/** New setting subsystem **/
 	                               			var container = $('tab_contents_roles');
@@ -759,69 +743,9 @@ var RoleTab = Class.create();
 													$('scaling.la.max').value = this.rightValue;
 												} 
 											}, 'scaling.la');
-											
-	                           				this.elements.pt_placement.value = this.CurrentRoleObject.options.placement;
-	                           				
-	                           				//TODO: Do this only if arch changed...
-	                           				// Clear all types
-	                           				var el = this.elements.pt_type; 
-											while(el.firstChild) { 
-												el.removeChild(el.firstChild); 
-											}
-																						
-											for (var i = 0; i < i_types[this.CurrentRoleObject.arch].length; i ++)
-											{
-												var opt = document.createElement("OPTION");
-												opt.value = i_types[this.CurrentRoleObject.arch][i];
-												opt.innerHTML = i_types[this.CurrentRoleObject.arch][i];
-												this.elements.pt_type.appendChild(opt); 
-											}
-	                           				
-	                           				if (this.CurrentRoleObject.options.i_type)
-	                           					this.elements.pt_type.value = this.CurrentRoleObject.options.i_type;
-	                           				else
-	                           					this.CurrentRoleObject.options.i_type = this.elements.pt_type.value;
-	                           					
-	                           				this.elements.elastic_ips.checked = this.CurrentRoleObject.options.use_elastic_ips;
 	                           				
 	                           				/***** EBS *******/
-	                           				var elems = $('itab_contents_ebs_n').select('[name="ebs_ctype"]');
-		                           			for (var i = 0; i < elems.length; i++)
-		                           			{
-		                           				if (elems[i].value == 1)
-		                           				{
-		                           					if (!this.CurrentRoleObject.options.use_ebs)
-		                           					{
-		                           						elems[i].checked = true;
-		                           						ShowEBSOptions(1);
-		                           					}
-		                           				}
-		                           				else if (elems[i].value == 2)
-		                           				{
-		                           					if (this.CurrentRoleObject.options.use_ebs && this.CurrentRoleObject.options.ebs_size != '')
-		                           					{
-		                           						this.elements.ebs_size.value = this.CurrentRoleObject.options.ebs_size;
-		                           						elems[i].checked = true;
-		                           						ShowEBSOptions(2);
-		                           					}
-		                           				}
-		                           				else if (elems[i].value == 3)
-		                           				{
-		                           					if (this.CurrentRoleObject.options.use_ebs && this.CurrentRoleObject.options.ebs_snapid != '')
-		                           					{
-		                           						this.elements.ebs_snapid.value = this.CurrentRoleObject.options.ebs_snapid;
-		                           						elems[i].checked = true;
-		                           						ShowEBSOptions(3);
-		                           					}
-		                           				}
-		                           			}
-		                           			
-		                           			this.elements.ebs_mount.checked = this.CurrentRoleObject.options.ebs_mount;
-		                           			
-		                           			if (this.CurrentRoleObject.options.ebs_mountpoint)
-		                           				this.elements.ebs_mountpoint.value = this.CurrentRoleObject.options.ebs_mountpoint;
-		                           				
-		                           			this.elements.ebs_mountpoint.disabled = !this.elements.ebs_mount.checked;
+	                               			ShowEBSOptions($('aws.use_ebs').checked);
 	                           				/*****************/
 	                           			}
 	                           			else
@@ -844,7 +768,6 @@ var RoleTab = Class.create();
 									err_obj.style.display = '';
 									
 									$('button_js').disabled = false;
-									$('btn_loader').style.display = 'none';
 									
 									new Effect.Pulsate(err_obj);
 								},
@@ -867,7 +790,12 @@ var RoleTab = Class.create();
 								   								   								   
 								   	var launch_order_type = $('roles_launch_order_0').checked == true ? '0' : '1';
 								   	
-								    var url = '/server/farm_manager.php?action='+MANAGER_ACTION+"&farm_name="+$('farm_name').value+"&farm_id="+FARM_ID+"&launch_order_type="+launch_order_type; 
+								   	// TODO: refactor
+								    var url = '/server/farm_manager.php?action='+MANAGER_ACTION
+								            +"&farm_name="+$('farm_name').value
+								            +"&farm_id="+FARM_ID
+								            +"&launch_order_type="+launch_order_type
+								            +"&farm_comments="+$('farm_comments').value; 
 									
 								    var o_tree_cn = window.RolesOrderTree.getRootNode().childNodes;
 								    for (var ii = 0; ii < o_tree_cn.length; ii++)
@@ -906,7 +834,12 @@ var RoleTab = Class.create();
  													if (MANAGER_ACTION == 'create')
  														window.location.href = '/farms_control.php?farmid='+response.data+"&new=1";
  													else
- 														window.location.href = '/farms_view.php?code=1';
+ 													{
+ 														if (RETURN_TO == 'instances_list')
+ 															window.location.href = '/instances_view.php?farmid='+FARM_ID;
+ 														else
+ 															window.location.href = '/farms_view.php?code=1';
+ 													}
  												}
 											}
  											catch(e)
@@ -1100,6 +1033,16 @@ var RoleTab = Class.create();
 											
 											$('event_script_target_value_instance').parentNode.removeChild($('event_script_target_value_instance'));
 										}
+										else if (event_name == 'DNSZoneUpdated')
+										{
+											if (this.CurrentRoleObject.scripts[this.CurrentRoleScript].target == 'instance' || this.CurrentRoleObject.scripts[this.CurrentRoleScript].target == 'role')
+												this.CurrentRoleObject.scripts[this.CurrentRoleScript].target = 'farm';
+												
+											if ($('event_script_target_value_instance'))
+												$('event_script_target_value_instance').parentNode.removeChild($('event_script_target_value_instance'));
+												
+											$('event_script_target_value_role').parentNode.removeChild($('event_script_target_value_role'));
+										}
 										else
 										{
 											if (!$('event_script_target_value_instance'))
@@ -1109,7 +1052,17 @@ var RoleTab = Class.create();
 												opt.innerHTML = 'That instance only';
 												opt.id = 'event_script_target_value_instance';
 												
-												$('event_script_target_value').insertBefore(opt, $('event_script_target_value_role'));
+												$('event_script_target_value').insertBefore(opt, $('event_script_target_value_farm'));
+											}
+											
+											if (!$('event_script_target_value_role'))
+											{
+												var opt = document.createElement('OPTION');
+												opt.value = 'instance';
+												opt.innerHTML = 'All instances of the role';
+												opt.id = 'event_script_target_value_role';
+												
+												$('event_script_target_value').insertBefore(opt, $('event_script_target_value_instance'));
 											}
 										}
 										

@@ -61,7 +61,7 @@
 		foreach ($db->GetAll($sql) as $row)
 		{
 		    if ($row["ami_id"])
-				$row["role"] = $db->GetRow("SELECT name,ami_id,alias FROM ami_roles WHERE ami_id=?", $row["ami_id"]);
+				$row["role"] = $db->GetRow("SELECT name,ami_id,alias FROM roles WHERE ami_id=?", $row["ami_id"]);
 				
 		    $farm = $db->GetRow("SELECT name,id,clientid FROM farms WHERE id=?", $row["farmid"]);
 		    $row["clientid"] = $farm['clientid'];

@@ -1,1 +1,1 @@
-Instance {$event->InstanceInfo.instance_id} ({$event->InstanceInfo.role_name}) Public IP: {$event->InstanceInfo.external_ip} Internal IP: {$event->InstanceInfo.internal_ip} initialized 
+Instance {$event->DBInstance->InstacneID} ({$event->DBInstance->RoleName}) Public IP: {$event->DBInstance->ExternalIP} Internal IP: {$event->DBInstance->InternalIP} initialized 

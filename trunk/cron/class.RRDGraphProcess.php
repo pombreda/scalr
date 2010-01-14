@@ -67,13 +67,13 @@
             
             $farm_rrddb_dir = CONFIG::$RRD_DB_DIR."/{$farminfo['id']}";
             
-            $farm_amis = $db->GetAll("SELECT ami_roles.name as name FROM farm_amis
-            	INNER JOIN ami_roles ON ami_roles.ami_id = farm_amis.ami_id 
+            $farm_roles = $db->GetAll("SELECT roles.name as name FROM farm_roles
+            	INNER JOIN roles ON roles.ami_id = farm_roles.ami_id 
             	WHERE farmid=?", array($farminfo["id"])
             );
             
-            $farm_amis[] = array("name" => "_FARM");            
-            foreach ($farm_amis as $farm_ami)
+            $farm_roles[] = array("name" => "_FARM");            
+            foreach ($farm_roles as $farm_ami)
             {
             	// Get Role name
             	$role_name = $farm_ami["name"];

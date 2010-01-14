@@ -6,6 +6,7 @@
     	public function __construct()
     	{
     		$this->DB = Core::GetDBInstance();
+    		$this->Logger = Logger::getLogger(__CLASS__);
     	}
     	
     	public function RemoveScript($scriptID)
@@ -75,14 +76,51 @@
 			return true;
     	}
     	
+    	public function RemoveVolume($volume_id, $region = "")
+    	{
+    		$Client = Client::Load($_SESSION['uid']);
+    		
+    		$region = ($region) ? $region : $_SESSION['aws_region'];
+    		
+            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+    		$AmazonEC2Client->DeleteVolume($volume_id);
+    		    		
+    		return true;
+    	}
+    	
+    	public function RemoveSnapshots(array $snapshots)
+    	{
+    		$Client = Client::Load($_SESSION['uid']);
+            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region']));
+			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+    		foreach ($snapshots as $snapshot)
+    		{
+    			$AmazonEC2Client->DeleteSnapshot($snapshot);
+    		}
+    		
+    		return true;
+    	}
+    	
     	public function RebootInstances(array $instances, $farmid)
     	{
-    		$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
-            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
-            	throw new Exception("Farm not found in database");
-			
-            $Client = Client::Load($farminfo['clientid']);
-            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region']));
+    		if ($farmid)
+    		{
+	    		$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
+	            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
+	            	throw new Exception("Farm not found in database");
+				
+	            $clientid = $farminfo['clientid'];
+	            $region = $farminfo['region']; 
+    		}
+    		else
+    		{
+    			$clientid = $_SESSION['uid'];
+	            $region = $_SESSION['aws_region'];
+    		}
+    		
+    		$Client = Client::Load($clientid);
+            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
 			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
 		
     		$AmazonEC2Client->RebootInstances($instances);
@@ -90,25 +128,70 @@
     		return true;
     	}
     	
-    	public function TerminateInstances(array $instances, $farmid, $decrease_mininstances_setting = false)
+    	public function TerminateInstances(array $instances, $farmid, $decrease_mininstances_setting = false, $force_terminate = false)
     	{
-    		$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
-            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
-            	throw new Exception("Farm not found in database");
+    		if ($farmid)
+    		{
+	    		$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($farmid));
+	            if (!$farminfo || ($_SESSION['uid'] != 0 && $farminfo['clientid'] != $_SESSION['uid']))
+	            	throw new Exception("Farm not found in database");
+				
+	            $clientid = $farminfo['clientid'];
+	            $region = $farminfo['region']; 
+    		}
+    		else
+    		{
+    			$clientid = $_SESSION['uid'];
+	            $region = $_SESSION['aws_region'];
+    		}
 			
-            $Client = Client::Load($farminfo['clientid']);
-            $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region']));
-			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
-		
-    		$AmazonEC2Client->TerminateInstances($instances);
+    		if ($force_terminate)
+    		{
+            	$Client = Client::Load($clientid);
+            	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
+				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+				
+				$AmazonEC2Client->TerminateInstances($instances);
+    		}
+    		else
+    		{
+    			foreach ($instances as $instance_id)
+    			{
+	    			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instance_id));
+    				try
+					{
+						$this->Logger->info(new FarmLogMessage($farmid, 
+							sprintf("Scheduled termination for instance %s (%s). It will be terminated in 3 minutes.",
+	                        	$instanceinfo["instance_id"],
+	                        	$instanceinfo["external_ip"]
+	                    	)
+						));
+			            Scalr::FireEvent($farmid, new BeforeHostTerminateEvent(DBInstance::LoadByID($instanceinfo['id']), false));
+					}
+					catch (Exception $e)
+					{
+						$this->Logger->fatal(sprintf("Cannot terminate %s: %s",
+							$instanceinfo['instance_id'],
+							$e->getMessage()
+						));
+					}
+    			}
+    		}
+			
     		
-    		if ($decrease_mininstances_setting)
+    		
+    		if ($decrease_mininstances_setting && $farmid)
     		{
     			$instance_info = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instances[0]));
-    			$DBFarmRole = DBFarmRole::Load($farmid, $instance_info['ami_id']);
-    			$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, 
-    				$DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES)-1
-    			);
+    			$DBFarmRole = DBFarmRole::LoadByID($instance_info['farm_roleid']);
+    						
+    			$min_instances = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES);
+    			if ($min_instances > 1)
+    			{
+	    			$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, 
+	    				$min_instances-1
+	    			);
+    			}
     		}
     		
     		return true;

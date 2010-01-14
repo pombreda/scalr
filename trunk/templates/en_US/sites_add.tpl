@@ -38,6 +38,19 @@
 <link href="css/popup.css" rel="stylesheet" type="text/css" />
 <br>
 {assign var=button2_name value="Save"}
+{assign var=nofilter value="1"}
+{assign var=nofilter value="1"}
+
+{if $ezone && $domainname}
+{include file="inc/table_header.tpl" nofilter=1}
+	<div id="google_btn" style="padding-left: 5px; padding-top: 5px; padding-bottom: 5px;">
+		<input style="vertical-align:middle;" type="button" onclick="location.href='dns_zone_config.php?zone={$ezone}'" name="DNS_zone_transfers" value="Configure DNS zone transfers" class="btn" />
+		<span style="padding-left:10px"><input style="vertical-align:middle;" type="submit"  name="setup_google_apps_mx_records" value="Setup Google Apps MX records" class="btn" {if $disable_btn_setup_google_apps_mx == true}Disabled{/if} /></span>
+	</div>
+{include file="inc/table_footer.tpl" disable_footer_line=1 color="Gray"}
+<br />
+{/if}
+
 {include file="inc/table_header.tpl" nofilter=1}
 {if !$domainname && !$ezone}
     {include file="inc/intable_header.tpl" header="Application information" color="Gray"}
@@ -46,7 +59,7 @@
 		<td colspan="6">{$farm.name} <input type='hidden' name='farmid' value="{$farm.id}" /></td>
 	</tr>
 	<tr>
-		<td width="15%">{t}Instance of this role will create A records in DNS zone{/t}:</td>
+		<td width="15%">{t}Traffic will go to{/t}:</td>
 		<td colspan="6">
 		  <select name="ami_id" class="text">
 		  {section name=id loop=$roles}
@@ -56,7 +69,7 @@
 		</td>
 	</tr>
 	<tr>
-		<td width="15%">{t}Domain name{/t}:</td>
+		<td width="15%">{t}Domain or subdomain name{/t}:</td>
 		<td colspan="6"><input type="text" class="text" name="domainname" /></td>
 	</tr>
     {include file="inc/intable_footer.tpl" color="Gray"}
@@ -116,10 +129,10 @@
 	</tr>
 	{section name=id loop=$zone.records}
 	<tr>
-		<td><input {if $zone.records[id].issystem == 1}disabled{/if} type="text" class="text" name="zone[records][{$zone.records[id].id}][rkey]" size=30 value="{$zone.records[id].rkey}"></td>
-		<td><input {if $zone.records[id].issystem == 1}disabled{/if} type="text" class="text" name="zone[records][{$zone.records[id].id}][ttl]" size=6 value="{$zone.records[id].ttl}"></td>
+		<td><input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} type="text" class="text" name="zone[records][{$zone.records[id].id}][rkey]" size=30 value="{$zone.records[id].rkey}"></td>
+		<td><input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} type="text" class="text" name="zone[records][{$zone.records[id].id}][ttl]" size=6 value="{$zone.records[id].ttl}"></td>
 		<td>IN</td>
-		<td><select {if $zone.records[id].issystem == 1}disabled{/if} class="text" name="zone[records][{$zone.records[id].id}][rtype]" onchange="CheckPrAdd('ed', '{$zone.records[id].id}', this.value)">
+		<td><select {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} class="text" name="zone[records][{$zone.records[id].id}][rtype]" onchange="CheckPrAdd('ed', '{$zone.records[id].id}', this.value)">
 				<option {if $zone.records[id].rtype == "A"}selected{/if} value="A">A</option>
 				<option {if $zone.records[id].rtype == "CNAME"}selected{/if} value="CNAME">CNAME</option>
 				<option {if $zone.records[id].rtype == "MX"}selected{/if} value="MX">MX</option>
@@ -129,11 +142,11 @@
 			</select>
 		</td>
 		<td colspan="2"> 
-			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'priority') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}" size="5" style="display:{if $zone.records[id].rtype != "MX" && $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rpriority]" value="{$zone.records[id].rpriority}" size=30> 
-			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'weight') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_weight" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rweight]" value="{$zone.records[id].rweight}" size=30>
-			<input {if $zone.records[id].issystem == 1}disabled{/if} onclick="{literal}if (this.value == 'port') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_port" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rport]" value="{$zone.records[id].rport}" size=30>
+			<input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} onclick="{literal}if (this.value == 'priority') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}" size="5" style="display:{if $zone.records[id].rtype != "MX" && $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rpriority]" value="{$zone.records[id].rpriority}" size=30> 
+			<input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} onclick="{literal}if (this.value == 'weight') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_weight" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rweight]" value="{$zone.records[id].rweight}" size=30>
+			<input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} onclick="{literal}if (this.value == 'port') { this.value=''; } {/literal}" id="ed_{$zone.records[id].id}_port" size="5" style="display:{if $zone.records[id].rtype != "SRV"}none{/if};" type="text" class="text" name="zone[records][{$zone.records[id].id}][rport]" value="{$zone.records[id].rport}" size=30>
 			
-			<input {if $zone.records[id].issystem == 1}disabled{/if} class="text" type=text id="zone[records][{$zone.records[id].id}][rvalue]" name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}">
+			<input {if $zone.records[id].issystem == 1 && $zone.allow_manage_system_records == 0}disabled{/if} class="text" type=text id="zone[records][{$zone.records[id].id}][rvalue]" name="zone[records][{$zone.records[id].id}][rvalue]" size=30 value="{$zone.records[id].rvalue}">
 			<span style="display:{if $zone.records[id].rtype != "TXT"}none{/if};vertical-align:middle;" id="spf_link_{$zone.records[id].id}">
 				&nbsp;&nbsp;&nbsp;<input style="vertical-align:middle;" type="button" onclick="AddSPFRecord('{$zone.records[id].id}', this);" name="spf" value="SPF constructor" class="btn">
 			</span>

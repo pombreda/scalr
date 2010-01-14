@@ -9,6 +9,12 @@
 		$display["grid_query_string"] = "&farmid={$farmid}";
 	}
 	
+	if ($req_iid)
+	{
+		$iid = (int)$_REQUEST["iid"];
+		$display["grid_query_string"] = "&iid={$iid}";
+	}
+	
 	$display["table_title_text"] = sprintf(_("Current time: %s"), date("M j, Y H:i:s"));
 	
 	$severities = array(

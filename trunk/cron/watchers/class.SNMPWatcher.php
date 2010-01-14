@@ -23,14 +23,15 @@
          * Constructor
          *
          */
-        function __construct($community, $path)
+        function __construct()
         {
             $this->DB = Core::GetDBInstance();
-        	
             $this->SNMPTree = Core::GetInstance("SNMPTree");
-				
-            $this->Community = $community;
-            
+        }
+        
+        public function SetConfig($community, $path)
+        {
+        	$this->Community = $community;
             $this->DataPath = $path;
         }
         

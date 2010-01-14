@@ -106,14 +106,14 @@
 		{
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
-			$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+			$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
 			
-			if (!$DBFarmRole->IsAutoEIPEnabled)
+			if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_ELASIC_IPS))
 				return;
 			
 			// Check for already allocated and free elastic IP in database
-			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND ((role_name=? AND instance_index='{$event->InstanceInfo['index']}') OR instance_id = ?)",
-				array($this->FarmID, $DBFarmRole->GetRoleName(), $event->InstanceInfo["instance_id"])
+			$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE farmid=? AND ((farm_roleid=? AND instance_index='{$event->DBInstance->Index}') OR instance_id = ?)",
+				array($this->FarmID, $DBFarmRole->ID, $event->DBInstance->InstanceID)
 			);
 			
 			$this->Logger->debug(sprintf(_("IP for replace: %s"), $ip['ipaddress']));
@@ -145,8 +145,8 @@
 					$DBFarmRole->GetRoleName(), $DBFarmRole->AMIID, $DBFarmRole->ID
 				));
 				
-				$alocated_ips = $this->DB->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farmid=? AND role_name=?",
-					array($this->FarmID, $DBFarmRole->GetRoleName())
+				$alocated_ips = $this->DB->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farm_roleid=?",
+					array($DBFarmRole->ID)
 				);
 				
 				$this->Logger->debug(sprintf(_("Allocated IPs: %s, MaxInstances: %s"), 
@@ -168,7 +168,7 @@
 						$this->Logger->error(new FarmLogMessage(
 							$this->FarmID, 
 							sprintf(_("Cannot allocate new elastic ip for instance '%s': %s"), 
-								$event->InstanceInfo['instance_id'], 
+								$event->DBInstance->InstanceID, 
 								$e->getMessage()
 							)
 						));
@@ -176,8 +176,8 @@
 					}
 					
 					// Add allocated IP address to database
-					$this->DB->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
-						array($this->FarmID, $DBFarmRole->GetRoleName(), $address->publicIp, $farminfo['clientid'], $event->InstanceInfo['index'])
+					$this->DB->Execute("INSERT INTO elastic_ips SET farmid=?, farm_roleid=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
+						array($this->FarmID, $DBFarmRole->ID, $address->publicIp, $farminfo['clientid'], $event->DBInstance->Index)
 					);
 					
 					$ip['ipaddress'] = $address->publicIp;
@@ -211,7 +211,7 @@
 						try
 						{
 							// Associate elastic ip address with instance
-							$EC2Client->AssociateAddress($event->InstanceInfo['instance_id'], $ip['ipaddress']);
+							$EC2Client->AssociateAddress($event->DBInstance->InstanceID, $ip['ipaddress']);
 						}
 						catch(Exception $e)
 						{
@@ -241,24 +241,26 @@
 					return;
 				}					
 				
-				$this->Logger->info("IP: {$ip['ipaddress']} assigned to instance '{$event->InstanceInfo['instance_id']}'");
+				$this->Logger->info("IP: {$ip['ipaddress']} assigned to instance '{$event->DBInstance->InstanceID}'");
 				
 				// Update leastic IPs table
 				$this->DB->Execute("UPDATE elastic_ips SET state='1', instance_id=? WHERE ipaddress=?",
-					array($event->InstanceInfo['instance_id'], $ip['ipaddress'])
+					array($event->DBInstance->InstanceID, $ip['ipaddress'])
 				);
 				
 				// Update instance info in database
-				$this->DB->Execute("UPDATE farm_instances SET external_ip=?, isipchanged='1', isactive='0' WHERE instance_id=?",
-					array($ip['ipaddress'], $event->InstanceInfo['instance_id'])
+				$this->DB->Execute("UPDATE farm_instances SET external_ip=?, isipchanged='1', isactive='0' WHERE id=?",
+					array($ip['ipaddress'], $event->DBInstance->ID)
 				);
+				
+				Scalr::FireEvent($this->FarmID, new IPAddressChangedEvent($event->DBInstance, $ip['ipaddress']));
 			}
 			else
 			{
 				$this->Logger->fatal(new FarmLogMessage(
 					$this->FarmID, 
 					sprintf(_("Cannot allocate elastic ip address for instance %s on farm %s"),
-						$event->InstanceInfo['instance_id'],
+						$event->DBInstance->InstanceID,
 						$farminfo['name']
 					)
 				));
@@ -272,14 +274,14 @@
 		 */
 		public function OnHostDown(HostDownEvent $event)
 		{
-			if ($event->InstanceInfo['isrebootlaunched'] == 1)
+			if ($event->DBInstance->IsRebootLaunched == 1)
 				return;
 			
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			
 			try
 			{
-				$DBFarmRole = DBFarmRole::Load($this->FarmID, $event->InstanceInfo['ami_id']);
+				$DBFarmRole = $event->DBInstance->GetDBFarmRoleObject();
 			}
 			catch(Exception $e)
 			{
@@ -289,15 +291,15 @@
 			if ($DBFarmRole)
 			{
 				// Count already allocate elastic IPS for role
-				$alocated_ips = $this->DB->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farmid=? AND role_name=?",
-					array($this->FarmID, $DBFarmRole->GetRoleName())
+				$alocated_ips = $this->DB->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farm_roleid=?",
+					array($DBFarmRole->ID)
 				);
 			
 				// If number of allocated IPs more than 'Max instances' option for role, we must release elastic IP
 				if ($alocated_ips > $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
 				{
-					$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE instance_index=? AND farmid=? AND role_name=?", 
-						array($event->InstanceInfo['index'], $this->FarmID, $DBFarmRole->GetRoleName())
+					$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE instance_index=? AND farm_roleid=?", 
+						array($event->DBInstance->Index, $DBFarmRole->ID)
 					);
 					
 					if ($ip['state'] == 0)
@@ -326,7 +328,7 @@
 			}
 			else
 			{
-				$ips = $this->DB->GetAll("SELECT * FROM elastic_ips WHERE farmid=? AND role_name=?", array($this->FarmID, $event->InstanceInfo['role_name']));
+				$ips = $this->DB->GetAll("SELECT * FROM elastic_ips WHERE farm_roleid=?", array($event->DBInstance->FarmRoleID));
 				foreach ($ips as $ip)
 				{
 					if ($ip['ipaddress'])

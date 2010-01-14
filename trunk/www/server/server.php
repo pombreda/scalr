@@ -68,12 +68,13 @@
     		$versions = array();
 	        foreach ($dbversions as $version)
 	        {
-	        	preg_match_all("/\%([^\%\s]+)\%/si", $version["script"], $matches);
+	        	$text = preg_replace('/(\\\%)/si', '$$scalr$$', $version["script"]);
+	        	preg_match_all("/\%([^\%\s]+)\%/si", $text, $matches);
 	        	$vars = $matches[1];
 			    $data = array();
 			    foreach ($vars as $var)
 			    {
-			    	if (!in_array($var, CONFIG::$SCRIPT_BUILTIN_VARIABLES))
+			    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
 			    		$data[$var] = ucwords(str_replace("_", " ", $var));
 			    }
 			    $data = json_encode($data);
@@ -94,7 +95,7 @@
     		if (!preg_match("/^[A-Za-z0-9-]+$/", $role_name))
             	die(_("Allowed chars for role name is [A-Za-z0-9-]"));
     		
-            $role_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=? AND clientid=? AND roletype=?",
+            $role_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND clientid=? AND roletype=?",
             	array($ami_id, $_SESSION['uid'], ROLE_TYPE::CUSTOM)
             );
             if (!$role_info)
@@ -103,7 +104,7 @@
             if ($role_info['name'] == $role_name)
             	die("ok");
             	
-            $chk = $db->GetOne("SELECT id FROM ami_roles WHERE name=? AND iscompleted != '2' AND ami_id != ? AND region=?", 
+            $chk = $db->GetOne("SELECT id FROM roles WHERE name=? AND iscompleted != '2' AND ami_id != ? AND region=?", 
             	array($role_name, $ami_id, $role_info['region'])
             );
             if (!$chk)
@@ -141,7 +142,7 @@
     	case "get_role_params":
     		
     		$farmid = (int)$req_farmid;
-    		$ami_info = $db->GetRow("SELECT * FROM ami_roles WHERE ami_id=?", array($req_ami_id));
+    		$ami_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=?", array($req_ami_id));
     		if ($ami_info['clientid'] != 0 && $ami_info['clientid'] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
     			die(_("There are no parameters for this role"));
     		
@@ -151,7 +152,7 @@
     			$DataForm = new DataForm();
     			foreach ($params as $param)
     			{
-    				// Prepare options array 
+					// Prepare options array 
     				if ($param['options'])
     				{
 	    				$options = json_decode($param['options'], true);
@@ -160,11 +161,21 @@
 	    					$fopts[$option[0]] = $option[1];
     				}
 					
+    				$value = false;
+    				
+    				try
+    				{
+    					$DBFarmRole = DBFarmRole::Load($farmid, $req_ami_id);
+    					
+    					$value = $db->GetOne("SELECT value FROM farm_role_options WHERE farm_roleid=? AND name=?",
+	    					array($DBFarmRole->ID, $param['name'])
+	    				);
+    				}
+    				catch(Exception $e){}
+    				
     				// Get field value
-    				$value = $db->GetOne("SELECT value FROM farm_role_options WHERE farmid=? AND ami_id=? AND name=?",
-    					array($farmid, $req_ami_id, $param['name'])
-    				);
-    				if ($value === false)
+    				
+    				if ($value === false || $value === null)
     					$value = $param['defval'];
     				
     				$field = new DataFormField(
@@ -285,7 +296,7 @@
 		    );
 		    $instanceinfo['IsElastic'] = ($instanceinfo['custom_elastic_ip'] || $eip) ? 1 : 0;
 	    	
-		    $instanceinfo['role_alias'] = $db->GetOne("SELECT alias FROM ami_roles WHERE ami_id=?", array($instanceinfo['ami_id']));
+		    $instanceinfo['role_alias'] = $db->GetOne("SELECT alias FROM roles WHERE ami_id=?", array($instanceinfo['ami_id']));
 		    
             $Smarty->assign(array("i" => $instanceinfo));
             $Smarty->display("inc/popup_instanceinfo.tpl");

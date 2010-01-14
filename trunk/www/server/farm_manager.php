@@ -57,16 +57,16 @@
     	
 		// Prepare role information
     	$total_max_count = 0;
-    	$farm_amis = array();
-	            	
+    	$farm_roles = array();
+    	
         // Validate input vars
 		foreach ($roles as $role)
 		{
 			if (!$role)
 				continue;
 				
-			$rolename = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id=?", array($role['ami_id']));
-            $farm_amis[$role['ami_id']] = $role;
+			$rolename = $db->GetOne("SELECT name FROM roles WHERE ami_id=?", array($role['ami_id']));
+            $farm_roles[$role['ami_id']] = $role;
 			
             // Create empty DBFarmRole object (Only for validation)
             $DBFarmRole = new DBFarmRole(0);
@@ -74,12 +74,12 @@
             
             /* Validate scaling */
             $minCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MIN_INSTANCES];
-			if ($minCount <=0 || $minCount > 99)
-				throw new Exception(sprintf(_("Min instances for '%s' must be a number between 1 and 99"), $rolename));
+			if ($minCount <=0 || $minCount > 400)
+				throw new Exception(sprintf(_("Min instances for '%s' must be a number between 1 and 400"), $rolename));
                    
 			$maxCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MAX_INSTANCES];
-			if ($maxCount < 1 || $maxCount > 99)
-				throw new Exception(sprintf(_("Max instances for '%s' must be a number between 1 and 99"), $rolename));
+			if ($maxCount < 1 || $maxCount > 400)
+				throw new Exception(sprintf(_("Max instances for '%s' must be a number between 1 and 400"), $rolename));
 
 			if ($maxCount < $minCount)
 				throw new Exception(sprintf(_("Max instances should be greater or equal than Min instances for role '%s'"), $rolename));
@@ -90,7 +90,7 @@
 				
 			$total_max_count = $total_max_count+$maxCount;
                    
-			if ($role['options']['use_elastic_ips'])
+			if ($role['settings'][DBFarmRole::SETTING_AWS_USE_ELASIC_IPS])
                 $need_elastic_ips_for_farm += $maxCount;
             
 
@@ -98,18 +98,18 @@
             foreach (RoleScalingManager::$ScalingAlgos as $Algo)
             	$Algo->ValidateConfiguration($role['options']['scaling_algos'], $DBFarmRole);
             	
-			if ($role['options']['use_ebs'] && $role['options']['placement'] == "")
+			if ($role['settings'][DBFarmRole::SETTING_AWS_USE_EBS] && $role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "")
 				throw new Exception(sprintf(_("EBS cannot be enabled if Placement is set to 'Choose randomly'. Please select a different option for 'Placement' parameter for role '%s'."), $rolename));
 				
 			if ($role['options']['mysql_data_storage_engine'] == MYSQL_STORAGE_ENGINE::EBS)
 			{
-				if ($role['options']['placement'] == "" || $role['options']['placement'] == "x-scalr-diff")
+				if ($role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "" || $role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "x-scalr-diff")
 					throw new Exception(sprintf(_("If you want to use EBS as MySQL data storage, you should select specific 'Placement' parameter for role '%s'."), $rolename));
 			}
 				
-			if ($role['options']['use_ebs'] && $role['options']['ebs_size'])
+			if ($role['settings'][DBFarmRole::SETTING_AWS_USE_EBS] && $role['settings'][DBFarmRole::SETTING_AWS_EBS_SIZE])
 			{
-				if ($role['options']['ebs_size'] < 1 || $role['options']['ebs_size'] > 1000)
+				if ($role['settings'][DBFarmRole::SETTING_AWS_EBS_SIZE] < 1 || $role['settings'][DBFarmRole::SETTING_AWS_EBS_SIZE] > 1000)
 					throw new Exception(sprintf(_("EBS volume size for role '%s' must be between 1 and 1000 GB"), $rolename));
 			}
 				
@@ -140,12 +140,12 @@
         
         // Check limits
         $used_slots = $db->GetOne("SELECT SUM(value) FROM farm_role_settings WHERE name=? 
-	        AND farm_roleid IN (SELECT id FROM farm_amis WHERE farmid IN (SELECT id FROM farms WHERE clientid=?) AND farmid != ?)",
+	        AND farm_roleid IN (SELECT id FROM farm_roles WHERE farmid IN (SELECT id FROM farms WHERE clientid=?) AND farmid != ?)",
 	        array(DBFarmRole::SETTING_SCALING_MAX_INSTANCES, $uid, $farm_id)
 	    );
         
         if ($used_slots+$total_max_count > $i_limit)
-			throw new Exception(sprintf(_("The total amount of instances across all your farms is %s (aggregated Maximum instances Setting for all roles across all farms). If all farms will be running simultaneously you might hit the Amazon Limit of %s simultaneously running instances. Contact  Amazon to increase your instances limit, and then update this value in Settings->General->AWS Settings->Instances limit."), ($used_slots+$total_max_count), $i_limit));
+			throw new Exception(sprintf(_("The total amount of instances across all your farms is %s (aggregated Maximum instances Setting for all roles across all farms). If all farms will be running simultaneously you might hit the Amazon Limit of %s simultaneously running instances. Contact  Amazon to increase your instances limit, and then update this value in <a href=\"https://scalr.net/system_settings.php\">Settings->System->Instances limit</a>."), ($used_slots+$total_max_count), $i_limit));
 		
 		$used_ips = $db->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE clientid=? AND farmid != ?", array($uid, $farm_id));
 		if ($used_ips+$need_elastic_ips_for_farm > $eips_limit)
@@ -154,12 +154,15 @@
 			);
 			
 		$db->BeginTrans();
-		$transaction_started = true;
+		$transaction_started = true;		
+		
+		// comments from farm_add (edit form)
+		$comments = trim($req_farm_comments);		
 			
 	    switch($req_action)
 	    {            
 	        case "create":
-	            	        	
+	            	        	 
 	        	// Count client farms
 	        	$farms_count = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid=?", array($uid));
 	        	
@@ -172,6 +175,7 @@
 				$create_key_pair = true;
                 $create_farm_s3_bucket = true;
                 
+                
                 try
                 {
 	                // Create farm in database
@@ -181,35 +185,23 @@
 						clientid=?, 
 						hash=?, 
 						dtadded=NOW(),
-						mysql_bcp = ?,
-						mysql_bcp_every = ?,
-						mysql_rebundle_every = ?,
-						mysql_bundle = ?,
-						mysql_data_storage_engine = ?,
-						mysql_ebs_size = ?,
 						region = ?,
-						farm_roles_launch_order = ?
+						farm_roles_launch_order = ?,
+						comments = ?
 					", array( 
 	                	trim($farm_name), 
 						$_SESSION['uid'], 
 						$farmhash, 
-						$farm_mysql_make_backup, 
-						$farm_mysql_make_backup_every, 
-						$farm_mysql_bundle_every,
-						$farm_mysql_bundle,
-						$farm_mysql_data_storage_engine,
-						$farm_mysql_ebs_size,
 						$_SESSION['farm_builder_region'],
-						$farm_roles_launch_order
+						$farm_roles_launch_order,
+						$comments
 	                ));
+	                
 	                
 	                $farm_id = $db->Insert_ID();
 	                
 	                // Set farm S3 bucket name
 	                $bucket_name = "farm-{$farm_id}-{$Client->AWSAccountID}";
-	                $db->Execute("UPDATE farms SET bucket_name=? WHERE id=?",
-	                	array($bucket_name, $farm_id)
-	                );
                 }
                 catch(Exception $e)
                 {
@@ -230,23 +222,13 @@
 				{
 					$db->Execute("UPDATE farms SET   
 						name=?, 
-						mysql_bcp = ?,
-						mysql_bcp_every = ?,
-						mysql_rebundle_every = ?,
-						mysql_bundle = ?,
-						mysql_data_storage_engine = ?,
-						mysql_ebs_size = ?,
-						farm_roles_launch_order = ?
+						farm_roles_launch_order = ?,
+						comments = ?
 						WHERE id=?", 
 					array(  
 						trim($farm_name), 
-						$farm_mysql_make_backup, 
-						$farm_mysql_make_backup_every, 
-						$farm_mysql_bundle_every,
-						$farm_mysql_bundle,
-						$farm_mysql_data_storage_engine,
-						$farm_mysql_ebs_size, 
 						$farm_roles_launch_order,
+						$comments,
 						$farm_id
 					));
 				}
@@ -261,41 +243,54 @@
 	    	    
 	    if (in_array($req_action, array('create','edit')))
 	    {
+	    	$DBFarm = new DBFarm($farm_id);
+	    	
+	    	if ($bucket_name)
+	    		$DBFarm->SetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME, $bucket_name);
+	                
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BCP_ENABLED, $farm_mysql_make_backup);
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BCP_EVERY, $farm_mysql_make_backup_every);	                
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BUNDLE_ENABLED, $farm_mysql_bundle);
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_BUNDLE_EVERY, $farm_mysql_bundle_every);
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_DATA_STORAGE_ENGINE, $farm_mysql_data_storage_engine);	                
+			$DBFarm->SetSetting(DBFarm::SETTING_MYSQL_EBS_VOLUME_SIZE, $farm_mysql_ebs_size);
+	    	
 	    	// Remove unused roles
 	    	try
 			{
-                $db_farm_amis = $db->GetAll("SELECT * FROM farm_amis WHERE farmid=?", array($farm_id));
-                foreach ($db_farm_amis as $farm_ami)
+                $db_farm_roles = $db->GetAll("SELECT * FROM farm_roles WHERE farmid=?", array($farm_id));
+                foreach ($db_farm_roles as $farm_ami)
                 {
-                    if (!$farm_amis[$farm_ami["ami_id"]])
+                    if (!$farm_roles[$farm_ami["ami_id"]])
                     {
                         if (0 == $db->GetOne("SELECT COUNT(*) FROM zones WHERE ami_id=? AND farmid=?", array($farm_ami["ami_id"], $farm_id)))
                         {
 							$DBFarmRole = DBFarmRole::Load($farm_id, $farm_ami["ami_id"]);
+							$farm_roleid = $DBFarmRole->ID;
                            	$DBFarmRole->Delete();
                            	$DBFarmRole = null;
                        
-							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?", array($farm_id, $farm_ami["ami_id"]));
+							$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farm_roleid=?", array($farm_roleid));
                            	foreach ($instances as $instance)
                            	{
-                               if ($instance["instance_id"])
+                               if ($instance["instance_id"] && $instance['state'] != INSTANCE_STATE::TERMINATED)
                                {
 									try
                                		{
                                    		$res = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
                                    		if ($res instanceof SoapFault )
-                                       		$Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString));
+                                       		$Logger->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString)));
                                		}
                                		catch (Exception $e)
                                		{
-                                   		$Logger->fatal(sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage()));
+                                   		$Logger->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage())));
                                		}
                                }
 							}
                         }
                         else
                         {
-                            $rolename = $db->GetOne("SELECT name FROM ami_roles WHERE ami_id='{$farm_ami["ami_id"]}'");
+                            $rolename = $db->GetOne("SELECT name FROM roles WHERE ami_id='{$farm_ami["ami_id"]}'");
                             $sitename = $db->GetOne("SELECT zone FROM zones WHERE ami_id=? AND farmid=?", array($farm_ami["ami_id"], $farm_id));
                             throw new Exception(sprintf(_("You cannot delete role %s because there are DNS records bind to it. Please delete application %s first."), $rolename, $sitename));
                         }
@@ -311,31 +306,22 @@
 			// Add and update roles.
 	    	try
 			{
-				foreach ($farm_amis as $ami_id => $role)
+				foreach ($farm_roles as $ami_id => $role)
 				{
-                    $info = $db->GetRow("SELECT * FROM farm_amis WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
+                    $info = $db->GetRow("SELECT * FROM farm_roles WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
                     if ($info)
                     {
-                        if ($info['use_elastic_ips'] == 0 && $role['options']['use_elastic_ips'])
+                        $DBFarmRole = DBFarmRole::Load($farm_id, $ami_id);
+                    	
+                    	if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_ELASIC_IPS) && $role['settings'][DBFarmRole::SETTING_AWS_USE_ELASIC_IPS])
                     		$assign_elastic_ips[$info['id']] = $info['ami_id'];
                     	
-                    	$db->Execute("UPDATE farm_amis SET 
-                            avail_zone=?, instance_type=?, use_elastic_ips=?,
-                            reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, 
-                            status_timeout=?, launch_index=?
+                    	$db->Execute("UPDATE farm_roles SET 
+                            reboot_timeout=?, launch_timeout=?, status_timeout=?, launch_index=?
                             WHERE farmid=? AND ami_id=?
                             ", array(
-                            $role['options']['placement'], 
-                            $role['options']['i_type'],
-                            (int)$role['options']['use_elastic_ips'],
                             (int)$role['options']['reboot_timeout'],
                             (int)$role['options']['launch_timeout'],
-                            (int)$role['options']['use_ebs'],
-                            ($role['options']['use_ebs'] && $role['options']['ebs_size'] > 0) ? $role['options']['ebs_size'] : 0,
-                            ($role['options']['use_ebs'] && $role['options']['ebs_snapid'] != '') ? $role['options']['ebs_snapid'] : "",
-                            (int)$role['options']['ebs_mount'],
-                         	$role['options']['ebs_mountpoint'], 
                          	(int)$role['options']['status_timeout'],
                          	(int)$role['launch_index'],
                             $farm_id, 
@@ -344,27 +330,18 @@
 						
 						$DBFarmRole = DBFarmRole::Load($farm_id, $ami_id);
 						
-						$farm_amis[$ami_id]['DBFarmRole'] = $DBFarmRole;
+						$farm_roles[$ami_id]['DBFarmRole'] = $DBFarmRole;
                     }
     	            else 
     	            {
-                        $db->Execute("INSERT INTO farm_amis SET 
-							farmid=?, ami_id=?, avail_zone=?, instance_type=?, use_elastic_ips=?,
-                            reboot_timeout=?, launch_timeout=?, use_ebs =?,
-                            ebs_size = ?, ebs_snapid = ?, ebs_mount = ?, ebs_mountpoint = ?, status_timeout = ?, launch_index = ?
+                        $db->Execute("INSERT INTO farm_roles SET 
+							farmid=?, ami_id=?,
+                            reboot_timeout=?, launch_timeout=?, status_timeout = ?, launch_index = ?
                             ", array( 
                         		$farm_id, 
                         		$ami_id, 
-	                            $role['options']['placement'], 
-	                            $role['options']['i_type'],
-	                            (int)$role['options']['use_elastic_ips'],
 	                            (int)$role['options']['reboot_timeout'],
                             	(int)$role['options']['launch_timeout'],
-                            	(int)$role['options']['use_ebs'],
-                            	($role['options']['use_ebs'] && $role['options']['ebs_size'] > 0) ? $role['options']['ebs_size'] : 0,
-                            	($role['options']['use_ebs'] && $role['options']['ebs_snapid'] != '') ? $role['options']['ebs_snapid'] : "",
-                         		(int)$role['options']['ebs_mount'],
-                         		$role['options']['ebs_mountpoint'],
                          		(int)$role['options']['status_timeout'],
                          		(int)$role['launch_index']
 						));
@@ -378,7 +355,7 @@
 						$DBFarmRole->FarmID = $farm_id;
 						$DBFarmRole->AMIID = $ami_id; 
 						
-						$farm_amis[$ami_id]['DBFarmRole'] = $DBFarmRole;
+						$farm_roles[$ami_id]['DBFarmRole'] = $DBFarmRole;
 					}
 					
 					foreach ($role['options']['scaling_algos'] as $k=>$v)
@@ -418,62 +395,101 @@
 					/*****************/
 						
 					/* Update role params */
-					$db->Execute("DELETE FROM farm_role_options WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
+										
+					//var_dump($role);
 					
 					if (count($role['params']) > 0)
-					{
-						$multiselect = array();
+					{						
+						$current_role_options = $db->GetAll("SELECT * FROM farm_role_options WHERE farm_roleid=?", array($DBFarmRole->ID));
+						$role_opts = array();
+						foreach ($current_role_options as $cro)
+							$role_opts[$cro['hash']] = md5($cro['value']);
+						
+						//$db->Execute("DELETE FROM farm_role_options WHERE farm_roleid=?", array($DBFarmRole->ID));						
+						$params = array();
 						foreach ($role['params'] as $name => $value)
 						{
 							if (preg_match("/^(.*?)\[(.*?)\]$/", $name, $matches))
 							{
 								if (!$multiselect[$matches[1]])
-									$multiselect[$matches[1]] = array();
+									$params[$matches[1]] = array();
 								
 								if ($matches[2] != '' && $value == 1)
 								{
-									$multiselect[$matches[1]][] = $matches[2];
+									$params[$matches[1]][] = $matches[2];
 								}
 								continue;
 							}
-							
-							if ($name)
-							{
-								$db->Execute("INSERT INTO farm_role_options SET
-									farmid		= ?,
-									ami_id		= ?,
-									name		= ?,
-									value		= ?,
-									hash	 	= ? 
-									ON DUPLICATE KEY UPDATE name = ?
-								", array(
-									$farm_id,
-									$ami_id,
-									$name,
-									$value,
-									preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name)),
-									$name
-								));
-							}
+							else
+								$params[$name] = $value;
 						}
-						
-						foreach ($multiselect as $name => $value)
+
+						$saved_opts = array();
+						foreach($params as $name => $value)
 						{
 							if ($name)
 							{
-								$db->Execute("INSERT INTO farm_role_options SET
+								$val = (is_array($value)) ? implode(',', $value) : $value;
+								$hash = preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name));
+								
+								if (!$role_opts[$hash])
+								{
+									$db->Execute("INSERT INTO farm_role_options SET
 										farmid		= ?,
-										ami_id		= ?,
+										farm_roleid	= ?,
 										name		= ?,
 										value		= ?,
-										hash	 	= ?
+										hash	 	= ? 
+										ON DUPLICATE KEY UPDATE name = ?
 									", array(
 										$farm_id,
-										$ami_id,
+										$DBFarmRole->ID,
 										$name,
-										implode(",",$value),
-										preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name))
+										$val,
+										$hash,
+										$name
 									));
+									
+									$fire_event = true;
+								}
+								else
+								{
+									if (md5($val) != $role_opts[$hash])
+									{
+										$db->Execute("UPDATE farm_role_options SET value = ? WHERE
+											farm_roleid	= ? AND hash = ?	
+										", array(
+											$val,
+											$DBFarmRole->ID,
+											$hash
+										));
+										
+										$fire_event = true;
+									}
+								}
+								
+								// Submit event only for existing farm. 
+								// If we create a new farm, no need to fire this event.
+								if ($fire_event && $req_action == 'edit')
+								{
+									Scalr::FireEvent($farm_id, new RoleOptionChangedEvent(
+										$DBFarmRole, $hash
+									));
+									
+									$fire_event = false;
+								}
+								
+								$saved_opts[] = $hash;
+							}
+						}	
+
+						foreach ($role_opts as $k=>$v)
+						{
+							if (!in_array($k, array_values($saved_opts)))
+							{
+								$db->Execute("DELETE FROM farm_role_options WHERE farm_roleid = ? AND hash = ?",
+									array($DBFarmRole->ID, $k)
+								);
 							}
 						}
 					}
@@ -481,7 +497,7 @@
 					/* End of role params management */
 					
 					/* Add script options to databse */
-					$db->Execute("DELETE FROM farm_role_scripts WHERE farmid=? AND ami_id=?", array($farm_id, $ami_id));
+					$db->Execute("DELETE FROM farm_role_scripts WHERE farm_roleid=?", array($DBFarmRole->ID));
 					
 					if (count($role['scripts']) > 0)
 					{						
@@ -507,7 +523,7 @@
 								$db->Execute("INSERT INTO farm_role_scripts SET
 									scriptid	= ?,
 									farmid		= ?,
-									ami_id		= ?,
+									farm_roleid	= ?,
 									params		= ?,
 									event_name	= ?,
 									target		= ?,
@@ -518,7 +534,7 @@
 								", array(
 									$scriptid,
 									$farm_id,
-									$ami_id,
+									$DBFarmRole->ID,
 									serialize($config),
 									$event_name,
 									$target,
@@ -539,16 +555,19 @@
 				throw new Exception($e->getMessage(), E_ERROR);
 			}
 			
+			//exit();
+			
 			$Logger->getLogger("FarmEdit")->info("Farm Edit: {$farm_id}");
 			
 			try
 			{
 				$elbs = array();
-				foreach ($farm_amis as $ami_id => $role)
+				foreach ($farm_roles as $ami_id => $role)
 				{
 					$Logger->getLogger("FarmEdit")->info("Role: {$ami_id}");
 								
 					$AmazonELB = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+					$AmazonELB->SetRegion($_SESSION['farm_builder_region']);
 		        	$DBFarmRole = $role['DBFarmRole'];
 					
 					// Load balancer settings
@@ -571,24 +590,31 @@
 		        		
 					    $Logger->getLogger("FarmEdit")->info("Role: {$ami_id}, Host: ".$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME));
 					    
+		        		$avail_zones = array();
+		        		$avail_zones_setting_hash = "";
+					    foreach ($role['settings'] as $skey => $sval)
+					    {
+					    	if (preg_match("/^lb.avail_zone.(.*)?$/", $skey, $macthes))
+					    	{
+					    		if ($sval == 1)
+					    			array_push($avail_zones, $macthes[1]);
+					    			
+					    		$avail_zones_setting_hash .= "[{$macthes[1]}:{$sval}]";
+					    	}
+					    }
+					    
 					    if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME))
 		        		{
-		        			$elb_ame = sprintf("scalr-%s-%s", $farm_id, rand(1,100));
+		        			$elb_name = sprintf("scalr-%s-%s", $farm_id, rand(100,999));
 		        			
-			        		$avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
-						    $avail_zones = array();
-						    
-						    foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
-						    {
-						    	if (stristr($zone->zoneState,'available'))
-						    		array_push($avail_zones, (string)$zone->zoneName);
-						    }
-		        			
+			        				        			
 		        			//CREATE NEW ELB
-		        			$elb_dns_name = $AmazonELB->CreateLoadBalancer($elb_ame, $avail_zones, $ELBListenersList);
+		        			$elb_dns_name = $AmazonELB->CreateLoadBalancer($elb_name, $avail_zones, $ELBListenersList);
 		        			
 		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME, $elb_dns_name);
-		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_NAME, $elb_ame);
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_NAME, $elb_name);
+		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_AZ_HASH, $avail_zones_setting_hash);
+		        			
 		        			
 		        			$elbs[] = $elb_dns_name;
 		        			//Update healthcheck Settings 
@@ -604,7 +630,7 @@
 	        			
 						$hash = md5(serialize($ELBHealthCheckType));
 						
-						if ($elb_ame || ($hash != $DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH)))
+						if ($elb_name || ($hash != $DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH)))
 						{
 		        			//UPDATE CURRENT ELB
 		        			$AmazonELB->ConfigureHealthCheck(
@@ -613,6 +639,52 @@
 		        			);
 		        			
 		        			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH, $hash);
+						}
+						
+						// Configure AVAIL zones for the LB
+						if (!$elb_name && $avail_zones_setting_hash != $DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_AZ_HASH))
+						{
+							$info = $AmazonELB->DescribeLoadBalancers(array($DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME)));
+							$elb = $info->DescribeLoadBalancersResult->LoadBalancerDescriptions->member;
+							
+							$c = (array)$elb->AvailabilityZones;
+							
+							if (!is_array($c['member']))
+								$c_zones = array($c['member']);
+							else
+								$c_zones = $c['member'];
+								
+							$add_avail_zones = array();
+							$rem_avail_zones = array();
+							foreach ($role['settings'] as $skey => $sval)
+						    {
+						    	if (preg_match("/^lb.avail_zone.(.*)?$/", $skey, $m))
+						    	{
+									if ($sval == 1 && !in_array($m[1], $c_zones))
+										array_push($add_avail_zones, $m[1]);
+									
+									if ($sval == 0 && in_array($m[1], $c_zones))
+										array_push($rem_avail_zones, $m[1]);
+						    	}
+						    }
+						    
+						    if (count($add_avail_zones) > 0)
+						    {
+						    	$AmazonELB->EnableAvailabilityZonesForLoadBalancer(
+									$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME),
+									$add_avail_zones
+								);
+						    }
+						    
+							if (count($rem_avail_zones) > 0)
+						    {
+						    	$AmazonELB->DisableAvailabilityZonesForLoadBalancer(
+									$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME),
+									$rem_avail_zones
+								);
+						    }
+							
+							$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_AZ_HASH, $avail_zones_setting_hash);
 						}
 		        	}
 		        	else
@@ -637,8 +709,8 @@
 						if (!$id || !$ami_id)
 							continue;
 
-						$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=?",
-							array($farm_id, $ami_id)
+						$instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=? AND ami_id=? AND state != ?",
+							array($farm_id, $ami_id, INSTANCE_STATE::TERMINATED)
 						);
 						
 						foreach ($instances as $instance)
@@ -647,8 +719,8 @@
 							$address = $AmazonEC2Client->AllocateAddress();
 							
 							// Add allocated IP address to database
-							$db->Execute("INSERT INTO elastic_ips SET farmid=?, role_name=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
-								array($farm_id, $instance['role_name'], $address->publicIp, $uid, $instance['index'])
+							$db->Execute("INSERT INTO elastic_ips SET farmid=?, farm_roleid=?, ipaddress=?, state='0', instance_id='', clientid=?, instance_index=?",
+								array($farm_id, $instance['farm_roleid'], $address->publicIp, $uid, $instance['index'])
 							);
 							
 							$allocated_ips[] = $address->publicIp;
@@ -695,6 +767,8 @@
 							$db->Execute("UPDATE farm_instances SET external_ip=?, isipchanged='1', isactive='0' WHERE instance_id=?",
 								array($address->publicIp, $instance['instance_id'])
 							);
+							
+							Scalr::FireEvent($farm_id, new IPAddressChangedEvent(DBInstance::LoadByIID($instance['instance_id']), $address->publicIp));
 						}
 					}
 				}
@@ -719,9 +793,7 @@
                     
                     if ($create_bucket)
                     {
-                       $is_europe = ($_SESSION['farm_builder_region'] == 'eu-west-1') ? true : false;
-            
-			           if ($AmazonS3->CreateBucket($bucket_name, $is_europe))
+                       if ($AmazonS3->CreateBucket($bucket_name, $_SESSION['farm_builder_region']))
 							$created_bucket = $bucket_name;
                     }
                 }
@@ -736,8 +808,11 @@
                         $result = $AmazonEC2Client->CreateKeyPair($key_name);
                         if ($result->keyMaterial)
                         {
-                            $db->Execute("UPDATE farms SET private_key=?, private_key_name=? WHERE id=?", array($result->keyMaterial, $key_name, $farm_id));
-                            $created_key_name = $key_name;
+                            $DBFarm = new DBFarm($farm_id);
+	        				$DBFarm->SetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY, $result->keyMaterial);
+	        				$DBFarm->SetSetting(DBFarm::SETTING_AWS_KEYPAIR_NAME, $key_name);
+                        	
+                        	$created_key_name = $key_name;
                         }
                         else
                             throw new Exception(_("Cannot create key pair for farm."), E_ERROR);

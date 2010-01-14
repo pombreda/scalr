@@ -33,6 +33,16 @@
 			if ($info)
 			{
 				$item->dbInfo = $info;
+				if ($item->dbInfo['farm_roleid'])
+				{
+					try
+					{
+						$DBFarmRole = DBFarmRole::LoadByID($item->dbInfo['farm_roleid']);
+						$item->dbInfo['role_name'] = $DBFarmRole->GetRoleName();
+					}
+					catch(Exception $e){}
+				}
+								
 				$item->farmId = $info['farmid'];
 			}
 			else
@@ -41,6 +51,14 @@
 				if ($dbinstance)
 				{
 					$item->dbInstance = $dbinstance;
+					
+					try
+					{
+						$DBFarmRole = DBFarmRole::LoadByID($item->dbInstance['farm_roleid']);
+						$item->dbInstance['role_name'] = $DBFarmRole->GetRoleName();
+					}
+					catch(Exception $e){}
+					
 					$item->farmId = $dbinstance['farmid'];
 				}
 			}
@@ -84,8 +102,8 @@
 		    	'instance_id' => $r->instanceId, 
 		    	'farmid' => $r->farmId, 
 		    	'farm_name' => $r->farmName, 
-		    	'role_name' => $item->dbInstance['role_name'] ? $item->dbInstance['role_name'] : $item->dbInfo['role_name'],
-		    	'indb' => ($item->dbInfo) ? true : false
+		    	'role_name' => ($r->dbInstance && $r->dbInstance['role_name']) ? $r->dbInstance['role_name'] : $r->dbInfo['role_name'],
+		    	'indb' => ($r->dbInfo) ? true : false
 		    );
 		}
 	}

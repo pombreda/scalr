@@ -20,7 +20,7 @@ This payment covers your account until {$due_date}. You
 will be billed again at that time for the next month.
 
 NEED TO CANCEL?
-If you wish to cancel your Scalr.net account, log in to htt://paypal.com and cancel subscription {$pp_subsid}.
+If you wish to cancel your Scalr.net account, log in to http://paypal.com and cancel subscription {$pp_subsid}.
 
 ============================================================
 INVOICE
@@ -31,7 +31,7 @@ INVOICE
 
 
 Bill to:
-Alex Kovalyov
+Scalr Inc.
 
 Quantity     Description                               Price
 ------------------------------------------------------------
@@ -46,7 +46,7 @@ Quantity     Description                               Price
 
 
 Thank you for your business
-http://intridea.com
+https://scalr.com
 ............................................................
 
 

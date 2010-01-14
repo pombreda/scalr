@@ -16,6 +16,7 @@
 	$display['title'] = 'AWS Load balancer > Instance health state';
 	
 	$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+	$AmazonELBClient->SetRegion($_SESSION['aws_region']);
 
 	if ($_POST)
 	{

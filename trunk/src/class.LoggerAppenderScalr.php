@@ -130,6 +130,8 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		$this->db->Execute($query);
 	        		
 	        		$event->message = $this->db->qstr("[FarmID: {$event->message->FarmID}] {$event->message->Message}");
+	        		
+	        		return;
 	        	}
 	        	elseif ($event->message instanceof ScriptingLogMessage)
 	        	{
@@ -146,18 +148,35 @@ class LoggerAppenderScalr extends LoggerAppenderSkeleton {
 	        		$this->db->Execute($query);
 	        		
 	        		$event->message = $this->db->qstr("[Farm: {$event->message->FarmID}] {$event->message->Message}");
+	        		
+	        		return;
 	        	}
 	        	else
+	        	{
+	        		if (stristr($event->message, "AWS was not able to validate the provided access credentials") || 
+	        			stristr($event->message, "The X509 Certificate you provided does not exist in our records")
+	        		)
+	        		return;
+	        		
 	        		$event->message = $this->db->qstr($event->message);
+	        	}
+	        	
+	        	$level = $event->getLevel()->toString();
+	        	
+	        	if ($level == 'INFO')
+	        		return;
 	        	
 	        	// Redeclare threadName
 	            $event->threadName = TRANSACTION_ID; 
 	
-	            $event->subThreadName = defined("SUB_TRANSACTIONID") ? SUB_TRANSACTIONID : TRANSACTION_ID;
+	            $event->subThreadName = defined("SUB_TRANSACTIONID") ? SUB_TRANSACTIONID 
+	            		: $GLOBALS["SUB_TRANSACTIONID"] ? $GLOBALS["SUB_TRANSACTIONID"] 
+	            		: TRANSACTION_ID;
 	            
-	            $event->farmID = defined("LOGGER_FARMID") ? LOGGER_FARMID : null;
+	            $event->farmID = defined("LOGGER_FARMID") ? LOGGER_FARMID 
+	            		: $GLOBALS["LOGGER_FARMID"] ? $GLOBALS["LOGGER_FARMID"] 
+	            		: null;
 	            
-	        	$level = $event->getLevel()->toString();
 	        	if ($level == "FATAL" || $level == "ERROR")
 	        	{
 	        		$event->backtrace = $this->db->qstr(Debug::Backtrace());

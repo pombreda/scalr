@@ -49,7 +49,8 @@
 						phone		= ?,
 						fax			= ?,
 						comments	= ?,
-						dtadded		= NOW()
+						dtadded		= NOW(),
+						isactive	= '1'
         			 ", array(
         		    	$post_email, 
         		    	$Crypto->Hash($post_password), 
@@ -114,6 +115,18 @@
 					}
 	            }
                 
+	            
+	            // Add client to zohocrm
+	            try 
+	            {
+		            Scalr::FireInternalEvent("addClient", Client::Load($clientid));
+	            }
+	            catch (Exception $e)
+	            {
+            		throw new ApplicationException($e->getMessage(), E_ERROR);	
+	            }
+	            
+	            
                 if (count($err) == 0)
                 {
                     $okmsg = _("Client successfully added!");
@@ -214,6 +227,17 @@
 						}
 		            }
         		    
+		            // Update client in zohocrm
+		            try 
+		            {
+			            Scalr::FireInternalEvent("updateClient", Client::Load($post_id));
+		            }
+		            catch (Exception $e)
+		            {
+		            	throw new ApplicationException($e->getMessage(), E_ERROR);	
+		            }		            
+		            
+		            
         		    if (count($err) == 0)
         		    {
         		        $okmsg = _("Client successfully updated");
