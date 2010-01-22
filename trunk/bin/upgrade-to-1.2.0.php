@@ -64,6 +64,7 @@
 				$this->db->Execute("alter table `elastic_ips` add index `farm_roleid` (`farm_roleid`);");
 				$this->db->Execute("alter table `vhosts` add index `farm_roleid` (`farm_roleid`);");
 				$this->db->Execute("alter table `ami_roles` add column `default_ssh_port` int(5) DEFAULT '22' NULL after `region`;");
+				$this->db->Execute("alter table `events` add column `event_object` text NULL after `short_message`, add column `event_id` varchar(36) NULL after `event_object`;");
 			}
 			catch(Exception $e)
 			{

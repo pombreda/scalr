@@ -266,9 +266,11 @@ CREATE TABLE `events` (
   `message` varchar(255) default NULL,
   `ishandled` tinyint(1) default '0',
   `short_message` varchar(255) default NULL,
+  `event_object` text,
+  `event_id` varchar(36) default NULL,
   PRIMARY KEY  (`id`),
   KEY `farmid` (`farmid`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 /*Data for the table `events` */
 
