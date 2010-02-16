@@ -31,7 +31,16 @@
 			$filter = array(); 
 			$filter = explode(" ", $req_query);
 	        
-	        $instanceTypes = explode(" ","m1.small m1.large m1.xlarge c1.medium c1.xlarge m2.2xlarge m2.4xlarge");
+			$instanceTypes = array( X86_64_TYPE::C1_XLARGE,			
+									X86_64_TYPE::M1_LARGE,
+									X86_64_TYPE::M1_XLARGE,
+									X86_64_TYPE::M2_2XLARGE,
+									X86_64_TYPE::M2_4XLARGE,
+									I386_TYPE::C1_MEDIUM,
+									I386_TYPE::M1_SMALL
+								);
+			
+	        
 	        $i = 0;
 	        $instanceTypeSet = array();
 	        $requestDesription = array();	     

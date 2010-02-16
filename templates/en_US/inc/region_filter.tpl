@@ -11,9 +11,9 @@
 			<td nowrap style="padding:0px;height:26px;">
 				{if !$show_region_filter_title}{t}Region{/t}{else}{$show_region_filter_title}{/if}:
 				<select name="region" id="region" style="vertical-align:middle;" onchange="document.location.href = '{$smarty.server.PHP_SELF}?region='+this.value;">
-					{section name=id loop=$regions}
-						<option {if $smarty.session.aws_region == $regions[id]}selected{/if} value="{$regions[id]}">{$regions[id]}</option>
-					{/section}
+					 {foreach from=$regions item=region_name key=region_id}
+						<option {if $smarty.session.aws_region == $region_id}selected{/if} value="{$region_id}">{$region_name}</option>
+                     {/foreach}
 				</select>
 			</td>
 			<td align="left" nowrap>&nbsp;</td>

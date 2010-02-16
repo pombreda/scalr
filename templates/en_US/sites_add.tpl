@@ -93,7 +93,15 @@
 	<tr>
 		<td colspan=4></td>
 		<td>Refresh:</td>
-		<td><input type="text" class="text" disabled name="zone[soa_refresh]" size=12  value="{if $zone.soa_refresh}{$zone.soa_refresh}{else}14400{/if}"></td>
+		<td>
+		<select name="zone[soa_refresh]" class="text">
+			<option {if $zone.soa_refresh == 3600}selected{/if} value="3600">1 hour</option>
+			<option {if $zone.soa_refresh == 7200}selected{/if} value="7200">2 hours</option>
+			<option {if $zone.soa_refresh == 14400 || !$zone.soa_refresh}selected{/if} value="14400">4 hours</option>
+			<option {if $zone.soa_refresh == 28800}selected{/if} value="28800">8 hours</option>
+			<option {if $zone.soa_refresh == 86400}selected{/if} value="86400">1 day</option>
+		</select>
+		</td>
 	</tr>
 	<tr>
 		<td colspan=4></td>

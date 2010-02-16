@@ -79,8 +79,9 @@
             }
             	
            	// SNMP Watcher instance
-            $Watcher = new SNMPWatcher($SNMP_community, $farm_rrddb_dir);
-
+            $Watcher = new SNMPWatcher();
+            $Watcher->SetConfig($SNMP_community, $farm_rrddb_dir);
+            
             $farm_data = array();
             
             // Get all farm roles

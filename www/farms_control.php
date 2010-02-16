@@ -131,7 +131,7 @@
 		    		catch(Exception $e)
 		    		{
 		    			$db->RollbackTrans();
-						$Logger->fatal(new FarmLogMessage($farminfo["id"], "Exception thrown during role synchronization: {$e->getMessage()}"));
+						Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($farminfo["id"], "Exception thrown during role synchronization: {$e->getMessage()}"));
 						$err[] = _("Cannot terminate farm. Please try again later."); 
 		    		}
 		    	}

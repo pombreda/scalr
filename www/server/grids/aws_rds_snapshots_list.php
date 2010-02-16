@@ -28,20 +28,24 @@
 		$res = (array)$aws_response->DescribeDBSnapshotsResult->DBSnapshots;
 
 		if (!is_array($res['DBSnapshot']))
-			$rowz = array($res['DBSnapshot']);
+		{
+			if ($res['DBSnapshot'])
+				$rowz = array($res['DBSnapshot']);
+			else
+				$rowz = array();
+		}
 		else
 			$rowz = $res['DBSnapshot'];
-			
+
 		$start = $req_start ? (int) $req_start : 0;
 		$limit = $req_limit ? (int) $req_limit : 20;
 		
 		$response['total'] = count($rowz);
 		
-		$rowz = (count($rowz) > $limit) ? array_slice($rowz, $start, $limit) : $rowz;
+		$rowz = (count($rowz) > $limit) ? array_slice($rowz, $start, $limit) : $rowz;		
+
+		$response["data"] = array();		
 		
-		$response["data"] = array();
-				
-		// Rows
 		foreach ($rowz as $row)
 		{
 		    $response["data"][] = array(

@@ -39,7 +39,7 @@
         	
             define("SUB_TRANSACTIONID", posix_getpid());
             define("LOGGER_FARMID", $farminfo["id"]);
-            
+                        
             $this->Logger->info("Begin polling farm (ID: {$farminfo['id']}, Name: {$farminfo['name']}, Status: {$farminfo['status']})");
                         
             $farm_roles = $db->GetAll("SELECT ami_id, id, replace_to_ami FROM farm_roles WHERE farmid=? ORDER BY launch_index ASC", array($farminfo['id']));
@@ -101,8 +101,8 @@
 	            	elseif ($res == ScalingAlgo::DOWNSCALE)
 	            	{	     
 						/*
-						 Timeout instance's count decrease. Decreases instance’s count after scaling 
-						 resolution “the spare instances are running” for selected timeout interval
+						 Timeout instance's count decrease. Decreases instanceï¿½s count after scaling 
+						 resolution ï¿½the spare instances are runningï¿½ for selected timeout interval
 						 from scaling EditOptions							
 						*/    
 						
@@ -118,8 +118,8 @@
 							if(time() - $last_down_scale_data_time < $timeout_interval*60)
 							{
 								// if the launch time is too small to terminate smth in this role -> go to the next role in foreach()							
-								$this->Logger->info(new FarmLogMessage($farminfo['id'], 
-											sprintf("The running time is too small to terminate any instance in farm %s, role %s",
+								Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], 
+											sprintf("Waiting due to downscaling timeout for farm %s, role %s",
 												$farminfo['name'],
 												$instanceinfo['role_name']
 												)
@@ -187,9 +187,10 @@
                         		{
                         			$timeout = round(($time - 600) / 60, 1);
 
-                        			$this->Logger->info(new FarmLogMessage($farminfo['id'], sprintf("Farm %s, role %s scaling down. Instance '%s' will be terminated in %s minutes. Launch time: %s",
+                        			Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], sprintf("Farm %s, role %s scaling down (Algo: %s). Instance '%s' will be terminated in %s minutes. Launch time: %s",
                         				$farminfo['name'],
                         				$instanceinfo['role_name'],
+                        				get_class($ScalingAlgo),
                         				$instanceinfo['instance_id'],
                         				$timeout,
                         				$response->reservationSet->item->instancesSet->item->launchTime
@@ -202,14 +203,15 @@
                         	{                       
 		                        try
 		                        {
-		                            $this->Logger->info(new FarmLogMessage($farminfo['id'], 
-		                            	sprintf("Scheduled termination for instance %s (%s). It will be terminated in 3 minutes.",
+		                            Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], 
+		                            	sprintf("Scheduled termination due to scaling down (Algo: %s) for instance %s (%s). It will be terminated in 3 minutes.",
+		                            		get_class($ScalingAlgo),
 		                            		$instanceinfo["instance_id"],
 		                            		$instanceinfo["external_ip"]
 		                            	)
 		                            ));
 		                            
-						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($instanceinfo['id'], false)));
+						            Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($instanceinfo['id']), false));
 		                        }
 		                        catch (Exception $e)
 		                        {
@@ -230,7 +232,7 @@
 	            	{
 						/*
 						Timeout instance's count increase. Increases  instance's count after 
-						scaling resolution “need more instances” for selected timeout interval
+						scaling resolution ï¿½need more instancesï¿½ for selected timeout interval
 						from scaling EditOptions						
 						*/
 						
@@ -245,8 +247,8 @@
 							if(time() - $last_up_scale_data_time < $timeout_interval*60)
 							{
 								// if the launch time is too small to terminate smth in this role -> go to the next role in foreach()							
-								$this->Logger->info(new FarmLogMessage($farminfo['id'], 
-											sprintf("The last scaling time interval is too small to start a new instance in farm %s, role %s",
+								Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], 
+											sprintf("Waiting due to upscaling timeout for farm %s, role %s",
 												$farminfo['name'],
 												$instanceinfo['role_name']
 												)
@@ -264,7 +266,7 @@
 	            		
 	            		$instance_id = Scalr::RunInstance($DBFarmRole, false, false, true);                            
                         if ($instance_id)
-							$this->Logger->info(new FarmLogMessage($farminfo['id'], sprintf("Starting new instance. InstanceID = %s.", $instance_id)));
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], sprintf("Starting new instance. InstanceID = %s.", $instance_id)));
             		
 	            		break;
 	            	}

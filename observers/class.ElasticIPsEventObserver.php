@@ -125,7 +125,7 @@
 			{
 				if (!$this->CheckElasticIP($ip['ipaddress'], $farminfo))
 				{
-					$this->Logger->warn(new FarmLogMessage(
+					Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage(
 						$this->FarmID, 
 						sprintf(_("Elastic IP '%s' does not belong to you. Allocating new one."), 
 							$ip['ipaddress']
@@ -165,7 +165,7 @@
 					}
 					catch (Exception $e)
 					{
-						$this->Logger->error(new FarmLogMessage(
+						Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 							$this->FarmID, 
 							sprintf(_("Cannot allocate new elastic ip for instance '%s': %s"), 
 								$event->DBInstance->InstanceID, 
@@ -182,7 +182,7 @@
 					
 					$ip['ipaddress'] = $address->publicIp;
 					
-					$this->Logger->info(new FarmLogMessage(
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 						$this->FarmID, 
 						sprintf(_("Allocated new IP: %s"), 
 							$ip['ipaddress']
@@ -232,7 +232,7 @@
 				}
 				catch(Exception $e)
 				{
-					$this->Logger->error(new FarmLogMessage(
+					Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 						$this->FarmID, 
 						sprintf(_("Cannot associate elastic ip with instance: %s"), 
 							$e->getMessage()
@@ -257,7 +257,7 @@
 			}
 			else
 			{
-				$this->Logger->fatal(new FarmLogMessage(
+				Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage(
 					$this->FarmID, 
 					sprintf(_("Cannot allocate elastic ip address for instance %s on farm %s"),
 						$event->DBInstance->InstanceID,
@@ -315,7 +315,7 @@
 						}
 						catch(Exception $e)
 						{
-							$this->Logger->error(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("Cannot release unused elastic ip: %s"),
 									$e->getMessage()
@@ -344,7 +344,7 @@
 						}
 						catch(Exception $e)
 						{
-							$this->Logger->error(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("Cannot release unused elastic ip: %s"),
 									$e->getMessage()

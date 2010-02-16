@@ -135,7 +135,7 @@
         	// Auto - snapshoting
 			$snapshots_settings = $this->db->Execute("SELECT * FROM autosnap_settings 
 				WHERE (UNIX_TIMESTAMP(DATE_ADD(dtlastsnapshot, INTERVAL period HOUR)) < UNIX_TIMESTAMP(NOW()) OR dtlastsnapshot IS NULL)
-				AND volumeid != '0'");
+				AND objectid != '0' AND object_type = ?",array(AUTOSNAPSHOT_TYPE::EBSSnap));
 			while ($snapshot_settings = $snapshots_settings->FetchRow())
 			{
 				try

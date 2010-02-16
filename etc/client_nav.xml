@@ -6,18 +6,18 @@
 		<item href="sites_add.php">Add new</item>				
 	</node>
 
-	<node title="Server Farms">
-		<item href="farms_add.php">Build new</item>
-		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+	<node title="Server Farms" id='server_farms'>
+		<item href="farms_add.php">Build new</item>		
 		<separator />
-		<item href="aws_elb.php">Elastic Load balancers</item>
-		<separator />
-		<item href="elastic_ips.php">Elastic IPs</item>
-		<separator />
+		<item href="aws_elb.php">Elastic Load Balancers</item>		
+		<item href="elastic_ips.php">Elastic IPs</item>		
 		<node title="Elastic Block Storage">
 			<item href="ebs_manage.php">Volumes &amp; Snapshots</item>
 			<item href="ebs_arrays.php">Arrays</item>
 		</node>
+        <separator />
+        <item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		
 	</node>
 	
 	<node title="Servers">
@@ -52,7 +52,9 @@
 		<item href="default_records.php">Default DNS records</item>
 	</node>
 	
-	<node title="Tools">
+	<node title="Tools">        
+        <item href="scheduler.php">Tasks scheduler</item>
+        <separator />
 		<item href="garbage.php">Delete unused objects</item>
 		<separator />
 		<node title="Amazon Web Services">

@@ -166,8 +166,8 @@ Ext.onReady(function () {
 			{id: "option.attach", 		text:'Attach', 			  	href: "/ebs_manage.php?task=attach&volumeId={volume_id}"},
 			{id: "option.detach", 		text:'Detach', 			  	href: "/ebs_manage.php?task=detach&volumeId={volume_id}"},
 			new Ext.menu.Separator({id: "option.attachSep"}),
-			{id: "option.autosnap", 	text:'Auto-snapshot settings', handler: function(menuItem){
-				document.location.href = '/ebs_autosnaps.php?task=settings&volumeId='+menuItem.parentMenu.record.data.volume_id+'&region='+region;
+			{id: "option.autosnap", 	text:'Auto-snapshot settings', handler: function(menuItem){				
+				document.location.href = '/autosnapshots.php?task=settings&volumeId='+menuItem.parentMenu.record.data.volume_id+'&region='+region;
 			}},
 			new Ext.menu.Separator({id: "option.snapSep"}),
 			{id: "option.createSnap", 	text:'Create snapshot', 	href: "/ebs_manage.php?task=snap_create&volumeId={volume_id}"},

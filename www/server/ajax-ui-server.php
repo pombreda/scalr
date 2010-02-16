@@ -160,7 +160,7 @@
 	    			$instanceinfo = $this->DB->GetRow("SELECT * FROM farm_instances WHERE instance_id=?", array($instance_id));
     				try
 					{
-						$this->Logger->info(new FarmLogMessage($farmid, 
+						Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farmid, 
 							sprintf("Scheduled termination for instance %s (%s). It will be terminated in 3 minutes.",
 	                        	$instanceinfo["instance_id"],
 	                        	$instanceinfo["external_ip"]

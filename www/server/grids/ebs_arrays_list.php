@@ -51,7 +51,8 @@
 		//
 		foreach ($db->GetAll($sql) as $row)
 		{
-			$row['autosnapshoting'] = $db->GetOne("SELECT id FROM autosnap_settings WHERE arrayid=?", array($row['id']));
+
+			$row['autosnapshoting'] = $db->GetOne("SELECT id FROM autosnap_settings WHERE objectid=? AND objectType=?", array($row['id'],AUTOSNAPSHOT_TYPE::EBSArraySnap));
 			try
 			{
 				if ($row['farm_roleid'])

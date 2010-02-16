@@ -30,7 +30,7 @@
 						array($event->DBInstance->InstanceID)
 					);
 					
-					$this->Logger->info(new FarmLogMessage($this->FarmID, 
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($this->FarmID, 
 						sprintf(_("Instance '%s' deregistered from '%s' load balancer"),
 							$event->DBInstance->InstanceID,
 							$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME)
@@ -62,7 +62,7 @@
 						array($event->DBInstance->InstanceID)
 					);
 					
-					$this->Logger->info(new FarmLogMessage($this->FarmID, 
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($this->FarmID, 
 						sprintf(_("Instance '%s' registered on '%s' load balancer"),
 							$event->DBInstance->InstanceID,
 							$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME)

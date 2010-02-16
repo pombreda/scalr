@@ -86,6 +86,32 @@
 		}
 		
 		/**
+		 * 
+		 * @param int $farm_roleid
+		 * @param int $index
+		 * @return DBInstance
+		 */
+		static public function LoadByFarmRoleIDAndIndex($farm_roleid, $index)
+		{
+			$db = Core::GetDBInstance();
+			
+			$id = $db->GetRow("SELECT id FROM farm_instances WHERE farm_roleid = ? AND `index` = ?", 
+				array($farm_roleid, $index)
+			);
+			
+			if (!$id)
+			{
+				throw new Exception(sprintf(
+					_("Instance with FarmRoleID #%s and index #%s not found in database"), 
+					$farm_roleid,
+					$index
+				));
+			}
+			
+			return self::LoadByID($id);		
+		}
+		
+		/**
 		 * Load DBInstance by database id
 		 * @param $id
 		 * @return DBInstance
@@ -100,7 +126,7 @@
 				throw new Exception(sprintf(_("Instance ID#%s not found in database"), $id));
 				
 			$DBInstance = new DBInstance($instance_info['instance_id']);
-
+			
 			foreach(self::$FieldPropertyMap as $k=>$v)
 			{
 				if ($instance_info[$k])

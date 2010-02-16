@@ -279,11 +279,11 @@
                                		{
                                    		$res = $AmazonEC2Client->TerminateInstances(array($instance["instance_id"]));
                                    		if ($res instanceof SoapFault )
-                                       		$Logger->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString)));
+                                       		Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $res->faultString)));
                                		}
                                		catch (Exception $e)
                                		{
-                                   		$Logger->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage())));
+                                   		Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($farm_roleid ,sprintf(_("Cannot terminate instance '%s'. Please do it manualy. (%s)"), $instance["instance_id"], $e->getMessage())));
                                		}
                                }
 							}
@@ -366,6 +366,13 @@
 											
 					foreach ($role['settings'] as $k=>$v)
 						$DBFarmRole->SetSetting($k, $v);
+						
+					if ($role['settings'][DBFarmRole::SETTING_AWS_USE_EBS] == 0)
+					{
+						$db->Execute("DELETE FROM farm_ebs WHERE farm_roleid = ? AND ismanual='0'", array(
+							$DBFarmRole->ID
+						));
+					}
 					
 					/** Time scaling */
 					//TODO: optimize this code...

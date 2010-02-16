@@ -69,9 +69,25 @@ Ext.onReady(function () {
 			}
 		},
 		buttons: [
-			{text: 'Filter', handler: doFilter}
+			{text: 'Filter', handler: doFilter},
+			{text: 'Download Log', handler: doDownloadLog}
 		]
+		
 	});
+	
+	function doDownloadLog ()
+	{
+		var filterParams = searchPanel.getForm().getValues(false); // get field with params
+		var farmid = searchPanel.getForm().findField('farmid').value;
+		if (farmid) 
+		{
+			filterParams.farmid = farmid;
+		}		
+		window.location = Ext.urlEncode(filterParams,"/logs_view.php?action=download&");// form string for get requst
+			
+		
+	}
+	
 	
 	function doFilter () {
 		Ext.apply(store.baseParams, searchPanel.getForm().getValues(false));
@@ -104,10 +120,10 @@ Ext.onReady(function () {
         }),
         baseParams: {
         	sort: 'id',
-        	dir: 'DESC'
+        	dir: 'DESC'        	
         },
     	remoteSort: true,
-		url: 'server/grids/event_log_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		url: 'server/grids/event_log_list.php?a=1{/literal}{$grid_query_string}{literal}&showLog=1',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
 	Ext.apply(store.baseParams, Ext.ux.parseQueryString(window.location.href));

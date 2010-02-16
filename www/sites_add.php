@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = "Webtasites&nbsp;&raquo;&nbsp;Add / Edit";
+	$display["title"] = "Websites&nbsp;&raquo;&nbsp;Add / Edit";
 
 	if ($_SESSION["_POST"] && $post_vhost_page)
 	{
@@ -70,14 +70,14 @@
 		    	$post_zone['soa_owner'] = CONFIG::$DEF_SOA_OWNER;
 		    
 		    $post_zone['soa_expire'] = ((int)$post_zone['soa_expire'] == 0) ? 3600000 : (int)$post_zone['soa_expire'];
-		     
+		    $post_zone['soa_refresh'] = ((int)$post_zone['soa_refresh'] == 0 || $post_zone['soa_refresh'] < 3600) ? 14400 : (int)$post_zone['soa_refresh'];
 		 
 		    try
 			{   
 				if(!isset($post_setup_google_apps_mx_records))
 				{
-					$db->Execute("UPDATE zones SET soa_expire = ?, soa_owner = ? WHERE id=?",
-			    		array($post_zone['soa_expire'], $post_zone['soa_owner'], $zoneinfo['id'])
+					$db->Execute("UPDATE zones SET soa_expire = ?, soa_refresh=?, soa_owner = ? WHERE id=?",
+			    		array($post_zone['soa_expire'], $post_zone['soa_refresh'], $post_zone['soa_owner'], $zoneinfo['id'])
 					);
 					
 					foreach ((array)$post_zone["records"] as $k=>$v)
@@ -393,7 +393,7 @@
 					CONFIG::$DEF_SOA_TTL, 
 					CONFIG::$DEF_SOA_PARENT, 
 					date("Ymd")."01",
-					CONFIG::$DEF_SOA_REFRESH,
+					($post_zone['soa_refresh'] && (int)$post_zone['soa_refresh'] >= 3600) ? (int)$post_zone['soa_refresh'] : CONFIG::$DEF_SOA_REFRESH,
 					CONFIG::$DEF_SOA_RETRY, 
 					$post_zone['soa_expire'],
 					CONFIG::$DEF_SOA_MINTTL, 

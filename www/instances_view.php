@@ -129,7 +129,7 @@
 			}
 			
 			if (count($err) == 0)
-				$okmsg = _("Instance successfully marked as active");
+				$okmsg = _("Instance successfully marked as active (Added to DNS)");
 		}
 		elseif ($req_task == 'setinactive')
 		{
@@ -178,7 +178,7 @@
 			}
 
 			if (count($err) == 0)
-				$okmsg = _("Instance successfully marked as active");
+				$okmsg = _("Instance successfully marked as inactive (Removed from DNS)");
 		}
 		
 		if ($okmsg)

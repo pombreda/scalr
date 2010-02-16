@@ -160,7 +160,6 @@
 			$db = Core::GetDBInstance();
 			
 			$farm_info = $db->GetRow("SELECT * FROM farms WHERE id=?", array($id));
-			
 			if (!$farm_info)
 				throw new Exception(sprintf(_("Farm ID#%s not found in database"), $id));
 				

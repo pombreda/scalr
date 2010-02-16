@@ -57,7 +57,7 @@
 
 					if ($old_instance)
 					{
-						$this->Logger->info(new FarmLogMessage($old_instance["farmid"], "Scheduled termination for instance '{$old_instance["instance_id"]}' ({$old_instance["external_ip"]}). It will be terminated in 3 minutes."));
+						Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($old_instance["farmid"], "Scheduled termination for instance '{$old_instance["instance_id"]}' ({$old_instance["external_ip"]}). It will be terminated in 3 minutes."));
 						Scalr::FireEvent($old_instance["farmid"], new BeforeHostTerminateEvent(DBInstance::LoadByID($old_instance['id']), true));
 					}
 				}
@@ -180,10 +180,10 @@
 		{
 			if ($event->ForceTerminate)
 			{ 
-				$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
-				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($farminfo['region']);
+				$DBFarm = DBFarm::LoadByID($this->FarmID);
+				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($DBFarm->Region);
 				
-				$this->Logger->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$event->DBInstance->InstanceID}'..."));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$event->DBInstance->InstanceID}' (O)."));
                 $AmazonEC2Client->TerminateInstances(array($event->DBInstance->InstanceID));
 			}
 		}

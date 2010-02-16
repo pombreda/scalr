@@ -82,6 +82,7 @@
 			
 			$response["data"][] = $row;
 		}
+	
 	}
 	catch(Exception $e)
 	{

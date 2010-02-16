@@ -147,9 +147,9 @@
                                     {
                                     	$chk = @fsockopen("udp://{$instance_dns}", 161, $errno, $errstr, 5);
                                     	if ($chk)
-                                    		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Instance {$db_item_info['instance_id']} ({$db_item_info['external_ip']}) doesn't respond to SNMP. Scalr was able to open connection to UDP port 161, but snmp doesn't respond. Most likely snmpd is hung up. Try to restart it with /etc/init.d/snmpd restart"));
+                                    		Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($farminfo['id'], "Instance {$db_item_info['instance_id']} ({$db_item_info['external_ip']}) doesn't respond to SNMP. Scalr was able to open connection to UDP port 161, but snmp doesn't respond. Most likely snmpd is hung up. Try to restart it with /etc/init.d/snmpd restart"));
                                     	else
-                                    		$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance {$db_item_info['instance_id']} did not respond on {$db_item_info['external_ip']}:161. (Error {$errno}: {$errstr})"));
+                                    		Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance {$db_item_info['instance_id']} did not respond on {$db_item_info['external_ip']}:161. (Error {$errno}: {$errstr})"));
                                     	
                                     	if ($db_ami['status_timeout'] != 0 && $DBFarmRole->GetSetting(DBFarmRole::SETTING_TERMINATE_IF_SNMP_FAILS) == 1)
                                     	{
@@ -164,7 +164,7 @@
 	                                    		
 	                                    		if ($db_item_info['isrebootlaunched'] != 1)
 						                        {
-			                                    	$this->Logger->error(new FarmLogMessage(
+			                                    	Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage(
 			                                				$farminfo['id'], 
 			                                				sprintf(
 			                                					_("Failed to retrieve LA on instance %s for %s minutes. Try increasing '{$action} instance if cannot retrieve it's status' setting on %s configuration tab."),
@@ -181,20 +181,20 @@
 															default:
 																$this->Logger->info("The instance will be terminated by default");
 							                            	case "terminate":
-																$this->Logger->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));														
+																Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));														
 							                            		Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($db_item_info['id'])));						                            		
 							                            		break;
 							                            		
 							                            	case "reboot":	
 	
-																	$this->Logger->info(new FarmLogMessage($farminfo['id'], "Sending reboot request to instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). "));															
+																	Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Sending reboot request to instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). "));															
 																	// reboot instance 
 																	$AmazonEC2Client->RebootInstances(array($db_item_info['instance_id'])); 															
 							                            		
 																break;
 							                            } 
 							                            
-														$this->Logger->info(new FarmLogMessage($farminfo['id'], "Reboot/terminate for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). successfully completed "));
+														Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Reboot/terminate for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). successfully completed "));
 	
 							                        }
 							                        catch (Exception $e)

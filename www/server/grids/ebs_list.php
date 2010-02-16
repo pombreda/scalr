@@ -107,7 +107,9 @@
 				}
 			}
 			
-			$item->Scalr->AutoSnapshoting = ($db->GetOne("SELECT id FROM autosnap_settings WHERE volumeid=?", array($item->volumeId))) ? true : false;
+
+			$item->Scalr->AutoSnapshoting = ($db->GetOne("SELECT id FROM autosnap_settings WHERE objectid=? AND object_type=?",
+					 array($item->volumeId,AUTOSNAPSHOT_TYPE::EBSSnap))) ? true : false;
 			
 			///
 			/// Generate sort key

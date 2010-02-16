@@ -1,7 +1,7 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Launch new DB Instance");
+	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Modify DB Instance");
 		
 	if ($_SESSION["uid"] == 0)
 	{
@@ -56,12 +56,12 @@
 	{		
 		$_POST['PreferredMaintenanceWindow'] = "{$_POST['pmw1']['ddd']}:{$_POST['pmw1']['hh']}:{$_POST['pmw1']['mm']}-{$_POST['pmw2']['ddd']}:{$_POST['pmw2']['hh']}:{$_POST['pmw2']['mm']}";
 		$_POST['PreferredBackupWindow'] = "{$_POST['pbw1']['hh']}:{$_POST['pbw1']['mm']}-{$_POST['pbw2']['hh']}:{$_POST['pbw2']['mm']}";
-				
+
 		try
 		{		
 			$AmazonRDSClient->ModifyDBInstance(
 				$req_name,
-				$_POST['DBParameterGroup'],
+				$_POST['DBParameterGroupName'],
 				$_POST['DBSecurityGroups'],
 				$_POST['PreferredMaintenanceWindow'],
 				$_POST['MasterUserPassword'] ? $_POST['MasterUserPassword'] : null,

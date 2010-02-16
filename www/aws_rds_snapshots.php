@@ -1,7 +1,8 @@
-<? 
+<?
+
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
-	
+
 	if ($_SESSION["uid"] == 0)
 	{
 		$errmsg = _("Requested page cannot be viewed from admin account");
@@ -25,7 +26,10 @@
 			try
 			{
 				$snap_id = "scalr-manual-".dechex(microtime(true)*10000).rand(0,9);
+				
 				$AmazonRDSClient->CreateDBSnapshot($snap_id, $req_name);
+				$db->Execute("INSERT INTO rds_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?",
+							array($snap_id, "manual RDS instance snapshot", $_SESSION['aws_region']));
 			}
 			catch(Exception $e)
 			{
@@ -40,11 +44,13 @@
 		}
 		elseif ($req_action == 'delete' && $post_with_selected)
 		{
+			$i = 0;
 			foreach ($post_id as $snap_name)
 			{
 				try
 				{
 					$AmazonRDSClient->DeleteDBSnapshot($snap_name);
+					$db->Execute("DELETE FROM rds_snaps_info WHERE snapid=? ",array($snap_name));
 					$i++;
 				}
 				catch(Exception $e)
@@ -61,7 +67,7 @@
 	}	
 	
     if ($req_name)
-		$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Snapshots (Instance: {$req_name})");
+		$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Snapshots (DBInstance: {$req_name})");
 	else
 		$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Snapshots");
 			

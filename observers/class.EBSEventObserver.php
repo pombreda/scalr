@@ -113,7 +113,7 @@
 						$DBEBSVolume->Save();
 					}
 					
-					$this->Logger->info(new FarmLogMessage(
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 						$this->FarmID,
 						sprintf(_("Added new EBS volume delete task to queue (VolumeID: %s)"), 
 							$volume['volumeid']
@@ -175,13 +175,16 @@
 				{
 					$this->Logger->info(sprintf(_("Found EBS volume %s assigned to %s instance"), $DBEBSVolume->VolumeID, $DBEBSVolume->InstaneID));
 					
+					if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS) && $DBEBSVolume->IsManual == 0)
+						continue;
+					
 					try
 					{
 						$info = $EC2Client->DescribeVolumes($DBEBSVolume->VolumeID);
 						
 						if ($info->volumeSet->item->status == AMAZON_EBS_STATE::DELETING)
 						{
-							$this->Logger->debug(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->debug(new FarmLogMessage(
 									$this->FarmID,
 									sprintf(_("Volume '%s' state on EC2: %s"), 
 								$DBEBSVolume->VolumeID, $info->volumeSet->item->status)
@@ -191,7 +194,7 @@
 						}
 						elseif ($info->volumeSet->item->status != AMAZON_EBS_STATE::AVAILABLE)
 						{
-							$this->Logger->info(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("The volume %s assigned for instance %s is currently attached to instance %s. Detaching."),
 									$DBEBSVolume->VolumeID,
@@ -234,7 +237,7 @@
 							$DBEBSVolume->Save();
 							
 							// Attach free EBS volume
-							$this->Logger->info(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("Volume %s status is available. Attaching it to the instance %s"),
 									$DBEBSVolume->VolumeID, $event->DBInstance->InstanceID
@@ -250,7 +253,7 @@
 							}
 							catch(Exception $e)
 							{
-								$this->Logger->error(new FarmLogMessage(
+								Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 									$this->FarmID, 
 									sprintf(_("Cannot attach volume %s: %s"), $DBEBSVolume->VolumeID, $e->getMessage())
 								));
@@ -269,7 +272,7 @@
 			
 			if (!$auto_attached_volumes && $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_EBS))
 			{
-				$this->Logger->info(new FarmLogMessage(
+				Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 					$this->FarmID, 
 					sprintf(_("There are no free EBS volumes for role %s in availability zone %s. Creating new one(s)."),
 						$DBFarmRole->GetRoleName(), $event->DBInstance->AvailZone	
@@ -306,7 +309,7 @@
 		    			
 		    			$DBEBSVolume->Save();
 		    			
-		    			$this->Logger->info(new FarmLogMessage(
+		    			Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 							$this->FarmID, 
 							sprintf(_("Volume creation initialized. VolumeID: %s. Volume will be attached to the instance when creation process complete."),
 								$result->volumeId	
@@ -318,7 +321,7 @@
 		    		}
 		    		else
 		    		{
-		    			$this->Logger->error(new FarmLogMessage(
+		    			Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 							$this->FarmID, 
 							_("Volume creation failed. Unexpected error.")
 						));
@@ -326,7 +329,7 @@
 		    	}
 		    	catch(Exception $e)
 		    	{
-		    		$this->Logger->fatal(new FarmLogMessage(
+		    		Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage(
 						$this->FarmID, 
 						sprintf(_("Volume creation failed: %s"), $e->getMessage())
 					));
@@ -405,7 +408,7 @@
 					// Delete unused EBS
 					if ($need_delete)
 					{
-						$this->Logger->info(new FarmLogMessage(
+						Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 							$event->DBInstance->FarmID,
 							sprintf(_("Added new EBS volume delete task to queue (VolumeID: %s)"), 
 								$ebs['volumeid']
@@ -423,7 +426,7 @@
 								array(FARM_EBS_STATE::AVAILABLE, $ebs['id'])
 							);
 							
-							$this->Logger->info(new FarmLogMessage(
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 								$this->FarmID, 
 								sprintf(_("Volume %s successfully detached from instance %s"), $ebs['volumeid'], $ebs['instance_id'])
 							));
@@ -442,7 +445,7 @@
 					
 				foreach ($volumes as $ebs)
 				{
-					$this->Logger->info(new FarmLogMessage(
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
 						$event->DBInstance->FarmID,
 						sprintf(_("Added new EBS volume delete task to queue (VolumeID: %s)"), 
 							$ebs['volumeid']

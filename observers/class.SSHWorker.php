@@ -100,7 +100,7 @@
 				@unlink($pub_key_file);
 				@unlink($priv_key_file);
 				
-				$this->Logger->warn(new FarmLogMessage($this->FarmID, "Cannot upload ec2 keys to '{$event->DBInstance->InstanceID}' instance. Failed to connect to SSH '{$event->ExternalIP}:22'"));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Cannot upload ec2 keys to '{$event->DBInstance->InstanceID}' instance. Failed to connect to SSH '{$event->ExternalIP}:22'"));
 				
 				throw new Exception("Cannot upload keys on '{$event->DBInstance->InstanceID}'. Failed to connect to '{$event->ExternalIP}:22'.");
 			}
