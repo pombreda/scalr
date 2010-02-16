@@ -83,8 +83,10 @@
 			
         	// Auto - snapshoting
 			$snapshots_settings = $db->Execute("SELECT * FROM autosnap_settings 
-				WHERE (UNIX_TIMESTAMP(DATE_ADD(dtlastsnapshot, INTERVAL period HOUR)) < UNIX_TIMESTAMP(NOW()) OR dtlastsnapshot IS NULL)
-				AND volumeid != '0'");
+					WHERE (UNIX_TIMESTAMP(DATE_ADD(dtlastsnapshot, INTERVAL period HOUR)) < UNIX_TIMESTAMP(NOW()) OR dtlastsnapshot IS NULL)
+					AND objectid != '0' AND object_type = ?",
+				array(AUTOSNAPSHOT_TYPE::EBSSnap)				
+			);
 			while ($snapshot_settings = $snapshots_settings->FetchRow())
 			{
 				try
@@ -102,7 +104,9 @@
 					catch(Exception $e)
 					{
 						if (stristr($e->getMessage(), "does not exist"))
-							$db->Execute("DELETE FROM autosnap_settings WHERE id=?", array($snapshot_settings['id']));
+							$db->Execute("DELETE FROM autosnap_settings WHERE id=?", 
+								array($snapshot_settings['id'])
+							);
 												
 						throw $e;
 					}

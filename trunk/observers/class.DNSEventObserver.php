@@ -208,7 +208,7 @@
 			}
 			catch(Exception $e)
 			{
-				$this->Logger->warn(new FarmLogMessage($farminfo['id'], "Update DNS zone on 'OnHostDown'' event failed: {$e->getMessage()}"));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($farminfo['id'], "Update DNS zone on 'OnHostDown'' event failed: {$e->getMessage()}"));
 			}
 		}
 		
@@ -258,7 +258,7 @@
 							$role_name = $instanceinfo['role_name'];
 					}
 					
-					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Instance {$instanceinfo['instance_id']}. Is DB Master = {$instanceinfo['isdbmaster']}"));
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Instance {$instanceinfo['instance_id']}. Is DB Master = {$instanceinfo['isdbmaster']}"));
 					
 					try
 					{
@@ -273,7 +273,7 @@
 					
 					$instance_records = DNSZoneControler::GetInstanceDNSRecordsList($instanceinfo, $role_name, $ami_info['alias'], $skip_main_a_records);
 										
-					$this->Logger->info(new FarmLogMessage($farminfo['id'], "Adding system A records to zone {$zone['zone']}"));
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Adding system A records to zone {$zone['zone']}"));
 					
 					// Adding new records to database
 					foreach ($instance_records as $record_attrs)

@@ -79,7 +79,7 @@
 						}
 						catch(Exception $e)
 						{
-							LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
+							Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
 								sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
 							));
 							return false;

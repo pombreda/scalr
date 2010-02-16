@@ -30,7 +30,7 @@ Ext.QuickTips.init();
 	        ]
     	}),
     	remoteSort: false,
-		url: '/server/grids/aws_ec2_amis_list.php?a=1{/literal}{$grid_query_string}{literal}',
+		url: '/server/grids/aws_ec2_amis_list.php?a=1{/literal}{$grid_query_string}{literal}&ownerFilter=my',
 		listeners: { dataexception: Ext.ux.dataExceptionReporter }
     });
 
@@ -49,15 +49,43 @@ Ext.QuickTips.init();
         	emptyText: "No amies were found"
 		},
 
-        enableFilter: false,		
+        enableFilter: true,		
+        tbar: ['Owner:', 
+				new Ext.form.ComboBox
+				({
+					allowBlank: false,
+					editable: false, 
+					 store: new Ext.data.ArrayStore
+						({
+							id: 0,
+							fields: ['id','title'],
+							data: [['all','All'],['my', 'My AMIs'],['amazon', 'Amazon\'s']]
+						}),
+					value: 'My AMIs',
+					valueField: 'id',
+					displayField: 'title',				
+					typeAhead: false,
+					mode: 'local',
+					triggerAction: 'all',
+					selectOnFocus:false,
+					width:100,	
+					listeners:
+						{select:function(combo, record, index)
+							{
+			        			store.baseParams.ownerFilter = combo.getValue();	
+			        			store.load();
+			        		}
+        				}
+				})
+				],
+	    
                 
         // Columns
         columns:
         [
 			{header: "AMI ID",		 width: 50, dataIndex: 'imageId',		sortable: false},
 			{header: "State",		 width: 50, dataIndex: 'imageState',	sortable: false},
-			{header: "Owner",		 width: 50, dataIndex: 'imageOwnerId',	sortable: false},
-			{header: "Public",		 width: 50, dataIndex: 'isPublic',		sortable: false},
+			{header: "Owner",		 width: 50, dataIndex: 'imageOwnerId',	sortable: false},			
 			{header: "Architecture", width: 50, dataIndex: 'architecture',	sortable: false},
 			{header: "Type",		 width: 50, dataIndex: 'imageType',		sortable: false},			
 			{header: "Device Type",	 width: 50, dataIndex: 'rootDeviceType',sortable: false}

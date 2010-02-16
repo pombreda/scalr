@@ -27,7 +27,7 @@
     		array_push($display["avail_zones"], (string)$zone->zoneName);
     }    			
   
-  	$display['amiId'] = $req_id;
+  	$display['amiId'] = (int)$req_id;
   	
   	// depending on the ami's architecture we select it's type:
     if($req_arch == 'x86_64')  

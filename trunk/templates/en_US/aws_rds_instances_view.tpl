@@ -3,14 +3,6 @@
 <div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
 
-var FarmID = '{$smarty.get.farmid}';
-
-var regions = [
-{section name=id loop=$regions}
-	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}
-{/section}
-];
-
 var region = '{$smarty.session.aws_region}';
 
 {literal}
@@ -60,15 +52,18 @@ Ext.onReady(function () {
 			{header: "Storage", width: 20, dataIndex: 'storage', sortable: false},
 			{header: "Placement", width: 30, dataIndex: 'avail_zone', sortable: false},
 			{header: "Created at", width: 30, dataIndex: 'dtadded', sortable: false}
+			
 		],
-
+		
+		
 	
     	// Row menu
     	rowOptionsMenu: [
             {id: "option.details",			text: 'Details', 				href: "/aws_rds_instance_details.php?name={name}"}, 
             {id: "option.update",			text: 'Modify', 				href: "/aws_rds_instance_modify.php?name={name}"},       	
 			new Ext.menu.Separator({id: "option.detailsSep"}),
-			{id: "option.createSnap",		text: 'Create snapshot', 		href: "/aws_rds_snapshots.php?name={name}&action=create"},
+			{id: "option.createSnap",		text: 'Create snapshot', 		href: "/aws_rds_snapshots.php?name={name}&action=create"},			
+			{id: "option.autoSnap",			text: 'Auto snapshot settings', href: "/autosnapshots.php?name={name}"},
 			{id: "option.snaps",			text: 'Manage snapshots', 		href: "/aws_rds_snapshots.php?name={name}"},
 			new Ext.menu.Separator({id: "option.cwSep"}),
 			{id: "option.cw",				text: 'CloundWatch monitoring',	href: "/aws_cw_monitor.php?ObjectId={name}&Object=DBInstanceIdentifier&NameSpace=AWS/RDS"},

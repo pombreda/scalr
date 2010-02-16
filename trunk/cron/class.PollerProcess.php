@@ -130,12 +130,13 @@
                 $num = 0;
                 foreach ($result->reservationSet->item as $item)
                 {
-					$ami_role_name = $db->GetOne("SELECT role_name FROM farm_instances WHERE instance_id=? AND farmid=? AND state != ?", 
-						array($item->instancesSet->item->instanceId, $DBFarm->ID, INSTANCE_STATE::TERMINATED)
+					$i_info = $db->GetRow("SELECT role_name, status FROM farm_instances WHERE instance_id=? AND farmid=?", 
+						array($item->instancesSet->item->instanceId, $DBFarm->ID)
 					);
+					$ami_role_name = $i_info['role_name'];
 					if ($ami_role_name)
 					{
-	                	if (!is_array($ec2_items[$ami_role_name]))
+	                	if (!is_array($ec2_items[$ami_role_name]) && $i_info['state'] != INSTANCE_STATE::TERMINATED)
 							$ec2_items[$ami_role_name] = array();
 	                            
 						array_push($ec2_items[$ami_role_name], $item->instancesSet->item);
@@ -150,16 +151,18 @@
                 $this->Logger->debug("[FarmID: {$DBFarm->ID}] No instances found for this client.");
                 
             
-            foreach ($farm_instances as $farm_instance)
+            $all_farm_instances = $db->GetAll("SELECT * FROM farm_instances WHERE farmid=?",
+            	array($DBFarm->ID)
+            );
+            foreach ($all_farm_instances as $farm_instance)
             {
-                $instance_terminated = false;
-                
+                $instance_terminated = false;           
                 if (!isset($ec2_items_by_instanceid[$farm_instance["instance_id"]]))
                 {
                     $farm_instance['isrebootlaunched'] = 0;
                 	
                 	// Add entry to farm log
-                    $this->Logger->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$farm_instance["instance_id"]}' found in database but not found on EC2. Crashed."));
+                    Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$farm_instance["instance_id"]}' found in database but not found on EC2. Crashed."));
                 	Scalr::FireEvent($DBFarm->ID, new HostCrashEvent(DBInstance::LoadByID($farm_instance['id'])));
                 }
                 else 
@@ -182,19 +185,23 @@
                     }
                 }
                 
-                if ($instance_terminated)
+                if ($instance_terminated && $farm_instance['state'] != INSTANCE_STATE::TERMINATED)
                 {
                     $DBInstance = DBInstance::LoadByID($farm_instance['id']);
                     $DBInstance->IsRebootLaunched = 0;
                 	Scalr::FireEvent($DBFarm->ID, new HostDownEvent($DBInstance));
+                	continue;
                 }
                 
-                if ($farm_instance['state'] == INSTANCE_STATE::PENDING_TERMINATE)
+                if ($farm_instance['state'] == INSTANCE_STATE::PENDING_TERMINATE || $farm_instance['state'] == INSTANCE_STATE::TERMINATED)
                 {
-                	if ($farm_instance['dtshutdownscheduled'] && strtotime($farm_instance['dtshutdownscheduled'])+60*3 < time())
+                	if ($farm_instance['state'] == INSTANCE_STATE::TERMINATED || ($farm_instance['dtshutdownscheduled'] && strtotime($farm_instance['dtshutdownscheduled'])+60*3 < time()))
                 	{
-						$this->Logger->warn(new FarmLogMessage($DBFarm->ID, "Terminating instance '{$farm_instance["instance_id"]}'..."));
-                		$AmazonEC2Client->TerminateInstances(array($farm_instance['instance_id']));
+						if ($ec2_items_by_instanceid[$farm_instance["instance_id"]] != 'terminated' && $ec2_items_by_instanceid[$farm_instance["instance_id"]] != 'shutting-down')
+						{
+                			Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "Terminating instance '{$farm_instance["instance_id"]}' (P). "));
+                			$AmazonEC2Client->TerminateInstances(array($farm_instance['instance_id']));
+						}
                 	}
                 }
             }
@@ -285,7 +292,6 @@
 	                        	} 
                         	}
                         	
-                        	                        	
                         	$db->Execute("UPDATE roles SET `replace`='' WHERE ami_id='{$DBFarmRole->ReplaceToAMI}'");
                         	
                         	if ($delete_old_ami)
@@ -348,7 +354,7 @@
             			        $res = Scalr::RunInstance($DBFarmRole, $ami_info['ami_id'], false, true, $old_instance['avail_zone'], $old_instance['index']);
                                 if ($res)
                                 {
-                                    $this->Logger->warn(new FarmLogMessage($DBFarm->ID, "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' will be terminated after instance '{$res}' will boot up."));
+                                    Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "The instance ('{$ami_info["ami_id"]}') '{$old_instance['instance_id']}' will be terminated after instance '{$res}' will boot up."));
                                     $db->Execute("UPDATE farm_instances SET replace_iid='{$old_instance['instance_id']}', `index`='{$old_instance['index']}' WHERE instance_id='{$res}'");
                                     break;
                                 }
@@ -356,7 +362,7 @@
             			}
             			catch (Exception $e)
             			{
-            				$this->Logger->fatal(new FarmLogMessage($DBFarm->ID, "Cannot launch new instances to replace old ones. ".$e->getMessage()));
+            				Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($DBFarm->ID, "Cannot launch new instances to replace old ones. ".$e->getMessage()));
             			}
                     }
                     
@@ -417,7 +423,7 @@
                                 		
                                 		try
                                 		{
-                                			$this->Logger->info(new FarmLogMessage(
+                                			Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage(
                                 				$DBFarm->ID, 
                                 				sprintf(_("Releasing old address '%s' from EC2"), $old_ip)
                                 			));
@@ -428,7 +434,7 @@
                                 		{
                                 			if (!stristr($e->getMessage(), "does not belong to you."))
                                 			{
-	                                			$this->Logger->error(new FarmLogMessage(
+	                                			Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage(
 	                                				$DBFarm->ID, 
 	                                				sprintf(_("Cannot release address '%s': %s"), $old_ip, $e->getMessage())
 	                                			));
@@ -486,11 +492,11 @@
                                 if ($dtrebootstart+$reboot_timeout < time())
                                 {                                        
                                     // Add entry to farm log
-                    				$this->Logger->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$db_item_info["instance_id"]}' did not send 'rebootFinish' event in {$reboot_timeout} seconds after reboot start. Considering it broken. Terminating instance."));
+                    				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$db_item_info["instance_id"]}' did not send 'rebootFinish' event in {$reboot_timeout} seconds after reboot start. Considering it broken. Terminating instance."));
                                     
                                     try
                                     {
-                                        $this->Logger->info(new FarmLogMessage($DBFarm->ID, "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
+                                        Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($DBFarm->ID, "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
 						                Scalr::FireEvent($DBFarm->ID, new BeforeHostTerminateEvent(DBInstance::LoadByID($db_item_info['id'])));
                                     }
                                     catch (Exception $err)
@@ -509,7 +515,9 @@
 	                        {
 	                            Scalr::FireEvent($DBFarm->ID, new HostDownEvent(DBInstance::LoadByID($db_item_info['id'])));
 	                            // Add entry to farm log
-                    			$this->Logger->info(new FarmLogMessage($DBFarm->ID, "'{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}) Terminated!"));
+                    			Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($DBFarm->ID, "'{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}) Terminated!"));
+                    			
+                    			$AmazonEC2Client->TerminateInstances(array($item->instanceId));
 	                        }
 	                        catch (Exception $e)
 	                        {
@@ -558,11 +566,11 @@
                             {
                                                                     
                                 // Add entry to farm log
-                    			$this->Logger->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch (Try increasing timeouts in role settings). Considering it broken. Terminating instance."));
+                    			Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "Instance '{$db_item_info["instance_id"]}' did not send '{$event}' event in {$launch_timeout} seconds after launch (Try increasing timeouts in role settings). Considering it broken. Terminating instance."));
                                 
                                 try
                                 {
-                                    $this->Logger->info(new FarmLogMessage($DBFarm->ID, "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
+                                    Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($DBFarm->ID, "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));
 						            Scalr::FireEvent($DBFarm->ID, new BeforeHostTerminateEvent(DBInstance::LoadByID($db_item_info['id'])));
                                 }
                                 catch (Exception $err)

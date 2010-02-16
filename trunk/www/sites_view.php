@@ -52,16 +52,20 @@
 		
 		$zones = $db->GetAll($sql);
 		$zones_str = "";
-		foreach ($zones as $zone)
+		
+		if (count($zones) < 5)
 		{
-			@exec("whois {$zone['zone']}", &$o, $t);
-			if ($t == 0)
+			foreach ($zones as $zone)
 			{
-				$s = implode("\n", $o);
-				preg_match_all("/(ns([0-9]+).scalr.net)/si", $s, $m);
-				if ($m[2][0]+$m[2][1] == 3 && !$m[2][2])
+				@exec("whois {$zone['zone']}", &$o, $t);
+				if ($t == 0)
 				{
-					$zones_str .= "{$zone['zone']},";
+					$s = implode("\n", $o);
+					preg_match_all("/(ns([0-9]+).scalr.net)/si", $s, $m);
+					if ($m[2][0]+$m[2][1] == 3 && !$m[2][2])
+					{
+						$zones_str .= "{$zone['zone']},";
+					}
 				}
 			}
 		}
@@ -97,16 +101,19 @@
 		
 		$zones = $db->GetAll($sql);
 		$zones_str = "";
-		foreach ($zones as $zone)
+		if (count($zones) < 5)
 		{
-			@exec("whois {$zone['zone']}", &$o, $t);
-			if ($t == 0)
+			foreach ($zones as $zone)
 			{
-				$s = implode("\n", $o);
-				preg_match_all("/(ns([0-9]+).scalr.net)/si", $s, $m);
-				if ($m[2][0]+$m[2][1] == 3 && !$m[2][2])
+				@exec("whois {$zone['zone']}", &$o, $t);
+				if ($t == 0)
 				{
-					$zones_str .= "{$zone['zone']},";
+					$s = implode("\n", $o);
+					preg_match_all("/(ns([0-9]+).scalr.net)/si", $s, $m);
+					if ($m[2][0]+$m[2][1] == 3 && !$m[2][2])
+					{
+						$zones_str .= "{$zone['zone']},";
+					}
 				}
 			}
 		}

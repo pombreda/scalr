@@ -96,7 +96,8 @@
 	    		$DBEBSArray->Status = EBS_ARRAY_STATUS::PENDING_DELETE;
 	    		$DBEBSArray->Save();
 	    		
-	    		$db->Execute("DELETE FROM autosnap_settings WHERE arrayid=?", array($DBEBSArray->ID));
+
+	    		$db->Execute("DELETE FROM autosnap_settings WHERE objectid=? AND object_type=?", array($DBEBSArray->ID,AUTOSNAPSHOT_TYPE::EBSArraySnap));
 	    		
 	    		if (count($err) == 0 && !$errmsg)
 		    	{

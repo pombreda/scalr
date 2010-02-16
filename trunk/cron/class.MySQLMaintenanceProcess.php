@@ -89,7 +89,7 @@
 						
 	   					if (!$res)
 	   					{
-	   						$this->Logger->warn(new FarmLogMessage($DBFarm->ID, sprintf(_("Scalr cannot connect to instance %s:3306 (%s) and check replication status. (Error (%s):%s)"), $instance['external_ip'], $instance['instance_id'], $err, socket_strerror($err))));
+	   						Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, sprintf(_("Scalr cannot connect to instance %s:3306 (%s) and check replication status. (Error (%s):%s)"), $instance['external_ip'], $instance['instance_id'], $err, socket_strerror($err))));
 	   						continue;
 	   					}
 	   					
@@ -117,7 +117,7 @@
 	   				}
 	   				catch(Exception $e)
 	   				{
-	   					$this->Logger->warn(
+	   					Logger::getLogger(LOG_CATEGORY::FARM)->warn(
 	   						new FarmLogMessage(
 	   							$DBFarm->ID, 
 	   							"Cannot retrieve replication status. {$e->getMessage()}"

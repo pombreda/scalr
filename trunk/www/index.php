@@ -8,9 +8,20 @@
 		
 		$Client = Client::Load($_SESSION['uid']);
 		
+		$farms_rs = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array($Client->ID));
+		$farms = array();
+		foreach ($farms_rs as $frm)
+			$farms[] = $frm['id'];
+			
+		$farms = implode(', ', array_values($farms));
+		
 		$args = array(
         	"name"		=> $Client->Fullname,
-        	"email"		=> $Client->Email,
+			"Package"	=> $db->GetOne("SELECT CONCAT(name,' ($',cost,')') FROM billing_packages WHERE id=?", array($Client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE))),
+        	"Farms"		=> $farms,
+			"AWS Account ID" => $Client->AWSAccountID,
+			"ClientID"	=> $Client->ID,
+			"email"		=> $Client->Email,
         	"expires" => date("D M d H:i:s O Y", time()+120)
         );
         		        			

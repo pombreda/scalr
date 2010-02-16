@@ -67,7 +67,7 @@
 							df = new Ext.form.DateField(
 							{
 								renderTo: 'From',
-								format: "Y-m-d\\TH:i:s.\Z",	
+								format: "Y-m-d\\T H:i:s.\Z",	
 								width: 204,							
 								name: 'validFrom'
 							})

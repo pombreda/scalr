@@ -150,7 +150,7 @@
 		        				setcookie("scalr_signature", $Crypto->Hash("{$_SESSION["sault"]}:{$_SESSION["hash"]}:{$_SESSION["uid"]}:{$_SERVER['REMOTE_ADDR']}:{$_SESSION["cpwd"]}"), time()+43200);
 		        			}
 		        				        				        			
-		        			UI::Redirect("{$rpath}");
+		        			UI::Redirect("{$rpath}");		        			
 					    }
 					    else
 					    { 

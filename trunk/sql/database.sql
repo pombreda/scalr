@@ -878,7 +878,7 @@ CREATE TABLE `init_tokens` (
   `token` varchar(255) default NULL,
   `dtadded` datetime default NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1;
 
 CREATE TABLE `api_log` (
   `id` int(11) NOT NULL auto_increment,
@@ -905,5 +905,46 @@ CREATE TABLE `farm_role_scaling_times` (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 alter table `ebs_snaps_info` add column `is_autoebs_master_snap` tinyint(1) DEFAULT '0' NULL after `autosnapshotid`;
-
 alter table `ebs_snaps_info` add column `farm_roleid` int(11) NULL after `is_autoebs_master_snap`;
+
+
+CREATE TABLE `instances_history` (
+  `id` int(11) NOT NULL auto_increment,
+  `instance_id` varchar(20) default NULL,
+  `dtlaunched` int(11) default NULL,
+  `dtterminated` int(11) default NULL,
+  `uptime` int(11) default NULL,
+  `instance_type` varchar(20) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=1;
+
+
+CREATE TABLE IF NOT EXISTS `scheduler_tasks` (
+  `id` int(11) NOT NULL auto_increment,
+  `task_name` varchar(255) default NULL,
+  `task_type` varchar(255) default NULL,
+  `target_id` varchar(255) default NULL,
+  `target_type` varchar(255) default NULL,
+  `start_time_date` datetime default NULL,
+  `end_time_date` datetime default NULL,
+  `last_start_time` datetime default NULL,
+  `restart_every` int(11) default '0',
+  `task_config` text,
+  `order_index` int(11) default NULL,
+  `client_id` int(11) default NULL,
+  `status` varchar(11) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=INNODB AUTO_INCREMENT=1;
+
+CREATE TABLE IF NOT EXISTS `rds_snaps_info` (
+   `id` INT(11) NOT NULL AUTO_INCREMENT,
+   `snapid` VARCHAR(50) DEFAULT NULL,
+   `comment` VARCHAR(255) DEFAULT NULL,
+   `dtcreated` DATETIME DEFAULT NULL,   
+   `region` VARCHAR(255) DEFAULT 'us-east-1',
+   `autosnapshotid` INT(11) DEFAULT '0',
+   PRIMARY KEY  (`id`)
+) ENGINE=INNODB AUTO_INCREMENT=1;
+
+alter table `autosnap_settings` add column `objectid` varchar(20) NULL after `arrayid`, add column `object_type` varchar(20) NULL after `objectid`;
+alter table `autosnap_settings` drop column `volumeid`, drop column `arrayid`;

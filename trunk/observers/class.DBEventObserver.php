@@ -232,7 +232,7 @@
 			$farminfo = $this->DB->GetRow("SELECT * FROM farms WHERE id=?", array($this->FarmID));
 			if ($farminfo['status'] == FARM_STATUS::SYNCHRONIZING && $farminfo['term_on_sync_fail'] == 0)
 			{
-				$this->Logger->warn(new FarmLogMessage($this->FarmID, "Synchronization of role {$roleinfo['name']} failed. According to your preference, farm {$farminfo['name']} will not be terminated."));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Synchronization of role {$roleinfo['name']} failed. According to your preference, farm {$farminfo['name']} will not be terminated."));
 				
 				$this->DB->Execute("UPDATE farm_instances SET state=? WHERE farmid=? AND state=?",
 					array(INSTANCE_STATE::RUNNING, $this->FarmID, INSTANCE_STATE::PENDING_TERMINATE)
@@ -409,7 +409,7 @@
 		
 		public function OnIPAddressChanged(IPAddressChangedEvent $event)
 		{
-			$this->Logger->warn(new FarmLogMessage($this->FarmID, "IP changed for instance {$event->DBInstance->InstanceID}. New IP address: {$event->NewIPAddress}"));
+			Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "IP changed for instance {$event->DBInstance->InstanceID}. New IP address: {$event->NewIPAddress}"));
 			$this->DB->Execute("UPDATE farm_instances SET external_ip=?, isipchanged='0', isactive='1' WHERE id=?",
 				array($event->NewIPAddress, $event->DBInstance->ID)
 			);

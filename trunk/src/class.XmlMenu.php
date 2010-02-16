@@ -72,4 +72,17 @@ class XmlMenu
 		else
 			throw new Exception("Argument '\$Xml' must be instance of SimpleXMLElement or DOMElement");
 	}
+	function WtiteXmlToFile($filepath)
+	{
+		try
+		{
+			$this->Xml->asXML($filepath);
+		}
+		catch (Exception $e)
+		{
+			throw $e; 
+		}
+		
+	
+	}
 }

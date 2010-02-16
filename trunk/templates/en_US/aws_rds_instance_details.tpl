@@ -67,6 +67,21 @@
     		<td colspan="2">&nbsp;</td>
     	</tr>
     	<tr>
+    		<td width="20%">Parameter groups:</td>
+    		<td>
+    			{foreach name=id key=key item=item from=$param_groups}
+    				{if !$smarty.foreach.id.last}
+    					{$item.DBParameterGroupName} ({$item.ParameterApplyStatus}), 
+    				{else}
+    					{$item.DBParameterGroupName} ({$item.ParameterApplyStatus})
+    				{/if}
+    			{/foreach}
+    		</td>
+    	</tr>
+    	<tr>
+    		<td colspan="2">&nbsp;</td>
+    	</tr>
+    	<tr>
     		<td width="20%">Preferred maintenance window:</td>
     		<td>{$dbinstance->PreferredMaintenanceWindow}</td>
     	</tr>

@@ -34,6 +34,17 @@
 	else
 		$display['sec_groups'] = array((string)$sg['DBSecurityGroup']->DBSecurityGroupName => (array)$sg['DBSecurityGroup']);		
 	
+	$pg = (array)$dbinstance->DBParameterGroups;
+	$display['param_groups'] = array();
+	if (is_array($pg['DBParameterGroup']))
+	{
+		foreach ($pg['DBParameterGroup'] as $g)
+			$display['param_groups'][(string)$g->DBParameterGroupName] = (array)$g;
+			
+	}
+	else
+		$display['param_groups'] = array((string)$pg['DBParameterGroup']->DBParameterGroupName => (array)$pg['DBParameterGroup']);
+		
 	if ($dbinstance->PendingModifiedValues)
 		$display['pending_values'] = (array)$dbinstance->PendingModifiedValues;
 	

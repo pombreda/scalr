@@ -99,5 +99,10 @@
 		$response = array("error" => $e->getMessage(), "data" => array());
 	}
 	
-	print json_encode($response);
+	
+	if ($req_showLog)
+		print json_encode($response);	
+	else
+		return $response;
+	
 ?>

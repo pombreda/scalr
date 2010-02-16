@@ -80,7 +80,7 @@
 							}
 							catch(Exception $e)
 							{
-								LoggerManager::getLogger(__CLASS__)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
+								Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($DBEBSVolume->FarmID,
 									sprintf(_("Cannot attach volume to instance: %s"), $e->getMessage())
 								));
 								return false;
@@ -99,7 +99,7 @@
 						{
 							if ($volume->status == AMAZON_EBS_STATE::IN_USE)
 							{
-								LoggerManager::getLogger(__CLASS__)->warn(new FarmLogMessage($DBEBSVolume->FarmID,
+								Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBEBSVolume->FarmID,
 									sprintf(_("Cannot attach volume %s to instance %s. Volume already attached to another instance. Sending detach request..."), $this->VolumeID, $DBEBSVolume->InstanceID)
 								));
 								
@@ -110,7 +110,7 @@
 							}
 							else
 							{
-								LoggerManager::getLogger(__CLASS__)->error(new FarmLogMessage($DBEBSVolume->FarmID,
+								Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage($DBEBSVolume->FarmID,
 									sprintf(_("Cannot attach volume %s to instance. Volume status: %s"), $this->VolumeID, $volume->status)
 								));
 								return false;

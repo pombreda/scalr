@@ -310,7 +310,7 @@
 		{
 			$DB = Core::GetDBInstance();
 			
-			Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+			Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 				sprintf(_("Attaching volume %s to instance %s"), $DBEBSVolume->VolumeID, $DBInstance->InstanceID)
 			));
 			
@@ -361,7 +361,7 @@
 				$volume = $response->volumeSet->item;
 				if ($volume->status == AMAZON_EBS_STATE::ATTACHING || $volume->status == AMAZON_EBS_STATE::IN_USE)
 				{					
-					Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 						sprintf(_("Volume %s status: %s (%s)"), $DBEBSVolume->VolumeID, $volume->status, $volume->attachmentSet->item->status)
 					));
 					
@@ -371,13 +371,13 @@
 						array($DBInstance->FarmRoleID)
 					);
 					
-					Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+					Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 						sprintf(_("Need mount: %s, %s"), $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT), $DBEBSVolume->Mount)
 					));
 					
 					if ($volume->status == AMAZON_EBS_STATE::IN_USE && $volume->attachmentSet->item->status == 'attached')
 					{										
-						Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+						Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 							sprintf(_("Volume %s successfully attached to instance %s"), $DBEBSVolume->VolumeID, $DBInstance->InstanceID)
 						));
 						
@@ -385,14 +385,14 @@
 						{
 							$createfs = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID) || $DBEBSVolume->IsFSExists == 1) ? 0 : 1;
 							
-							Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 								sprintf(_("Waiting 5 seconds"))
 							));
 							
 							// Nicolas request. Device not avaiable on instance after attached state. need some time.
 							sleep(5);
 							
-							Logger::getLogger(__CLASS__)->info(new FarmLogMessage($farminfo['id'],
+							Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'],
 								sprintf(_("Sending trap mountEBS to %s"), $DBInstance->ExternalIP)
 							));
 							
@@ -645,7 +645,7 @@
         	$role_avail_zone = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE);
         	if ($ebs)
         	{
-        		LoggerManager::getLogger('RunInstance')->info(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("There are EBS volumes assigned to this instance. Using avail-zone: %s"), $ebs['avail_zone'])));
+        		Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("There are EBS volumes assigned to this instance. Using avail-zone: %s"), $ebs['avail_zone'])));
         		$role_avail_zone = $ebs['avail_zone'];
         	}
         	
@@ -733,7 +733,7 @@
 				
 	        	}
 	        	
-	        	LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(
+	        	Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(
 	        		_("Cannot launch new instance on role %s in availability zone %s. %s"), 
 	        		$role_name, 
 	        		$RunInstancesType->placement->availabilityZone, 
@@ -750,7 +750,7 @@
 	                    	
 	        	$instance_id = $result->instancesSet->item->instanceId;
 	        	
-	        	LoggerManager::getLogger('RunInstance')->debug(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Instance '%s' index: %s"), $instance_id, $instance_index)));
+	        	Logger::getLogger(LOG_CATEGORY::FARM)->debug(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Instance '%s' index: %s"), $instance_id, $instance_index)));
 	        	
 		        $DB->Execute("INSERT INTO 
         			`farm_instances` 
@@ -797,7 +797,7 @@
 	        }
 	        else 
 	        {
-	            LoggerManager::getLogger('RunInstance')->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Cannot launch new instance. %s"), $result->faultstring)));
+	            Logger::getLogger(LOG_CATEGORY::FARM)->fatal(new FarmLogMessage($DBFarmRole->FarmID, sprintf(_("Cannot launch new instance. %s"), $result->faultstring)));
 	            return false;
 	        }
 	        

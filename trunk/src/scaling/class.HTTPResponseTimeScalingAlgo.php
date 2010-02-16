@@ -68,7 +68,7 @@
 			}
 			catch(Exception $e)
 			{
-				$this->Logger->warn(new FarmLogMessage($DBFarmRole->FarmID, $e->getMessage()));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarmRole->FarmID, $e->getMessage()));
 				return ScalingAlgo::NOOP;
 			}
 			

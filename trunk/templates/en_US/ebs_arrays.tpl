@@ -122,7 +122,7 @@ Ext.onReady(function () {
 				
 			}}, 
 			new Ext.menu.Separator({id: "option.viewSnapSep"}),
-			{id: "option.autosnap", 	text:'Auto-snapshot settings', 		href: "/ebs_autosnaps.php?task=settings&array_id={id}&region={region}"},
+			{id: "option.autosnap", 	text:'Auto-snapshot settings', 		href: "/autosnapshots.php?task=settings&array_id={id}&region={region}"},
 			new Ext.menu.Separator({id: "option.autoSnapSep"}),
 			{id: "option.recreate", 	text:'Recreate array', 		href: "/ebs_arrays.php?task=recreate&array_id={id}"},
 			{id: "option.delete", 	text:'Delete array', 		href: "/ebs_arrays.php?task=delete&array_id={id}"}
