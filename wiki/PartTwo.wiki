@@ -1,0 +1,5 @@
+#summary How Scalr works (2 of 3)
+
+See [PartOne] and [PartTwo]
+
+http://scalr.googlecode.com/files/scalr_comic_2of3.png
