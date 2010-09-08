@@ -1,0 +1,10 @@
+#summary Comic that explains what Scalr does
+#labels Comic,Explanation
+
+= Special thanks to Anton for this comic =
+
+http://scalr.googlecode.com/files/scalr_comic_1of3.png
+
+http://scalr.googlecode.com/files/scalr_comic_2of3
+
+http://scalr.googlecode.com/files/scalr_comic_3of3
