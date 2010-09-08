@@ -3,3 +3,5 @@
 See [PartOne] and [PartTwo]
 
 http://scalr.googlecode.com/files/scalr_comic_2of3.png
+
+[PartTwo << Previous] | [PartThree Next >>]
