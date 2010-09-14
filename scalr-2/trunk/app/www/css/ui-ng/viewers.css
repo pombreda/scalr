@@ -1,0 +1,496 @@
+/*
+ * SelRolesViewer
+ */
+
+div.viewers-selrolesviewer-blocks {
+	float: left;
+	position: absolute;
+	height: 130px;
+}
+
+/* Add button */
+div.viewers-selrolesviewer-add {
+	left: 0px;
+	width: 40px;
+	border-width: 1px;
+	border-style: none solid none none;
+	border-color: #8DB2E3;
+	background-color: #D9EAFD;
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/add.png');
+	background-position: center center;
+	background-repeat: no-repeat
+}
+
+div.viewers-selrolesviewer-add:hover {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/add_hover.png');
+}
+
+/* DataView */
+div.viewers-selrolesviewer-dataview {
+	left: 80px;
+	width: 0px;
+	overflow: hidden;
+	border-width: 1px;
+	border-style: none solid none solid;
+	border-color: #8DB2E3;
+}
+
+#viewers-selrolesviewer {
+	background-color: #fff;
+}
+
+#viewers-selrolesviewer ul {
+	position: relative;
+	display: block;
+}
+
+#viewers-selrolesviewer ul li {
+	position: relative;
+	float: left;
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/canvas.png');
+	margin: 5px;
+	height: 120px;
+	width: 120px;
+	cursor: pointer;
+	text-align: center;
+}
+
+#viewers-selrolesviewer ul li div {
+	position: absolute;
+	bottom: 15px;
+	width: 110px;
+	text-align: center;
+	padding-left: 5px;
+	overflow: hidden;
+	font-family: "Arial";
+	font-size: 12px;
+	color: #666;
+}
+
+#viewers-selrolesviewer ul li div.full {
+	position: absolute;
+	left: 5px;
+	top: 60px;
+	height: 15px;
+	width: auto;
+	padding: 5px;
+	display: none;
+	background-color: #FFF;
+	border-color: #CBD6ED;
+	border-width: 1px;
+	border-style: solid;
+	color: #333;
+	z-index: 2;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+}
+
+#viewers-selrolesviewer ul li div.full-show {
+	display: block;
+}
+
+#viewers-selrolesviewer ul li img.icon {
+	position: relative;
+	top: 12px;
+}
+
+#viewers-selrolesviewer ul li img.platform {
+	position: absolute;
+	top: 7px;
+	left: 6px;
+}
+
+#viewers-selrolesviewer ul li img.arch {
+	position: absolute;
+	top: 57px;
+	right: 7px;
+}
+
+#viewers-selrolesviewer ul li:hover {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/canvas_hover.png');
+}
+
+#viewers-selrolesviewer ul li.selrolesviewer-selected {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/canvas_selected.png');
+}
+
+#viewers-selrolesviewer ul li a {
+	display: none;
+	position: absolute;
+	left: 100px;
+	top: 5px;
+	width: 16px;
+	height: 16px;
+	background-repeat: no-repeat
+}
+
+#viewers-selrolesviewer ul li:hover a {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/close.png');
+	display: block;
+}
+
+#viewers-selrolesviewer ul li:hover a:hover {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/close_hover.png');
+	display: block;
+}
+
+/* Scroll & filter blocks */
+div.viewers-selrolesviewer-scroll {
+	width: 40px;
+}
+
+div.viewers-selrolesviewer-scroll img {
+	position: absolute;
+	cursor: pointer;
+	top: 38px;
+	left: 8px;
+}
+
+div.viewers-selrolesviewer-scroll-disabled img {
+	cursor: default;
+}
+
+div.viewers-selrolesviewer-left {
+	left: 40px;
+}
+
+div.viewers-selrolesviewer-right {
+	right: 0px;
+	width: 40px;
+}
+
+div.viewers-selrolesviewer-filter-button {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/filter.png');
+	height: 29px;
+	top: 5px;
+	right: 7px;
+	width: 27px;
+	background-repeat: no-repeat
+}
+
+div.viewers-selrolesviewer-filter-button:hover {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/filter_hover.png');
+}
+
+div.viewers-selrolesviewer-filter-button-click {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/filter_input_right.png');
+}
+
+div.viewers-selrolesviewer-filter-button-click:hover {
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/filter_input_right.png');
+}
+
+div.viewers-selrolesviewer-filter-input {
+	top: 5px;
+	right: 34px;
+	width: 121px;
+	height: 29px;
+}
+
+div.viewers-selrolesviewer-filter-input input {
+	border-width: 0px;
+	background-repeat: no-repeat;
+	background-image: url('/images/ui-ng/viewers/selrolesviewer/filter_input.png');
+	padding-left: 6px;
+	padding-top: 6px;
+	width: 115px;
+	height: 23px;
+}
+
+/**
+ * AddRolesViewer
+ */
+#viewers-addrolesviewer {
+	background-color: #fff;
+	padding-top: 19px;
+	padding-left: 23px;
+	padding-right: 23px;
+	padding-bottom: 19px;
+}
+
+#viewers-addrolesviewer div.description {
+	background-color: #E8EDF7;
+	padding: 10px;
+}
+
+
+#viewers-addrolesviewer div.block {
+	overflow: visible;
+	background-color: #FFF;
+	height: auto;
+	padding-bottom: 14px;
+}
+
+#viewers-addrolesviewer div.title {
+	cursor: pointer;
+	background-image: url('/images/ui-ng/viewers/addrolesviewer/contract.png');
+	background-color: #E8EDF7;
+	background-repeat: no-repeat;
+	height: 23px;
+
+	-moz-border-radius-topright: 4px;
+	-webkit-border-radius-topright: 4px;
+	border-top-right-radius: 4px;
+}
+
+#viewers-addrolesviewer div.title-contract {
+	background-image: url('/images/ui-ng/viewers/addrolesviewer/expand.png');
+}
+
+#viewers-addrolesviewer div.title-disabled {
+	background-image: url('/images/ui-ng/viewers/addrolesviewer/expand_disable.png');
+	background-color: #EFEFEF;
+	cursor: default;
+}
+
+#viewers-addrolesviewer div.title div {
+	border-color: #CBD6ED;
+	border-style: none none solid;
+	border-width: 1px;
+	margin-left: 24px;
+	height: 22px;
+	position: relative;
+}
+
+#viewers-addrolesviewer div.title-disabled div {
+	border-color: #DCDCDC;
+}
+
+#viewers-addrolesviewer div.title span {
+	position: absolute;
+	top: 4px;
+	left: 8px;
+	font-family: "Verdana";
+	font-size: 12px;
+	font-weight: bold;
+	color: #15428B;
+}
+
+#viewers-addrolesviewer div.title-disabled span {
+	color: #666666;
+}
+
+#viewers-addrolesviewer ul {
+	overflow: hidden;
+	background-color: #F1F4FA;
+	display: block;
+	height: auto;
+	padding: 19px 23px 5px 23px;
+}
+
+#viewers-addrolesviewer ul.hidden {
+	display: none;
+}
+
+#viewers-addrolesviewer ul li {
+	float: left;
+	width: 200px;
+	height: 100px;
+	overflow: hidden;
+	background-color: #FFF;
+	margin-right: 14px;
+	margin-bottom: 14px;
+	padding: 6px;
+	font-size: 12px;
+
+	border-width: 1px;
+	border-color: #C0D5FA;
+	border-style: solid;
+
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
+}
+
+#viewers-addrolesviewer ul li:hover {
+	background-color: #EEF5FD;
+}
+
+#viewers-addrolesviewer ul li.addrolesviewer-selected {
+	background-color: #D6EAFC;
+}
+
+/*
+ * ListView
+ */
+.x-list-header {
+	position: relative;
+	height: 26px;
+}
+
+.x-list-body dt em {
+	-moz-user-select: text;
+}
+
+.x-list-wrap {
+	overflow: hidden !important;
+}
+
+dl.viewers-listview-row {
+	border-width: 1px;
+	border-collapse: collapse;
+	border-style: dashed;
+	border-color: #FFFFFF #EDEDED #EDEDED;
+}
+
+dl.viewers-listview-row-alt {
+	background-color: #F9FAFF;
+}
+
+dl.viewers-listview-row-over {
+	background-color: #EFEFEF;
+	border-color: #DDDDDD;
+}
+
+dl.viewers-listview-row-selected {
+	background-color:#DFE8F6 !important;
+	border-color:#A3BAE9;
+}
+
+dl.viewers-listview-row-red {
+	background-color: pink !important;
+}
+
+.x-list-header-inner div em, dl.viewers-listview-row em {
+	font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
+	font-size: 14px;
+	line-height: normal;
+	-webkit-user-select: auto;
+}
+
+div.viewers-listview-empty {
+	text-align: center;
+	font-size: 12px;
+	padding: 10px;
+}
+
+div.viewers-listview-columns-icon {
+	cursor: pointer;
+	position: absolute;
+	right: 0px;
+}
+
+/* row-options */
+.viewers-listview-row-options {
+	padding: 2px 0px 0px 0px !important;
+}
+
+div.viewers-listview-row-options-btn {
+	font: normal 13px/1.2em Arial,"Lucida Grande",Verdana,sans-serif;
+	font-size: 11px;
+	font-weight: bold;
+	font-variant: normal;
+	line-height: 1.65em;
+	font-size-adjust: none;
+	font-stretch: normal;
+
+	text-align: center;
+	display: block;
+	position: relative;
+	text-decoration: none;
+	background: url('/images/ui-ng/viewers/listview/bg-control.gif') no-repeat left;
+	width: 86px;
+	height: 19px;
+	overflow: hidden;
+	padding: 0 20px 0 8px;
+	color: #666 !important;
+	z-index: 19;
+	white-space: nowrap;
+}
+
+.viewers-listview-row-options-btn .viewers-listview-row-options-trigger {
+	width: 20px;
+	height: 19px;
+	background: url('/images/ui-ng/viewers/listview/control-pimp.gif') no-repeat #fafafa;
+	overflow: hidden;
+	font-size: 1px;
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 19;
+}
+
+.viewers-listview-row-options-btn:hover .viewers-listview-row-options-trigger {
+	background-image: url('/images/ui-ng/viewers/listview/control-pimp-hover.gif');
+}
+
+.viewers-listview-row-order-plugin {
+	padding: 0px !important;
+}
+
+/*
+ * object status
+ */
+.status-ok {
+        color:green;
+}
+.status-ok-pending {
+        color:#666633;
+}
+.status-pending {
+        color:#FF9900;
+}
+.status-fail {
+        color:red;
+}
+
+/*
+ * mb-icons
+ */
+.scalr-mb-instance-terminating {
+	background: transparent url('/images/ui-ng/icons/mb/instance_terminate.anim.gif') no-repeat top left;
+	height: 36px !important;
+}
+
+.scalr-mb-instance-rebooting {
+	background: transparent url('/images/ui-ng/icons/mb/instance_reboot.anim.gif') no-repeat top left;
+	height: 36px !important;
+}
+
+.scalr-mb-farm-building {
+	background: transparent url('/images/ui-ng/icons/mb/farm_save.anim.gif') no-repeat top left;
+	height: 36px !important;
+}
+
+.scalr-mb-object-removing {
+	background: transparent url('/images/ui-ng/icons/mb/object_remove.png') no-repeat top left;
+	height: 36px !important;
+}
+
+.scalr-mb-info {
+	background: transparent url('/images/ui-ng/icons/mb/info.gif') no-repeat top left;
+}
+
+/*
+ * Scalr Error message
+ */
+.viewers-messages {
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	padding: 5px 5px 5px 30px;
+	cursor: pointer;
+	margin-top: 3px;
+
+	font-family: "Arial";
+	font-size: 14px;
+}
+
+.viewers-errormessage {
+	background: #FEF2EB url('/images/ui-ng/icons/message/error.png') no-repeat scroll 5px 4px;
+	border: 1px solid #FD721E;
+	color: #CA4100;
+}
+
+.viewers-infomessage {
+	background: #FEFDE0 url('/images/ui-ng/icons/message/info.png') no-repeat scroll 5px 4px;
+	border: 1px solid #A4A4A4;
+	color: #333333;
+}
+
+.viewers-successmessage {
+	background: #EDFCEE url('/images/ui-ng/icons/message/success.png') no-repeat scroll 5px 4px;
+	border: 1px solid #5FBF59;
+	color: #3F7D00;
+}
