@@ -267,6 +267,8 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 			var hdIndex = this.view.findHeaderIndex(this.dragHd), index = hdIndex, len = this.view.columns.length;
 			this.hdRealIndex = -1;
 			this.hdRealNextIndex = -1;
+			this.hdRealDiff = 0; // diff between first and next columns (columns with persist width)
+			this.hdRealNextDiff = 0;
 
 			while (index >= 0) {
 				if (this.view.columns[index].hidden && this.view.columns[index].hidden == 'yes') {
@@ -276,6 +278,10 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 
 				if (Ext.isNumber(this.view.columns[index].width)) {
 					this.hdRealIndex = index;
+				} else {
+					this.hdRealDiff += parseInt(this.view.columns[index].width);
+					index--;
+					continue;
 				}
 				break;
 			}
@@ -293,6 +299,10 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 
 				if (Ext.isNumber(this.view.columns[index].width)) {
 					this.hdRealNextIndex = index;
+				} else {
+					this.hdRealNextDiff += parseInt(this.view.columns[index].width);
+					index++;
+					continue;
 				}
 				break;
 			}
@@ -322,7 +332,7 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 			allw = 0,
 			wp = 0;
 
-		cs[this.hdRealIndex].widthPx = Math.min(nw, (curw + nextw - 20));
+		cs[this.hdRealIndex].widthPx = Math.min(Math.max(20, nw - this.hdRealDiff), (curw + nextw - 20));
 		cs[this.hdRealNextIndex].widthPx = nextw + curw - cs[this.hdRealIndex].widthPx;
 
 		// calculate summary

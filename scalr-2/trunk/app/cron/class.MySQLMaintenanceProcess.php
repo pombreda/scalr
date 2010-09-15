@@ -164,12 +164,15 @@
                         
                         if ($DBServer)
                         {
-                        	$msg = new Scalr_Messaging_Msg_Mysql_CreateBackup();
-                        	$msg->rootPassword = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_ROOT_PASSWORD);
-                            $DBServer->SendMessage($msg);
-                        	
-                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BCP_RUNNING, 1);
-                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BCP_SERVER_ID, $DBServer->serverId);
+                        	if ($DBServer->status == SERVER_STATUS::RUNNING)
+                        	{
+	                        	$msg = new Scalr_Messaging_Msg_Mysql_CreateBackup();
+	                        	$msg->rootPassword = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_ROOT_PASSWORD);
+	                            $DBServer->SendMessage($msg);
+	                        	
+	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BCP_RUNNING, 1);
+	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BCP_SERVER_ID, $DBServer->serverId);
+                        	}
                         }
                         else 
                             $this->Logger->info("[FarmID: {$DBFarm->ID}] There is no running mysql instances for run backup procedure!");
@@ -206,26 +209,29 @@
 						
 						if ($DBServer)
 	                    {                            
-	                        $DBFarmRole = $DBServer->GetFarmRoleObject();
-	                        
-	                        $pbw_from = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START);
-	                        $pbw_to = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END);
-	                        if ($pbw_from && $pbw_to)
-	                        {
-	                        	$current_time = (int)date("Hi");
-	                        	if ($pbw_from <= $current_time && $pbw_to >= $current_time)
-									$allow_bundle = true;
-	                        }
-	                        else
-	                        	$allow_bundle = true;
-	                        
-	                        if ($allow_bundle)
-	                        {
-		                        $DBServer->SendMessage(new Scalr_Messaging_Msg_Mysql_CreateDataBundle());
+	                    	if ($DBServer->status == SERVER_STATUS::RUNNING)
+                        	{
+		                    	$DBFarmRole = $DBServer->GetFarmRoleObject();
 		                        
-	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING, 1);
-	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_SERVER_ID, $DBServer->serverId);
-	                        }
+		                        $pbw_from = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START);
+		                        $pbw_to = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END);
+		                        if ($pbw_from && $pbw_to)
+		                        {
+		                        	$current_time = (int)date("Hi");
+		                        	if ($pbw_from <= $current_time && $pbw_to >= $current_time)
+										$allow_bundle = true;
+		                        }
+		                        else
+		                        	$allow_bundle = true;
+		                        
+		                        if ($allow_bundle)
+		                        {
+			                        $DBServer->SendMessage(new Scalr_Messaging_Msg_Mysql_CreateDataBundle());
+			                        
+		                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING, 1);
+		                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_SERVER_ID, $DBServer->serverId);
+		                        }
+                        	}
 	                    }
 	                    else 
 	                        $this->Logger->info("[FarmID: {$DBFarm->ID}] There is no running mysql master instances for run bundle procedure!");

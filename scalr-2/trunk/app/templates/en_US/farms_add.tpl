@@ -254,7 +254,7 @@
        	        renderTo: 'roles_order_panel',
        	        title:'Use up & down arrows to set roles launch order.',
        	        height:300,
-       	        hideHeaders: true,
+       	        //hideHeaders: true,
        	        viewConfig: {
 					forceFit: true
 				},
@@ -264,22 +264,23 @@
 				}),
        	        columns: [{
 					id: 'role_up',
-					width: '30',
+					width: 24,
 					renderer: function(value, metadata) {
 						metadata.attr = 'style="padding: 0px"';
-						return '<img src="/images/up_icon.png" style="cursor: pointer">';
+						return '<img src="/images/up_icon.png" style="cursor: pointer; padding: 2px;">';
 					}
        	        }, {
 					id: 'role_down',
-					width: '30',
+					width: 24,
 					renderer: function(value, metadata) {
 						metadata.attr = 'style="padding: 0px"';
-						return '<img src="/images/down_icon.png" style="cursor: pointer">';
+						return '<img src="/images/down_icon.png" style="cursor: pointer; padding: 2px;">';
 					}
 				}, {
 					id: 'role_name',
-					header: 'role_name',
-					dataIndex: 'role_name'
+					header: 'Role',
+					dataIndex: 'role_name',
+					width: 300
        	        }],
        	        listeners: {
 					'cellclick': function(grid, rowIndex, columnIndex, e) {
@@ -300,7 +301,10 @@
 			});
        	    
       	    // render the grid
-      	    window.RolesOrderTree.render();            	            	    
+      	    window.RolesOrderTree.render();
+      	    //Ext.get(window.RolesOrderTree.view.innerHd).parent().hide();
+      	    //console.log(window.RolesOrderTree.view.innerHd);
+      	                	            	    
       	    // fix for IE
       	    Ext.get('tab_contents_rso').dom.style.display = 'none';
 

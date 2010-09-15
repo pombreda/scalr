@@ -209,6 +209,7 @@
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
 		{
+			/*
 			if ($BundleTask->bundleType == SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS)
 			{
 				try
@@ -245,7 +246,7 @@
 					Logger::getLogger(__CLASS__)->fatal("CheckServerSnapshotStatus ({$BundleTask->id}): {$e->getMessage()}");
 				}
 			}	
-	        
+	        */
 		}
 		
 		public function CreateServerSnapshot(BundleTask $BundleTask)
@@ -271,8 +272,9 @@
 	        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
 	        
 	        $platfrom = (string)$ami_info->imagesSet->item->platform;
+	        /*
 	        $rootDeviceType = (string)$ami_info->imagesSet->item->rootDeviceType;
-	        
+	      	
 	        if ($rootDeviceType == 'ebs')
 	        {
 	        	$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS;
@@ -306,6 +308,7 @@
 	        }
 	        else
 	        {
+	        */
 		        if ($platfrom == 'windows')
 		        {
         	
@@ -321,7 +324,9 @@
 		        else
 		        {
 		        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
-		        	$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
+		        	$BundleTask->bundleType = (string)$ami_info->imagesSet->item->rootDeviceType == 'ebs' ?
+		        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS :
+		        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
 		        	
 		        	$BundleTask->Save();
 		        	
@@ -346,7 +351,9 @@
 			        	));
 		        	}
 		        }
+		    /*
 	        }
+	        */
 	        
 	        $BundleTask->setDate('started');
 	        $BundleTask->Save();

@@ -21,7 +21,7 @@
 	     		<td>
 	     			<select id="aws.instance_type" name="aws.instance_type" class="role_settings text">
 	             		{section name=zid loop=$servers[id].types}
-	             			<option value="{$servers[id].types[zid]}">{$servers[id].types[zid]}</option>
+	             			<option {if $servers[id].types[zid] == 'm1.small' || $servers[id].types[zid] == 'm1.large'}selected{/if} value="{$servers[id].types[zid]}">{$servers[id].types[zid]}</option>
 	             		{/section}
 	             	</select>
 	     		</td>

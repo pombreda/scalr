@@ -1,164 +1,126 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer"></div>
+<script type="text/javascript" src="/js/ui-ng/data.js"></script>
+<script type="text/javascript" src="/js/ui-ng/viewers/ListView.js"></script>
+
+<div id="listview-scheduler-view"></div>
+
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
-	// create the Data Store
-    var store = new Ext.ux.scalr.Store({
-    	reader: new Ext.ux.scalr.JsonReader({
-	        root: 'data',
-	        successProperty: 'success',
-	        errorProperty: 'error',
-	        totalProperty: 'total',
-	        id: 'id',
-	        	
-	        fields: [
+	var store = new Scalr.data.Store({
+		reader: new Scalr.data.JsonReader({
+			id: 'id',
+			fields: [
 				'id', 'task_name', 'task_type', 'target_name', 'target_type', 'start_time_date',
 				'end_time_date', 'last_start_time', 'restart_every','order_index', 'farmid','farm_name','status'
-	        ]
-    	}),
-    	remoteSort: true,
-		url: '/server/grids/scheduler_tasks_list.php?a=1{/literal}{$grid_query_string}{literal}',
-		listeners: { dataexception: Ext.ux.dataExceptionReporter }
-    });
-		
-	function targetRenderer(value, p, record) 
-	{		
-		var data = record.data;
-		var retval = "";		
-		switch(data.target_type)
-		{
-			case "farm":					
-				retval += 'Farm: <a href="farms_view.php?id='+data.farmid+'" title="Farm '+data.target_name+'">'+data.target_name+'</a>';					
-				break;
-				
-			case "role":
-				retval += 'Farm: <a href="farms_view.php?id='+data.farmid+'" title="Farm '+data.farm_name+'">'+data.farm_name+'</a>';									
-				retval += '&nbsp;&rarr;&nbsp;Role: <a href="farm_roles_view.php?farmid='+data.farmid+'" title="Role '+data.target_name+'">'+data.target_name+'</a>';
-				break;
-				
-			case "instance":
-				retval += 'Farm: <a href="farms_view.php?id='+data.farmid+'" title="Farm '+data.farm_name+'">'+data.farm_name+'</a>';									
-				retval += '&nbsp;&rarr;&nbsp;Server: <a href="servers_view.php?farmid='+data.farmid+'" title="Server '+data.target_name+'">'+data.target_name+'</a>';
-				break;
-		}	
-		return  retval;	
-	}
-	
-	function colorRenderer(value, p, record)
-	{
-		var data = record.data;
-		switch(data.status)
-		{
-			case "Active": 
-				data.status = "<span style='color:green;'>"+data.status+"</span>";
-				
-				break;
-			case "Suspended":
-				data.status = "<span style='color:blue;'>"+data.status+"</span>";
-				
-				break;
-			case "Finished":
-				data.status = "<span style='color:red;'>"+data.status+"</span>";
-				
-				break;
-			
-		}
-	return data.status;
-		
-		
-	}
+			]
+		}),
+		remoteSort: true,
+		url: '/server/grids/scheduler_tasks_list.php?a=1{/literal}{$grid_query_string}{literal}'
+	});
 
-    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
-    
-	var grid = new Ext.ux.scalr.GridViewer({
-        renderTo: "maingrid-ct",
-        height: 500,
-        title: "Script tasks",
-        id: 'schedule_tasks_list_'+GRID_VERSION,
-        store: store,
-        maximize: true,
-        viewConfig: { 
-        	emptyText: "No tasks defined"
-        },
-		 
-		enableFilter: true,
-		tbar: 
-        [ 
-			 {
-				icon: '/images/add.png', // icons can also be specified inline
-				cls: 'x-btn-icon',
-				tooltip: 'Add new request',
-				handler: function()
-				{
-					document.location.href = '/scheduler_task_add.php?task=create';
-				}
-			 }
-	    ],
-	    
-        // Columns
-        columns:
-        [
-			{header: "ID", width: 15, dataIndex: 'id', sortable: true},
-			{header: "Task name", width: 40, dataIndex: 'task_name', sortable: true},
-			{header: "Task type", width: 40, dataIndex: 'task_type', sortable: false},			
-			{header: "Target name", width: 40, dataIndex: 'target_name',renderer:targetRenderer, sortable: true},
-	    //	{header: "Target type", width: 40, dataIndex: 'target_type',renderer:targetRenderer, sortable: true},
-			{header: "Start date", width: 50, dataIndex: 'start_time_date', sortable: true},
-			{header: "End date", width: 50, dataIndex: 'end_time_date', sortable: true},
-			{header: "Last time executed", width: 50, dataIndex: 'last_start_time', sortable: true},
-			{header: "Priority", width: 20, dataIndex: 'order_index', sortable: true},
-			{header: "Status", width: 20, dataIndex: 'status',renderer:colorRenderer, sortable: true}			
+	var panel = new Scalr.Viewers.ListView({
+		renderTo: "listview-scheduler-view",
+		autoRender: true,
+		store: store,
+		savePagingSize: true,
+		saveFilter: true,
+		stateId: 'listview-scheduler-view',
+		stateful: true,
+		title: 'Script tasks',
+
+		tbar: [{
+			icon: '/images/add.png', // icons can also be specified inline
+			cls: 'x-btn-icon',
+			tooltip: 'Add new request',
+			handler: function () {
+				document.location.href = '/scheduler_task_add.php?task=create';
+			}
+		}],
+
+		rowOptionsMenu: [
+			{itemId: "option.activate", text: 'Activate',	href: "/scheduler.php?&action=activate&id={id}" },
+			{itemId: "option.suspend", text: 'Suspend',   	href: "/scheduler.php?&action=suspend&id={id}"},
+			new Ext.menu.Separator({itemId: "option.editSep"}),
+			{itemId: "option.edit", text: 'Edit', 			href: "/scheduler_task_add.php?task=edit&id={id}"}
 		],
 
-    	// Row menu
-    	rowOptionsMenu: 
-    	[
-    		{id: "option.activate", text: 'Activate',	href: "/scheduler.php?&action=activate&id={id}" },
-			{id: "option.suspend", text: 'Suspend',   	href: "/scheduler.php?&action=suspend&id={id}"},
-			new Ext.menu.Separator({id: "option.editSep"}),
-			{id: "option.edit", text: 'Edit', 			href: "/scheduler_task_add.php?task=edit&id={id}"}			
-     	],
-
-     	getRowOptionVisibility: function (item, record)
-     	{
-     		var data = record.data;
-			
-			if (item.id == "option.activate" || item.id == "option.suspend" || item.id == "option.editSep")
-			{
+		getRowOptionVisibility: function (item, record) {
+			if (item.itemId == "option.activate" || item.itemId == "option.suspend" || item.itemId == "option.editSep") {
 				var reg =/Finished/i
-				if(reg.test(data.status))			
+				if(reg.test(record.data.status))
 					return false;
 			}
 			var reg =/Active/i
-     		if (item.id == "option.activate" && reg.test(data.status))
+			if (item.itemId == "option.activate" && reg.test(record.data.status))
 				return false;
-				
+
 			var reg =/Suspended/i
-			if (item.id == "option.suspend"  && reg.test(data.status))
+			if (item.itemId == "option.suspend"  && reg.test(record.data.status))
 				return false;
-			
+
 			return true;
 		},
 
-		getRowMenuVisibility: function (record) {
-			return true;
-		},
 		withSelected: {
 			menu: [
-				{text: "Delete", value: "delete"},
-				{text: "Activate", value: "activate"},				
-				{text: "Suspend", value: "suspend"}
+				{
+					text: "Delete",
+					method: 'post',
+					params: {
+						action: 'delete'
+					},
+					confirmationMessage: 'Delete selected task(s)?',
+					url: '/scheduler.php'
+				}, {
+					text: "Activate",
+					method: 'post',
+					params: {
+						action: 'activate'
+					},
+					confirmationMessage: 'Activate selected task(s)?',
+					url: '/scheduler.php'
+				}, {
+					text: "Suspend",
+					method: 'post',
+					params: {
+						action: 'suspend'
+					},
+					confirmationMessage: 'Suspend selected task(s)?',
+					url: '/scheduler.php'
+				}
 			],
-			hiddens: {with_selected : 1},
-			action: "action"
-		}
-    });
-    grid.render();
-    store.load();
+		},
 
-	return;
+		listViewOptions: {
+			emptyText: "No tasks defined",
+			columns: [
+				{ header: "ID", width: 15, dataIndex: 'id', sortable: true, hidden: 'no' },
+				{ header: "Task name", width: 40, dataIndex: 'task_name', sortable: true, hidden: 'no' },
+				{ header: "Task type", width: 40, dataIndex: 'task_type', sortable: false, hidden: 'no' },
+				{ header: "Target name", width: 80, dataIndex: 'target_name', sortable: true, hidden: 'no', tpl:
+					'<tpl if="target_type == &quot;farm&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {target_name}">{target_name}</a></tpl>' +
+					'<tpl if="target_type == &quot;role&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {farm_name}">{farm_name}</a>' +
+						'&nbsp;&rarr;&nbsp;Role: <a href="farm_roles_view.php?farmid={farmid}" title="Role {target_name}">{target_name}</a>' +
+					'</tpl>' +
+					'<tpl if="target_type == &quot;instance&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {farm_name}">{farm_name}</a>' +
+						'&nbsp;&rarr;&nbsp;Server: <a href="servers_view.php?farmid={farmid}" title="Server {target_name}">{target_name}</a>' +
+					'</tpl>'
+				},
+				{ header: "Start date", width: 50, dataIndex: 'start_time_date', sortable: true, hidden: 'no' },
+				{ header: "End date", width: 50, dataIndex: 'end_time_date', sortable: true, hidden: 'no' },
+				{ header: "Last time executed", width: 50, dataIndex: 'last_start_time', sortable: true, hidden: 'no', tpl:
+					'<tpl if="last_start_time">{last_start_time}</tpl>'
+				},
+				{ header: "Priority", width: 20, dataIndex: 'order_index', sortable: true, hidden: 'no' },
+				{ header: "Status", width: 20, dataIndex: 'status', sortable: true, hidden: 'no', tpl:
+					'<tpl if="status == &quot;Active&quot;"><span style="color: green;">{status}</span></tpl>' +
+					'<tpl if="status == &quot;Suspended&quot;"><span style="color: blue;">{status}</span></tpl>' +
+					'<tpl if="status == &quot;Finished&quot;"><span style="color: red;">{status}</span></tpl>'
+				}
+			]
+		}
+	});
 });
 {/literal}
 </script>

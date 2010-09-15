@@ -40,6 +40,8 @@
 		}
 		else
 		{
+			$req_login = trim($req_login);
+			
 			if($req_isadmin && CheckIPAcceess())
 			{
 				$hash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);

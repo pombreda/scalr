@@ -1,81 +1,63 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer"></div>
+<script type="text/javascript" src="/js/ui-ng/data.js"></script>
+<script type="text/javascript" src="/js/ui-ng/viewers/ListView.js"></script>
+
+<div id="listview-script-shortcuts-view"></div>
+
 <script type="text/javascript">
 {literal}
 Ext.onReady(function () {
-	// create the Data Store
-    var store = new Ext.ux.scalr.Store({
-    	reader: new Ext.ux.scalr.JsonReader({
-	        root: 'data',
-	        successProperty: 'success',
-	        errorProperty: 'error',
-	        totalProperty: 'total',
-	        id: 'id',
-	        	
-	        fields: [
+	var store = new Scalr.data.Store({
+		reader: new Scalr.data.JsonReader({
+			id: 'id',
+			fields: [
 				{name: 'id', type: 'int'},
 				'farmid', 'farmname', 'ami_id', 'rolename', 'scriptname', 'event_name'
 	        ]
     	}),
-    	remoteSort: true,
-		url: '/server/grids/script_shortcuts_list.php?a=1{/literal}{$grid_query_string}{literal}',
-		listeners: { dataexception: Ext.ux.dataExceptionReporter }
+		url: '/server/grids/script_shortcuts_list.php?a=1{/literal}{$grid_query_string}{literal}'
     });
-		
-	function targetRenderer(value, p, record) {
-		var retval = '<a href="farms_view.php?id='+record.data.farmid+'">'+record.data.farmname+'</a>';
-		if (record.data.ami_id)
-			retval += '&rarr;<a href="farm_roles_view.php?farmid='+record.data.farmid+'&ami_id='+record.data.ami_id+'">'+record.data.rolename+'</a>';
 
-		retval += '&nbsp;&nbsp;&nbsp;';
+	var panel = new Scalr.Viewers.ListView({
+		renderTo: "listview-script-shortcuts-view",
+		autoRender: true,
+		store: store,
+		saveFilter: true,
+		stateId: 'listview-script-shortcuts-view',
+		stateful: true,
+		title: 'Script shortcuts',
 
-		return retval;
-	}
-
-	
-    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
-	var grid = new Ext.ux.scalr.GridViewer({
-        renderTo: "maingrid-ct",
-        height: 500,
-        title: "Script shortcuts",
-        id: 'scripts_list_'+GRID_VERSION,
-        store: store,
-        maximize: true,
-        viewConfig: { 
-        	emptyText: "No shortcuts defined"
-        },
-
-        // Columns
-        columns:[
-			{header: "Target", width: 150, dataIndex: 'id', renderer:targetRenderer, sortable: false},
-			{header: "Script", width: 500, dataIndex: 'scriptname', sortable: true}
+		rowOptionsMenu: [
+			{ itemId: "option.edit", text: 'Edit', href: "/execute_script.php?script={event_name}&task=edit&farmid={farmid}"}
 		],
 
-    	// Row menu
-    	rowOptionsMenu: [
-			{id: "option.edit", 		text: 'Edit', 	href: "/execute_script.php?script={event_name}&task=edit&farmid={farmid}"}
-     	],
-
-     	getRowOptionVisibility: function (item, record) {
-			return true;
-		},
-
-		getRowMenuVisibility: function (record) {
-			return true;
-		},
 		withSelected: {
 			menu: [
-				{text: "Delete", value: "delete"}
+				{
+					text: "Delete",
+					method: 'post',
+					params: {
+						action: 'delete',
+						with_selected: 1
+					},
+					confirmationMessage: 'Delete selected shortcut(s)?',
+					url: '/script_shortcuts.php'
+				}
 			],
-			hiddens: {with_selected : 1},
-			action: "act"
-		}
-    });
-    grid.render();
-    store.load();
+		},
 
-	return;
+		listViewOptions: {
+			emptyText: "No shortcuts defined",
+			columns: [
+				{ header: "Target", width: 150, dataIndex: 'id', sortable: false, hidden: 'no', tpl:
+					'<a href="farms_view.php?id={farmid}">{farmname}</a>' +
+					'<tpl if="ami_id">&rarr;<a href="farm_roles_view.php?farmid={farmid}&ami_id={ami_id}">{rolename}</a></tpl>' +
+					'&nbsp;&nbsp;&nbsp;'
+				},
+				{ header: "Script", width: 500, dataIndex: 'scriptname', sortable: true, hidden: 'no' }
+			]
+		}
+	});
 });
 {/literal}
 </script>

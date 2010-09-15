@@ -286,6 +286,14 @@
         			
         			if (!$DBEBSVolume->volumeId)
         			{
+        				if ($DBEBSVolume->ec2AvailZone == 'x-scalr-diff')
+        				{
+        					if ($DBEBSVolume->serverId)
+        						$DBEBSVolume->ec2AvailZone = DBServer::LoadByID($DBEBSVolume->serverId)->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE);
+        					else
+        						$DBEBSVolume->delete();
+        				}
+        				
         				$CreateVolumeType = new CreateVolumeType(
         					$DBEBSVolume->size,
         					($DBEBSVolume->snapId) ? $DBEBSVolume->snapId : "",
@@ -305,11 +313,13 @@
 	        				else
 	        				{
 	        					$this->logger->error("Cannot create volume. Database ID: {$DBEBSVolume->id}");
+	        					exit();
 	        				}
         				}
         				catch(Exception $e)
         				{
         					$this->logger->error("Cannot create volume: {$e->getMessage()}. Database ID: {$DBEBSVolume->id}");
+        					exit();
         				}
         			}
         			else
@@ -377,7 +387,7 @@
         			}
         			catch(Exception $e)
         			{
-        				
+        				$this->logger->warn("Cannot attach volume: {$e->getMessage()}");
         			}
 				    
 				    if ($result->status == AMAZON_EBS_STATE::IN_USE || $result->status == AMAZON_EBS_STATE::ATTACHING)
@@ -387,7 +397,7 @@
 				    	$DBEBSVolume->save();
 				    }
 				   	else
-				   		$this->logger->error("Cannot attach volume: volume status: {$result->status}. Database ID: {$DBEBSVolume->id}. Volume ID: {$DBEBSVolume->volumeId}");
+				   		$this->logger->warn("Cannot attach volume: volume status: {$result->status} ({$volumeinfo->status}). Database ID: {$DBEBSVolume->id}. Volume ID: {$DBEBSVolume->volumeId}");
         		}
         	}
         }

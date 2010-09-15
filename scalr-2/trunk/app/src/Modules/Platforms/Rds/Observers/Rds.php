@@ -42,7 +42,7 @@
 			                    
 		    if (count($servers) == 0)
 		    	return;
-		    
+		    	
 		    // TERMINATE RUNNING INSTANCES
 		    $RDSClient = $this->GetAmazonRDSClientObject($DBDarm->Region);
             foreach ($servers as $DBServer)

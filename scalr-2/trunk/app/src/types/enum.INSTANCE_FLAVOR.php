@@ -1,6 +1,7 @@
 <?		
 	final class INSTANCE_FLAVOR // Flavor
 	{
+		const T1_MICRO 	= "t1.micro";
 		const M1_SMALL 	= "m1.small";
 		const M1_LARGE 	= "m1.large";
 		const M1_XLARGE = "m1.xlarge";

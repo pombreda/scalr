@@ -513,7 +513,12 @@
 				}
 				
 				if ($update_system_records)
+				{
 					$this->updateSystemRecords();
+					$this->db->Execute("UPDATE dns_zones SET status=?, `dtlastmodified` = NOW() WHERE id = ?", 
+						array($this->status, $this->id)
+					);
+				}
 				
 			} catch (Exception $e) {
 				

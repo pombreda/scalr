@@ -70,15 +70,15 @@
             	$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_LAST_POLLING_TIME, time());
 
             	// Get current count of running and pending instances.
-            	$this->Logger->info(sprintf("Processing role '%s'", $DBFarmRole->GetRoleName()));
+            	$this->Logger->info(sprintf("[FarmID: {$DBFarm->ID}] Processing role '%s'", $DBFarmRole->GetRoleName()));
             	
             	$RoleScalingManager = new RoleScalingManager($DBFarmRole);            	
             	foreach ($RoleScalingManager->GetEnabledAlgos() as $ScalingAlgo)
             	{            		
-            		$this->Logger->info(sprintf("Checking %s scaling algorithm...", get_class($ScalingAlgo)));
+            		$this->Logger->info(sprintf("[FarmID: {$DBFarm->ID}] Checking %s scaling algorithm...", get_class($ScalingAlgo)));
             		
             		$res = $ScalingAlgo->MakeDecision($DBFarmRole);
-	            	$this->Logger->info(sprintf("%s result: %s", get_class($ScalingAlgo), $res));
+	            	$this->Logger->info(sprintf("[FarmID: {$DBFarm->ID}] %s result: %s", get_class($ScalingAlgo), $res));
 	            	
 	            	if ($res == ScalingAlgo::STOP_SCALING)
 	            	{
@@ -205,6 +205,15 @@
 		                        {		                            
 						            Scalr::FireEvent($DBFarm->ID, new BeforeHostTerminateEvent($DBServer, false));
 						            
+						            $db->Execute("UPDATE servers_history SET
+										dtterminated	= NOW(),
+										terminate_reason	= ?
+										WHERE server_id = ?
+									", array(
+										sprintf("Terminated during scaling down"),
+										$DBServer->serverId
+									));
+						            
 						            Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], sprintf("Farm %s, role %s scaling down (Algo: %s, Sensor value: %s). Server '%s' marked as 'Pending terminate' and will be fully terminated in 3 minutes.",
                         				$DBFarm->Name,
                         				$DBServer->GetFarmRoleObject()->GetRoleName(),
@@ -224,7 +233,11 @@
                         	}
                         }
                         else
-                        	$this->Logger->warn(sprintf("Scalr unable to determine what instance it should terminate. Skipping..."));
+                        {
+                        	Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($DBFarm->ID,
+                        		sprintf("Scalr unable to determine what instance should be terminated during downscaling. Skipping...")
+                        	));
+                        }
 	                        
 						break;
 	            	}

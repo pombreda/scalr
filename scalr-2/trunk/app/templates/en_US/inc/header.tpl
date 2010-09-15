@@ -107,7 +107,7 @@
 				{if $err}
 					errmsg += '<span style="color: #CB3216">';
 						{foreach from=$err key=id item=field}
-							errmsg += '<br />&bull;&nbsp;&nbsp;{$field}';
+							errmsg += '<br />&bull;&nbsp;&nbsp;{$field|replace:"'":"\'"}';
 						{/foreach}
 					errmsg += '</span>';
 				{/if}

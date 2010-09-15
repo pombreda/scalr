@@ -119,6 +119,7 @@
 		{
 			$DBEBSVolume = DBEBSVolume::loadByVolumeId($event->VolumeID);
 			$DBEBSVolume->mountStatus = EC2_EBS_MOUNT_STATUS::MOUNTED;
+			$DBEBSVolume->isFsExists = 1;
 			$DBEBSVolume->save();
 		}
 		
@@ -209,7 +210,7 @@
 			if ($event->DBServer->platform != SERVER_PLATFORMS::EC2)
 				return;
 			
-			$this->DB->Execute("UPDATE ec2_ebs SET attachment_status=?, mount_status=?, device='' WHERE server_id=?", array(
+			$this->DB->Execute("UPDATE ec2_ebs SET attachment_status=?, mount_status=?, device='', server_id='' WHERE server_id=?", array(
 				EC2_EBS_ATTACH_STATUS::AVAILABLE,
 				EC2_EBS_MOUNT_STATUS::NOT_MOUNTED,
 				$event->DBServer->serverId

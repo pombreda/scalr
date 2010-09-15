@@ -178,7 +178,6 @@ RoleTab.prototype = {
 				}
 			}
 			window.RolesOrderTree.getStore().loadData(roles);
-			//window.RolesOrderTree.getView().refresh();
 		}
 		else
 			Ext.get('tab_rso').dom.style.display = 'none';
@@ -506,6 +505,12 @@ RoleTab.prototype = {
 					var opt = document.createElement("OPTION");
 					opt.value = i_types[this.CurrentRoleObject.arch][i];
 					opt.innerHTML = i_types[this.CurrentRoleObject.arch][i];
+					
+					if (opt.value == 'm1.small' || opt.value == 'm1.large')
+					{
+						opt.selected = true;
+					}
+					
 					Ext.get('aws.instance_type').dom.appendChild(opt); 
 				}
    				

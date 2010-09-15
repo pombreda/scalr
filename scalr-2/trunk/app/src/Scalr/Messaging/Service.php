@@ -35,6 +35,7 @@ class Scalr_Messaging_Service {
 			
 	    	$cryptoKey = $DBServer->GetKey(true);
 	    	$isOneTimeKey = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_KEY_TYPE) == SZR_KEY_TYPE::ONE_TIME;
+	    	$isOneTimeKey = false; //FIXME:
 	    	$keyExpired = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_ONETIME_KEY_EXPIRED);
 	    	if ($isOneTimeKey && $keyExpired) {
 	    		throw new Exception("One-time crypto key expired");

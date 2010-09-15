@@ -1,6 +1,7 @@
 <?
 	final class X86_64_TYPE
 	{
+		const T1_MICRO 	= "t1.micro";
 		const M1_LARGE 	= "m1.large";
 		const M1_XLARGE = "m1.xlarge";
 		const C1_XLARGE	= "c1.xlarge";
