@@ -1,0 +1,5 @@
+1. Install Scalr 2.0 to separate folder using separate database (DO NOT OVERWRITE YOUR CURRENT INSTALLATION)
+2. Import sql/scalr-2.0-structure.sql to your scalr 2.0 database.
+2. Stop all cronjobs related to Scalr 1.2.0
+3. Execute script bin/upgrade_20100601.php
+4. Execute script bin/upgrade_20100813.php

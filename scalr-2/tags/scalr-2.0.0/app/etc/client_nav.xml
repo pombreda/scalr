@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menu>
+	<node title="Websites">
+		<node title="DNS Zones">
+			<item href="dns_zones_view.php" search="SELECT COUNT(*) FROM dns_zones WHERE zone_name LIKE '%s' AND client_id='{$_SESSION['uid']}'">View all</item>		
+			<item href="dns_zone_add.php">Add new</item>				
+		</node>
+		<node title="Apache virtual hosts">
+			<item href="apache_vhosts_view.php" search="SELECT COUNT(*) FROM apache_vhosts WHERE name LIKE '%s' AND client_id='{$_SESSION['uid']}'">View all</item>		
+			<item href="apache_vhost_add.php">Add new</item>				
+		</node>
+	</node>
+
+	<node title="Server Farms" id='server_farms'>
+		<item href="farms_add.php">Build new</item>		
+		<separator />
+		<item href="aws_elb.php">Elastic Load Balancers</item>		
+		<item href="elastic_ips.php">Elastic IPs</item>		
+		<node title="Elastic Block Storage">
+			<item href="ebs_manage.php">Volumes &amp; Snapshots</item>
+			<!-- <item href="ebs_arrays.php">Arrays</item>  -->
+		</node>
+        <separator />
+        <item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		
+	</node>
+	
+	<node title="Servers">
+		<item href="servers_view.php">Manage</item>
+		<separator />
+		<item href="szr_server_import.php">Import non-scalr server</item>
+	</node>
+
+	<node title="Roles">
+		<item href="roles_view.php" search="SELECT COUNT(*) FROM roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="sec_groups_view.php">Security groups</item>
+		<separator />
+		<node title="Bundle tasks">
+			<item href="bundle_tasks.php">View all</item>
+			<item href="server_create_image.php">Create new (Bundle server image)</item>
+		</node>
+	</node>
+	
+	<node title="Scripts">
+		<item href="script_templates.php?task=create">Add new</item>
+		<item href="script_templates.php" search="SELECT COUNT(*) FROM scripts WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<separator />
+		<item href="script_shortcuts.php">Shortcuts</item>
+	</node>		
+	
+	<node title="Logs">
+		<item href="logs_view.php">Event log</item>
+		<item href="scripting_logs_view.php">Scripting log</item>
+		<item href="api_logs_view.php">API log</item>
+	</node>
+	
+	<node title="Settings">
+		<item href="profile.php">Profile</item>
+		<item href="aws_settings.php">AWS settings</item>
+		<item href="system_settings.php">System settings</item>
+		<separator />
+		<item href="default_records.php">Default DNS records</item>
+	</node>
+	
+	<node title="Tools">        
+        <item href="scheduler.php" search="SELECT COUNT(*) FROM scheduler_tasks WHERE task_name LIKE '%s' AND client_id='{$_SESSION['uid']}'" >Tasks scheduler</item>        
+        <separator />
+		<item href="garbage.php">Delete unused objects</item>
+		<separator />
+		<node title="Amazon Web Services">
+			<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
+			<node title="Amazon EC2">
+                <node title="Spot instances">
+                    <node title="Spot Requests">                    
+                        <item href="aws_ec2_spotrequest_view.php">Manage</item>
+                        <item href="aws_ec2_amis_view.php">Add new</item>
+                    </node>
+                    <node title="Datafeed">
+                        <item  href="aws_ec2_datafeed_view.php">Manage</item>
+                        <item  href="aws_ec2_datafeed_add.php">Add new</item>
+                    </node>                
+                    <item  href="aws_ec2_pricehistory_view.php">Price history</item>
+                    <item href="aws_ec2_instances_view.php">Spot instances</item>
+                </node>
+                <node title="Reserved instances">
+                    <item href="ec2_reserved_instances.php">List reserved instances</item>
+                    <item href="ec2_reserved_offerings.php">List reserved instances offerings</item>
+                </node>
+            </node>      
+            <node title="Amazon VPC">
+                <node title="VPC">
+                    <item href="aws_vpc_view.php">Manage</item>
+                    <item href="aws_vpc_add.php">Add new</item>                    
+                </node>
+                <node title="Subnets">
+                    <item href="aws_vpc_subnets_view.php">Manage</item>
+                </node>
+                <node title="VPN Connections">
+                    <item href="aws_vpc_gateways_view.php">Manage</item>
+                    <item href="aws_vpc_add_vpn_connections.php">Add new</item>                    
+                </node>
+                <node title="Gateways">
+                    <item href="aws_vpc_gateways_view.php">Manage</item>
+                    <item href="aws_vpc_add_custom_gateway.php">Add customer gateway</item>
+                    <item href="aws_vpc_add_vpn_gateway.php">Add VPN gateway</item>
+                </node>
+                <node title="DHCP options">
+                    <item href="aws_vpc_dhcp_view.php">Manage</item>
+                    <item href="aws_vpc_add_dhcp.php">Add new</item>
+                </node>
+            </node>            
+            <node title="Amazon RDS">
+				<item href="aws_rds_instances_view.php">View DB instances</item>
+				<separator />
+				<node title="DB security groups">
+					<item href="aws_rds_security_groups.php">Manage</item>
+					<item href="aws_rds_sec_group_add.php">Add new</item>
+				</node>                
+                <node title="DB parameter groups">
+                    <item href="aws_rds_parameter_groups.php">Manage</item>
+                    <item href="aws_rds_param_group_add.php">Add new</item>
+                </node>
+                <separator />
+                <item href="aws_rds_snapshots.php">Manage DB snapshots</item>
+				<separator />
+				<item href="aws_rds_create_instance.php">Launch new DB instance</item>
+			</node>
+		</node>
+	</node>
+</menu>
