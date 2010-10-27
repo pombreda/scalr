@@ -140,6 +140,14 @@
 			
 			$role_id = $db->Insert_Id();
 			
+			if ($proto_role['ami_id'])
+			{
+				$db->Execute("INSERT INTO role_options (`name`, `type`, `isrequired`, `defval`, `allow_multiple_choice`, `options`, `ami_id`, `hash`, `issystem`)
+					SELECT `name`, `type`, `isrequired`, `defval`, `allow_multiple_choice`, `options`, '{$BundleTask->snapshotId}', `hash`, `issystem`
+					FROM role_options WHERE ami_id='{$proto_role['ami_id']}'
+				");
+			}
+			
 			$BundleTask->roleId = $role_id;
 			$BundleTask->Save();
 			

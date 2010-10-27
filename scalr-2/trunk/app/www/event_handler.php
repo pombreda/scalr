@@ -23,11 +23,11 @@
 			//Logger::getLogger('EVENT_HANDLER')->info(new FarmLogMessage($farm_id, http_build_query($_REQUEST)));
 			
 			
-			Logger::getLogger('EVENT_HANDLER')->info(http_build_query($_REQUEST));
+			//Logger::getLogger('EVENT_HANDLER')->info(http_build_query($_REQUEST));
 			
 			// Add log infomation about event received from instance
-			$Logger->info("Event data: {$req_Data}");
-			$Logger->info("Scalarizr version: {$req_PkgVer}");
+			//$Logger->info("Event data: {$req_Data}");
+			//$Logger->info("Scalarizr version: {$req_PkgVer}");
 			
 			// Get farminfo and instanceinfo from database
 			$farminfo = $db->GetRow("SELECT id FROM farms WHERE id=? AND hash=?", array($farm_id, $hash));

@@ -25,8 +25,10 @@
 				$view_option = "-Ov -Oq";
 			else
 				$view_option = "-On";
+
+			//print "/usr/bin/snmpget -r {$this->Retries} -t {$this->Timeout} {$view_option} -v 2c -c {$this->Community} {$this->Host}:{$this->Port} {$OID}\n";
 				
-			$retval = $this->Shell->QueryRaw("/usr/bin/snmpget -r {$this->Retries} -t {$this->Timeout} {$view_option} -v 2c -c {$this->Community} {$this->Host} {$OID}");
+			$retval = $this->Shell->QueryRaw("/usr/bin/snmpget -r {$this->Retries} -t {$this->Timeout} {$view_option} -v 2c -c {$this->Community} {$this->Host}:{$this->Port} {$OID}");
 			
 			//$this->logger->info("TIME(snmpget:{$this->Host}) = " . (microtime(true) - $s1));
 			

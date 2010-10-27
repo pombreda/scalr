@@ -24,11 +24,14 @@
 			if ($newSettings[DBFarmRole::SETTING_DNS_INT_RECORD_ALIAS] != $oldSettings[DBFarmRole::SETTING_DNS_INT_RECORD_ALIAS])
 				$update = true;
 				
-			$zones = DBDNSZone::loadByFarmId($DBFarmRole->FarmID);
-			foreach ($zones as $zone)
+			if ($update)
 			{
-				$zone->updateSystemRecords();
-				$zone->save();
+				$zones = DBDNSZone::loadByFarmId($DBFarmRole->FarmID);
+				foreach ($zones as $zone)
+				{
+					$zone->updateSystemRecords();
+					$zone->save();
+				}
 			}
 		}
 	}

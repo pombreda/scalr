@@ -54,27 +54,46 @@
 		$param_groups = array((string)$pg['DBParameterGroup']->DBParameterGroupName => (array)$pg['DBParameterGroup']);
 		
 	$display['sec_groups'] = array_keys($sec_groups);
-		
+	
 	if ($_POST)
 	{		
 		$_POST['PreferredMaintenanceWindow'] = "{$_POST['pmw1']['ddd']}:{$_POST['pmw1']['hh']}:{$_POST['pmw1']['mm']}-{$_POST['pmw2']['ddd']}:{$_POST['pmw2']['hh']}:{$_POST['pmw2']['mm']}";
 		$_POST['PreferredBackupWindow'] = "{$_POST['pbw1']['hh']}:{$_POST['pbw1']['mm']}-{$_POST['pbw2']['hh']}:{$_POST['pbw2']['mm']}";
 
 		try
-		{	
-			$AmazonRDSClient->ModifyDBInstance(
-				$req_name,
-				$_POST['DBParameterGroupName'],
-				$_POST['DBSecurityGroups'],
-				$_POST['PreferredMaintenanceWindow'],
-				$_POST['MasterUserPassword'] ? $_POST['MasterUserPassword'] : null,
-				$_POST['AllocatedStorage'],
-				$_POST['DBInstanceClass'],
-				$_POST['ApplyImmediately'],
-				$_POST['BackupRetentionPeriod'],
-				$_POST['PreferredBackupWindow'],
-				$_POST['MultiAZ']?$_POST['MultiAZ']:false
-			);
+		{				
+			if ($instance->DBInstanceStatus == 'storage-full')
+			{
+				$AmazonRDSClient->ModifyDBInstance(
+					$req_name,
+					null,
+					null,
+					null,
+					null,
+					$_POST['AllocatedStorage'],
+					null,
+					null,
+					null,
+					null,
+					null
+				);
+			}
+			else
+			{
+				$AmazonRDSClient->ModifyDBInstance(
+					$req_name,
+					$_POST['DBParameterGroupName'] == 'default.mysql5.1' ? null : $_POST['DBParameterGroupName'],
+					$_POST['DBSecurityGroups'],
+					$_POST['PreferredMaintenanceWindow'],
+					$_POST['MasterUserPassword'] ? $_POST['MasterUserPassword'] : null,
+					$_POST['AllocatedStorage'],
+					$_POST['DBInstanceClass'],
+					$_POST['ApplyImmediately'],
+					$_POST['BackupRetentionPeriod'],
+					$_POST['PreferredBackupWindow'],
+					$_POST['MultiAZ']?1:0
+				);
+			}
 		}
 		catch(Exception $e)
 		{

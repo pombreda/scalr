@@ -94,13 +94,14 @@
             //
             // Update statistics
             //
-            /*
+
 			$this->Logger->debug("Updating statistics for farm.");
                 
 			$current_stat = $db->GetRow("SELECT * FROM farm_stats WHERE farmid=? AND month=? AND year=?",
 				array($DBFarm->ID, date("m"), date("Y"))
 			);
-                
+
+			/*
 			foreach ($ec2_items as $ami_id => $items)
 			{				
 				foreach ($items as $item)
@@ -118,6 +119,7 @@
 					);
 				}
 			}
+			*/
                                 
 			if (!$current_stat)
 			{
@@ -151,8 +153,7 @@
                 c1_xlarge	= c1_xlarge+?,
                 dtlastupdate = ?
                 WHERE farmid = ? AND month = ? AND year = ?
-			", $data);
-			*/                
+			", $data);                
                 
  			//
 			//Statistics update - end

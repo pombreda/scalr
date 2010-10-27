@@ -523,7 +523,7 @@
 			} catch (Exception $e) {
 				
 				$this->db->RollbackTrans();
-				throw new Exception ("Cannot save server. Error: " . $e->getMessage(), $e->getCode());			
+				throw new Exception ("Cannot save DBDNS zone. Error: " . $e->getMessage(), $e->getCode());			
 			}
 			
 			$this->db->CommitTrans();

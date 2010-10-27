@@ -54,7 +54,12 @@
         
         function handleWork ($serverId)
         {
-            $dbserver = DBServer::LoadByID($serverId);
+            try {
+            	$dbserver = DBServer::LoadByID($serverId);	
+            } catch (ServerNotFoundException $e) {
+            	$this->db->Execute("DELETE FROM messages WHERE server_id=?", array($serverId));
+            	return;
+            }
             $rs = $this->db->Execute("SELECT * FROM messages 
             		WHERE server_id = ? AND type = ? AND status = ? 
             		ORDER BY id ASC", 

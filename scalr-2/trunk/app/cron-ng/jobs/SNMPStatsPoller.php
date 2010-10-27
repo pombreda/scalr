@@ -17,11 +17,11 @@
 					"daemonize" => false,
 					"preventParalleling" => true, 
     				"workerMemoryLimit" => 40000,   		
-    				"size" => 10,
+    				"size" => 15,
     				"startupTimeout" => 10000 // 10 seconds
     			),
     			"fileName" => __FILE__,
-    			"memoryLimit" => 300000
+    			"memoryLimit" => 500000
     		);
     	}
     	
@@ -118,18 +118,25 @@
             	$ami_icnt = 0;
             	
             	// Get instances
-            	$servers = $this->db->GetAll("SELECT `status`, `remote_ip`, `index` FROM servers WHERE farm_roleid=? AND status NOT IN(?,?)", 
-            		array($farm_role["id"], SERVER_STATUS::PENDING_TERMINATE, SERVER_STATUS::TERMINATED)
+            	$servers = $this->db->Execute("SELECT `status`, `remote_ip`, `index`,`server_id` FROM servers WHERE farm_roleid=? AND status = ?", 
+            		array($farm_role["id"], SERVER_STATUS::RUNNING)
             	);
             	
             	// Watch SNMP values fro each instance
-            	foreach ($servers as $server)
+            	while ($server = $servers->FetchRow())
             	{
             		if ($server['state'] == SERVER_STATUS::PENDING_TERMINATE || $server['state'] == SERVER_STATUS::TERMINATED)
             			continue;
+            			
+            		if (!$server['remote_ip'])
+            			continue;
             		
+            		$port = $this->db->GetOne("select `value` FROM server_properties WHERE `name`=? AND server_id=?",array(SERVER_PROPERTIES::SZR_SNMP_PORT, $server['server_id']));
+            		if (!$port)
+            			$port = 161;
+            			
             		// Connect to SNMP
-            		$this->snmpWatcher->Connect($server['remote_ip'], true);
+            		$this->snmpWatcher->Connect($server['remote_ip'], true, $port);
             		
             		$this->snmpWatcher->ResetData();
             		

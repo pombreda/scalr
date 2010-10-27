@@ -30,6 +30,9 @@
 		
 		$rows = (array)$aws_response->DescribeDBParameterGroupsResult->DBParameterGroups;
 		
+		if (!is_array($rows['DBParameterGroup']))
+			$rows['DBParameterGroup'] = array($rows['DBParameterGroup']);
+		
 		// Get DBParameterGroups from SimpleXML Response and clean from stdClass
 		$rowz = array();		
 		foreach ($rows['DBParameterGroup'] as $row) 

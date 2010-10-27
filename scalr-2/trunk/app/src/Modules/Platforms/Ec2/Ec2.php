@@ -586,7 +586,7 @@
 	
 		        $aws_sgroups = array();
 		        foreach ($aws_sgroups_list_t as $sg)
-		        	$aws_sgroups[$sg->groupName] = $sg;
+		        	$aws_sgroups[strtolower($sg->groupName)] = $sg;
 		        	
 		        unset($aws_sgroups_list_t);
 			}
@@ -599,10 +599,10 @@
 			$partent_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRolePrototype();
 			array_push($retval, $role_sec_group);
 			
-			if (!$aws_sgroups[$role_sec_group])
+			if (!$aws_sgroups[strtolower($role_sec_group)])
 			{
 				try {
-					$EC2Client->CreateSecurityGroup($role_sec_group, $DBServer->GetFarmRoleObject()->GetRoleName());
+					$EC2Client->CreateSecurityGroup(strtolower($role_sec_group), $DBServer->GetFarmRoleObject()->GetRoleName());
 				}
 				catch(Exception $e) {
 					throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
@@ -617,8 +617,8 @@
 		    	//
 				// Check parent security group
 				//
-				if ($aws_sgroups[$partent_sec_group] && count($group_rules) == 0)
-					$IpPermissionSet->item = $aws_sgroups[$partent_sec_group]->ipPermissions->item; 
+				if ($aws_sgroups[strtolower($partent_sec_group)] && count($group_rules) == 0)
+					$IpPermissionSet->item = $aws_sgroups[strtolower($partent_sec_group)]->ipPermissions->item; 
 				else
 				{
 					if (count($group_rules) == 0)
@@ -651,7 +651,7 @@
 				if (!$aws_sgroups[CONFIG::$MYSQL_STAT_SEC_GROUP])
 				{
 					try {
-						$EC2Client->CreateSecurityGroup(CONFIG::$MYSQL_STAT_SEC_GROUP, "Security group for access to mysql replication status from Scalr app");
+						$EC2Client->CreateSecurityGroup(strtolower(CONFIG::$MYSQL_STAT_SEC_GROUP), "Security group for access to mysql replication status from Scalr app");
 					}
 					catch(Exception $e) {
 						throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");

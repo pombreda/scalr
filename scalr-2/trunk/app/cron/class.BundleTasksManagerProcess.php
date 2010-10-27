@@ -81,7 +81,12 @@
          			if ($BundleTask->replaceType == SERVER_REPLACEMENT_TYPE::REPLACE_FARM)
          			{	
          				$DBFarm = DBFarm::LoadByID($BundleTask->farmId);
-		         		$r_farm_roles[] = $DBFarm->GetFarmRoleByRoleID($BundleTask->prototypeRoleId);
+		         		
+         				try {
+         					$r_farm_roles[] = $DBFarm->GetFarmRoleByRoleID($BundleTask->prototypeRoleId);	
+         				} catch (Exception $e) {
+         				}
+         				
          			}
          			elseif ($BundleTask->replaceType == SERVER_REPLACEMENT_TYPE::REPLACE_ALL)
          			{

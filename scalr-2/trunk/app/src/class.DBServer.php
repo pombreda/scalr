@@ -317,11 +317,7 @@
 			$port = $this->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
 			$SNMP->Connect($this->remoteIp, $port ? $port : 161, $DBFarm->Hash, false, false, true);
 			
-			if ($this->IsSupported("0.5")) {
-				$result = implode(":", $SNMP->GetTree("UCD-DISKIO-MIB::diskIOTable"));
-			} else {
-				$result = implode(":", $SNMP->GetTree("UCD-DISKIO-MIB::diskIODevice"));
-			}
+			$result = implode(":", $SNMP->GetTree("UCD-DISKIO-MIB::diskIODevice"));
 			
 			$map = array(
 				"b", "c", "d", "e", "f", "g", "h", "i", "j", 
