@@ -21,6 +21,11 @@
      */
     require(dirname(__FILE__)."/../src/class.ScalrEnvironment20090305.php");
     
+    /**
+     * Date: 2010-09-23
+     * @todo: description
+     */
+    require(dirname(__FILE__)."/../src/class.ScalrEnvironment20100923.php");
     
     /**
      * ***************************************************************************************
@@ -36,12 +41,12 @@
     	
     $args = trim($args, ",");
     	
-    Logger::getLogger('query-env')->info("Received request. Args: {$args} (".http_build_query($_REQUEST).")");
+    //Logger::getLogger('query-env')->info("Received request. Args: {$args} (".http_build_query($_REQUEST).")");
     	
     try
     {
    	 	$EnvironmentObject = ScalrEnvironmentFactory::CreateEnvironment($req_version);
-    	$response = $EnvironmentObject->Query($req_operation, $_REQUEST);
+    	$response = $EnvironmentObject->Query($req_operation, array_merge($_GET, $_POST));
     }
     catch(Exception $e)
     {
@@ -52,8 +57,8 @@
     
     header("Content-Type: text/xml");
     
-    Logger::getLogger('query-env')->info("Response:");
-    Logger::getLogger('query-env')->info($response);
+    //Logger::getLogger('query-env')->info("Response:");
+    //Logger::getLogger('query-env')->info($response);
     print $response;
     exit();
 ?>

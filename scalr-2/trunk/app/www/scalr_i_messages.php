@@ -5,7 +5,7 @@
 	try
 	{
 		$DBServer = DBServer::LoadByID($req_server_id);
-		if ($DBServer->clientId != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 			throw new Exception("Server not found");
 			
 	}
@@ -32,7 +32,7 @@
 			$msg = $serializer->unserialize($message['message']);
 			$DBServer->SendMessage($msg);
 						
-			$okmsg = "Message successfully sent";
+			$okmsg = _("Message successfully sent");
 		}
 		
 		UI::Redirect("/scalr_i_messages.php?server_id={$DBServer->serverId}");

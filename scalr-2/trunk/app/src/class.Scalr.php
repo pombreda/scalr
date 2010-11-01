@@ -366,6 +366,19 @@
 			return $DBServer;
 		}
 	    
+		public static function GenerateAPIKeys()
+		{
+			$key = Scalr::GenerateRandomKey();
+			
+			$sault = abs(crc32($key));
+			$keyid = dechex($sault).dechex(time());
+			
+			$ScalrKey = $key;
+			$ScalrKeyID = $keyid;
+			
+			return array("id" => $ScalrKeyID, "key" => $ScalrKey);
+		}
+		
 		public static function GenerateRandomKey($length = 128)
 		{
 			$fp = fopen("/dev/urandom", "r");

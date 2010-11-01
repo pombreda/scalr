@@ -9,18 +9,14 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from admin account"));
-		else
-			$clientid = $_SESSION['uid'];
-			
-		$region = $_SESSION['aws_region'];
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
 		// Load Client Object
-	    $Client = Client::Load($clientid);
-	    
-	    $AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-		$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+	    $AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds( 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+			$_SESSION['aws_region']
+		);
 	    
 	    $res = $AmazonRDSClient->DescribeEvents($req_name, $req_type);
 	    

@@ -2,9 +2,9 @@
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 
@@ -30,7 +30,7 @@
 				case "delete":
 					
 					$db->Execute("DELETE FROM scheduler_tasks WHERE id = ? AND client_id = ?",
-						array($task_id, $_SESSION['uid'])
+						array($task_id, Scalr_Session::getInstance()->getClientId())
 					);
 					$okmsg = _("Selected task(s) successfully removed");
 					
@@ -39,7 +39,7 @@
 				case "activate":
 					
 					$db->Execute("UPDATE scheduler_tasks SET `status` = ? WHERE id = ? AND `status` = ? AND client_id = ?",
-						array(TASK_STATUS::ACTIVE, $task_id, TASK_STATUS::SUSPENDED, $_SESSION['uid'])
+						array(TASK_STATUS::ACTIVE, $task_id, TASK_STATUS::SUSPENDED, Scalr_Session::getInstance()->getClientId())
 					);
 					$okmsg = _("Selected task(s) successfully activated");
 					
@@ -48,7 +48,7 @@
 				case "suspend":
 					
 					$db->Execute("UPDATE scheduler_tasks SET `status` = ? WHERE id = ? AND `status` = ? AND client_id = ?",
-						array(TASK_STATUS::SUSPENDED, $task_id, TASK_STATUS::ACTIVE, $_SESSION['uid'])
+						array(TASK_STATUS::SUSPENDED, $task_id, TASK_STATUS::ACTIVE, Scalr_Session::getInstance()->getClientId())
 					);
 					$okmsg = _("Selected task(s) successfully suspended");
 					

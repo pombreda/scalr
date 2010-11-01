@@ -9,17 +9,17 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 		
-		if ($_SESSION['uid'] != 0)
+		if (Scalr_Session::getInstance()->getClientId() != 0)
 		{
 			$filter_sql .= " AND ("; 
 				// Show shared roles
 				$filter_sql .= " origin='".SCRIPT_ORIGIN_TYPE::SHARED."'";
 			
 				// Show custom roles
-				$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='{$_SESSION['uid']}')";
+				$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='".Scalr_Session::getInstance()->getClientId()."')";
 				
 				//Show approved contributed roles
-				$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='{$_SESSION['uid']}'))";
+				$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='".Scalr_Session::getInstance()->getClientId()."'))";
 			$filter_sql .= ")";
 		}
 		
@@ -85,7 +85,7 @@
 			{
 				$client = $db->GetRow("SELECT email, fullname FROM clients WHERE id = ?", array($row['clientid']));
 				
-				if ($_SESSION['uid'] == 0)
+				if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 					$row["client_email"] = $client['email'];
 					
 				$row["client_name"] = $client['fullname'];

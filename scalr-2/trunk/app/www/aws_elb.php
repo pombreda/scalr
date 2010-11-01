@@ -2,18 +2,14 @@
 	require_once('src/prepend.inc.php');
     $display['load_extjs'] = true;	    
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
 	if ($req_farmid)
-	{
 		$display['grid_query_string'] .= "&farmid={$req_farmid}";
-	}
-	
-	$Client = Client::Load($_SESSION['uid']);
 	
 	if ($req_action == 'remove')
 	{
@@ -25,8 +21,12 @@
 				$req_name
 			));
 									
-			$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$AmazonELBClient->SetRegion($_SESSION['aws_region']);
+			$AmazonELBClient = Scalr_Service_Cloud_Aws::newElb(
+				$_SESSION['aws_region'], 
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+			);
+	
 			$AmazonELBClient->DeleteLoadBalancer($req_name);
 			
 			if ($roleid)

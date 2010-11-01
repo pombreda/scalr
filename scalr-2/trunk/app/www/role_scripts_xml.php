@@ -15,10 +15,12 @@
 	
 	if ($req_farmid)
 	{
-	    if ($_SESSION["uid"] != 0)
-	       $farminfo = $db->GetRow("SELECT id FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
+	    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+	    	$farminfo = $db->GetRow("SELECT id FROM farms WHERE id=?", array($req_farmid));
 	    else
-	       $farminfo = $db->GetRow("SELECT id FROM farms WHERE id=?", array($req_farmid));
+	       $farminfo = $db->GetRow("SELECT id FROM farms WHERE id=? AND env_id=?", 
+	       	array($req_farmid, Scalr_Session::getInstance()->getEnvironmentId())
+	       ); 
 	}
 		   
 	//
@@ -29,14 +31,14 @@
 		// Show shared roles
 		$filter_sql .= " origin='".SCRIPT_ORIGIN_TYPE::SHARED."'";
 	
-		if ($_SESSION['uid'] != 0)
+		if (Scalr_Session::getInstance()->getClientId() != 0)
 		{
 			// Show custom roles
-			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='{$_SESSION['uid']}')";
+			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='".Scalr_Session::getInstance()->getClientId()."')";
 		}
 		
 		//Show approved contributed roles
-		$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='{$_SESSION['uid']}'))";
+		$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='".Scalr_Session::getInstance()->getClientId()."'))";
 	$filter_sql .= ")";
 	
     $sql = "select * from scripts WHERE 1=1 {$filter_sql}";
@@ -105,7 +107,7 @@
 	        
 	        $idomNode->setAttribute("child", "0");
 	        
-	        $dbversions = $db->Execute("SELECT * FROM script_revisions WHERE scriptid=? AND (approval_state=? OR (SELECT clientid FROM scripts WHERE scripts.id=script_revisions.scriptid) = '{$_SESSION['uid']}' OR revision IN (SELECT version FROM farm_role_scripts WHERE scriptid=? AND farmid=?))", 
+	        $dbversions = $db->Execute("SELECT * FROM script_revisions WHERE scriptid=? AND (approval_state=? OR (SELECT clientid FROM scripts WHERE scripts.id=script_revisions.scriptid) = '".Scalr_Session::getInstance()->getClientId()."' OR revision IN (SELECT version FROM farm_role_scripts WHERE scriptid=? AND farmid=?))", 
 	        	array($template['id'], APPROVAL_STATE::APPROVED, $template['id'], $req_farmid)
 	        );
 	        $versions = array();
@@ -144,12 +146,7 @@
 	}
 
 	//TODO: Move it to class
-	function GetCustomVariables($template)
-	{
-		$text = preg_replace('/(\\\%)/si', '$$scalr$$', $template);
-		preg_match_all("/\%([^\%\s]+)\%/si", $text, $matches);
-		return $matches[1];		
-	}
+	
 	
     print $tree->saveXML();
 ?>

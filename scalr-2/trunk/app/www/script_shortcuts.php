@@ -11,8 +11,8 @@
 	{
 		foreach ($_POST['id'] as $farm_scriptid)
 		{
-			$db->Execute("DELETE FROM farm_role_scripts WHERE farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}') AND id=? AND ismenuitem='1'",
-				array($farm_scriptid)
+			$db->Execute("DELETE FROM farm_role_scripts WHERE farmid IN (SELECT id FROM farms WHERE clientid=?) AND id=? AND ismenuitem='1'",
+				array(Scalr_Session::getInstance()->getClientId(), $farm_scriptid)
 			);
 		}
 		

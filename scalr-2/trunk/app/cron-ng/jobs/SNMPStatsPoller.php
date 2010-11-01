@@ -20,6 +20,8 @@
     				"size" => 15,
     				"startupTimeout" => 10000 // 10 seconds
     			),
+    			# Terminate when pending work 3 times greater then last work portion
+    			"pendingWorkCoef" => 2,  
     			"fileName" => __FILE__,
     			"memoryLimit" => 500000
     		);
@@ -78,13 +80,13 @@
             $GLOBALS["SUB_TRANSACTIONID"] = abs(crc32(posix_getpid().$farmId));
             $GLOBALS["LOGGER_FARMID"] = $farmId;
             
-            //$this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Begin polling farm (ID: {$farmId}, Name: {$farminfo['name']})");
+            $this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Begin polling farm (ID: {$farmId}, Name: {$farminfo['name']})");
             
             //
             // Check farm status
             //
             
-            if ($this->db->GetOne("SELECT status FROM farms WHERE id=?", array($farmId)) != 1)
+            if ($this->db->GetOne("SELECT status FROM farms WHERE id=?", array($farmId)) != FARM_STATUS::RUNNING)
             {
             	$this->logger->warn("[FarmID: {$farmId}] Farm terminated by client.");
             	return;
@@ -112,31 +114,34 @@
             // Get all farm roles
             $farm_roles = $this->db->GetAll("SELECT id, role_id FROM farm_roles WHERE farmid=?", array($farmId));
             
+            $this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Found".count($farm_roles)." roles...");
+            
             foreach ($farm_roles as $farm_role)
             {
-            	$ami_data = array();
-            	$ami_icnt = 0;
+            	$role_data = array();
+            	$role_icnt = 0;
             	
-            	// Get instances
-            	$servers = $this->db->Execute("SELECT `status`, `remote_ip`, `index`,`server_id` FROM servers WHERE farm_roleid=? AND status = ?", 
-            		array($farm_role["id"], SERVER_STATUS::RUNNING)
-            	);
+            	$DBFarmRole = DBFarmRole::LoadByID($farm_role['id']);
+            	
+            	$servers = $DBFarmRole->GetServersByFilter(array(), array('status' => array(SERVER_STATUS::PENDING_TERMINATE, SERVER_STATUS::TERMINATED)));
+            	
+            	$this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Found".count($servers)." servers...");
             	
             	// Watch SNMP values fro each instance
-            	while ($server = $servers->FetchRow())
+            	foreach ($servers as $DBServer)
             	{
-            		if ($server['state'] == SERVER_STATUS::PENDING_TERMINATE || $server['state'] == SERVER_STATUS::TERMINATED)
+            		if ($DBServer->status == SERVER_STATUS::PENDING_TERMINATE || $DBServer->status == SERVER_STATUS::TERMINATED)
             			continue;
             			
             		if (!$server['remote_ip'])
             			continue;
             		
-            		$port = $this->db->GetOne("select `value` FROM server_properties WHERE `name`=? AND server_id=?",array(SERVER_PROPERTIES::SZR_SNMP_PORT, $server['server_id']));
+            		$port = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
             		if (!$port)
             			$port = 161;
             			
             		// Connect to SNMP
-            		$this->snmpWatcher->Connect($server['remote_ip'], true, $port);
+            		$this->snmpWatcher->Connect($DBServer->remoteIp, true, $port);
             		
             		$this->snmpWatcher->ResetData();
             		
@@ -154,25 +159,25 @@
             			// Collect data
             			foreach($data as $k=>$v)
             			{
-            				$ami_data[$watcher_name][$k] += (float)$v;
+            				$role_data[$watcher_name][$k] += (float)$v;
             				$farm_data[$watcher_name][$k] += (float)$v;
             			}
             			
-            			$this->snmpWatcher->UpdateRRDDatabase($watcher_name, $data, "INSTANCE_{$farm_role["id"]}_{$server['index']}");
+            			$this->snmpWatcher->UpdateRRDDatabase($watcher_name, $data, "INSTANCE_{$farm_role["id"]}_{$DBServer->index}");
             		}
             		
-            		$ami_icnt++;
+            		$role_icnt++;
             		$farm_icnt++;
             	}
             	
             	//Update data and build graphic for role
-            	foreach ($ami_data as $watcher_name => $data)
+            	foreach ($role_data as $watcher_name => $data)
             	{
             		// if true count average value value
             		if ($this->watchers[$watcher_name])
             		{
             			foreach ($data as &$ditem)
-            				$ditem = round($ditem/$ami_icnt, 2);
+            				$ditem = round($ditem/$role_icnt, 2);
             		}
             			
              		if ($data[0] === '' || $data[0] === false || $data[0] === null)

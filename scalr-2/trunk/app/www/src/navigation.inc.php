@@ -4,17 +4,17 @@
 	require_once (dirname(__FILE__) . "/../../src/class.XmlMenu.php");
 	$Menu = new XmlMenu();
     
-    if ($_SESSION["uid"] == 0)
+    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
     	$Menu->LoadFromFile(dirname(__FILE__)."/../../etc/admin_nav.xml");
     else
+    {
     	$Menu->LoadFromFile(dirname(__FILE__)."/../../etc/client_nav.xml");  
-    	
-    if ($_SESSION["uid"] != 0)
-    {   	    			
+    	   	    			
 		// creates path for  user menu cash files in session		
 		$menuDirectory = dirname(__FILE__)."/../../cache/menu";
 
-		foreach ($GLOBALS["db"]->GetAll("SELECT name, id  FROM farms WHERE clientid=?", array($_SESSION['uid'])) as $row)
+		foreach ($GLOBALS["db"]->GetAll("SELECT name, id  FROM farms WHERE env_id=?", 
+			array(Scalr_Session::getInstance()->getEnvironmentId())) as $row)
 		{
 		    $farm_info[] = array(
 		    	'name' =>$row['name'], 
@@ -25,7 +25,7 @@
 		}   			
 		
 		$farmCrc32String = crc32($farmCrc32String);		
-		$xmlUserFileName = "menu_{$_SESSION['uid']}_{$farmCrc32String}.xml";
+		$xmlUserFileName = "menu_".Scalr_Session::getInstance()->getEnvironmentId()."_{$farmCrc32String}.xml";
 					
 		$filesArray = array();
 	
@@ -50,7 +50,7 @@
 	    	$currentUserFileInfo = explode("_",$fileName);	
 
 	    	// updates "menu" cache files for user
-	    	if(($currentUserFileInfo[1] == $_SESSION['uid']) &&  // current user...
+	    	if(($currentUserFileInfo[1] == Scalr_Session::getInstance()->getEnvironmentId()) &&  // current user...
 	    	 	($currentUserFileInfo[2] != "{$farmCrc32String}.xml")) // has another(old) file    
 	    	 	unlink("{$menuDirectory}/{$fileName}");  
 	        	

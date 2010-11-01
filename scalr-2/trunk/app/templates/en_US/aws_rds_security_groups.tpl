@@ -2,9 +2,6 @@
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
-
-var uid = '{$smarty.session.uid}';
-
 var regions = [
 {foreach from=$regions name=id key=key item=item}
 	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}

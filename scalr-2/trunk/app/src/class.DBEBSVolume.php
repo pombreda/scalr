@@ -5,6 +5,7 @@
 		public 
 			$id,
 			$farmId,
+			$envId,
 			$farmRoleId,
 			$volumeId,
 			$serverId,
@@ -25,6 +26,7 @@
 			
 		private
 			$db,
+			$environment,
 			$logger;
 			
 		/**
@@ -35,6 +37,7 @@
 			
 		private static $FieldPropertyMap = array(
 			'id' 			=> 'id',
+			'env_id'		=> 'envId',
 			'farm_id'		=> 'farmId',
 			'farm_roleid'	=> 'farmRoleId',			
 			'volume_id'		=> 'volumeId',
@@ -60,6 +63,17 @@
 			$this->volumeId = $volumeId;
 			$this->db = Core::GetDBInstance();
 			$this->logger = Logger::getLogger(__CLASS__);
+		}
+		
+		/**
+		 * @return Scalr_Environment
+		 */
+		public function getEnvironmentObject()
+		{
+			if (!$this->environment)
+				$this->environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($this->envId);
+				
+			return $this->environment;
 		}
 		
 		/**

@@ -11,7 +11,7 @@
 		
 		$sql = "select farm_role_scripts.*, scripts.name as scriptname from farm_role_scripts 
 	    INNER JOIN scripts ON scripts.id = farm_role_scripts.scriptid
-	    WHERE ismenuitem='1' AND farmid IN (SELECT id FROM farms WHERE clientid='{$_SESSION['uid']}')";
+	    WHERE ismenuitem='1' AND farmid IN (SELECT id FROM farms WHERE env_id='".Scalr_Session::getInstance()->getEnvironmentId()."')";
 	    
 	    if ($req_query)
 		{
@@ -49,7 +49,7 @@
 				try
 				{
 					$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
-					$row['rolename'] = $DBFarmRole->GetRoleName();
+					$row['rolename'] = $DBFarmRole->GetRoleObject()->name;
 				}
 				catch(Exception $e)
 				{

@@ -11,12 +11,26 @@
 		</tr>
 		<tr>
 			<td width="20%">Role Name:</td>
-			<td>{$farmrole->GetRoleName()}</td>
+			{assign var=role value=$farmrole->GetRoleObject()}
+			<td>{$role->name}</td>
 		</tr>
 		<tr>
 			<td width="20%">Platform:</td>
 			<td>{$farmrole->Platform}</td>
 		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"}
+		
+		{include file="inc/intable_header.tpl" header="Scaling details" color="Gray"}
+		{section name=id loop=$metrics}
+        <tr>
+			<td width="20%">{$metrics[id].name}:</td>
+			<td>{if $metrics[id].last_value != null}Checked at {$metrics[id].date}. Value: {$metrics[id].last_value}{else}Never checked{/if}</td>
+		</tr>
+		{sectionelse}
+		<tr>
+			<td colspan="2">Scaling disabled for this role</td>
+		</tr>
+		{/section}
 		{include file="inc/intable_footer.tpl" color="Gray"}
 			
 		<!-- 	

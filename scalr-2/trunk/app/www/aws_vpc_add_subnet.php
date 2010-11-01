@@ -2,20 +2,28 @@
 
 	require("src/prepend.inc.php"); 
 		
-	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
-	
-	$Client = Client::Load($_SESSION['uid']);
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon VPC&nbsp;&raquo;&nbsp;Create Subnet");	
 		
 	$AmazonVPCClient = AmazonVPC::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonVPCClient->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+	$AmazonVPCClient->SetAuthKeys(
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
 		
 
 	// Get Avail zones
-	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+	$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$_SESSION['aws_region'],
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
+			
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
     $display["avail_zones"] = array();
     

@@ -10,6 +10,7 @@
 		public $serverId,
 			$farmId,
 			$farmRoleId,
+			$envId,
 			$roleId,
 			$clientId,
 			$platform,
@@ -27,9 +28,11 @@
 			$platformProps,
 			$realStatus,
 			$cloudServerID,
+			$cloudLocation,
 			$Db,
 			$dbId,
 			$propsCache,
+			$environment,
 			$client,
 			$dbFarmRole,
 			$dbFarm;
@@ -37,12 +40,14 @@
 		public static $platformPropsClasses = array(
 			SERVER_PLATFORMS::EC2 => 'EC2_SERVER_PROPERTIES',
 			SERVER_PLATFORMS::RACKSPACE => 'RACKSPACE_SERVER_PROPERTIES',
-			SERVER_PLATFORMS::RDS => 'RDS_SERVER_PROPERTIES'
+			SERVER_PLATFORMS::RDS => 'RDS_SERVER_PROPERTIES',
+			SERVER_PLATFORMS::EUCALYPTUS => 'EUCA_SERVER_PROPERTIES'
 		);
 					
 		private static $FieldPropertyMap = array(
 			'id'			=> 'dbId',
 			'server_id' 	=> 'serverId',
+			'env_id'		=> 'envId',
 			'farm_id'		=> 'farmId',
 			'role_id'		=> 'roleId',
 			'farm_roleid'	=> 'farmRoleId',
@@ -65,9 +70,47 @@
 			$this->Db = Core::GetDBInstance();
 		}
 		
+		public function GetCloudUserData()
+		{
+			$retval = array(
+	        	"farmid" 			=> $this->farmId,
+	        	"role"				=> implode(",", $this->GetFarmRoleObject()->GetRoleObject()->getBehaviors()),
+	        	"eventhandlerurl"	=> CONFIG::$EVENTHANDLER_URL,
+	        	"hash"				=> $this->GetFarmObject()->Hash,
+	        	"realrolename"		=> $this->GetFarmRoleObject()->GetRoleObject()->name,
+	        	"httpproto"			=> CONFIG::$HTTP_PROTO,
+	        	"region"			=> $this->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+	        	
+	        	/*** For Scalarizr ***/
+	        	"szr_key"			=> $this->GetKey(),
+	        	"serverid"			=> $this->serverId,
+	        	'p2p_producer_endpoint'	=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/messaging",
+				'queryenv_url'		=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/environment.php"
+	        );
+	        
+	        if ($this->platform == SERVER_PLATFORMS::EC2)
+	        	$retval["s3bucket"]	= $this->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_S3_BUCKET);
+	        	
+	        return $retval;
+		}
+		
 		public function IsRebooting()
 		{
 			return $this->GetProperty(SERVER_PROPERTIES::REBOOTING);
+		}
+		
+		/**
+		 * 
+		 * Return cloud location (region)
+		 * @param bool $skipCache
+		 * @return string
+		 */
+		public function GetCloudLocation($skipCache = false)
+		{
+			if (!$this->cloudLocation || $skipCache == true)
+				$this->cloudLocation = PlatformFactory::NewPlatform($this->platform)->GetServerCloudLocation($this);
+			
+			return $this->cloudLocation;
 		}
 		
 		/**
@@ -94,6 +137,18 @@
 				$this->realStatus = PlatformFactory::NewPlatform($this->platform)->GetServerRealStatus($this);
 			
 			return $this->realStatus;
+		}
+		
+		/**
+		 * @return Scalr_Environment
+		 * Enter description here ...
+		 */
+		public function GetEnvironmentObject()
+		{
+			if (!$this->environment)
+				$this->environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($this->envId);
+				
+			return $this->environment;
 		}
 		
 		/**
@@ -312,12 +367,16 @@
 		{
 			$DBFarm = $this->GetFarmObject();
 			
-			$SNMP = new SNMP();
+			$snmpClient = new Scalr_Net_Snmp_Client();
 
 			$port = $this->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
-			$SNMP->Connect($this->remoteIp, $port ? $port : 161, $DBFarm->Hash, false, false, true);
+			$snmpClient->Connect($this->remoteIp, $port ? $port : 161, $DBFarm->Hash, false, false, true);
 			
-			$result = implode(":", $SNMP->GetTree("UCD-DISKIO-MIB::diskIODevice"));
+			if ($this->IsSupported("0.5")) {
+				$result = implode(":", $snmpClient->getTree("UCD-DISKIO-MIB::diskIOTable"));
+			} else {
+				$result = implode(":", $snmpClient->getTree("UCD-DISKIO-MIB::diskIODevice"));
+			}
 			
 			$map = array(
 				"b", "c", "d", "e", "f", "g", "h", "i", "j", 
@@ -396,6 +455,7 @@
 				`server_id`		= ?,
 				`farm_id`		= ?,
 				`role_id`		= ?,
+				`env_id`		= ?,
 				`farm_roleid`	= ?,
 				`client_id`		= ?,
 				`platform`		= ?,
@@ -408,6 +468,7 @@
 				$server_id,
 				$creInfo->farmId ? $creInfo->farmId : $creInfo->dbFarmRole->FarmID,
 				$creInfo->roleId,
+				$creInfo->envId,
 				$creInfo->dbFarmRole ? $creInfo->dbFarmRole->ID : 0,
 				$client_id,
 				$creInfo->platform,
@@ -593,11 +654,14 @@
 				    else
 						$msg = $e->getMessage();
 					
-				    $logger->error(new FarmLogMessage($this->farmId, sprintf("Cannot deliver message '%s' (message_id: %s) via REST"
-						. " to server '%s' (server_id: %s). Error: %s %s",
-						$message->getName(), $message->messageId, 
-						$this->remoteIp, $this->serverId, $request->getResponseCode(), $msg
-					)));
+					if ($this->farmId)
+					{
+					    $logger->error(new FarmLogMessage($this->farmId, sprintf("Cannot deliver message '%s' (message_id: %s) via REST"
+							. " to server '%s' (server_id: %s). Error: %s %s",
+							$message->getName(), $message->messageId, 
+							$this->remoteIp, $this->serverId, $request->getResponseCode(), $msg
+						)));
+					}
 					
 					return false;
 				}
@@ -631,7 +695,7 @@
 			$retval =  array(
 				'external_ip' 	=> $this->remoteIp,
 				'internal_ip'	=> $this->localIp,
-				'role_name'		=> $this->GetFarmRoleObject()->GetRoleName(),
+				'role_name'		=> $this->GetFarmRoleObject()->GetRoleObject()->name,
 				'isdbmaster'	=> $this->GetProperty(SERVER_PROPERTIES::DB_MYSQL_MASTER),
 				'instance_index'=> $this->index
 			);

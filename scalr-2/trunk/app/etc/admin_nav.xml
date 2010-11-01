@@ -4,18 +4,11 @@
 	<node title="Clients">
 		<item href="clients_add.php">Add new</item>
 		<item href="clients_view.php" search="SELECT COUNT(*) FROM clients WHERE email LIKE '%s' OR aws_accountid LIKE '%s' OR fullname LIKE '%s'">View all</item>
-		<separator />
-		<item href="clients_view.php?overdue=1">View overdue accounts</item>
-		<item href="clients_view.php?cancelled=1">View cancelled accounts</item>
 	</node>
 	
 	<node title="Farms">
 		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s'">View all</item>
 	</node>	
-
-	<node title="Applications">
-		<item href="sites_view.php" search="SELECT COUNT(*) FROM zones WHERE zone LIKE '%s'">View all</item>
-	</node>
 
 	<node title="Logs">
 		<item href="syslogs_view.php">System log</item>
@@ -23,22 +16,17 @@
 		<item href="scripting_logs_view.php">Scripting log</item>
 	</node>
 
-	<node title="Roles">
-		<item href="roles_view.php" search="SELECT COUNT(*) FROM roles WHERE name LIKE '%s'">View all</item>		
-	</node>
-
 	<node title="Scripts">
 		<item href="script_templates.php">View all</item>		
 	</node>
 
 	<node title="Settings">
-		<node title="Nameservers">
-			<item href="ns_add.php">Add new</item>
-			<item href="ns_view.php">View all</item>			
-		</node>
 		<item href="default_records.php">Default DNS records</item>
 		<separator />
-		<item href="shared_roles.php">Shared roles</item>
+		<node title="Roles">
+			<item href="roles_view.php?origin=Shared">View all</item>
+			<item href="role_edit.php">Add new</item>
+		</node>
 		<separator />
 		<item href="settings_core.php">Core settings</item>
 		<separator />

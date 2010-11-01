@@ -91,5 +91,7 @@
 		public function OnRoleOptionChanged(RoleOptionChangedEvent $event) {}
 		
 		public function OnEBSVolumeAttached(EBSVolumeAttachedEvent $event) {}
+		
+		public function OnServiceConfigurationPresetChanged(ServiceConfigurationPresetChangedEvent $event) {}
 	}
 ?>

@@ -9,13 +9,11 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] != 0)
-		   throw new Exception(_("Requested page cannot be viewed from the client account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::SCALR_ADMIN);
 		
 		$sql = "SELECT 
 			id, 
 			email,
-			aws_accountid,
 			isactive,
 			dtadded,
 			farms_limit,
@@ -40,20 +38,11 @@
 			$sql .= " AND isactive='{$isactive}'";
 		}
 		
-		if ($req_overdue)
-		{
-			$sql .= " AND (TO_DAYS(dtdue) < TO_DAYS(NOW()) AND isactive='1')";
-		}
-		
-		if ($req_cancelled)
-		{
-			$sql .= " AND ((SELECT COUNT(*) FROM subscriptions WHERE status = 'Active' AND subscriptions.clientid = clients.id) = 0 AND isactive='0')";
-		}
 		
 		if ($req_query)
 		{
 			$filter = mysql_escape_string($req_query);
-			foreach(array("email", "aws_accountid", "fullname") as $field)
+			foreach(array("email", "fullname") as $field)
 			{
 				$likes[] = "$field LIKE '%{$filter}%'";
 			}
@@ -80,31 +69,9 @@
 		foreach ($db->GetAll($sql) as $row)
 		{
 			$row["farms"] = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid='{$row['id']}'");
-			$row["apps"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE clientid='{$row['id']}'");
-			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM roles WHERE clientid='{$row['id']}'");
+			$row["apps"] = $db->GetOne("SELECT COUNT(*) FROM dns_zones WHERE client_id='{$row['id']}'");
+			$row["roles"] = $db->GetOne("SELECT COUNT(*) FROM roles WHERE client_id='{$row['id']}'");
 			$row["servers"] = $db->GetOne("SELECT COUNT(*) FROM servers WHERE client_id='{$row['id']}'");
-			
-			
-			$pkg = $db->GetOne("SELECT value FROM client_settings WHERE clientid=? AND `key`=?", array(
-				$row['id'], CLIENT_SETTINGS::BILLING_CGF_PKG
-			));
-			if ($pkg)
-			{
-				$row['billing_type'] = ucfirst($pkg)." (Chargify)";
-			}
-			else
-			{
-				$row['billing_type'] = $db->GetOne("SELECT name FROM billing_packages WHERE id=(SELECT value FROM client_settings WHERE clientid='{$row['id']}' AND `key`='billing.packageid')");
-				if ($row['billing_type'])
-					$row['billing_type'] = "{$row['billing_type']} (PayPal)";
-				else
-					$row['billing_type'] = "";
-			}
-			
-			if ($row['dtdue'])
-				$row['dtdue'] = date("d-m-Y", strtotime($row['dtdue']));
-			else
-				$row['dtdue'] = '';
 			
 			$response["data"][] = $row;
 		}

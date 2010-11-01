@@ -15,8 +15,10 @@
         {
 			$db = Core::GetDBInstance();
 			
-			$this->ThreadArgs = $db->GetAll("SELECT id FROM farm_roles WHERE role_id IN (SELECT id FROM roles WHERE alias=?)", 
-            	array(ROLE_ALIAS::MYSQL)
+			//TODO: roles
+			
+			$this->ThreadArgs = $db->GetAll("SELECT id FROM farm_roles WHERE platform != ? AND role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?)", 
+            	array(SERVER_PLATFORMS::RDS, ROLE_BEHAVIORS::MYSQL)
             );
         }
         
@@ -25,16 +27,18 @@
             
         }
         
-        public function StartThread($mysql_farm_ami)
+        public function StartThread($mysql_farm_role)
         {
         	// Reconfigure observers;
         	Scalr::ReconfigureObservers();
         	
         	$db = Core::GetDBInstance();
-            $Shell = ShellFactory::GetShellInstance();
-            $SNMP = new SNMP();
         	
-            $DBFarmRole = DBFarmRole::LoadByID($mysql_farm_ami['id']);
+            $DBFarmRole = DBFarmRole::LoadByID($mysql_farm_role['id']);
+            
+            if ($DBFarmRole->Platform == SERVER_PLATFORMS::RDS)
+            	return;
+            
             $DBFarm = $DBFarmRole->GetFarmObject();    
             
 			//skip terminated farms

@@ -1,6 +1,8 @@
 Ext.ns("Scalr");
 Ext.ns("Scalr.Viewers");
+Ext.ns("Scalr.Viewers.Message");
 Ext.ns("Scalr.state");
+Ext.ns("Scalr.Viewers.Plugins");
 
 Scalr.fireOnInputChange = function(el, obj, handler) {
 	el.on('keyup', function() {
@@ -45,83 +47,120 @@ Scalr.Viewers.autoSize = Ext.extend(Ext.util.Observable, {
 });
 
 Ext.Ajax.on('requestexception', function() {
-	if (Ext.MessageBox.isVisible()) 
+	if (Ext.MessageBox.isVisible())
 		Ext.MessageBox.hide();
 
 	Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
 });
 
-Scalr.Viewers.ErrorMessage = function(message, errorId) {
-	// @TODO: replace with simpler code, DOM ID would be already defined
-	// Clear error message ? Not by '' message (fixed)
-	// 3 argument - clear prev messages ?
-	var msgId = 'top-messages', msgCt = Ext.get(msgId);
-	if (!msgCt) {
-		msgCt = Ext.DomHelper.insertFirst(Ext.get('body-container') || Ext.getBody(), { id: msgId }, true);
-	}
+Scalr.Viewers.Message.Add = function(message, errorId, timeout, type) {
+	var msgCt = Ext.get('top-messages');
 
+	message = message || '';
 	if (!Ext.isArray(message) && message != '') {
 		message = [message];
 	}
 
 	errorId = errorId || '';
-	if (errorId && !Ext.isArray(message)) {
+	if (errorId) {
 		// clear all messages with errorId
 		var childs = msgCt.query('div');
 		for (var i = 0, len = childs.length; i < len; i++) {
 			var elem = Ext.get(childs[i]);
 			if (elem.getAttribute('errorId') == errorId) {
-				elem.remove();
+				elem.ghost('t', {
+					remove: true,
+					callback: i ? Ext.emptyFn : Scalr.Viewers.Message.Update // call only once after clearing all elements
+				});
+			}
+		}
+		Scalr.Viewers.Message.Update();
+	}
+
+	// count visible messages
+	var childs = msgCt.query('div'), cnt = 0;
+	for (var i = 0, len = childs.length; i < len; i++) {
+		var elem = Ext.get(childs[i]);
+		if (! elem.hasClass('viewers-hiddenmessage'))
+			cnt++;
+	}
+
+	if (Ext.isArray(message)) {
+		var typeF = 'viewers-' + type + 'message' || 'viewers-errormessage';
+		for (var i = 0, len = message.length; i < len; i++) {
+			var m = msgCt.createChild({
+				tag: 'div',
+				cls: 'viewers-messages ' + typeF + ((i + cnt) >= Scalr.Viewers.Message.ShowMessages ? ' viewers-hiddenmessage' : ''),
+				errorId: errorId,
+				html: message[i] + '<div class="viewers-messages-close"><img src="/images/ui-ng/icons/message/' + type + '_close.png"></div>'
+			});
+
+			m.on('mouseenter', function () {
+				this.addClass('viewers-messages-close-show');
+			}, m.child('div.viewers-messages-close'));
+
+			m.on('mouseleave', function () {
+				this.removeClass('viewers-messages-close-show');
+			}, m.child('div.viewers-messages-close'));
+
+			m.child('div.viewers-messages-close').on('click', function() {
+				this.ghost('t', {
+					remove: true,
+					callback: Scalr.Viewers.Message.Update
+				});
+			}, m);
+
+			if (timeout)
+				m.pause(timeout).ghost('t', {
+					remove: true,
+					callback: Scalr.Viewers.Message.Update
+				});
+		}
+		//Ext.get('top-messages-icons').child('img.close').show();
+		Scalr.Viewers.Message.Update();
+	}
+
+	scroll(0, 0);
+};
+
+Scalr.Viewers.Message.ShowMessages = 5;
+
+Scalr.Viewers.Message.Update = function () {
+	var msgCt = Ext.get('top-messages');
+
+	// count visible messages
+	var childs = msgCt.query('div'), cnt = 0;
+	for (var i = 0, len = childs.length; i < len; i++) {
+		var elem = Ext.get(childs[i]);
+		if (! elem.hasClass('viewers-hiddenmessage'))
+			cnt++;
+		else {
+			if (cnt >= Scalr.Viewers.Message.ShowMessages)
+				//Ext.get('top-messages-icons')
+				// add icon
+				break;
+			else {
+				cnt++;
+				elem.removeClass('viewers-hiddenmessage');
 			}
 		}
 	}
 
-	if (Ext.isArray(message)) {
-		for (var i = 0, len = message.length; i < len; i++) {
-			var m = msgCt.createChild({ tag: 'div', cls: 'viewers-messages viewers-errormessage', errorId: errorId, html: message[i] });
-			m.on('click', function() {
-				this.ghost('t', {remove: true});
-			}, m);
-		}
-	}
-	
-	scroll(0, 0);
-};
-
-Scalr.Viewers.InfoMessage = function(message) {
-	var msgId = 'top-messages', msgCt = Ext.get(msgId);
-	if (!msgCt) {
-		msgCt = Ext.DomHelper.insertFirst(Ext.get('body-container') || Ext.getBody(), { id: msgId }, true);
-	}
-
-	if (! Ext.isArray(message)) {
-		message = [message];
-	}
-
-	for (var i = 0, len = message.length; i < len; i++) {
-		var m = msgCt.createChild({ tag: 'div', cls: 'viewers-messages viewers-infomessage', html: message[i] });
-		m.on('click', function() {
-			this.ghost('t', {remove: true});
-		}, m);
+	if (! childs.length) {
+		// remove icon
 	}
 };
 
-Scalr.Viewers.SuccessMessage = function(message) {
-	var msgId = 'top-messages', msgCt = Ext.get(msgId);
-	if (!msgCt) {
-		msgCt = Ext.DomHelper.insertFirst(Ext.get('body-container') || Ext.getBody(), { id: msgId }, true);
-	}
+Scalr.Viewers.ErrorMessage = function(message, errorId, timeout) {
+	Scalr.Viewers.Message.Add(message, errorId, timeout, 'error');
+};
 
-	if (! Ext.isArray(message)) {
-		message = [message];
-	}
+Scalr.Viewers.InfoMessage = function(message, errorId, timeout) {
+	Scalr.Viewers.Message.Add(message, errorId, timeout, 'info');
+};
 
-	for (var i = 0, len = message.length; i < len; i++) {
-		var m = msgCt.createChild({ tag: 'div', cls: 'viewers-messages viewers-successmessage', html: message[i] });
-		m.on('click', function() {
-			this.ghost('t', {remove: true});
-		}, m);
-	}
+Scalr.Viewers.SuccessMessage = function(message, errorId, timeout) {
+	Scalr.Viewers.Message.Add(message, errorId, timeout, 'success');
 };
 
 Scalr.Viewers.FilterField = Ext.extend(Ext.form.TwinTriggerField, {
@@ -200,8 +239,8 @@ Scalr.state.StorageProvider = function(config) {
 		this.localStorage = localStorage;
 	}
 
-	Ext.apply(this, config);                                                                                                                                                                                                                 
-};                                                                                                                                                                                                                                           
+	Ext.apply(this, config);
+};
 
 Ext.extend(Scalr.state.StorageProvider, Ext.state.Provider, {
 	// private
@@ -229,7 +268,7 @@ Ext.extend(Scalr.state.StorageProvider, Ext.state.Provider, {
 		}
 	},
 
-	// private                                                                                                                                                                                                                               
+	// private
 	clear: function(name) {
 		if (! this.enabled)
 			return;
@@ -243,5 +282,34 @@ Ext.extend(Scalr.state.StorageProvider, Ext.state.Provider, {
 			return;
 
 		this.localStorage.clear();
+	}
+});
+
+Scalr.Viewers.WarningPanel = Ext.extend(Ext.Container, {
+	autoHeight: true,
+	cls: 'viewers-warningpanel'
+});
+
+Scalr.Viewers.Plugins.findOne = Ext.extend(Ext.util.Observable, {
+	init: function (comp) {
+		Ext.apply(comp, {
+			findOne: this.findOne
+		});
+	},
+
+	findOne: function (name, value, comp) {
+		comp = comp || this;
+
+		if (Ext.isObject(comp.items)) {
+			var items = comp.items.items;
+			for (var i = 0; i < items.length; i++) {
+				if (items[i][name] == value)
+					return items[i];
+
+				var r = this.findOne(name, value, items[i]);
+				if (r)
+					return r;
+			}
+		}
 	}
 });

@@ -229,7 +229,7 @@
 									HideComboByClassName('Server',true,false);
 									
 									if(loadedserver_id)
-				   						SelectComboByValue(serverCombo,serverStore,loadedserver_id,"id");
+				   						SelectComboByValue(serverCombo,serverStore,loadedserver_id,"server_id");
 								}
 								else
 								 	// hide servers

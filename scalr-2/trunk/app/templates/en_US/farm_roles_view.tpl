@@ -17,9 +17,9 @@ Ext.onReady(function () {
 			totalProperty: 'total',
 			id: 'id',
 			fields: [
-				{name: 'id', type: 'int'}, 'platform',
+				{name: 'id', type: 'int'}, 'platform', 'location',
 				'name', 'min_count', 'max_count', 'min_LA', 'max_LA', 'servers', 'domains', 
-				'image_id', 'farmid','shortcuts', 'role_id', 'scaling_algos', 'farm_status', 'region'
+				'image_id', 'farmid','shortcuts', 'role_id', 'scaling_algos', 'farm_status', 'location'
 			]
 		}),
 		remoteSort: true,
@@ -38,13 +38,14 @@ Ext.onReady(function () {
 		title: 'Farm roles',
 
     	rowOptionsMenu: [
-			{itemId: "option.cfg", 			text:'Configure', 			  			href: "/farms_add.php?id={farmid}&role_id={role_id}&configure=1"},
+			{itemId: "option.ssh_key", 		text: 'Download SSH private key', 		href: "/farm_roles_view.php?farmid={farmid}&action=download_private_key&farm_roleid={id}"},
+			{itemId: "option.cfg", 			text:'Configure', 			  			href: "/farms_builder.php?id={farmid}&role_id={role_id}"},
 			{itemId: "option.stat", 		text:'View statistics', 			  	href: "/monitoring.php?role={id}&farmid={farmid}"},
 			{itemId: "option.info", 		text:'Extended role information', 		href: "/farm_role_view_extended_info.php?farm_roleid={id}"},
 			new Ext.menu.Separator({itemId: "option.mainSep"}),
 			{itemId: "option.exec", 		text: 'Execute script', 				href: "/execute_script.php?farm_roleid={id}"},
 			new Ext.menu.Separator({itemId: "option.eSep"}),
-			{itemId: "option.sgEdit", 		text: 'Edit security group', 			href: "/sec_group_edit.php?role_name={name}&region={region}"},
+			{itemId: "option.sgEdit", 		text: 'Edit security group', 			href: "/sec_group_edit.php?role_name={name}&location={location}&platform={platform}"},
 			new Ext.menu.Separator({itemId: "option.sgSep"}),
 			{itemId: "option.launch", 		text: 'Launch new instance', 			href: "/farm_roles_view.php?farmid={farmid}&action=launch_new_instance&farm_roleid={id}"},
 			new Ext.menu.Separator({itemId: "option.scSep"})
@@ -56,7 +57,7 @@ Ext.onReady(function () {
 			if (item.itemId == "option.scSep")
 				return (data.shortcuts.length > 0);
 			
-			if (item.itemId == 'option.stat' || item.itemId == 'option.cfg')
+			if (item.itemId == 'option.stat' || item.itemId == 'option.cfg' || item.itemId == 'option.ssh_key' || item.itemId == 'option.info')
 			{
 				return true;
 			}
@@ -75,6 +76,7 @@ Ext.onReady(function () {
 			emptyText: "No clients defined",
 			columns: [
 				{ header: "Platform", width: 15, dataIndex: 'platform', sortable: true, hidden: 'no' },
+				{ header: "Location", width: 15, dataIndex: 'location', sortable: false, hidden: 'no' },
 				{ header: "Role name", width: 40, dataIndex: 'name', sortable: false, hidden: 'no', tpl:
 					'<a href="/roles_view.php?id={role_id}">{name}</a>'
 				},

@@ -9,8 +9,8 @@
     	{
     		$DBServer = DBServer::LoadByID($req_server_id);
     		
-    		if ($_SESSION['uid'] != 0 && $DBServer->clientId != $_SESSION['uid'])
-            	CoreUtils::Redirect("servers_view.php");
+    		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
+				UI::Redirect("servers_view.php");
     		
             $output = PlatformFactory::NewPlatform($DBServer->platform)->GetServerConsoleOutput($DBServer);
             
@@ -31,11 +31,11 @@
     	catch(Exception $e)
     	{
     		$errmsg = $e->getMessage();
-    		CoreUtils::Redirect("servers_view.php");
+    		UI::Redirect("servers_view.php");
     	}
     }
     else 
-        CoreUtils::Redirect("servers_view.php");
+        UI::Redirect("servers_view.php");
                                
                                                    
     $display["server_id"] = $req_server_id;

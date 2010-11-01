@@ -2,9 +2,9 @@
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 
@@ -14,8 +14,14 @@
 	{
 
 	    // Create Amazon s3 client object
-	    $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
-	    $AmazonCloudFront = new AmazonCloudFront($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
+	    $AmazonS3 = new AmazonS3(
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+	    );
+        $AmazonCloudFront = new AmazonCloudFront(
+        	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+        );
     
 	    if ($req_action == 'delete_backet')
 	    {
@@ -78,7 +84,7 @@
 	    			
 	    			// Remove CNAME from DNS zone
 	    			$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid=?",
-	    				array($info['zone'], $_SESSION['uid'])
+	    				array($info['zone'], Scalr_Session::getInstance()->getClientId())
 	    			);
 	    			
 	    			if ($zoneinfo)
@@ -144,7 +150,7 @@
 	    				$post_domainname, 
 	    				$post_zone, 
 	    				$req_bucket_name, 
-	    				$_SESSION['uid']
+	    				Scalr_Session::getInstance()->getClientId()
 	    				)
 	    			);
 	    			
@@ -152,7 +158,7 @@
 	    			$zoneinfo = $db->GetRow("SELECT * FROM zones WHERE zone=? AND clientid=?", 
 	    				array(
 	    				$post_zone,
-	    				$_SESSION['uid']
+	    				Scalr_Session::getInstance()->getClientId()
 	    			));
 	    			
 	    			if ($zoneinfo && $post_domainname)
@@ -182,9 +188,9 @@
     		{
     			$display['errmsg'] = $errmsg;
     			$display['bucket_name'] = $req_name;
-    			$display['zones'] = $db->GetAll("SELECT * FROM dns_zones WHERE status!=? AND client_id=?", 
+    			$display['zones'] = $db->GetAll("SELECT * FROM dns_zones WHERE status!=? AND env_id=?", 
     				array(DNS_ZONE_STATUS::PENDING_DELETE,
-    				$_SESSION['uid'])
+    				Scalr_Session::getInstance()->getEnvironmentId())
     			);
     			
     			$Smarty->assign($display);

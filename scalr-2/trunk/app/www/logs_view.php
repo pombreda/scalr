@@ -57,10 +57,10 @@
 	);
 	$display["severities"] = json_encode($severities);
 
-	if (!$_SESSION["uid"])
+	if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 		$farms = $db->GetAll("SELECT id, name FROM farms");
 	else
-		$farms = $db->GetAll("SELECT id, name FROM farms WHERE clientid='{$_SESSION['uid']}'");
+		$farms = $db->GetAll("SELECT id, name FROM farms WHERE env_id=?", array(Scalr_Session::getInstance()->getEnvironmentId()));
 	
 	$disp_farms = array(array('',''));
 	foreach ($farms as $farm)

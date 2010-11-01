@@ -9,8 +9,7 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] != 0)
-			throw new Exception(_("Requested page cannot be viewed from the client account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::SCALR_ADMIN);
 		
 		Core::Load("Data/Formater");
 		   

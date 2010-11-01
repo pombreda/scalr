@@ -6,12 +6,11 @@
 	
 	try
 	{
-		if ($_SESSION['uid'] != 0)
-			throw new Exception("Page not found");
-		
 		$enable_json = true;
 		include("../../../src/prepend.inc.php");	
 
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::SCALR_ADMIN);
+		
 		$sql = "select *, '' as script, script_revisions.id as id, script_revisions.dtcreated as dtcreated, script_revisions.approval_state as approval_state 
 			FROM script_revisions 
 			INNER JOIN scripts ON scripts.id = script_revisions.scriptid 

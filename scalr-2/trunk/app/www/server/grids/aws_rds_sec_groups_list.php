@@ -19,11 +19,11 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$Client = Client::Load($_SESSION['uid']);
-		
-		$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);		
-		
-		$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+		$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds( 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+			$_SESSION['aws_region']
+		);
 		
 		// Rows		
 		$aws_response = $AmazonRDSClient->DescribeDBSecurityGroups();		

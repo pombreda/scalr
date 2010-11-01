@@ -15,14 +15,14 @@
 		 *
 		 * @return AmazonEC2
 		 */
-		private function GetAmazonEC2ClientObject(DBFarm $DBFarm)
+		private function GetAmazonEC2ClientObject(Scalr_Environment $environment, $region)
 		{
-	    	// Get Client Object
-			$Client = Client::Load($DBFarm->ClientID);
-	
 	    	// Return new instance of AmazonEC2 object
-			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBFarm->Region)); 
-			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$region, 
+				$environment->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+				$environment->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
 			
 			return $AmazonEC2Client;
 		}
@@ -44,11 +44,12 @@
 			$ips = $this->DB->GetAll("SELECT * FROM elastic_ips WHERE farmid=?", array($this->FarmID));
 			if (count($ips) > 0)
 			{
-				$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm);
 				foreach ($ips as $ip)
 				{
 					try
 					{
+						$DBFarmRole = DBFarmRole::LoadByID($ip['farm_roleid']);
+						$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm->GetEnvironmentObject(), $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION));
 						$EC2Client->ReleaseAddress($ip["ipaddress"]);
 					}
 					catch(Exception $e)
@@ -71,10 +72,8 @@
 		 * Check Elastic IP availability
 		 * 
 		 */
-		private function CheckElasticIP($ipaddress, $DBFarm)
+		private function CheckElasticIP($ipaddress, $EC2Client)
 		{
-			$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm);
-			
 			$this->Logger->debug(sprintf(_("Checking IP: %s"), $ipaddress));
 			
 			$DescribeAddressesType = new DescribeAddressesType();
@@ -111,6 +110,8 @@
 				$DBFarmRole = $event->DBServer->GetFarmRoleObject();
 				if (!$DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_USE_ELASIC_IPS))
 					return;
+					
+				$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm->GetEnvironmentObject(), $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION));
 			}
 			catch(Exeption $e)
 			{
@@ -129,7 +130,7 @@
 			//
 			if ($ip['ipaddress'])
 			{
-				if (!$this->CheckElasticIP($ip['ipaddress'], $DBFarm))
+				if (!$this->CheckElasticIP($ip['ipaddress'], $EC2Client))
 				{
 					Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage(
 						$this->FarmID, 
@@ -148,7 +149,7 @@
 			if (!$ip)
 			{				
 				$this->Logger->debug(sprintf(_("Farm role: %s, %s, %s"), 
-					$DBFarmRole->GetRoleName(), $DBFarmRole->AMIID, $DBFarmRole->ID
+					$DBFarmRole->GetRoleObject()->name, $DBFarmRole->AMIID, $DBFarmRole->ID
 				));
 				
 				$alocated_ips = $this->DB->GetOne("SELECT COUNT(*) FROM elastic_ips WHERE farm_roleid=?",
@@ -162,8 +163,6 @@
 				// Check elastic IPs limit. We cannot allocate more than 'Max instances' option for role
 				if ($alocated_ips < $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
 				{
-					$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm);
-					
 					try
 					{
 						// Alocate new IP address
@@ -206,9 +205,6 @@
 			// If we have ip address
 			if ($ip['ipaddress'])
 			{
-				if (!$EC2Client)
-					$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm);
-					
 				$assign_retries = 1;
 				try
 				{
@@ -290,7 +286,7 @@
 					$ip = $this->DB->GetRow("SELECT * FROM elastic_ips WHERE server_id=?", array($event->DBServer->serverId));
 					if ($ip)
 					{
-						$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm);
+						$EC2Client = $this->GetAmazonEC2ClientObject($DBFarm->GetEnvironmentObject(), $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
 						try
 						{
 							// Associate elastic ip address with instance

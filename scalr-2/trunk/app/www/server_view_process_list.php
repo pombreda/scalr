@@ -6,8 +6,8 @@
 	{
 		$DBServer = DBServer::LoadByID($req_server_id);
 		
-		if ($_SESSION['uid'] != 0 && $DBServer->clientId != $_SESSION['uid'])
-			CoreUtils::Redirect("/servers_view.php");
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
+			UI::Redirect("/servers_view.php");
 	} 
 	catch(Exception $e)
 	{

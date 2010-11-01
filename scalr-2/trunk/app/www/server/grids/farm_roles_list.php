@@ -11,7 +11,7 @@
 	
 		$DBFarm = DBFarm::LoadByID($req_farmid);
 		
-		if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 	    	throw new Exception(_("Farm not found in database"));
 		
 		$sql = "SELECT * from farm_roles WHERE farmid='{$DBFarm->ID}'";
@@ -53,12 +53,7 @@
 		$response["data"] = array();
 		
 		foreach ($db->GetAll($sql) as $row)
-		{
-			$info = $db->GetRow("SELECT name, ami_id FROM roles WHERE id='{$row['role_id']}'");
-			
-			$row["name"] = $info['name'];
-			$row['image_id'] = $info['ami_id'];
-			
+		{	
 			$row["servers"] = $db->GetOne("SELECT COUNT(*) FROM servers WHERE farm_roleid=?", array($row['id']));
 			
 			$row['farm_status'] = $db->GetOne("SELECT status FROM farms WHERE id=?", array($row['farmid']));
@@ -67,11 +62,19 @@
 				array($row["id"], DNS_ZONE_STATUS::PENDING_DELETE, $row['farmid'])
 			);
 			
-			$row['region'] = $db->GetOne("SELECT region FROM farms WHERE id=?", array($row['farmid']));
-			
 			$DBFarmRole = DBFarmRole::LoadByID($row['id']);
+			
 			$row['min_count'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES);
 			$row['max_count'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES);
+			
+			$row['location'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION);
+			
+			$DBRole = DBRole::loadById($row['role_id']);
+			$row["name"] = $DBRole->name;
+			$row['image_id'] = $DBRole->getImageId(
+				$DBFarmRole->Platform, 
+				$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+			);
 			
 			$row['shortcuts'] = $db->GetAll("SELECT * FROM farm_role_scripts WHERE farm_roleid=? AND ismenuitem='1'",
 				array($row['id'])
@@ -79,18 +82,11 @@
 			foreach ($row['shortcuts'] as &$shortcut)
 				$shortcut['name'] = $db->GetOne("SELECT name FROM scripts WHERE id=?", array($shortcut['scriptid']));
 			
-			$RoleScalingManager = new RoleScalingManager($DBFarmRole);
+				
+			$scalingManager = new Scalr_Scaling_Manager($DBFarmRole);
 			$scaling_algos = array();
-        	foreach ($RoleScalingManager->GetRegisteredAlgos() as $Algo)
-        	{
-        		$algo_name = strtolower(str_replace("ScalingAlgo", "", get_class($Algo)));
-        		
-        		if ($algo_name == 'base')
-        			continue;
-        		
-        		if ($RoleScalingManager->IsAlgoEnabled($algo_name))
-        			$scaling_algos[] = $Algo->GetAlgoDescription();
-        	}
+        	foreach ($scalingManager->getFarmRoleMetrics() as $farmRoleMetric)
+        		$scaling_algos[] = $farmRoleMetric->getMetric()->name;
 				
         	if (count($scaling_algos) == 0)
         		$row['scaling_algos'] = _("Scaling disabled");

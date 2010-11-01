@@ -29,8 +29,12 @@
 			{		
 				try
 				{ 	
-					$Client = Client::Load($snapshotsSettings['clientid']);						
-					$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+					$environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($snapshotsSettings['env_id']);
+					$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+						$environment->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+						$environment->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+						$snapshotsSettings['region']
+					); 
 					
 					// Check instance. If instance wasn't found then delete current recrod from settings table				 	
 					try

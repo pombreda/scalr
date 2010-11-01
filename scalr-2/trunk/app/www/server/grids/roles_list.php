@@ -9,20 +9,22 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 		
-		if ($_SESSION['uid'] == 0)
-		   $sql = "SELECT * from roles WHERE 1=1";
+		if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+		   $sql = "SELECT id from roles WHERE 1=1";
 		else
-		   $sql = "SELECT * from roles WHERE (clientid='{$_SESSION['uid']}' OR (roletype='".ROLE_TYPE::SHARED."' AND clientid = '0') OR (roletype='".ROLE_TYPE::SHARED."' AND clientid != '0' AND approval_state='".APPROVAL_STATE::APPROVED."'))";
-			
-		//Region filter
-		$sql .= " AND region='".$_SESSION['aws_region']."'";
+		   $sql = "SELECT id from roles WHERE (env_id='".Scalr_Session::getInstance()->getEnvironmentId()."' OR (origin='".ROLE_TYPE::SHARED."' AND env_id = '0') OR (origin='".ROLE_TYPE::SHARED."' AND env_id != '0' AND approval_state='".APPROVAL_STATE::APPROVED."'))";
 		   
 		if ($req_clientid)
 		{
 		    $id = (int)$req_clientid;
-		    $sql .= " AND clientid='{$id}'";
+		    $sql .= " AND client_id='{$id}'";
 		}
 
+		if ($req_cloud_location)
+		{
+			$sql .= " AND id IN (SELECT role_id FROM role_images WHERE cloud_location={$db->qstr($req_cloud_location)})";
+		}
+		
 		if ($req_id)
 		{
 		    $id = (int)$req_id;
@@ -32,33 +34,33 @@
 		if ($req_type)
 		{
 			$type = preg_replace("/[^A-Za-z]+/", "", $req_type);
-		    $sql .= " AND roletype='{$type}'";
+		    $sql .= " AND origin='{$type}'";
 		}
 			
 		if ($req_origin)
 		{
 			if ($req_origin == SCRIPT_ORIGIN_TYPE::CUSTOM)
-				$sql .= " AND roletype = '".ROLE_TYPE::CUSTOM."'";
+				$sql .= " AND origin = '".ROLE_TYPE::CUSTOM."'";
 			elseif ($req_origin == SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED)
-				$sql .= " AND (roletype = '".ROLE_TYPE::SHARED."' AND clientid != '0')";
+				$sql .= " AND (origin = '".ROLE_TYPE::SHARED."' AND env_id != '0')";
 			elseif ($req_origin == SCRIPT_ORIGIN_TYPE::SHARED)
-				$sql .= " AND (roletype = '".ROLE_TYPE::SHARED."' AND clientid = '0')";
+				$sql .= " AND (origin = '".ROLE_TYPE::SHARED."' AND env_id = '0')";
 		}
 		
 		if ($req_approval_state && $req_origin != SCRIPT_ORIGIN_TYPE::SHARED)
 		{
 			$state = preg_replace("/[^A-Za-z]+/", "", $req_approval_state);
 			$sql .= " AND approval_state = '{$state}'";
-			$sql .= " AND clientid != '0'";
+			$sql .= " AND env_id != '0'";
 		}
 		elseif ($req_type == ROLE_TYPE::SHARED)
-			$sql .= " AND clientid = '0'";
+			$sql .= " AND env_id = '0'";
 	
 			
 	    if ($req_query)
 		{
 			$filter = mysql_escape_string($req_query);
-			foreach(array("name", "comments", "description", "ami_id") as $field)
+			foreach(array("name", "description") as $field)
 			{
 				$likes[] = "$field LIKE '%{$filter}%'";
 			}
@@ -88,28 +90,36 @@
 		// Rows
 		//
 		foreach ($db->GetAll($sql) as $row)
-		{
-			if ($row['ami_id'] && $row['roletype'] != ROLE_TYPE::SHARED)
-				$row["isreplaced"] = $db->GetOne("SELECT id FROM roles WHERE `replace`='{$row['ami_id']}'");
+		{	
+			$dbRole = DBRole::loadById($row['id']);
 			
-			if ($row['clientid'] == 0)
-				$row["client_name"] = "Scalr";
+			$platforms = array();
+			foreach ($dbRole->getPlatforms() as $platform)
+				$platforms[] = SERVER_PLATFORMS::GetName($platform);
+			
+			$role = array(
+				'name'			=> $dbRole->name,
+				'behaviors'		=> implode(", ", $dbRole->getBehaviors()),
+				'id'			=> $dbRole->id,
+				'architecture'	=> $dbRole->architecture,
+				'client_id'		=> $dbRole->clientId,
+				'env_id'		=> $dbRole->envId,
+				'origin'		=> $dbRole->origin,
+				'approval_state'=> $dbRole->approvalState,
+				'os'			=> $dbRole->os,
+				'platforms'		=> implode(", ", $platforms),
+				'generation'	=> ($dbRole->generation == 2) ? 'scalarizer' : 'ami-scripts' 
+			);
+			
+			if ($dbRole->clientId == 0)
+				$role["client_name"] = "Scalr";
 			else
-				$row["client_name"] = $db->GetOne("SELECT fullname FROM clients WHERE id='{$row['clientid']}'");
+				$role["client_name"] = $db->GetOne("SELECT fullname FROM clients WHERE id='{$dbRole->clientId}'");
 				
-			if (!$row["client_name"])
-				$row["client_name"] = "";
-						
-			$time = strtotime($row['dtbuilt']);
+			if (!$role["client_name"])
+				$role["client_name"] = "";
 			
-			if ($time)
-				$row['dtbuilt'] = date("M j, Y", $time);
-				
-			$row['type'] = ROLE_ALIAS::GetTypeByAlias($row['alias']);
-			
-			$display["rows"][] = $row;
-			
-			$response["data"][] = $row;
+			$response["data"][] = $role;
 		}
 	}
 	catch(Exception $e)

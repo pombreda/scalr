@@ -1,7 +1,14 @@
 <?php
-	class Modules_Platforms_Ec2 implements IPlatformModule
+	class Modules_Platforms_Ec2 extends Modules_Platforms_Aws implements IPlatformModule
 	{
 		private $db;
+		
+		/** Properties **/
+		const ACCOUNT_ID 	= 'ec2.account_id';
+		const ACCESS_KEY	= 'ec2.access_key';
+		const SECRET_KEY	= 'ec2.secret_key';
+		const PRIVATE_KEY	= 'ec2.private_key';
+		const CERTIFICATE	= 'ec2.certificate';
 		
 		/**
 		 * 
@@ -12,7 +19,23 @@
 		public function __construct()
 		{
 			$this->db = Core::GetDBInstance();
-		}	
+		}
+		
+		public function getPropsList()
+		{
+			return array(
+				self::ACCOUNT_ID	=> 'AWS Account ID',
+				self::ACCESS_KEY	=> 'AWS Access Key',
+				self::SECRET_KEY	=> 'AWS Secret Key',
+				self::CERTIFICATE	=> 'AWS x.509 Certificate',
+				self::PRIVATE_KEY	=> 'AWS x.509 Private Key'
+			);
+		}
+		
+		public function GetServerCloudLocation(DBServer $DBServer)
+		{
+			return $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION);
+		}
 		
 		public function GetServerID(DBServer $DBServer)
 		{
@@ -23,16 +46,20 @@
 		{
 			return in_array(
 				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID), 
-				array_keys($this->GetServersList($DBServer->GetClient(), $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)))
+				array_keys($this->GetServersList(
+					$DBServer->GetEnvironmentObject(), 
+					$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
+				))
 			);
 		}
 		
 		public function GetServerIPAddresses(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-			$EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        $iinfo = $EC2Client->DescribeInstances($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID));
 		    $iinfo = $iinfo->reservationSet->item->instancesSet->item;
@@ -43,12 +70,15 @@
 		    );
 		}
 		
-		public function GetServersList(Client $Client, $region, $skipCache = false)
+		public function GetServersList(Scalr_Environment $environment, $region, $skipCache = false)
 		{
-			if (!$this->instancesListCache[$Client->AWSAccountID][$region] || $skipCache)
+			if (!$this->instancesListCache[$environment->id][$region] || $skipCache)
 			{
-				$EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
-		        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+				$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+					$region, 
+					$environment->getPlatformConfigValue(self::PRIVATE_KEY),
+					$environment->getPlatformConfigValue(self::CERTIFICATE)
+				);
 		        
 		        try
 				{
@@ -64,22 +94,20 @@
 				if ($results->item)
 				{					
 					if ($results->item->reservationId)
-						$this->instancesListCache[$Client->AWSAccountID][$region][(string)$results->item->instancesSet->item->instanceId] = (string)$results->item->instancesSet->item->instanceState->name;
+						$this->instancesListCache[$environment->id][$region][(string)$results->item->instancesSet->item->instanceId] = (string)$results->item->instancesSet->item->instanceState->name;
 					else
 					{
 						foreach ($results->item as $item)
-							$this->instancesListCache[$Client->AWSAccountID][$region][(string)$item->instancesSet->item->instanceId] = (string)$item->instancesSet->item->instanceState->name;
+							$this->instancesListCache[$environment->id][$region][(string)$item->instancesSet->item->instanceId] = (string)$item->instancesSet->item->instanceState->name;
 					}
 				}
 			}
 	        
-			return $this->instancesListCache[$Client->AWSAccountID][$region];
+			return $this->instancesListCache[$environment->id][$region];
 		}
 		
 		public function GetServerRealStatus(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-
 			$region = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION);
 			
 			$iid = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID);
@@ -87,10 +115,13 @@
 			{
 				$status = 'not-found';
 			}
-			elseif (!$this->instancesListCache[$Client->AWSAccountID][$region][$iid])
+			elseif (!$this->instancesListCache[$DBServer->GetEnvironmentObject()->id][$region][$iid])
 			{
-		        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
-		        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		        $EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+					$region, 
+					$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+					$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+				);
 		        
 		        try {
 		        	$iinfo = $EC2Client->DescribeInstances($iid);
@@ -111,7 +142,7 @@
 			}
 			else
 			{
-				$status = $this->instancesListCache[$Client->AWSAccountID][$region][$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)];
+				$status = $this->instancesListCache[$DBServer->GetEnvironmentObject()->id][$region][$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)];
 			}
 			
 			return Modules_Platforms_Ec2_Adapters_Status::load($status);
@@ -119,10 +150,11 @@
 		
 		public function TerminateServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        $EC2Client->TerminateInstances(array($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)));
 	        
@@ -131,10 +163,11 @@
 		
 		public function RebootServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        $EC2Client->RebootInstances(array($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)));
 	        
@@ -143,14 +176,19 @@
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
 		{
-			$Client = Client::Load($DBRole->clientId);
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBRole->region));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			/*
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				"CLOUD_LOCATION", 
+				$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
+			*/
         
-	        
+	        //TODO:
+			
+			/*
 	        $DescribeImagesType = new DescribeImagesType();
-			$DescribeImagesType->imagesSet->item[] = array("imageId" => $DBRole->imageId);
+			$DescribeImagesType->imagesSet->item[] = array("imageId" => $DBRole->getImageId(SERVER_PLATFORMS::EC2));
 	        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
 	        
 	        $platfrom = (string)$ami_info->imagesSet->item->platform;
@@ -181,7 +219,10 @@
     		    	try
     		    	{
     		    		$bucket_not_exists = false;
-    		    		$S3Client = new AmazonS3($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+    		    		$S3Client = new AmazonS3(
+    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::ACCESS_KEY), 
+    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::SECRET_KEY)
+    		    		);
     		    		$objects = $S3Client->ListBucket($bucket_name, $prefix);
     		    	}
     		    	catch(Exception $e)
@@ -201,159 +242,88 @@
     			    	}
     		    		
     		    		if ($bucket_not_exists)
-    			    		$EC2Client->DeregisterImage($DBRole->imageId);
+    			    		$EC2Client->DeregisterImage($DBRole->getImageId(SERVER_PLATFORMS::EC2));
     		    	}
 		        }
 	        }
+	        */
 		}
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
 		{
-			/*
-			if ($BundleTask->bundleType == SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS)
-			{
-				try
-				{
-					$DBServer = DBServer::LoadByID($BundleTask->serverId);
-					
-					$Client = $DBServer->GetClient();
-					
-			        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-			        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
-			        
-			        $DescribeImagesType = new DescribeImagesType();
-					$DescribeImagesType->imagesSet->item[] = array("imageId" => $BundleTask->snapshotId);
-			        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
-			        $ami_info = $ami_info->imagesSet->item;
-			        
-			        $BundleTask->Log(sprintf("Checking snapshot creation status: %s", $ami_info->imageState));
-			        
-			        if ($ami_info->imageState == 'available')
-			        {
-			        	$BundleTask->SnapshotCreationComplete($BundleTask->snapshotId);
-			        }
-			        elseif ($ami_info->imageState == 'failed')
-			        {
-			        	$BundleTask->SnapshotCreationFailed("AWS returned status 'failed' for EBS image");
-			        }
-			        else
-			        {
-			        	Logger::getLogger(__CLASS__)->error("CheckServerSnapshotStatus ({$BundleTask->id}) status = {$ami_info->imageState}");
-			        }
-				}
-				catch(Exception $e)
-				{
-					Logger::getLogger(__CLASS__)->fatal("CheckServerSnapshotStatus ({$BundleTask->id}): {$e->getMessage()}");
-				}
-			}	
-	        */
+			
 		}
 		
 		public function CreateServerSnapshot(BundleTask $BundleTask)
 		{
 			$DBServer = DBServer::LoadByID($BundleTask->serverId);
 			
-			$Client = $DBServer->GetClient();
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        if (!$BundleTask->prototypeRoleId)
 	        {
-	        	$proto_ami_id = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AMIID);
+	        	$proto_image_id = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AMIID);
 	        }
 	        else
 	        {
-	        	$proto_ami_id = $this->db->GetOne("SELECT ami_id FROM roles WHERE id=?", array($BundleTask->prototypeRoleId));
+	        	$proto_image_id = DBRole::loadById($BundleTask->prototypeRoleId)->getImageId(
+	        		SERVER_PLATFORMS::EC2, 
+	        		$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
+	        	);
 	        }	        
 	        
 	        $DescribeImagesType = new DescribeImagesType();
-			$DescribeImagesType->imagesSet->item[] = array("imageId" => $proto_ami_id);
+			$DescribeImagesType->imagesSet->item[] = array("imageId" => $proto_image_id);
 	        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
 	        
 	        $platfrom = (string)$ami_info->imagesSet->item->platform;
-	        /*
-	        $rootDeviceType = (string)$ami_info->imagesSet->item->rootDeviceType;
-	      	
-	        if ($rootDeviceType == 'ebs')
+	        
+	        if ($platfrom == 'windows')
 	        {
-	        	$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS;
+        
+	        	//TODO: Windows platfrom is not supported yet.
+	        	
+	        	$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_WIN;
 	        	
 	        	$BundleTask->Log(sprintf(_("Selected platfrom snapshoting type: %s"), $BundleTask->bundleType));
 	        	
-	        	try
-	        	{
-		        	$CreateImageType = new CreateImageType(
-		        		$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
-		        		$BundleTask->roleName,
-		        		$BundleTask->roleName,
-		        		false
-		        	);
-		        	
-		        	$result = $EC2Client->CreateImage($CreateImageType);
-		        			        	
-		        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
-		        	$BundleTask->snapshotId = $result->imageId;
-		        	
-		        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (AMIID: %s). Bundle task status changed to: %s"), 
-		        		$BundleTask->snapshotId, $BundleTask->status
-		        	));
-	        	}
-	        	catch(Exception $e)
-	        	{
-	        		$BundleTask->SnapshotCreationFailed($e->getMessage());
-	        		return;
-	        	}
-	        	
+	        	$BundleTask->SnapshotCreationFailed("Not supported yet");
+	        	return;
 	        }
 	        else
 	        {
-	        */
-		        if ($platfrom == 'windows')
-		        {
-        	
-		        	//TODO: Windows platfrom is not supported yet.
-		        	
-		        	$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_WIN;
-		        	
-		        	$BundleTask->Log(sprintf(_("Selected platfrom snapshoting type: %s"), $BundleTask->bundleType));
-		        	
-		        	$BundleTask->SnapshotCreationFailed("Not supported yet");
-		        	return;
-		        }
-		        else
-		        {
-		        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
-		        	$BundleTask->bundleType = (string)$ami_info->imagesSet->item->rootDeviceType == 'ebs' ?
-		        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS :
-		        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
-		        	
-		        	$BundleTask->Save();
-		        	
-		        	$BundleTask->Log(sprintf(_("Selected platfrom snapshoting type: %s"), $BundleTask->bundleType));
-		        	
-		        	$msg = new Scalr_Messaging_Msg_Rebundle(
-		        		$BundleTask->id,
-						$BundleTask->roleName,
-						array()
-		        	);
+	        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
+	        	$BundleTask->bundleType = (string)$ami_info->imagesSet->item->rootDeviceType == 'ebs' ?
+	        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS :
+	        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
+	        	
+	        	$BundleTask->Save();
+	        	
+	        	$BundleTask->Log(sprintf(_("Selected platfrom snapshoting type: %s"), $BundleTask->bundleType));
+	        	
+	        	$msg = new Scalr_Messaging_Msg_Rebundle(
+	        		$BundleTask->id,
+					$BundleTask->roleName,
+					array()
+	        	);
 
-	
-	        		if (!$DBServer->SendMessage($msg))
-	        		{
-	        			$BundleTask->SnapshotCreationFailed("Cannot send rebundle message to server. Please check event log for more details.");
-	        			return;
-	        		}
-		        	else
-		        	{
-			        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (MessageID: %s). Bundle task status changed to: %s"), 
-			        		$msg->messageId, $BundleTask->status
-			        	));
-		        	}
-		        }
-		    /*
+
+        		if (!$DBServer->SendMessage($msg))
+        		{
+        			$BundleTask->SnapshotCreationFailed("Cannot send rebundle message to server. Please check event log for more details.");
+        			return;
+        		}
+	        	else
+	        	{
+		        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (MessageID: %s). Bundle task status changed to: %s"), 
+		        		$msg->messageId, $BundleTask->status
+		        	));
+	        	}
 	        }
-	        */
 	        
 	        $BundleTask->setDate('started');
 	        $BundleTask->Save();
@@ -367,10 +337,11 @@
 		
 		public function GetServerConsoleOutput(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        $c = $EC2Client->GetConsoleOutput($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID));
 	        
@@ -384,11 +355,12 @@
 		{
 			try
 			{
-				$Client = $DBServer->GetClient();
-				
 				try {
-		        	$EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-		        	$EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		        	$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+						$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+					);
 		        
 		        	$iinfo = $EC2Client->DescribeInstances($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID));
 		        	$iinfo = $iinfo->reservationSet->item;
@@ -406,6 +378,33 @@
 			        		$groups[] = $item->groupId;
 			        }
 			        
+			        /*
+			         <tr>
+						<td width="20%">CloudWatch monitoring:</td>
+						<td>{if $info->instancesSet->item->monitoring->state == 'enabled'}
+								<a href="/aws_cw_monitor.php?ObjectId={$info->instancesSet->item->instanceId}&Object=InstanceId&NameSpace=AWS/EC2">{$info->instancesSet->item->monitoring->state}</a>
+								&nbsp;(<a href="aws_ec2_cw_manage.php?action=Disable&iid={$info->instancesSet->item->instanceId}&region={$smarty.request.region}">Disable</a>)
+							{else}
+								{$info->instancesSet->item->monitoring->state}
+								&nbsp;(<a href="aws_ec2_cw_manage.php?action=Enable&iid={$info->instancesSet->item->instanceId}&region={$smarty.request.region}">Enable</a>)
+							{/if}
+						</td>
+					</tr>
+			         */
+			        
+			        $monitoring = $iinfo->instancesSet->item->monitoring->state;
+			        if ($monitoring == 'disabled')
+			        {
+			        	$monitoring = "Disabled
+							&nbsp;(<a href='aws_ec2_cw_manage.php?action=Enable&server_id={$DBServer->serverId}'>Enable</a>)";
+			        }
+			        else 
+			        {
+			        	$monitoring = "<a href='/aws_cw_monitor.php?ObjectId=".$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)."&Object=InstanceId&NameSpace=AWS/EC2'>Enabled</a>
+							&nbsp;(<a href='aws_ec2_cw_manage.php?action=Disable&server_id={$DBServer->serverId}'>Disable</a>)";
+			        }
+			        
+			        
 			        return array(
 			        	'Instance ID'			=> $DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
 			        	'Owner ID'				=> $iinfo->ownerId,
@@ -422,7 +421,7 @@
 			        	'Root device type'		=> $iinfo->instancesSet->item->rootDeviceType,
 			        	'Instance state'		=> $iinfo->instancesSet->item->instanceState->name." ({$iinfo->instancesSet->item->instanceState->code})",
 			        	'Placement'				=> $iinfo->instancesSet->item->placement->availabilityZone,
-			        	'Monitoring (CloudWatch)'	=> $iinfo->instancesSet->item->monitoring->state,
+			        	'Monitoring (CloudWatch)'	=> $monitoring,
 			        	'Security groups'		=> implode(', ', $groups)
 			        );
 		        }
@@ -437,10 +436,11 @@
 		
 		public function LaunchServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $EC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)));
-	        $EC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+			);
 	        
 	        $RunInstancesType = new RunInstancesType();
 	        
@@ -457,7 +457,10 @@
 	        
 	        
 	        // Set AMI, AKI and ARI ids
-	        $RunInstancesType->imageId = $DBRole->imageId;
+	        $RunInstancesType->imageId = $DBRole->getImageId(
+	        	SERVER_PLATFORMS::EC2, 
+	        	$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
+	        );
 	        
 	        $akiId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AKIID);
 	        if (!$akiId)
@@ -466,6 +469,19 @@
 	        if ($akiId)
 	        	$RunInstancesType->kernelId = $akiId;
 	        
+	        $vpcPrivateIp = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_PRIVATE_IP);
+	        $vpcSubnetId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_SUBNET_ID);
+	        if ($vpcPrivateIp && $vpcSubnetId)
+	        {
+	        	$RunInstancesType->subnetId = $vpcSubnetId;
+	        	$RunInstancesType->privateIpAddress = $vpcPrivateIp;
+	        }
+	        else
+	        {
+	        	// Set Security groups
+				foreach ($this->GetServerSecurityGroupsList($DBServer, $EC2Client) as $sgroup)
+	        		$RunInstancesType->AddSecurityGroup($sgroup);
+	        }
 	        	        
 	        $ariId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::ARIID);
 	        if (!$ariId)
@@ -476,20 +492,17 @@
 	        	
 	        $RunInstancesType->minCount = 1;
 	        $RunInstancesType->maxCount = 1;
-	        
-	        // Set Security groups
-	        foreach ($this->GetServerSecurityGroupsList($DBServer, $EC2Client) as $sgroup)
-	        	$RunInstancesType->AddSecurityGroup($sgroup);
 	        	
 	        // Set availability zone
-	        $RunInstancesType->SetAvailabilityZone($this->GetServerAvailZone($DBServer, $EC2Client));
+	        $avail_zone = $this->GetServerAvailZone($DBServer, $EC2Client);
+	        if ($avail_zone)
+	        	$RunInstancesType->SetAvailabilityZone($avail_zone);
 	        
 	        $i_type = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE);
 	        if (!$i_type)
 	        {
-	        	$i_type = $this->db->GetOne("SELECT instance_type FROM roles WHERE id=?", array(
-		        	$DBServer->roleId
-		        ));
+	        	$DBRole = DBRole::loadById($DBServer->roleId);
+	        	$i_type = $DBRole->getProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE);
 	        }
 	        
 	        // Set instance type
@@ -498,61 +511,18 @@
 	        // Set additional info
 	       	$RunInstancesType->additionalInfo = "";
 	       	
-	       	//set key name
-	       	//TODO:
-	        $RunInstancesType->keyName = $DBServer->GetFarmObject()->GetSetting(DBFarm::SETTING_AWS_KEYPAIR_NAME);
+	       	
+	        $RunInstancesType->keyName = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+	        	$DBServer->farmId, 
+	        	$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
+	        )->cloudKeyName;
 	        
-	        
-	        // Set user data
-	        if (!$DBServer->GetFarmObject()->GetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME))
-	        	$bucket_name = "FARM-{$DBServer->farmId}-{$Client->AWSAccountID}";
-	        else
-	        	$bucket_name = $DBServer->GetFarmObject()->GetSetting(DBFarm::SETTING_AWS_S3_BUCKET_NAME);
-	        
-	        $user_data = array(
-	        	"farmid" 			=> $DBServer->farmId,
-	        	"role"				=> $DBServer->GetFarmRoleObject()->GetRoleAlias(),
-	        	"eventhandlerurl"	=> CONFIG::$EVENTHANDLER_URL,
-	        	"hash"				=> $DBServer->GetFarmObject()->Hash,
-	        	"s3bucket"			=> $bucket_name,
-	        	"realrolename"		=> $DBServer->GetFarmRoleObject()->GetRoleName(),
-	        	"httpproto"			=> CONFIG::$HTTP_PROTO,
-	        	"region"			=> $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION),
-	        	
-	        	/*** For Scalarizr ***/
-	        	"szr_key"			=> $DBServer->GetKey(),
-	        	"serverid"			=> $DBServer->serverId,
-	        	'p2p_producer_endpoint'	=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/messaging",
-				'queryenv_url'		=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/environment.php"
-	        );
-	        
-	        foreach ($user_data as $k=>$v)
+	        foreach ($DBServer->GetCloudUserData() as $k=>$v)
 	        	$u_data .= "{$k}={$v};";
 	        	
 	        $RunInstancesType->SetUserData(trim($u_data, ";"));
 	        
-			try
-	        {
-	        	$result = $EC2Client->RunInstances($RunInstancesType);
-	        }
-	        catch(Exception $e)
-	        {
-	        	try
-	        	{
-		        	if (stristr($e->getMessage(), "The key pair") && stristr($e->getMessage(), "does not exist"))
-		        	{
-						$result = $EC2Client->CreateKeyPair($RunInstancesType->keyName);
-						if ($result->keyMaterial)
-							$DBServer->GetFarmObject()->SetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY, $result->keyMaterial);
-		        	}
-	        	}
-	        	catch(Exception $e)
-	        	{
-				
-	        	}
-	        	
-	            throw $e;
-	        }
+			$result = $EC2Client->RunInstances($RunInstancesType);
 	        
 	        if ($result->instancesSet)
 	        {
@@ -560,6 +530,23 @@
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID, (string)$result->instancesSet->item->instanceId);
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE, $RunInstancesType->instanceType);
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::AMIID, $RunInstancesType->imageId);
+	        	
+	        	try
+	        	{
+	        		$CreateTagsType = new CreateTagsType(
+	        			array((string)$result->instancesSet->item->instanceId),
+	        			array(
+	        				"scalr-farm-id"			=> $DBServer->farmId,
+	        				"scalr-farm-name"		=> $DBServer->GetFarmObject()->Name,
+	        				"scalr-farm-role-id"	=> $DBServer->farmRoleId,
+	        				"scalr-role-name"		=> $DBServer->GetFarmRoleObject()->GetRoleObject()->name,
+	        				"scalr-server-id"		=> $DBServer->serverId
+	        			)
+	        		);
+	        		
+	        		$EC2Client->CreateTags($CreateTagsType);
+	        	}
+	        	catch(Exception $e){ }
 	        	
 		        return $DBServer;
 	        }
@@ -595,14 +582,14 @@
 			}
 			
 			// Add Role security group
-			$role_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRoleName();
-			$partent_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRolePrototype();
+			$role_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRoleObject()->name;
+			$partent_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRoleObject()->getRoleHistory();
 			array_push($retval, $role_sec_group);
 			
 			if (!$aws_sgroups[strtolower($role_sec_group)])
 			{
 				try {
-					$EC2Client->CreateSecurityGroup(strtolower($role_sec_group), $DBServer->GetFarmRoleObject()->GetRoleName());
+					$EC2Client->CreateSecurityGroup($role_sec_group, $DBServer->GetFarmRoleObject()->GetRoleObject()->name);
 				}
 				catch(Exception $e) {
 					throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
@@ -610,15 +597,13 @@
 					                        
 		    	$IpPermissionSet = new IpPermissionSetType();
 				
-		    	$group_rules = $this->db->GetAll("SELECT * FROM security_rules WHERE roleid=?", array(
-		    		$DBServer->GetFarmRoleObject()->GetRoleID()
-		    	));
+		    	$group_rules = $DBServer->GetFarmRoleObject()->GetRoleObject()->getSecurityRules();
 		    	
 		    	//
 				// Check parent security group
 				//
-				if ($aws_sgroups[strtolower($partent_sec_group)] && count($group_rules) == 0)
-					$IpPermissionSet->item = $aws_sgroups[strtolower($partent_sec_group)]->ipPermissions->item; 
+				if ($partent_sec_group && $aws_sgroups[$partent_sec_group] && count($group_rules) == 0)
+					$IpPermissionSet->item = $aws_sgroups[$partent_sec_group]->ipPermissions->item; 
 				else
 				{
 					if (count($group_rules) == 0)
@@ -640,12 +625,12 @@
 				}
 	
 	            // Create security group
-	            $EC2Client->AuthorizeSecurityGroupIngress($DBServer->GetClient()->AWSAccountID, $role_sec_group, $IpPermissionSet);	
+	            $EC2Client->AuthorizeSecurityGroupIngress($DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::ACCOUNT_ID), $role_sec_group, $IpPermissionSet);	
 			}
 			
 			
 			// Add MySQL Security group
-			if ($DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::MYSQL)
+			if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
 			{
 				array_push($retval, CONFIG::$MYSQL_STAT_SEC_GROUP);
 				if (!$aws_sgroups[CONFIG::$MYSQL_STAT_SEC_GROUP])
@@ -669,7 +654,7 @@
 		            }
 		
 		            // Create security group
-		            $EC2Client->AuthorizeSecurityGroupIngress($DBServer->GetClient()->AWSAccountID, CONFIG::$MYSQL_STAT_SEC_GROUP, $IpPermissionSet);
+		            $EC2Client->AuthorizeSecurityGroupIngress($DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::ACCOUNT_ID), CONFIG::$MYSQL_STAT_SEC_GROUP, $IpPermissionSet);
 				}
 			}
 	         
@@ -704,7 +689,7 @@
 			    }
         		
 			    if (!$role_avail_zone)
-			    	$zone_index = rand(0, count($avail_zones)-1);
+			    	return false;
 			    else
 			    {
 				    // Get count of curently running instances
@@ -726,23 +711,28 @@
 		{
 			$put = false;
 			$put |= $message instanceof Scalr_Messaging_Msg_Rebundle;
-			$put |= $message instanceof Scalr_Messaging_Msg_HostInitResponse && $DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::MYSQL;
+			$put |= $message instanceof Scalr_Messaging_Msg_HostInitResponse && $DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL);
 			$put |= $message instanceof Scalr_Messaging_Msg_Mysql_PromoteToMaster;
 			$put |= $message instanceof Scalr_Messaging_Msg_Mysql_CreateDataBundle;
 			$put |= $message instanceof Scalr_Messaging_Msg_Mysql_CreateBackup;
 			
 			
 			if ($put) {
-				$Client = $DBServer->GetClient();
+				$environment = $DBServer->GetEnvironmentObject();
 	        	$accessData = new stdClass();
-	        	$accessData->accountId = $Client->AWSAccountID;
-	        	$accessData->keyId = $Client->AWSAccessKeyID;
-	        	$accessData->key = $Client->AWSAccessKey;
-	        	$accessData->cert = $Client->AWSCertificate;
-	        	$accessData->pk = $Client->AWSPrivateKey;
+	        	$accessData->accountId = $environment->getPlatformConfigValue(self::ACCOUNT_ID);
+	        	$accessData->keyId = $environment->getPlatformConfigValue(self::ACCESS_KEY);
+	        	$accessData->key = $environment->getPlatformConfigValue(self::SECRET_KEY);
+	        	$accessData->cert = $environment->getPlatformConfigValue(self::CERTIFICATE);
+	        	$accessData->pk = $environment->getPlatformConfigValue(self::PRIVATE_KEY);
 	        	
 	        	$message->platformAccessData = $accessData;
 			}
+		}
+		
+		public function ClearCache ()
+		{
+			$this->instancesListCache = array();
 		}
 	}
 

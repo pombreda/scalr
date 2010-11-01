@@ -1,15 +1,12 @@
 <?php
-	
 	require("src/prepend.inc.php"); 
-	
-	if ($_SESSION["uid"] == 0)
-	{
-		$errmsg = "Requested page cannot be viewed from admin account";
-		UI::Redirect("index.php");
-	}	
-	
 	$display['load_extjs'] = true;	
-	$Client = Client::Load($_SESSION['uid']);
+	
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Manage parameter groups");
 	
@@ -17,9 +14,11 @@
 	{ 
 		if ($post_action == 'delete')
 		{
-			$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			
-			$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+			$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY),
+				$_SESSION['aws_region']
+			);
 				
 			$i = 0;
 			foreach ($post_id as $group_name)

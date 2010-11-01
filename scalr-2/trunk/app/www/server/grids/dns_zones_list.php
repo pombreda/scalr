@@ -10,8 +10,9 @@
 		include("../../src/prepend.inc.php");
 	
 		$sql = "select * FROM dns_zones WHERE 1=1";
-		if ($_SESSION["uid"] != 0)
-			$sql .= " AND client_id='{$_SESSION['uid']}'";
+		
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+			$sql .= " AND env_id='".Scalr_Session::getInstance()->getEnvironmentId()."'";
 		
 		if ($req_client_id)
 		{
@@ -65,13 +66,20 @@
 		{
 		    if ($row['farm_roleid'])
 		    {
-		    	$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
-		    	
-		    	$row['role_name'] = $DBFarmRole->GetRoleName();
-		    	$row['farm_name'] = $DBFarmRole->GetFarmObject()->Name;
-		    	$row['farm_id'] = $DBFarmRole->FarmID;
+		    	try {
+			    	$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
+			    	
+			    	$row['role_name'] = $DBFarmRole->GetRoleObject()->name;
+			    	$row['farm_name'] = $DBFarmRole->GetFarmObject()->Name;
+			    	$row['farm_id'] = $DBFarmRole->FarmID;
+		    	}
+		    	catch(Exception $e)
+		    	{
+		    		$row['farm_roleid'] = false;
+		    	}
 		    }
-			elseif ($row['farm_id'])
+			
+		    if ($row['farm_id'] && !$row['farm_name'])
 			{
 				$DBFarm = DBFarm::LoadByID($row['farm_id']);
 				

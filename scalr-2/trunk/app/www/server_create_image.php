@@ -3,15 +3,17 @@
 	
 	$display["title"] = "Create new role";
 		
+	if ($post_cancel)
+        UI::Redirect("servers_view.php");
+	
 	if ($req_server_id)
     {
     	try
 		{
     		$DBServer = DBServer::LoadByID($req_server_id);
     		
-    		// Validate client and server
-    		if ($_SESSION['uid'] != 0 && $DBServer->clientId != $_SESSION['uid'])
-    			throw new Excpeiotn("No such server");
+    		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
+    			throw new Exception("No such server");
     			
     		$DBFarmRole = $DBServer->GetFarmRoleObject();
     		
@@ -22,7 +24,7 @@
     				$display["show_dbmaster_warning"] = true;
     		}
     		
-    		if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL)
+    		if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
             	$display["warnmsg"] = _("You are about to synchronize MySQL instance. The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$DBServer->farmId}'>Click here if you wish to bundle and save MySQL data</a>.");
             	
             //Check for already running bundle on selected instance
@@ -72,7 +74,7 @@
             	if (!preg_match("/^[A-Za-z0-9-]+$/si", $req_rolename))
             		$err[] = _("Role name is incorrect");
             	
-            	$roleinfo = $db->GetRow("SELECT * FROM roles WHERE name=? AND (clientid=? OR clientid='0')", array($req_rolename, $DBServer->clientId));
+            	$roleinfo = $db->GetRow("SELECT * FROM roles WHERE name=? AND (env_id=? OR env_id='0')", array($req_rolename, $DBServer->envId));
             	if ($req_replace_type != SERVER_REPLACEMENT_TYPE::REPLACE_ALL)
             	{
             		if ($roleinfo)
@@ -81,7 +83,7 @@
             	else
             	{
             		//ADD CONFIRMATION:
-            		if ($roleinfo && $roleinfo['clientid'] == 0)
+            		if ($roleinfo && $roleinfo['env_id'] == 0)
             			$err[] = _("Selected role name is reserved and cannot be used for custom role");
             	}
             		
@@ -102,7 +104,7 @@
             	}
             }
             
-            $DBServer->roleName = $DBServer->GetFarmRoleObject()->GetRoleName();
+            $DBServer->roleName = $DBServer->GetFarmRoleObject()->GetRoleObject()->name;
             $DBServer->farmName = $DBServer->GetFarmObject()->Name;
             $display["DBServer"] = $DBServer;
 		}

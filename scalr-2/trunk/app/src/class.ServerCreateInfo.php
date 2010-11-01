@@ -12,7 +12,8 @@
 		public $index;
 		public $remoteIp;
 		public $localIp;
-		public $clientId;		
+		public $clientId;
+		public $envId;		
 		public $roleId;
 		public $farmId;
 		
@@ -35,6 +36,10 @@
 			$this->index = $index;
 			$this->roleId = $role_id === null ? $this->dbFarmRole->RoleID : $role_id;
 			
+			if ($DBFarmRole)
+				$this->envId = $DBFarmRole->GetFarmObject()->EnvID;
+			
+			
 			//Refletcion
 			$Reflect = new ReflectionClass(DBServer::$platformPropsClasses[$this->platform]);
 			foreach ($Reflect->getConstants() as $k=>$v)
@@ -44,16 +49,29 @@
 			{
 				switch($this->platform)
 				{
+					case SERVER_PLATFORMS::EUCALYPTUS:
+						$this->SetProperties(array(
+							EUCA_SERVER_PROPERTIES::REGION => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+						));
+						break;
+					
+					case SERVER_PLATFORMS::RACKSPACE:
+						$this->SetProperties(array(
+							RACKSPACE_SERVER_PROPERTIES::DATACENTER => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+						));
+						break;
+					
 					case SERVER_PLATFORMS::EC2:
 						$this->SetProperties(array(
 							EC2_SERVER_PROPERTIES::AVAIL_ZONE => $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE),
-							EC2_SERVER_PROPERTIES::REGION => $DBFarmRole->GetFarmObject()->Region
+							EC2_SERVER_PROPERTIES::REGION => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
 						));
 					break;
+					
 					case SERVER_PLATFORMS::RDS:
 						$this->SetProperties(array(
 							RDS_SERVER_PROPERTIES::AVAIL_ZONE => $DBFarmRole->GetSetting(DBFarmRole::SETTING_RDS_AVAIL_ZONE),
-							RDS_SERVER_PROPERTIES::REGION => $DBFarmRole->GetFarmObject()->Region,
+							RDS_SERVER_PROPERTIES::REGION => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION),
 							RDS_SERVER_PROPERTIES::INSTANCE_CLASS => $DBFarmRole->GetSetting(DBFarmRole::SETTING_RDS_INSTANCE_CLASS),
 							RDS_SERVER_PROPERTIES::STORAGE	=> $DBFarmRole->GetSetting(DBFarmRole::SETTING_RDS_STORAGE),
 							RDS_SERVER_PROPERTIES::INSTANCE_ENGINE => $DBFarmRole->GetSetting(DBFarmRole::SETTING_RDS_INSTANCE_ENGINE),

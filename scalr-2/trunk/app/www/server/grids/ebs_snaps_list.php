@@ -9,10 +9,7 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from the admin account"));
-		
-		$Client = Client::Load($_SESSION['uid']);
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
 		if (!$_SESSION['aws_region'])
 			$_SESSION['aws_region'] = AWSRegions::US_EAST_1;
@@ -32,8 +29,11 @@
 	    else
 	    	$region = $_SESSION['aws_region'];	
 	        
-	    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region));
-		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+	    $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+			$region, 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+		);
 	    
 	    // Rows
 		$aws_response = $AmazonEC2Client->DescribeSnapshots();
@@ -48,7 +48,7 @@
 			$pv->startTime = date("Y-m-d H:i:s", strtotime($pv->startTime));
 			$item = $pv;	
 						
-			if ($pv->ownerId != $Client->AWSAccountID)
+			if ($pv->ownerId != Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID))
 			{
 				$item->comment = $pv->description;
 				$item->owner = $pv->ownerId;

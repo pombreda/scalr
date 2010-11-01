@@ -3,9 +3,9 @@
 	
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Launch new DB Instance");
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}	
 	
@@ -29,9 +29,11 @@
     	$display['region'] = $req_region;
     }
     	
-    $Client				= Client::Load($_SESSION['uid']);
-	$AmazonRDSClient 	= AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-	$AmazonRDSClient->SetRegion($req_region);
+    $AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds( 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+		$_SESSION['aws_region']
+	);
  		
 	if ($_POST && $_POST['step'] == 2)
 	{			
@@ -133,8 +135,11 @@
 	// Load avail zones
 	//
  
-	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region));
-	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);		
+	$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$_SESSION['aws_region'], 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);	
 	
     // Get Avail zones
     $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();

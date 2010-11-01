@@ -19,10 +19,11 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$Client = Client::Load($_SESSION['uid']);	
-		
-		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+			$_SESSION['aws_region'], 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+		);
 	
 		if($req_query)
 		{	

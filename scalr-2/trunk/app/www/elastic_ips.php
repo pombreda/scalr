@@ -2,9 +2,9 @@
 	require_once('src/prepend.inc.php');
     $display['load_extjs'] = true;	    
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
@@ -13,15 +13,18 @@
 		$display['grid_query_string'] .= "&farmid={$req_farmid}";
 	}
 	
-	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+	$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$_SESSION['aws_region'],
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
 
 	if ($req_task == 'associate')
 	{
 		if (!$req_server_id)
 		{
-			$servers = $db->GetAll("SELECT * FROM servers WHERE client_id=? AND status IN(?,?) AND platform=?", 
-				array($_SESSION['uid'], SERVER_STATUS::RUNNING, SERVER_STATUS::INIT, SERVER_PLATFORMS::EC2)
+			$servers = $db->GetAll("SELECT * FROM servers WHERE env_id=? AND status IN(?,?) AND platform=?", 
+				array(Scalr_Session::getInstance()->getEnvironmentId(), SERVER_STATUS::RUNNING, SERVER_STATUS::INIT, SERVER_PLATFORMS::EC2)
 			);
 			$display['servers'] = array();
 			foreach ($servers as $server)
@@ -45,7 +48,7 @@
 			try
 			{
 				$DBServer = DBServer::LoadByID($req_server_id);
-				if ($DBServer->clientId != $_SESSION['uid'])
+				if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 					throw new Exception("Server not found");
 			}
 			catch(Exception $e)

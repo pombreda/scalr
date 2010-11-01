@@ -1,7 +1,9 @@
 <?php
 	
 	class DBFarmRole
-	{
+	{				
+		const SETTING_CLOUD_LOCATION					= 	'cloud.location';
+		
 		const SETTING_EXCLUDE_FROM_DNS					= 	'dns.exclude_role';
 		const SETTING_DNS_INT_RECORD_ALIAS				= 	'dns.int_record_alias';
 		const SETTING_DNS_EXT_RECORD_ALIAS				= 	'dns.ext_record_alias';
@@ -44,6 +46,13 @@
 		const SETTING_RDS_MULTI_AZ				= 		'rds.multi-az';
 		const SETTING_RDS_PORT					= 		'rds.port';
 		
+		/** RACKSPACE Settings **/
+		const SETTING_RS_FLAVOR_ID				= 		'rs.flavor_id';
+		
+		/** EUCA Settings **/
+		const SETTING_EUCA_INSTANCE_TYPE 		= 		'euca.instance_type';
+		const SETTING_EUCA_AVAIL_ZONE	 		= 		'euca.availability_zone';
+		
 		/** AWS EC2 Settings **/
 		const SETTING_AWS_INSTANCE_TYPE 		= 		'aws.instance_type';
 		const SETTING_AWS_AVAIL_ZONE			= 		'aws.availability_zone';
@@ -57,7 +66,11 @@
 		const SETTING_AWS_ARI_ID				= 		'aws.ari_id';
 		const SETTING_AWS_ENABLE_CW_MONITORING	= 		'aws.enable_cw_monitoring';
 		const SETTING_AWS_SECURITY_GROUPS_LIST  = 		'aws.security_groups.list';
-				
+		const SETTING_AWS_S3_BUCKET				= 		'aws.s3_bucket';		
+		
+		const SETTING_AWS_VPC_PRIVATE_IP		=		'aws.vpc.privateIpAddress';
+		const SETTING_AWS_VPC_SUBNET_ID			=		'aws.vpc.subnetId';
+		
 		/** MySQL options **/
 		const SETTING_MYSQL_PMA_USER			=		'mysql.pma.username';
 		const SETTING_MYSQL_PMA_PASS			=		'mysql.pma.password';
@@ -101,6 +114,9 @@
 		const SETTING_MTA_GMAIL_LOGIN			=		'mta.gmail.login';
 		const SETTING_MTA_GMAIL_PASSWORD		=		'mta.gmail.password';
 		
+		const SETTING_SYSTEM_REBOOT_TIMEOUT		=		'system.timeouts.reboot';
+		const SETTING_SYSTEM_LAUNCH_TIMEOUT		= 		'system.timeouts.launch';
+		
 		
 		
 		
@@ -108,18 +124,12 @@
 			$ID,
 			$FarmID,
 			$LaunchIndex,
-			$RebootTimeout,
-			$LaunchTimeout,
 			$RoleID,
 			$NewRoleID,
 			$Platform;
 		
 		private $DB,
-				$RoleName,
-				$RoleOrigin,
-				$RoleAlias,
-				$ImageID,
-				$RolePrototype,
+				$dbRole,
 				$SettingsCache;
 		
 		private static $FieldPropertyMap = array(
@@ -128,8 +138,6 @@
 			'role_id'		=> 'RoleID',
 			'new_role_id'	=> 'NewRoleID',
 			'launch_index'	=> 'LaunchIndex',
-			'reboot_timeout'=> 'RebootTimeout',
-			'launch_timeout'=> 'LaunchTimeout',
 			'platform'		=> 'Platform'
 		);
 		
@@ -149,12 +157,7 @@
 		
 		public function __sleep()
 		{
-			$this->GetRoleName();
-			$this->GetRoleAlias();
-			
 			$retval = array("ID", "FarmID", "RoleID");
-			array_push($retval, "RoleAlias");
-			array_push($retval, "RoleName");
 			
 			return $retval;
 		}
@@ -218,61 +221,12 @@
 			return $this->DBFarm;
 		}
 		
-		/**
-		 * Returns role alias
-		 * @return string
-		 */
-		public function GetRoleAlias()
+		public function GetRoleObject()
 		{
-			if (!$this->RoleAlias)
-				$this->RoleAlias = $this->DB->GetOne("SELECT alias FROM roles WHERE id=?", array($this->RoleID));
-				
-			return $this->RoleAlias;
-		}
-		
-		/**
-		 * Returns Role origin //Shared, Custom, Contributed
-		 * @return string
-		 */
-		public function GetRoleOrigin()
-		{
-			if (!$this->RoleOrigin)
-				$this->RoleOrigin = $this->DB->GetOne("SELECT roletype FROM roles WHERE id=?", array($this->RoleID));
-				
-			return $this->RoleOrigin;
-		}
-		
-		
-		/**
-		 * Returns Role name
-		 * @return string
-		 */
-		public function GetRoleName()
-		{
-			if (!$this->RoleName)
-				$this->RoleName = $this->DB->GetOne("SELECT name FROM roles WHERE id=?", array($this->RoleID));
-				
-			return $this->RoleName;
-		}
-		
-		public function GetImageId()
-		{
-			if (!$this->ImageID)
-				$this->ImageID = $this->DB->GetOne("SELECT ami_id FROM roles WHERE id=?", array($this->RoleID));
-				
-			return $this->ImageID;
-		}
-		
-		/**
-		 * Returns role prototype
-		 * @return string
-		 */
-		public function GetRolePrototype()
-		{
-			if (!$this->RolePrototype)
-				$this->RolePrototype = $this->DB->GetOne("SELECT prototype_role FROM roles WHERE id=?", array($this->RoleID));
-				
-			return $this->RolePrototype;
+			if (!$this->dbRole)
+				$this->dbRole = DBRole::loadById($this->RoleID);
+			
+			return $this->dbRole;
 		}
 		
 		/**
@@ -290,6 +244,42 @@
 		 */
 		public function Delete()
 		{
+			foreach ($this->GetServersByFilter() as $DBServer)
+			{
+				if ($DBServer->status != SERVER_STATUS::TERMINATED)
+                {
+                	try
+					{
+						PlatformFactory::NewPlatform($DBServer->platform)->TerminateServer($DBServer);
+                           
+						$this->DB->Execute("UPDATE servers_history SET
+							dtterminated	= NOW(),
+							terminate_reason	= ?
+							WHERE server_id = ?
+						", array(
+							sprintf("Farm terminated"),
+							$DBServer->serverId
+						));
+					}
+					catch(Exception $e){}
+					
+					$DBServer->status = SERVER_STATUS::TERMINATED;
+			
+					if (defined("SCALR_SERVER_TZ"))
+					{
+						$tz = date_default_timezone_get();
+						date_default_timezone_set(SCALR_SERVER_TZ);
+					}
+				
+					$DBServer->dateShutdownScheduled = date("Y-m-d H:i:s");
+			
+					if ($tz)
+						date_default_timezone_set($tz);
+			
+					$DBServer->Save();
+                }
+			}
+			
 			// Delete settings
 			$this->DB->Execute("DELETE FROM farm_role_settings WHERE farm_roleid=?", array($this->ID));
 			
@@ -299,10 +289,25 @@
             // Clear farm role options & scripts
 			$this->DB->Execute("DELETE FROM farm_role_options WHERE farm_roleid=?", array($this->ID));
 			$this->DB->Execute("DELETE FROM farm_role_scripts WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM farm_role_service_config_presets WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM farm_role_scaling_metrics WHERE farm_roleid=?", array($this->ID));
 			
 			// Clear apache vhosts and update DNS zones
 			$this->DB->Execute("DELETE FROM apache_vhosts WHERE farm_roleid=?", array($this->ID));
 			$this->DB->Execute("UPDATE dns_zones SET farm_roleid='0' WHERE farm_roleid=?", array($this->ID));
+		}
+		
+		public function GetServiceConfiguration($behavior)
+		{
+			$preset_id = $this->DB->GetOne("SELECT preset_id FROM farm_role_service_config_presets WHERE farm_roleid=? AND behavior=?", array(
+				$this->ID,
+				$behavior
+			));
+			
+			if ($preset_id)
+				return Scalr_Model::init(Scalr_Model::SERVICE_CONFIGURATION)->loadById($preset_id);
+			else
+				return null;
 		}
 		
 		public function GetPendingInstancesCount()
@@ -365,6 +370,224 @@
 			}
 			
 			return $retval;
+		}
+		
+		public function SetServiceConfigPresets(array $presets)
+		{
+			foreach ($this->GetRoleObject()->getBehaviors() as $behavior) {
+				$farm_preset_id = $this->DB->GetOne("SELECT preset_id FROM farm_role_service_config_presets WHERE farm_roleid=? AND behavior=?", array(
+					$this->ID,
+					$behavior
+				));
+				
+				$send_message = false;
+				$msg = false;
+				
+				if ($presets[$behavior]) {
+					if (!$farm_preset_id) {
+						$this->DB->Execute("INSERT INTO farm_role_service_config_presets SET
+							preset_id	= ?,
+							farm_roleid	= ?,
+							behavior	= ?,
+							restart_service	= '0'
+						", array(
+							$presets[$behavior],
+							$this->ID,
+							$behavior
+						));
+
+						$send_message = true;
+					}
+					elseif ($farm_preset_id != $presets[$behavior]) {
+						$this->DB->Execute("UPDATE farm_role_service_config_presets SET
+							preset_id	= ?
+						WHERE farm_roleid = ? AND behavior = ?
+						", array(
+							$presets[$behavior],
+							$this->ID,
+							$behavior
+						));
+						
+						$send_message = true;
+					}
+					
+					if ($send_message) {
+						$msg = new Scalr_Messaging_Msg_UpdateServiceConfiguration(
+							$behavior,
+							0,
+							0
+						);
+					}
+				}
+				else {
+					if ($farm_preset_id) {
+						$this->DB->Execute("DELETE FROM farm_role_service_config_presets WHERE farm_roleid=? AND behavior=?", array($this->ID, $behavior));
+						$msg = new Scalr_Messaging_Msg_UpdateServiceConfiguration(
+							$behavior,
+							1,
+							0
+						);
+					}
+				}
+				
+				if ($msg)
+				{
+					foreach ($this->GetServersByFilter(array('status' => SERVER_STATUS::RUNNING)) as $dbServer)
+					{
+						if ($dbServer->IsSupported("0.6"))
+							$dbServer->SendMessage($msg);
+					}
+				}
+			}
+		}
+		
+		public function SetScripts(array $scripts)
+		{
+			$this->DB->Execute("DELETE FROM farm_role_scripts WHERE farm_roleid=?", array($this->ID));
+				
+			if (count($scripts) > 0)
+			{						
+				foreach ($scripts as $script)
+				{							
+					$config = $script['params'];
+					
+					$target = $script['target'];
+					$order_index = (int)$script['order_index'];
+					
+					$version = $script['version'];
+					$issync = $script['issync'];
+					$timeout = (int)$script['timeout'];
+					if (!$timeout)
+						$timeout = CONFIG::$SYNCHRONOUS_SCRIPT_TIMEOUT;
+					
+					$event_name = $script['event'];
+					$scriptid = $script['script_id'];
+					if ($event_name && $scriptid)
+					{
+						$this->DB->Execute("INSERT INTO farm_role_scripts SET
+							scriptid	= ?,
+							farmid		= ?,
+							farm_roleid	= ?,
+							params		= ?,
+							event_name	= ?,
+							target		= ?,
+							version		= ?,
+							timeout		= ?,
+							issync		= ?,
+							order_index = ?,
+							issystem	= '1'
+						", array(
+							$scriptid,
+							$this->FarmID,
+							$this->ID,
+							serialize($config),
+							$event_name,
+							$target,
+							$version,
+							$timeout,
+							$issync,
+							$order_index
+						));
+					}
+				}
+			}
+		}
+		
+		public function SetParameters(array $p_params)
+		{
+			if (count($p_params) > 0)
+			{						
+				$current_role_options = $this->DB->GetAll("SELECT * FROM farm_role_options WHERE farm_roleid=?", array($this->ID));
+				$role_opts = array();
+				foreach ($current_role_options as $cro)
+					$role_opts[$cro['hash']] = md5($cro['value']);
+										
+				$params = array();
+				foreach ($p_params as $name => $value)
+				{
+					if (preg_match("/^(.*?)\[(.*?)\]$/", $name, $matches))
+					{
+						if (!$multiselect[$matches[1]])
+							$params[$matches[1]] = array();
+						
+						if ($matches[2] != '' && $value == 1)
+							$params[$matches[1]][] = $matches[2];
+	
+						continue;
+					}
+					else
+						$params[$name] = $value;
+				}
+	
+				$saved_opts = array();
+				foreach($params as $name => $value)
+				{
+					if ($name)
+					{
+						$val = (is_array($value)) ? implode(',', $value) : $value;
+						$hash = preg_replace("/[^A-Za-z0-9]+/", "_", strtolower($name));
+						
+						if (!$role_opts[$hash])
+						{
+							$this->DB->Execute("INSERT INTO farm_role_options SET
+								farmid		= ?,
+								farm_roleid	= ?,
+								name		= ?,
+								value		= ?,
+								hash	 	= ? 
+								ON DUPLICATE KEY UPDATE name = ?
+							", array(
+								$this->FarmID,
+								$this->ID,
+								$name,
+								$val,
+								$hash,
+								$name
+							));
+							
+							$fire_event = true;
+						}
+						else
+						{
+							if (md5($val) != $role_opts[$hash])
+							{
+								$this->DB->Execute("UPDATE farm_role_options SET value = ? WHERE
+									farm_roleid	= ? AND hash = ?	
+								", array(
+									$val,
+									$this->ID,
+									$hash
+								));
+								
+								$fire_event = true;
+							}
+						}
+						
+						// Submit event only for existing farm. 
+						// If we create a new farm, no need to fire this event.
+						if ($fire_event)
+						{
+							Scalr::FireEvent($this->FarmID, new RoleOptionChangedEvent(
+								$this, $hash
+							));
+							
+							$fire_event = false;
+						}
+						
+						$saved_opts[] = $hash;
+					}
+				}	
+	
+				foreach ($role_opts as $k=>$v)
+				{
+					if (!in_array($k, array_values($saved_opts)))
+					{
+						$this->DB->Execute("DELETE FROM farm_role_options WHERE farm_roleid = ? AND hash = ?",
+							array($this->ID, $k)
+						);
+					}
+				}
+			}
 		}
 		
 		/**

@@ -1,10 +1,12 @@
 <?
     require("src/prepend.inc.php"); 
         
-    if ($_SESSION['uid'] == 0)
+    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
     else 
-        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
+        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND env_id=?", 
+        	array($req_farmid, Scalr_Session::getInstance()->getEnvironmentId())
+        );
 
     if (!$farminfo)
         UI::Redirect("farms_view.php");
@@ -40,7 +42,7 @@
     	try
     	{
     		$DBServer = DBServer::LoadByFarmRoleIDAndIndex($req_role, $req_server_index);
-    		if ($_SESSION['uid'] != 0 && $DBServer->clientId != $_SESSION['uid'])
+    		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
     			throw new Exception("No such server");
     	}
     	catch(Exception $e)

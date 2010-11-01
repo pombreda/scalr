@@ -2,6 +2,36 @@
 
 	Core::Load("NET/API/AWS/WSSESoapClient");
 	
+	class CreateTagsType
+	{
+		public $resourcesSet;
+		public $tagSet;
+		
+		public function construct(array $resources, array $tags)
+		{
+			$this->resourcesSet = new sdtClass();
+			$this->resourcesSet->item = array();
+			
+			$this->tagSet = new stdClass();
+			$this->tagSet = array();
+			
+			foreach ($resources as $v)
+			{
+				$itm = new stdClass();
+				$itm->resourceId = $v;
+				$this->resourcesSet->item[] = $itm;
+			}
+			
+			foreach ($tags as $k=>$v)
+			{
+				$itm = new stdClass();
+				$itm->key = $k;
+				$itm->value = $v;
+				$this->tagSet->item[] = $itm;
+			}
+		}
+	}
+	
 	class CreateImageType
 	{
 		public $instanceId;
@@ -501,8 +531,8 @@
 	
 	class AmazonEC2 
     {		
-	    const EC2WSDL = 'http://ec2.amazonaws.com/doc/2009-11-30/AmazonEC2.wsdl'; //previos version http://ec2.amazonaws.com/doc/2009-10-31/AmazonEC2.wsdl
-	    const EC2WSDL_LOCAL = '/etc/aws/wsdl/2009-11-30.ec2.wsdl';
+	    const EC2WSDL = 'http://ec2.amazonaws.com/doc/2010-08-31/AmazonEC2.wsdl'; //previos version http://ec2.amazonaws.com/doc/2009-10-31/AmazonEC2.wsdl
+	    const EC2WSDL_LOCAL = '/etc/aws/wsdl/2010-08-31.ec2.wsdl';
 	    const KEY_PATH = '/etc/awskey.pem';
 	    const CERT_PATH = '/etc/awscert.pem';
 	    const USER_AGENT = 'Libwebta AWS Client (http://webta.net)';
@@ -575,6 +605,24 @@
 	
 			return $response;
 		}
+		
+		public function CreateTags(CreateTagsType $CreateImageType)
+		{
+			try 
+			{
+				$response = $this->EC2SoapClient->CreateTags($CreateTagsType);
+				
+				if ($response instanceof SoapFault)
+					throw new Exception($response->faultstring, E_ERROR);
+			} 
+			catch (SoapFault $e) 
+			{
+			    throw new Exception($e->getMessage(), E_ERROR);
+			}
+	
+			return $response;
+		}
+		
 		
 		/**
 		 * Creates an AMI that uses an Amazon EBS root device from a "running" or "stopped" instance.

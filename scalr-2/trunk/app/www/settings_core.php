@@ -1,8 +1,11 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;General";
 	if ($_POST) 
@@ -36,33 +39,6 @@
 					$db->Execute("update nameservers set `password` =? where id=?",
 						array($encrypted, $row["id"])
 					);
-				}
-			    
-				$clients = $db->GetAll("SELECT * FROM clients");
-				foreach ($clients as $client)
-				{
-					if ($client["aws_accountid"])
-					{
-						$key = $Crypto->Decrypt($client["aws_accesskey"], $current_pass);
-						$keyid = $Crypto->Decrypt($client["aws_accesskeyid"], $current_pass);
-						$pkey = $Crypto->Decrypt($client["aws_private_key_enc"], $current_pass);
-						$cert = $Crypto->Decrypt($client["aws_certificate_enc"], $current_pass);
-						
-						$db->Execute("UPDATE clients SET
-							aws_accesskey = ?,
-							aws_accesskeyid = ?,
-							aws_private_key_enc = ?,
-							aws_certificate_enc = ?
-							WHERE id=?",
-							array(
-								$Crypto->Encrypt(trim($key), $post_pass),
-								$Crypto->Encrypt(trim($keyid), $post_pass),
-								$Crypto->Encrypt(trim($pkey), $post_pass),
-								$Crypto->Encrypt(trim($cert), $post_pass),
-								$client["id"]
-							)
-						);
-					}
 				}
 				
 			    // Save new password into DB

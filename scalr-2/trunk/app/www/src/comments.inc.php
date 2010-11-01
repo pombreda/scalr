@@ -1,5 +1,5 @@
 <?php
-	if ($req_task == "delete" && $_SESSION['uid'] == 0)
+	if ($req_task == "delete" && Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 	{
 		$commentid = (int)$req_commentid; 
 		$db->Execute("DELETE FROM comments WHERE id=?", array($commentid));
@@ -19,7 +19,7 @@
 		$comment = $purifier->purify($post_comment);
 		$okmsg = "";
 		
-		if ($_SESSION['uid'] == 0 && $display["allow_moderation"])
+		if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN) && $display["allow_moderation"])
 		{
 			if ($post_approval_state != $display['approval_state'])
 			{
@@ -95,7 +95,7 @@
 				objectid		= ?,
 				isprivate		= ?
 			", array(
-				$_SESSION['uid'],
+				Scalr_Session::getInstance()->getClientId(),
 				$object_owner,
 				$entity_name,
 				$comment,
@@ -103,10 +103,10 @@
 				($post_isprivate == 1) ? 1 : 0
 			));
 			
-			$submitted_by = ($_SESSION['uid'] == 0) ? _("Scalr Team") : $db->GetOne("SELECT fullname FROM clients WHERE id=?", array($_SESSION['uid']));
+			$submitted_by = (Scalr_Session::getInstance()->getClientId() == 0) ? _("Scalr Team") : $db->GetOne("SELECT fullname FROM clients WHERE id=?", array(Scalr_Session::getInstance()->getClientId()));
 			$link = "http://{$_SERVER['HTTP_HOST']}/{$redir_link}";
 			
-			if ($_SESSION['uid'] != $object_owner && !$moderation_phase_changed)
+			if (Scalr_Session::getInstance()->getClientId() != $object_owner && !$moderation_phase_changed)
 			{
 				if ($object_owner == 0)
 				{
@@ -187,7 +187,7 @@
 			$comment['color_schema'] = 'comment_red';
 			$comment['client']['fullname'] = _("Scalr Team");
 		}
-		elseif ($comment['clientid'] != 0 && $comment['clientid'] == $_SESSION['uid'])
+		elseif ($comment['clientid'] != 0 && $comment['clientid'] == Scalr_Session::getInstance()->getClientId())
 			$comment['color_schema'] = 'comment_green';
 		else
 			$comment['color_schema'] = 'comment_purple';

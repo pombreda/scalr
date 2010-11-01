@@ -1,10 +1,12 @@
 <?
     require("src/prepend.inc.php"); 
     
-    if ($_SESSION['uid'] == 0)
+    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_id));
     else 
-        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_id, $_SESSION['uid']));
+        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND env_id=?", 
+        	array($req_id, Scalr_Session::getInstance()->getEnvironmentId())
+        );
 
     if (!$farminfo || $post_cancel)
         UI::Redirect("farms_view.php");
@@ -24,12 +26,7 @@
     
     if ($req_action == "delete")
     {
-    	if ($_SESSION['uid'] != 0)
-			$info = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($farminfo['id'], $_SESSION['uid']));
-		else 
-			$info = $db->GetRow("SELECT * FROM farms WHERE id=?", array($farminfo['id']));
-		
-	    if ($info)
+    	if ($farminfo)
 	    {
     	    $db->BeginTrans();
     		
@@ -46,6 +43,7 @@
 	    		
 	    		$db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farminfo['id']));
 	    		$db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farminfo['id']));
+	    		$db->Execute("DELETE FROM ssh_keys WHERE farm_id=?", array($farminfo['id']));
 	    		
 	    		//TODO: Remove servers
 	    		$db->Execute("DELETE FROM servers WHERE farm_id=?", array($farminfo['id']));
@@ -81,7 +79,7 @@
     $display['farm_id'] = $farminfo['id'];
 	$display["title"] = _("Farms&nbsp;&raquo;&nbsp;Delete");
 	$display["farminfo"] = $farminfo;
-	$display["app_count"] = $db->GetOne("SELECT COUNT(*) FROM zones WHERE farmid='{$farminfo['id']}'");
+	$display["app_count"] = $db->GetOne("SELECT COUNT(*) FROM dns_zones WHERE farm_id='{$farminfo['id']}'");
 
 	require_once("src/append.inc.php");
 ?>

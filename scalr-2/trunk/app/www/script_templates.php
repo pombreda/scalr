@@ -5,6 +5,8 @@
 	$display["title"] = _("Script templates");
 	$display["help"] = _("Scalr can execute scripts on instances upon various events. Your script templates along with parameters, will appear on farm/role configuration page under Scripting tab.");
 	
+	$display['Scalr_Session'] = Scalr_Session::getInstance();
+	
 	if (isset($post_cancel))
 		UI::Redirect("script_templates.php");
 	
@@ -19,7 +21,9 @@
 				array($template['id'], APPROVAL_STATE::APPROVED)
 			);
 			
-			$chk = $db->GetOne("SELECT id FROM scripts WHERE name=? AND clientid=?", array($template['name'], $_SESSION['uid']));
+			$chk = $db->GetOne("SELECT id FROM scripts WHERE name=? AND clientid=?", 
+				array($template['name'], Scalr_Session::getInstance()->getClientId())
+			);
 			if ($chk)
 				$name = "{$template['name']} #".rand(1000, 9999);
 			else
@@ -38,7 +42,7 @@
 					$name,
 					$template['description'],
 					SCRIPT_ORIGIN_TYPE::CUSTOM,
-					$_SESSION['uid'],
+					Scalr_Session::getInstance()->getClientId(),
 					APPROVAL_STATE::APPROVED
 				));
 				
@@ -70,8 +74,8 @@
 			// Get template info from database
 			$template = $db->GetRow("SELECT * FROM scripts WHERE id=?", array($req_id));
 			
-			if (!$template || ($template['clientid'] == 0 && $_SESSION['uid'] != 0) ||
-				($template['clientid'] != 0 && $_SESSION['uid'] != 0 && $_SESSION['uid'] != $template['clientid'])
+			if (!$template || ($template['clientid'] == 0 && Scalr_Session::getInstance()->getClientId() != 0) ||
+				($template['clientid'] != 0 && Scalr_Session::getInstance()->getClientId() != 0 && Scalr_Session::getInstance()->getClientId() != $template['clientid'])
 			) {
 				$errmsg = _("You don't have permissions to edit this template");
 				UI::Redirect("script_templates.php");
@@ -214,13 +218,13 @@
 					{
 						if (!$template)
 						{
-							if ($_SESSION['uid'] != 0)
+							if (Scalr_Session::getInstance()->getClientId() != 0)
 								$origin = SCRIPT_ORIGIN_TYPE::CUSTOM;
 							else
 								$origin = SCRIPT_ORIGIN_TYPE::SHARED;
 								
 							$approval_state = APPROVAL_STATE::APPROVED;
-							$clientid = $_SESSION['uid'];
+							$clientid = Scalr_Session::getInstance()->getClientId();
 						}
 						else
 						{
@@ -286,8 +290,8 @@
 							objectid		= ?,
 							isprivate		= '1'
 						", array(
-							$_SESSION['uid'],
-							$_SESSION['uid'],
+							Scalr_Session::getInstance()->getClientId(),
+							Scalr_Session::getInstance()->getClientId(),
 							COMMENTS_OBJECT_TYPE::SCRIPT,
 							htmlspecialchars($post_sharing_comments),
 							$scriptid

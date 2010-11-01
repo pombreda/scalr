@@ -13,7 +13,7 @@
 		
 		const SZR_IMPORTING_ROLE_NAME = 'scalarizr.import.role_name';
 		
-		const SZR_IMPORTING_BEHAVIOUR = 'scalarizr.import.behaviour';
+		const SZR_IMPORTING_BEHAVIOR = 'scalarizr.import.behaviour';
 		
 		const SZR_SNMP_PORT = 'scalarizr.snmp_port';
 		

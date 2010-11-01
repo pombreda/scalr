@@ -17,6 +17,10 @@
 					self::$cache[$platform] = new Modules_Platforms_Ec2();
 				elseif ($platform == SERVER_PLATFORMS::RDS)
 					self::$cache[$platform] = new Modules_Platforms_Rds();
+				elseif ($platform == SERVER_PLATFORMS::EUCALYPTUS)
+					self::$cache[$platform] = new Modules_Platforms_Eucalyptus();
+				elseif ($platform == SERVER_PLATFORMS::RACKSPACE)
+					self::$cache[$platform] = new Modules_Platforms_Rackspace();
 				else
 					throw new Exception(sprintf("Platform %s not supported by Scalr", $platform));
 			}

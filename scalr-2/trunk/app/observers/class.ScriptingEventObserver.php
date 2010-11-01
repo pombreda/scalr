@@ -19,18 +19,18 @@
 				$DBFarmRole = $event->DBServer->GetFarmRoleObject();
 				if ($DBFarmRole)
 				{
-					$role_name = $DBFarmRole->GetRoleAlias();
-					$alias = $DBFarmRole->GetRoleName();
+					$behaviors = $DBFarmRole->GetRoleObject()->getBehaviors();
+					$role_name = $DBFarmRole->GetRoleObject()->name;
 				}
 			}
 			catch(Exception $e)
 			{
 				$role_name = '*Unknown*';
-				$alias = '*Unknown*';
+				$behaviors = '*Unknown*';
 			}
 			
 			$msg = new Scalr_Messaging_Msg_HostDown(
-				$alias, 
+				$behaviors, 
 				$role_name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp
@@ -42,8 +42,8 @@
 		public function OnHostUp(HostUpEvent $event)
 		{						
 			$msg = new Scalr_Messaging_Msg_HostUp(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp
 			);
@@ -54,8 +54,8 @@
 		public function OnHostInit(HostInitEvent $event)
 		{									
 			$msg = new Scalr_Messaging_Msg_HostInit(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp
 			);
@@ -66,8 +66,8 @@
 		public function OnRebootComplete(RebootCompleteEvent $event)
 		{			
 			$msg = new Scalr_Messaging_Msg_RebootFinish(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp
 			);
@@ -78,8 +78,8 @@
 		public function OnIPAddressChanged(IPAddressChangedEvent $event)
 		{
 			$msg = new Scalr_Messaging_Msg_IpAddressChanged(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp,
 				$event->NewIPAddress
@@ -91,8 +91,8 @@
 		public function OnNewMysqlMasterUp(NewMysqlMasterUpEvent $event)
 		{
 			$msg = new Scalr_Messaging_Msg_Mysql_NewMasterUp(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp,
 				$event->SnapURL
@@ -104,8 +104,8 @@
 		public function OnEBSVolumeMounted(EBSVolumeMountedEvent $event)
 		{
 			$msg = new Scalr_Messaging_Msg_BlockDeviceMounted(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp,
 				$event->VolumeID,
@@ -119,8 +119,8 @@
 		public function OnBeforeInstanceLaunch(BeforeInstanceLaunchEvent $event)
 		{			
 			$msg = new Scalr_Messaging_Msg_BeforeInstanceLaunch(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName()
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name
 			);
 			
 			$this->SendExecMessage($event->DBServer, $event, $msg);
@@ -129,8 +129,8 @@
 		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
 		{			
 			$msg = new Scalr_Messaging_Msg_BeforeHostTerminate(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp
 			);
@@ -148,8 +148,8 @@
 		public function OnEBSVolumeAttached(EBSVolumeAttachedEvent $event)
 		{			
 			$msg = new Scalr_Messaging_Msg_BlockDeviceAttached(
-				$event->DBServer->GetFarmRoleObject()->GetRoleAlias(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleName(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
 				$event->DBServer->localIp, 
 				$event->DBServer->remoteIp,
 				$event->VolumeID,

@@ -21,7 +21,6 @@
 				$farm_roleid = $DBfarmRole->ID;
 			}
 			catch(Exception $e) {
-				$farm_roleid = 0;
 				return;
 			}
 			
@@ -38,8 +37,11 @@
 				if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
 				{	
 					$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0', is_autoebs_master_snap='1', farm_roleid=?",
-						array($event->SnapshotInfo, _('MySQL Master volume snapshot'), $event->DBFarm->Region, $DBFarmRole->ID)
-					);
+					array(
+						$event->SnapshotInfo, _('MySQL Master volume snapshot'), 
+						$event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+						$DBFarmRole->ID
+					));
 					
 					// Scalarizr stuff
 					$DBFarmRole->SetSetting(DbFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $event->snapshotId);
@@ -122,9 +124,19 @@
 			$event->DBServer->status = SERVER_STATUS::INIT;
 			$event->DBServer->Save();
 			
-			$DBFarm = DBFarm::LoadByID($this->FarmID);
-			if (!$DBFarm->GetSetting(DBFarm::SETTING_AWS_PUBLIC_KEY))
-				$DBFarm->SetSetting(DBFarm::SETTING_AWS_PUBLIC_KEY, $event->PublicKey);
+			try {
+				$key = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+					$event->DBServer->farmId,
+					$event->DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+				);
+				
+				if ($key && !$key->getPublic())
+				{
+					$key->setPublic($event->PublicKey);
+					$key->save();
+				}
+			}
+			catch(Exception $e) { }
 		}
 			
 		/**
@@ -145,7 +157,7 @@
 			}
 			
 			if ($BundleTask->status == SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS)
-				$BundleTask->SnapshotCreationComplete($event->SnapshotID);
+				$BundleTask->SnapshotCreationComplete($event->SnapshotID, $event->MetaData);
 		}
 		
 		/**

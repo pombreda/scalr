@@ -14,8 +14,11 @@
 			
 			$Client = Client::Load($DBFarm->ClientID);
 			
-			$AmazonELB = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$AmazonELB->SetRegion($DBFarm->Region);
+			$AmazonELB = Scalr_Service_Cloud_Aws::newElb(
+				$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION),
+				$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+				$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+			);
 			
 			// Load balancer settings
         	if ($newSettings[DBFarmRole::SETTING_BALANCING_USE_ELB] == 1)
@@ -161,6 +164,9 @@
         			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HOSTNAME, "");
         			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_USE_ELB, "0");
         			$DBFarmRole->SetSetting(DBFarmRole::SETTING_BALANCING_HC_HASH, "");
+        			$DBFarmRole->ClearSettings("lb.avail_zone");
+        			$DBFarmRole->ClearSettings("lb.healthcheck");
+        			$DBFarmRole->ClearSettings("lb.role.listener");
         		}
         	}
 		}

@@ -22,7 +22,7 @@
     		<td>{t}Author{/t}:</td>
     		<td>
     			{if $script_info.client.id}
-					{if $script_info.client.id == $smarty.session.uid}
+					{if $script_info.client.id == $Scalr_Session->getClientId()}
 						Me
 					{else}
 						{$script_info.client.fullname}

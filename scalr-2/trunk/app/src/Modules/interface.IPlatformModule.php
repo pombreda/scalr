@@ -2,6 +2,8 @@
 
 	interface IPlatformModule
 	{
+		public function getLocations();
+		
 		public function LaunchServer(DBServer $DBServer);
 				
 		public function TerminateServer(DBServer $DBServer);
@@ -26,6 +28,10 @@
 		
 		public function PutAccessData(DBServer $DBServer, Scalr_Messaging_Msg $message);
 		
+		public function ClearCache();
+		
 		public function GetServerID(DBServer $DBServer);
+		
+		public function GetServerCloudLocation(DBServer $DBServer);
 	}
 ?>

@@ -6,7 +6,7 @@
 	try
 	{
 		$DBDNSZone = DBDNSZone::loadById($req_zone_id);
-		if ($DBDNSZone->clientId != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBDNSZone->envId))
 			throw new Exception('Not found');
 	}
 	catch(Exception $e)

@@ -10,7 +10,7 @@
 			$DBFarm = DBFarm::LoadByID($farmid);			
 			$target == SCRIPTING_TARGET::FARM;
 			
-			if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $DBFarm->ClientID)
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 				throw new Exception("Specified farm not found");  
 		}
 		
@@ -20,7 +20,7 @@
 		
 			$DBFarmRole = DBFarmRole::LoadByID($req_farm_roleid);
 			
-			if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $DBFarmRole->GetFarmObject()->ClientID)
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarmRole->GetFarmObject()->EnvID))
 				throw new Exception("Specified farm role not found");
 			
 			$target = SCRIPTING_TARGET::ROLE;
@@ -28,12 +28,12 @@
 			$farmid = $DBFarmRole->FarmID; 				
 		}
 		
-		if ($req_target == SCRIPTING_TARGET::INSTANCE)
+		if ($req_target == SCRIPTING_TARGET::INSTANCE || (!$req_target && $req_server_id && $req_farmid))
 		{ 			
 			$DBServer = DBServer::LoadByID($req_server_id);
 
-			if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $DBServer->clientId)
-				throw new Exception("Specified server not found");
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
+				throw new Exception("Specified farm role not found");
 
 			$target 		= SCRIPTING_TARGET::INSTANCE;
 			$server_id 		= $req_server_id;			
@@ -64,17 +64,17 @@
 	if(!$display['target'])
 		$display['target'] = SCRIPTING_TARGET::FARM;
 			
-	if ($_SESSION['uid'] != 0)
+	if (Scalr_Session::getInstance()->getClientId() != 0)
 	{
 		$filter_sql .= " AND ("; 
 			// Show shared roles
 			$filter_sql .= " origin='".SCRIPT_ORIGIN_TYPE::SHARED."'";
 		
 			// Show custom roles
-			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='{$_SESSION['uid']}')";
+			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='".Scalr_Session::getInstance()->getClientId()."')";
 			
 			//Show approved contributed roles
-			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='{$_SESSION['uid']}'))";
+			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='".Scalr_Session::getInstance()->getClientId()."'))";
 		$filter_sql .= ")";
 	}
 	
@@ -259,15 +259,6 @@
 				$message = new Scalr_Messaging_Msg_ExecScript($event_name);
 				$message->meta[Scalr_Messaging_MsgMeta::EVENT_ID] = "FRSID-{$farm_rolescript_id}";
 				$DBServer->SendMessage($message);
-				
-				/*
-				$DBServer->SendMessage(new EventNoticeScalrMessage(
-					$DBServer->remoteIp,
-					"FRSID-{$farm_rolescript_id}",
-					$DBServer->GetFarmRoleObject()->GetRoleName(),
-					$event_name
-				));
-				*/
 			}
 		}
 		

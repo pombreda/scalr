@@ -218,5 +218,7 @@
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
         <input type="hidden" name="name" value="{$group_name}">
+        <input type="hidden" name="platform" value="{$platform}">
+        <input type="hidden" name="location" value="{$location}">
 	{include file="inc/table_footer.tpl" button_js=1 button_js_name="Save" show_js_button=1 button_js_action="SaveRules();"}
 {include file="inc/footer.tpl"}

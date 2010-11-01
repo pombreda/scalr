@@ -31,6 +31,8 @@
 		*/
 		private $timeout;
 		
+		private $community;
+		
 		private $host;
 		private $port;
 		
@@ -129,16 +131,9 @@
 		 * @param unknown_type $rootOID
 		 * @return array Array of values
 		 */
-		public function GetTree($rootOID = null)
+		public function getTree($rootOID = null)
 		{
-			try 
-			{
-				$retval = @snmpwalk($this->Connection, $this->Community, $rootOID, $this->Timeout);
-				
-			} catch (Exception $e)
-			{
-				$this->RaiseWarning("Cannot walk through {$this->Connection}/{$this->Community}/$rootOID". $e->__toString());
-			}
+			$retval = @snmpwalk("{$this->host}:{$this->port}", $this->community, $rootOID, $this->timeout);	
 			return $retval;
 		}
 		
@@ -148,16 +143,9 @@
 		 * @param unknown_type $rootOID
 		 * @return array Array of values
 		 */
-		public function GetFullTree($rootOID = null)
+		public function getFullTree($rootOID = null)
 		{
-			try 
-			{
-				$retval = @snmpwalkoid($this->Connection, $this->Community, $rootOID, $this->Timeout);
-				
-			} catch (Exception $e)
-			{
-				$this->RaiseWarning("Cannot walkoid through {$this->Connection}/{$this->Community}/$rootOID". $e->__toString());
-			}
+			$retval = @snmpwalkoid("{$this->host}:{$this->port}", $this->community, $rootOID, $this->timeout);
 			return $retval;
 		}
 	}

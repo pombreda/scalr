@@ -19,16 +19,16 @@
        	 	{
        	 		$db = Core::GetDBInstance(null, true);
        	 		
+       	 		//TODO:
+       	 		
        	 		// set status to "finished" for finished taskes
-       	 		$info = $db->Execute("UPDATE scheduler_tasks, client_settings SET `status` = ?
-       	 			WHERE scheduler_tasks.client_id = client_settings.clientid
-       	 			AND client_settings.key = ? 					
-					AND (end_time_date 		< CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`value`,'SYSTEM'))) 
-					OR  (last_start_time 	< CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`value`,'SYSTEM')) 
+       	 		$info = $db->Execute("UPDATE scheduler_tasks SET `status` = ?
+       	 			WHERE (end_time_date 		< CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`timezone`,'SYSTEM'))) 
+					OR  (last_start_time 	< CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`timezone`,'SYSTEM')) 
 						 AND restart_every 	= 0
 						) 
 					AND `status` != ? ",
-        		array(TASK_STATUS::FINISHED,CLIENT_SETTINGS::TIMEZONE,TASK_STATUS::FINISHED));
+        		array(TASK_STATUS::FINISHED,ENVIRONMENT_SETTINGS::TIMEZONE,TASK_STATUS::FINISHED));
 
 
        	 		// get all task from schedule table which are conformed to the conditions. 
@@ -36,19 +36,17 @@
        	 		// 'client_settings.value' - client's timezone like "Europe/London" or others.
        	 		
        	 		$taskList = $db->GetAll("SELECT scheduler_tasks.*
-						FROM scheduler_tasks LEFT JOIN `client_settings` 
-						ON scheduler_tasks.client_id = client_settings.clientid 
-						WHERE `key` = ?
-						AND end_time_date > CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`value`,'SYSTEM')) AND start_time_date <= CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`value`,'SYSTEM'))
+						FROM scheduler_tasks
+						WHERE end_time_date > CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`timezone`,'SYSTEM')) AND start_time_date <= CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`timezone`,'SYSTEM'))
 						AND  (
-								(ADDDATE(IF (last_start_time, last_start_time, start_time_date), INTERVAL restart_every MINUTE) <=  CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`value`,'SYSTEM')))
+								(ADDDATE(IF (last_start_time, last_start_time, start_time_date), INTERVAL restart_every MINUTE) <=  CONVERT_TZ(NOW(),'SYSTEM',IFNULL(`timezone`,'SYSTEM')))
 								OR   ( last_start_time IS NULL)
 							 )
 						AND `status` = ?
 						ORDER BY 
 						IF (last_start_time, last_start_time, start_time_date) AND order_index ASC
        	 		",
-        		array(CLIENT_SETTINGS::TIMEZONE,TASK_STATUS::ACTIVE));
+        		array(TASK_STATUS::ACTIVE));
 
        	 		if(!$taskList)
        	 		{
@@ -277,14 +275,11 @@
 	       	 		}
 	       	 		else
 	       	 		{
-		       	 		$db->Execute("UPDATE  scheduler_tasks, client_settings
-									SET last_start_time = CONVERT_TZ(NOW(),'SYSTEM',`value`)
-									WHERE 
-									scheduler_tasks.client_id = client_settings.clientid 
-									AND client_settings.key = ?
-									AND scheduler_tasks.id = ?
+		       	 		$db->Execute("UPDATE  scheduler_tasks
+									SET last_start_time = CONVERT_TZ(NOW(),'SYSTEM',`timezone`)
+									WHERE scheduler_tasks.id = ?
 									AND `status` = ?",
-								array(CLIENT_SETTINGS::TIMEZONE,$task['id'], TASK_STATUS::ACTIVE)
+								array($task['id'], TASK_STATUS::ACTIVE)
 						);
 						
 		       	 		$this->Logger->info(sprintf("Task {$task['id']} successfully sent"));

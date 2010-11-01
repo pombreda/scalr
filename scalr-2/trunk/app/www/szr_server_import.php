@@ -9,18 +9,31 @@
 		unset($_SESSION["importing_server_id"]);	
 	}
 	
-	$behaviours = array(
-		ROLE_ALIAS::BASE => ROLE_ALIAS::GetTypeByAlias(ROLE_ALIAS::BASE),
-		//ROLE_ALIAS::WWW => ROLE_ALIAS::GetTypeByAlias(ROLE_ALIAS::WWW),		
-		ROLE_ALIAS::APP => ROLE_ALIAS::GetTypeByAlias(ROLE_ALIAS::APP),
-		ROLE_ALIAS::MYSQL => ROLE_ALIAS::GetTypeByAlias(ROLE_ALIAS::MYSQL)
-		//ROLE_ALIAS::MEMCACHED => ROLE_ALIAS::GetTypeByAlias(ROLE_ALIAS::MEMCACHED)
+	$behaviors = array(
+		ROLE_BEHAVIORS::BASE => ROLE_BEHAVIORS::GetName(ROLE_BEHAVIORS::BASE),
+		ROLE_BEHAVIORS::APACHE => ROLE_BEHAVIORS::GetName(ROLE_BEHAVIORS::APACHE),
+		ROLE_BEHAVIORS::MYSQL => ROLE_BEHAVIORS::GetName(ROLE_BEHAVIORS::MYSQL),
+		ROLE_BEHAVIORS::NGINX => ROLE_BEHAVIORS::GetName(ROLE_BEHAVIORS::NGINX),
+		ROLE_BEHAVIORS::MEMCACHED => ROLE_BEHAVIORS::GetName(ROLE_BEHAVIORS::MEMCACHED)
 	);
 	
 	$platforms = array(
-		'ec2' => 'Amazon EC2'
+		SERVER_PLATFORMS::EC2 => 'Amazon EC2',
+		//SERVER_PLATFORMS::RACKSPACE => 'Rackspace',
+		SERVER_PLATFORMS::EUCALYPTUS => 'Eucalyptus'
 	);
-	
+
+	$platforms = array();	
+	$env = Scalr_Model::init(Scalr_Model::ENVIRONMENT);
+	$env->loadById(Scalr_Session::getInstance()->getEnvironmentId());
+	$enabledPlatforms = $env->getEnabledPlatforms();
+	foreach (SERVER_PLATFORMS::getList() as $k => $v) {
+		if (in_array($k, $enabledPlatforms)) {
+			$platforms[$k] = $v;
+		}
+	}
+	unset($platforms['rds']);
+
 	if ($_POST)
 	{
 		$validator = new Validator();
@@ -41,24 +54,24 @@
 					// Validate farm
 					$validator->IsNotEmpty($req_farmid, _("Farm"));
 					if ($req_farmid) {
-						$ismine = $db->GetOne("SELECT COUNT(*) FROM farms WHERE clientid = ? AND id = ?", 
-								array($_SESSION["uid"], $req_farmid));
+						$ismine = $db->GetOne("SELECT COUNT(*) FROM farms WHERE env_id = ? AND id = ?", 
+								array(Scalr_Session::getInstance()->getEnvironmentId(), $req_farmid));
 						if (!$ismine) {
 							$validator->AddError(null, null, null, 
 									_("Farm doesn't exists or doesn't belongs to your account"));
 						}
 					}
 				}
-				if (!in_array($req_platform, array("ec2", "vps"))) {
-					$validator->AddError(null, null, null, _("Invalid 'Platform'. Only 'ec2', 'vps' allowed"));
+				if (!in_array($req_platform, array_keys($platforms))) {
+					$validator->AddError(null, null, null, _("Unknown cloud platform"));
 				}
-				if (!in_array($req_behaviour, array_keys($behaviours))) {
+				if (!in_array($req_behavior, array_keys($behaviors))) {
 					$validator->AddError(null, null, null, _("Invalid 'Behavior'"));
 				}
 				
 				// Find server in the database
 				$existingServer = $db->GetRow("SELECT * FROM servers WHERE remote_ip = ?", array($req_remote_ip));
-				if ($existingServer["client_id"] == $_SESSION["uid"]) {
+				if ($existingServer["client_id"] == Scalr_Session::getInstance()->getClientId()) {
 					$validator->AddError(null, null, null, 
 							sprintf(_("Server %s is already in Scalr with a server_id: %s"), 
 							$req_remote_ip, $existingServer["server_id"]));
@@ -72,12 +85,14 @@
 					$cryptoKey = Scalr::GenerateRandomKey(40);
 					
 					$creInfo = new ServerCreateInfo($req_platform, null, 0, 0);
-					$creInfo->clientId = $_SESSION["uid"];
+					$creInfo->clientId = Scalr_Session::getInstance()->getClientId();
+					$creInfo->envId = Scalr_Session::getInstance()->getEnvironmentId();
 					$creInfo->farmId = (int)$req_farmid;
 					$creInfo->remoteIp = $req_remote_ip;
+					$creInfo->envId = Scalr_Session::getInstance()->getEnvironmentId();
 					$creInfo->SetProperties(array(
 						SERVER_PROPERTIES::SZR_IMPORTING_ROLE_NAME => $req_role_name,
-						SERVER_PROPERTIES::SZR_IMPORTING_BEHAVIOUR => $req_behaviour,
+						SERVER_PROPERTIES::SZR_IMPORTING_BEHAVIOR => $req_behavior,
 						SERVER_PROPERTIES::SZR_KEY => $cryptoKey,
 						SERVER_PROPERTIES::SZR_KEY_TYPE => SZR_KEY_TYPE::PERMANENT,
 						SERVER_PROPERTIES::SZR_VESION => "0.5-1",
@@ -97,13 +112,21 @@
 			}
 			
 			if (!$err) {
-				$display["command"] = sprintf('scalarizr --import -y'
-						. ' -o server-id=%s -o role-name=%s -o crypto-key=%s'
-						. ' -o platform=%s -o behaviour=%s'
-						. ' -o queryenv-url=%s -o messaging-p2p.producer-url=%s',
-						$dbServer->serverId, $req_role_name, $cryptoKey,
-						$req_platform, $req_behaviour == ROLE_ALIAS::BASE ? '' : $req_behaviour, 
-						"http://".$_SERVER['HTTP_HOST']. "/query-env", "http://".$_SERVER['HTTP_HOST']. "/messaging");
+				$options = array(
+					'server-id' => $dbServer->serverId,
+					'role-name' => $req_role_name,
+					'crypto-key' => $cryptoKey,
+					'platform' => $req_platform,
+					'behaviour' => $req_behavior == ROLE_BEHAVIORS::BASE ? '' : $req_behavior,
+					'queryenv-url' => "http://".$_SERVER['HTTP_HOST']. "/query-env",
+					'messaging-p2p.producer-url' => "http://".$_SERVER['HTTP_HOST']. "/messaging"
+				);
+
+				$command = 'scalarizr --import -y';
+				foreach ($options as $k => $v) {
+					$command .= sprintf(' -o %s=%s', $k, $v);
+				}
+				$display['command'] = $command;
 				
 				$req_step = 2;
 			}
@@ -112,7 +135,9 @@
 
 	if (!$template_name)
 		$template_name = "szr_server_import_step{$req_step}.tpl";
-	$display['behaviours'] = $behaviours;
+		
+	$display['behaviors'] = $behaviors;
+	$display['platforms'] = $platforms;	
 	
 	require("src/append.inc.php"); 
 ?>

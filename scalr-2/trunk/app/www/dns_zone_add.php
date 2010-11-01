@@ -2,6 +2,12 @@
 	require("src/prepend.inc.php"); 	
 	$display["title"] = "DNS zone&nbsp;&raquo;&nbsp;Add";
 
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER, Scalr_AuthToken::MODULE_DNS))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
+	
 	if ($_POST)
 	{
 		if ($req_step == 1 || !$req_step)
@@ -17,8 +23,9 @@
 				while (count($domain_chunks) > 0)
 				{
 					$chk_dmn = trim(array_pop($domain_chunks).".{$chk_dmn}", ".");
-					if ($db->GetOne("SELECT id FROM dns_zones WHERE zone_name=? AND client_id != ?", array($chk_dmn, $_SESSION['uid'])))
-					{
+					if ($db->GetOne("SELECT id FROM dns_zones WHERE zone_name=? AND env_id != ?", 
+						array($chk_dmn, Scalr_Session::getInstance()->getEnvironmentId()))
+					) {
 						if ($chk_dmn == $req_domainname)
 							$err[] = sprintf(_("%s already exists on scalr nameservers"), $req_domainname);
 						else
@@ -39,8 +46,9 @@
 				if ($req_farmid)
 				{
 					$DBFarm = DBFarm::LoadByID($req_farmid);
-					if ($DBFarm->ClientID != $_SESSION['uid'])
-						throw new Exception(_("Farm not found"));
+					
+					if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
+						throw new Exception("Farm not found");
 	
 					$farm_id = $DBFarm->ID;
 					
@@ -76,7 +84,9 @@
 		            foreach ($nss as $ns)
 		            	$records[] = array("id" => "c".rand(10000, 999999), "type" => "NS", "ttl" => 14400, "value" => "{$ns["host"]}.", "name" => "{$display["domainname"]}.", "issystem" => 0);
 		                
-		            $def_records = $db->GetAll("SELECT * FROM default_records WHERE clientid='{$_SESSION['uid']}'");
+		            $def_records = $db->GetAll("SELECT * FROM default_records WHERE clientid=?", 
+		            	array(Scalr_Session::getInstance()->getClientId())
+		            );
 		            foreach ($def_records as $record)
 		            {
 		                $record["name"] = str_replace("%hostname%", "{$display["domainname"]}.", $record["name"]);
@@ -106,13 +116,16 @@
 					$_SESSION['dns_temp_domain_add']['domainname'], 
 					$req_zone['soa_refresh'], 
 					$req_zone['soa_expire'],
-					str_replace('@', '.', $db->GetOne("SELECT email FROM clients WHERE id=?", array($_SESSION['uid']))),
+					str_replace('@', '.', $db->GetOne("SELECT email FROM clients WHERE id=?", array(
+						Scalr_Session::getInstance()->getClientId()
+					))),
 					$req_zone['soa_retry']
 				);
 				
 				$DBDNSZone->farmRoleId = (int)$_SESSION['dns_temp_domain_add']['farm_roleid'];
 				$DBDNSZone->farmId = (int)$_SESSION['dns_temp_domain_add']['farm_id'];
-				$DBDNSZone->clientId = $_SESSION['uid'];
+				$DBDNSZone->clientId = Scalr_Session::getInstance()->getClientId();
+				$DBDNSZone->envId = Scalr_Session::getInstance()->getEnvironmentId();
 				
 				$DBDNSZone->setRecords($records);
 				

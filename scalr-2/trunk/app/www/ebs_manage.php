@@ -2,14 +2,17 @@
 	require_once('src/prepend.inc.php');
     $display['load_extjs'] = true;	    
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
-    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2Client->SetAuthKeys($_SESSION['aws_private_key'], $_SESSION['aws_certificate']);
+    $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$_SESSION['aws_region'],
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
     
     if ($req_task)
 	{
@@ -86,7 +89,8 @@
 						$DBEBSVolume->mount = ($req_mount == 1) ? true: false;
 						$DBEBSVolume->mountPoint = $req_mountpoint;
 						$DBEBSVolume->mountStatus = ($req_mount == 1) ? EC2_EBS_MOUNT_STATUS::AWAITING_ATTACHMENT : EC2_EBS_MOUNT_STATUS::NOT_MOUNTED;
-						$DBEBSVolume->clientId = $_SESSION['uid'];
+						$DBEBSVolume->clientId = Scalr_Session::getInstance()->getClientId();
+						$DBEBSVolume->envId = Scalr_Session::getInstance()->getEnvironmentId();
 						
 						
 						$DBEBSVolume->Save();
@@ -99,8 +103,8 @@
 					}
 				}
 				
-				$display['servers'] = $db->GetAll("SELECT * FROM servers WHERE client_id=? AND platform=? AND status=?", array(
-					$_SESSION['uid'], SERVER_PLATFORMS::EC2, SERVER_STATUS::RUNNING
+				$display['servers'] = $db->GetAll("SELECT * FROM servers WHERE env_id=? AND platform=? AND status=?", array(
+					Scalr_Session::getInstance()->getEnvironmentId(), SERVER_PLATFORMS::EC2, SERVER_STATUS::RUNNING
 				));
 				foreach ($display['servers'] as &$s)
 				{

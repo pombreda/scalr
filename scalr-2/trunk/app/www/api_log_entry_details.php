@@ -1,9 +1,9 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_ADMIN))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
@@ -12,7 +12,7 @@
 	$display['entry'] = $db->GetRow("SELECT * FROM api_log WHERE transaction_id=? AND clientid=?",
 		array(
 			$req_trans_id,
-			$_SESSION['uid']
+			Scalr_Session::getInstance()->getClientId()
 		)
 	);
 	

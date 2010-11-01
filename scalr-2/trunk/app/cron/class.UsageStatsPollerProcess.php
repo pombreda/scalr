@@ -36,7 +36,7 @@
         	Scalr::ReconfigureObservers();
         	
         	$db = Core::GetDBInstance();
-            $SNMP = new SNMP();
+            $snmpClient = new Scalr_Net_Snmp_Client();
             
             $DBFarm = DBFarm::LoadByID($farminfo['id']);
             
@@ -47,7 +47,7 @@
 
             foreach ($DBFarm->GetFarmRoles() as $DBFarmRole)
             {
-                $this->Logger->info("[FarmID: {$DBFarm->ID}] Begin check '{$DBFarmRole->GetRoleName()}' role servers. Platform: {$DBFarmRole->Platform}");                
+                $this->Logger->info("[FarmID: {$DBFarm->ID}] Begin check '{$DBFarmRole->GetRoleObject()->name}' role servers. Platform: {$DBFarmRole->Platform}");                
                 foreach ($DBFarmRole->GetServersByFilter() as $DBServer)
                 {                	
                 	if ($DBServer->status == SERVER_STATUS::PENDING_TERMINATE)
@@ -58,14 +58,18 @@
 						if (!$DBServer->remoteIp)
 							continue;
                     	
-                    	$SNMP->Connect($DBServer->remoteIp, null, $DBFarm->Hash, null, null, true);
-                        $res = $SNMP->Get(".1.3.6.1.4.1.2021.10.1.3.3");
+						$port = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
+						if (!$port)
+							$port = 161;
+							
+                    	$snmpClient->connect($DBServer->remoteIp, $port, $DBFarm->Hash, null, null, true);
+                        $res = $snmpClient->get(".1.3.6.1.4.1.2021.10.1.3.3");
                         if ($res)
                         {                                	
-							preg_match_all("/[0-9]+/si", $SNMP->Get(".1.3.6.1.2.1.2.2.1.10.2"), $matches);
+							preg_match_all("/[0-9]+/si", $snmpClient->get(".1.3.6.1.2.1.2.2.1.10.2"), $matches);
 							$bw_in = $matches[0][0];
 						                        
-							preg_match_all("/[0-9]+/si", $SNMP->Get(".1.3.6.1.2.1.2.2.1.16.2"), $matches);
+							preg_match_all("/[0-9]+/si", $snmpClient->get(".1.3.6.1.2.1.2.2.1.16.2"), $matches);
 							$bw_out = $matches[0][0];
 						            
 							$c_bw_in = (int)$DBServer->GetProperty(SERVER_PROPERTIES::STATISTICS_BW_IN);
@@ -94,7 +98,6 @@
             //
             // Update statistics
             //
-
 			$this->Logger->debug("Updating statistics for farm.");
                 
 			$current_stat = $db->GetRow("SELECT * FROM farm_stats WHERE farmid=? AND month=? AND year=?",
@@ -102,22 +105,20 @@
 			);
 
 			/*
-			foreach ($ec2_items as $ami_id => $items)
-			{				
-				foreach ($items as $item)
-				{
-					$launch_time = strtotime($item->launchTime);
-					$uptime = time() - $launch_time;
-	                    
-					$last_uptime = $db->GetOne("SELECT uptime FROM farm_instances WHERE instance_id=?", array($item->instanceId));
-					$uptime_delta = $uptime-$last_uptime;
-	                    
-					$stat_uptime[$item->instanceType] += $uptime_delta;
-					
-					$db->Execute("UPDATE farm_instances SET uptime=? WHERE instance_id=?",
-						array($uptime, $item->instanceId)
-					);
-				}
+			/*
+			foreach ($items as $item)
+			{
+				$launch_time = strtotime($item->launchTime);
+				$uptime = time() - $launch_time;
+                    
+				$last_uptime = $db->GetOne("SELECT uptime FROM farm_instances WHERE instance_id=?", array($item->instanceId));
+				$uptime_delta = $uptime-$last_uptime;
+                    
+				$stat_uptime[$item->instanceType] += $uptime_delta;
+				
+				$db->Execute("UPDATE farm_instances SET uptime=? WHERE instance_id=?",
+					array($uptime, $item->instanceId)
+				);
 			}
 			*/
                                 

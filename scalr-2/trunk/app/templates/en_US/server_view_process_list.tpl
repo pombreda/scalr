@@ -2,9 +2,6 @@
 <link rel="stylesheet" href="css/grids.css" type="text/css" />
 <div id="maingrid-ct" class="ux-gridviewer"></div>
 <script type="text/javascript">
-
-var uid = '{$smarty.session.uid}';
-
 var regions = [
 {section name=id loop=$regions}
 	['{$regions[id]}','{$regions[id]}']{if !$smarty.section.id.last},{/if}

@@ -18,8 +18,11 @@
 				{
 					$Client = $DBServer->GetClient();
 					
-					$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-					$AmazonELBClient->SetRegion($DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
+					$AmazonELBClient = Scalr_Service_Cloud_Aws::newElb(
+						$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+					); 
 					
 					$AmazonELBClient->DeregisterInstancesFromLoadBalancer(
 						$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME),
@@ -61,8 +64,11 @@
 				{
 					$Client = $event->DBServer->GetClient();
 					
-					$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-					$AmazonELBClient->SetRegion($event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
+					$AmazonELBClient = Scalr_Service_Cloud_Aws::newElb(
+						$event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+						$event->DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+						$event->DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+					); 
 					
 					$AmazonELBClient->RegisterInstancesWithLoadBalancer(
 						$DBFarmRole->GetSetting(DBFarmRole::SETTING_BALANCING_NAME),

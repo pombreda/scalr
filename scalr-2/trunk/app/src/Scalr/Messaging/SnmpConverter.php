@@ -105,8 +105,13 @@ class Scalr_Messaging_SnmpConverter {
 	private function extractVars ($msg) {
 		$ret = array();		
 		foreach (array_keys($this->getTrapVars($msg->getName())) as $var) {
-			$ret[$var] = $msg->{$var};
+			if ($var == 'behaviour') {
+				$ret[$var] = $msg->{$var}[0];
+			} else {
+				$ret[$var] = $msg->{$var};
+			}
 		}
+
 		return $ret;
 	}
 	

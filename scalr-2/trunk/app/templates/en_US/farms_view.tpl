@@ -17,13 +17,13 @@ Ext.onReady(function () {
 				{name: 'id', type: 'int'},
 				{name: 'clientid', type: 'int'},
 				{name: 'dtadded', type: 'date'},
-				'name', 'status', 'region', 'servers', 'roles', 'zones','client_email','havemysqlrole','shortcuts'
+				'name', 'status', 'servers', 'roles', 'zones','client_email','havemysqlrole','shortcuts'
 			]
 		}),
 		remoteSort: true,
 		url: '/server/grids/farms_list.php?a=1{/literal}{$grid_query_string}{literal}'
 	});
-    
+
 	new Scalr.Viewers.ListView({
 		renderTo: "listview-farms-view",
 		autoRender: true,
@@ -38,7 +38,7 @@ Ext.onReady(function () {
 		rowOptionsMenu: [
 			//{id: "option.viewMap", 		text:'View map', 			  	href: "/farm_map.php?id={id}"},
 			//new Ext.menu.Separator({id: "option.viewMapSep"}),
-			
+
 			{itemId: "option.privateKey", 	text: 'Download Private key', 	href: "/storage/keys/{id}/{name}.pem"},
 			new Ext.menu.Separator({itemId: "option.privateKeySep"}),
 			{itemId: "option.launchFarm", 	text: 'Launch', 				href: "/farms_control.php?farmid={id}"},
@@ -46,7 +46,7 @@ Ext.onReady(function () {
 			new Ext.menu.Separator({itemId: "option.controlSep"}),
 			{itemId: "option.usageStats",	text: 'Usage statistics', 		href: "/farm_usage_stats.php?farmid={id}"},
 			{itemId: "option.loadStats",	text: 'Load statistics', 		href: "/monitoring.php?farmid={id}"},
-			
+
 			{itemId: "option.ebs",			text: 'EBS usage', 				href: "/ebs_manage.php?farmid={id}"},
 			{itemId: "option.eip",			text: 'Elastic IPs usage', 		href: "/elastic_ips.php?farmid={id}"},
 			{itemId: "option.events",		text: 'Events & Notifications', href: "/events_view.php?farmid={id}"},
@@ -55,13 +55,13 @@ Ext.onReady(function () {
 
 			{itemId: "option.mysql",		text: 'MySQL status', 			href: "/farm_mysql_info.php?farmid={id}"},
 			{itemId: "option.script",		text: 'Execute script', 		href: "/execute_script.php?farmid={id}"},
-			
+
 			new Ext.menu.Separator({itemId: "option.logsSep"}),
 			{itemId: "option.logs",			text: 'View log', 				href: "/logs_view.php?farmid={id}"},
 			new Ext.menu.Separator({itemId: "option.editSep"}),
-			{itemId: "option.edit",			text: 'Edit', 					href: "/farms_add.php?id={id}"},
+			{itemId: "option.edit",			text: 'Edit', 					href: "/farms_builder.php?id={id}"},
 			{itemId: "option.delete",		text: 'Delete', 				href: "/farm_delete.php?id={id}"},
-			
+
 			new Ext.menu.Separator({itemId: "option.scSep"})
 		],
 		getRowOptionVisibility: function (item, record) {
@@ -75,10 +75,10 @@ Ext.onReady(function () {
 
 			if (item.itemId == "option.scSep")
 				return (data.shortcuts.length > 0);
-			
-			if (item.itemId == "option.viewMap" || 
-					item.itemId == "option.viewMapSep" || 
-					item.itemId == "option.loadStats" || 
+
+			if (item.itemId == "option.viewMap" ||
+					item.itemId == "option.viewMapSep" ||
+					item.itemId == "option.loadStats" ||
 					item.itemId == "option.mysqlSep" ||
 					item.itemId == "option.mysql" ||
 					item.itemId == "option.script"
@@ -103,14 +103,13 @@ Ext.onReady(function () {
 			columns: [
 				{ header: "Farm ID", width: 5, dataIndex: 'id', sortable: true, hidden: 'no' },
 				{/literal}
-					{if $smarty.session.uid == 0}
+					{if $Scalr_Session->getClientId() == 0}
 						{literal}
 						{ header: "Client", width: 10, dataIndex: 'client', tpl: '<a href="/clients_view.php?clientid={clientid}">{client_email}</a>', sortable: false, hidden: 'no' },
 						{/literal}
 					{/if}
 				{literal}
 				{ header: "Farm Name", width: 10, dataIndex: 'name', sortable: true, hidden: 'no' },
-				{ header: "Location", width: 10, dataIndex: 'region', sortable: true, hidden: 'no' },
 				{ header: "Added", width: 10, dataIndex: 'dtadded', tpl: '{[values.dtadded ? values.dtadded.dateFormat("M j, Y") : ""]}', sortable: true, hidden: 'no' },
 				{ header: "Roles", width:  10, dataIndex: 'roles', tpl: '{roles} [<a href="/farm_roles_view.php?farmid={id}">View</a>]', sortable: false, hidden: 'no' },
 				{ header: "Servers", width: 10, dataIndex: 'servers', tpl: '{servers} [<a href="/servers_view.php?farmid={id}">View</a>]', sortable: false, hidden: 'no' },
@@ -118,7 +117,7 @@ Ext.onReady(function () {
 				{ header: "Status", width: 5, dataIndex: 'status', tpl:
 					new Ext.XTemplate('<span class="{[this.getClass(values.status)]}">{[this.getName(values.status)]}</span>', {
 						getClass: function (value) {
-							if (value == 1) 
+							if (value == 1)
 								return "status-ok";
 							else if (value == 3)
 								return "status-ok-pending";
@@ -147,8 +146,8 @@ Ext.onReady(function () {
 					if (item.isshortcut) {
 						item.parentMenu.remove(item);
 					}
-				});			
-				
+				});
+
 
 				if (data.shortcuts.length > 0)
 				{
@@ -166,17 +165,6 @@ Ext.onReady(function () {
 						}
 					}
 				}
-				/*
-				else
-				{
-					var rows = romenu.items.items;
-					for (k in rows)
-					{
-						if (rows[k].isshortcut == 1)
-							romenu.remove(rows[k]);
-					}
-				}
-				*/
 			}}
 		}
 	});

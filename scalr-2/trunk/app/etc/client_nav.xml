@@ -3,27 +3,19 @@
 <menu>
 	<node title="Websites">
 		<node title="DNS Zones">
-			<item href="dns_zones_view.php" search="SELECT COUNT(*) FROM dns_zones WHERE zone_name LIKE '%s' AND client_id='{$_SESSION['uid']}'">View all</item>		
+			<item href="dns_zones_view.php" search="SELECT COUNT(*) FROM dns_zones WHERE zone_name LIKE '%s' AND env_id = '{ENV_ID}'">View all</item>		
 			<item href="dns_zone_add.php">Add new</item>				
 		</node>
 		<node title="Apache virtual hosts">
-			<item href="apache_vhosts_view.php" search="SELECT COUNT(*) FROM apache_vhosts WHERE name LIKE '%s' AND client_id='{$_SESSION['uid']}'">View all</item>		
+			<item href="apache_vhosts_view.php" search="SELECT COUNT(*) FROM apache_vhosts WHERE name LIKE '%s' AND env_id = '{ENV_ID}'">View all</item>		
 			<item href="apache_vhost_add.php">Add new</item>				
 		</node>
 	</node>
 
 	<node title="Server Farms" id='server_farms'>
-		<item href="farms_add.php">Build new</item>		
+		<item href="farms_builder.php">Build new</item>		
 		<separator />
-		<item href="aws_elb.php">Elastic Load Balancers</item>		
-		<item href="elastic_ips.php">Elastic IPs</item>		
-		<node title="Elastic Block Storage">
-			<item href="ebs_manage.php">Volumes &amp; Snapshots</item>
-			<!-- <item href="ebs_arrays.php">Arrays</item>  -->
-		</node>
-        <separator />
-        <item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
-		
+        <item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND env_id ='{ENV_ID}'">View all</item>
 	</node>
 	
 	<node title="Servers">
@@ -33,19 +25,27 @@
 	</node>
 
 	<node title="Roles">
-		<item href="roles_view.php" search="SELECT COUNT(*) FROM roles WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
-		<separator />
-		<item href="sec_groups_view.php">Security groups</item>
+		<item href="roles_view.php" search="SELECT COUNT(*) FROM roles WHERE name LIKE '%s' AND env_id = '{ENV_ID}'">View all</item>
 		<separator />
 		<node title="Bundle tasks">
 			<item href="bundle_tasks.php">View all</item>
 			<item href="server_create_image.php">Create new (Bundle server image)</item>
 		</node>
+		<separator />
+		<node title="Service configuration presets">
+			<item href="service_config_presets.php">Manage</item>
+			<item href="service_config_preset_add.php">Create new</item>
+		</node>
+		<separator />
+		<node title="Custom scaling metrics">
+			<item href="scaling_metrics.php">Manage</item>
+			<item href="scaling_metric_add.php">Create new</item>
+		</node>
 	</node>
 	
 	<node title="Scripts">
 		<item href="script_templates.php?task=create">Add new</item>
-		<item href="script_templates.php" search="SELECT COUNT(*) FROM scripts WHERE name LIKE '%s' AND clientid='{$_SESSION['uid']}'">View all</item>
+		<item href="script_templates.php" search="SELECT COUNT(*) FROM scripts WHERE name LIKE '%s' AND clientid='{CLIENT_ID}'">View all</item>
 		<separator />
 		<item href="script_shortcuts.php">Shortcuts</item>
 	</node>		
@@ -58,20 +58,36 @@
 	
 	<node title="Settings">
 		<item href="profile.php">Profile</item>
-		<item href="aws_settings.php">AWS settings</item>
 		<item href="system_settings.php">System settings</item>
+		<separator />
+		<item href="environments.php">Manage environments</item>
 		<separator />
 		<item href="default_records.php">Default DNS records</item>
 	</node>
 	
 	<node title="Tools">        
-        <item href="scheduler.php" search="SELECT COUNT(*) FROM scheduler_tasks WHERE task_name LIKE '%s' AND client_id='{$_SESSION['uid']}'" >Tasks scheduler</item>        
+        <item href="scheduler.php" search="SELECT COUNT(*) FROM scheduler_tasks WHERE task_name LIKE '%s' AND client_id='{CLIENT_ID}'" >Tasks scheduler</item>        
         <separator />
 		<item href="garbage.php">Delete unused objects</item>
 		<separator />
+		<node title="Eucalyptus">
+			<item href="sec_groups_view.php?platform=eucalyptus">Security groups</item>	
+			<node title="Elastic Block Storage">
+				<item href="ebs_manage.php?platform=eucalyptus">Volumes &amp; Snapshots</item>
+			</node>
+		</node>
+		<separator />
 		<node title="Amazon Web Services">
 			<item href="s3browser.php">S3 &amp; Cloudfront manager</item>
+			<item href="aws_elb.php">Elastic Load Balancers manager</item>
 			<node title="Amazon EC2">
+				<item href="sec_groups_view.php?platform=ec2">Security groups</item>
+				<separator />	
+				<item href="elastic_ips.php">Elastic IPs</item>		
+				<node title="Elastic Block Storage">
+					<item href="ebs_manage.php?platform=ec2">Volumes &amp; Snapshots</item>
+				</node>
+		        <separator />
                 <node title="Spot instances">
                     <node title="Spot Requests">                    
                         <item href="aws_ec2_spotrequest_view.php">Manage</item>

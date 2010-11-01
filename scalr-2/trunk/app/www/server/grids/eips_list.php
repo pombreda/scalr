@@ -9,13 +9,13 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
-		$Client = Client::Load($_SESSION['uid']);
-		
-		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+			$_SESSION['aws_region'], 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+		);
 		
 		// Rows
 		$aws_response = $AmazonEC2Client->DescribeAddresses();
@@ -64,7 +64,7 @@
 					try
 					{
 						$DBFarmRole = DBFarmRole::LoadByID($item['farm_roleid']);
-						$item['role_name'] = $DBFarmRole->GetRoleName();
+						$item['role_name'] = $DBFarmRole->GetRoleObject()->name;
 						$item['farm_name'] = $DBFarmRole->GetFarmObject()->Name;
 					}
 					catch(Exception $e){}

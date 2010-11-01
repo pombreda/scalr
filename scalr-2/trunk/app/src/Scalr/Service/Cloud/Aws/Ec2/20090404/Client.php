@@ -1,23 +1,41 @@
 <?php 
-
-	require_once dirname(__FILE__) . '/DescribeImagesResponse.php';
-	require_once dirname(__FILE__) . '/AllocateAddressResponse.php';
-	require_once dirname(__FILE__) . '/DescribeAddressesResponse.php';
-	require_once dirname(__FILE__) . '/DescribeSecurityGroupsResponse.php';
-	require_once dirname(__FILE__) . '/CreateKeyPairResponse.php';
-	require_once dirname(__FILE__) . '/DescribeKeyPairsResponse.php';
-	require_once dirname(__FILE__) . '/RunInstancesResponse.php';
-	require_once dirname(__FILE__) . '/DescribeAvailabilityZonesResponse.php';
-	require_once dirname(__FILE__) . '/DescribeInstancesResponse.php';
-	
-	require_once dirname(__FILE__) . '/../../Transports/Query.php';
-
 	abstract class Scalr_Service_Cloud_Aws_Ec2_20090404_Client extends Scalr_Service_Cloud_Aws_Transports_Query
 	{
 		function __construct()
 		{
 			$this->apiVersion = '2009-04-04';
+			$this->uri = '/';
 		}
+		
+		///
+		// EBS
+		///
+		public function createVolume($size, $availabilityZone, $snapshotId=null)
+		{
+			$request_args = array(
+				"Action" => "CreateVolume",
+				"AvailabilityZone"	=> "kvm-cluster",
+				"Size"	=> $size
+			);
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			return new Scalr_Service_Cloud_Aws_Ec2_20090404_CreateVolumeResponse($response);
+		}
+		
+		public function describeVolumes(array $volumes = null)
+		{
+			$request_args = array(
+				"Action" => "DescribeVolumes", 
+			);
+			foreach ((array)$volumes as $i=>$n)
+				$request_args['VolumeId.'.($i+1)] = $n;
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeVolumesResponse($response);
+		}
+		
 		
 		///
 		// Other
@@ -32,7 +50,7 @@
 			if ($zoneName)
 				$request_args['ZoneName'] = $zoneName;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeAvailabilityZonesResponse($response);
 		}
@@ -42,7 +60,63 @@
 		// Instances 
 		///
 		
-		public function describeInstances($instanceIds = array())
+		/**
+		 * 
+		 * Enter description here ...
+		 * @param string $instanceId
+		 * @return string
+		 */
+		public function getConsoleOutput($instanceId)
+		{
+			$request_args = array(
+				"Action" 		=> "GetConsoleOutput",
+				"InstanceId"	=> $instanceId
+			);
+			
+			$response = $this->Request("GET", $this->uri, $request_args);			
+			return base64_decode((string)$response->output);
+		}
+		
+		public function rebootInstances(array $instanceIds)
+		{
+			$request_args = array(
+				"Action" => "RebootInstances", 
+			);
+			foreach ((array)$instanceIds as $i=>$n)
+				$request_args['InstanceId.'.($i+1)] = $n;
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			return ((string)$response->return == 'true') ? true : false;
+		}
+		
+		/**
+		 * 
+		 * Enter description here ...
+		 * @param array $instanceIds
+		 */
+		public function terminateInstances(array $instanceIds)
+		{
+			$request_args = array(
+				"Action" => "TerminateInstances", 
+			);
+			foreach ((array)$instanceIds as $i=>$n)
+				$request_args['InstanceId.'.($i+1)] = $n;
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			//TODO: Scalr_Service_Cloud_Aws_Ec2_20090404_TerminateInstancesResponse
+			
+			return true;
+		}
+		
+		/**
+		 * 
+		 * Describe instances ...
+		 * @param array $instanceIds
+		 * @return Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeInstancesResponse
+		 */
+		public function describeInstances(array $instanceIds = array())
 		{
 			$request_args = array(
 				"Action" => "DescribeInstances", 
@@ -50,11 +124,27 @@
 			foreach ((array)$instanceIds as $i=>$n)
 				$request_args['InstanceId.'.($i+1)] = $n;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeInstancesResponse($response);
 		}
 		
+		/**
+		 * 
+		 * Run new instance ...
+		 * @param string $imageId
+		 * @param string $instanceType
+		 * @param string $keyName
+		 * @param string $availZone
+		 * @param array $securityGroup
+		 * @param string $userData
+		 * @param integer $minCount
+		 * @param integer $maxCount
+		 * @param string $kernelId
+		 * @param string $ramdiskId
+		 * @param boolean $monitoring
+		 * @return Scalr_Service_Cloud_Aws_Ec2_20090404_RunInstancesResponse
+		 */
 		public function runInstances($imageId, $instanceType, $keyName = null, $availZone = null, $securityGroup = array(), $userData = "", 
 			$minCount = 1, $maxCount = 1, $kernelId = null, $ramdiskId = null, $monitoring = false)
 		{
@@ -68,7 +158,7 @@
 			);
 			
 			if ($availZone)
-				$request_args['Placment.AvailabilityZone'] = $availZone;
+				$request_args['Placement.AvailabilityZone'] = $availZone;
 			if ($keyName)
 				$request_args['KeyName'] = $keyName;
 			if ($kernelId)
@@ -93,7 +183,7 @@
 				$request_args["Encoding"]	= "base64";
 			}
 			
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_RunInstancesResponse($response);
 		}
@@ -110,7 +200,7 @@
 				"KeyName"	=> $keyName 
 			);
 			
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return ((string)$response->return == 'true') ? true : false;
 		}
@@ -123,7 +213,7 @@
 			foreach ((array)$keys as $i=>$n)
 				$request_args['KeyName.'.($i+1)] = $n;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeKeyPairsResponse($response);
 		}
@@ -135,7 +225,7 @@
 				"KeyName"	=> $keyName 
 			);
 			
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_CreateKeyPairResponse($response);
 		}
@@ -144,6 +234,31 @@
 		///
 		// Security groups
 		///
+		public function revokeSecurityGroupIngress($groupName, $ipProtocol = null, $fromPort = null, $toPort = null, $cidrIp = null, $sourceSecurityGroupName = null, $sourceSecurityGroupOwnerId = null)
+		{
+			$request_args = array(
+				"Action" => "RevokeSecurityGroupIngress",
+				"GroupName"	=> $groupName 
+			);
+			
+			if ($cidrIp)
+			{
+				$request_args['CidrIp'] = $cidrIp;
+				$request_args['IpProtocol'] = $ipProtocol;
+				$request_args['FromPort'] = $fromPort;
+				$request_args['ToPort'] = $toPort;
+			}
+			else
+			{
+				$request_args['SourceSecurityGroupName'] = $sourceSecurityGroupName;
+				$request_args['SourceSecurityGroupOwnerId'] = $sourceSecurityGroupOwnerId;
+			}
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			return ((string)$response->return == 'true') ? true : false;
+		}
+		
 		
 		public function authorizeSecurityGroupIngress($groupName, $ipProtocol = null, $fromPort = null, $toPort = null, $cidrIp = null, $sourceSecurityGroupName = null, $sourceSecurityGroupOwnerId = null)
 		{
@@ -165,7 +280,7 @@
 				$request_args['SourceSecurityGroupOwnerId'] = $sourceSecurityGroupOwnerId;
 			}
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return ((string)$response->return == 'true') ? true : false;
 		}
@@ -178,7 +293,7 @@
 			foreach ((array)$groups as $i=>$n)
 				$request_args['GroupName.'.($i+1)] = $n;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeSecurityGroupsResponse($response);
 		}
@@ -191,7 +306,7 @@
 				"GroupDescription" => $description 
 			);
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return ((string)$response->return == 'true') ? true : false;
 		}
@@ -208,7 +323,7 @@
 				"PublicIp" => $ip 
 			);
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return ((string)$response->return == 'true') ? true : false;
 		}
@@ -221,7 +336,7 @@
 			foreach ((array)$ips as $i=>$n)
 				$request_args['PublicIp.'.($i+1)] = $n;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeAddressesResponse($response);
 		}
@@ -232,7 +347,7 @@
 				"Action" => "AllocateAddress", 
 			);
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_AllocateAddressResponse($response);
 		}
 		
@@ -241,6 +356,26 @@
 		// Images
 		///
 		
+		public function deregisterImage($imageId)
+		{
+			$request_args = array(
+				"Action" => "DeregisterImage",
+				"ImageId" => $imageId 
+			);
+				
+			$response = $this->Request("GET", $this->uri, $request_args);
+			
+			return ((string)$response->return == 'true') ? true : false;
+		}
+		
+		/**
+		 * 
+		 * Enter description here ...
+		 * @param unknown_type $executableBy
+		 * @param unknown_type $imageId
+		 * @param unknown_type $owner
+		 * @return Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeImagesResponse
+		 */
 		public function describeImages($executableBy = array(), $imageId = array(), $owner = array()) 
 		{
 			$request_args = array(
@@ -253,7 +388,7 @@
 			foreach ((array)$owner as $i=>$n)
 				$request_args['Owner.'.($i+1)] = $n;
 				
-			$response = $this->Request("GET", "/", $request_args);
+			$response = $this->Request("GET", $this->uri, $request_args);
 			
 			return new Scalr_Service_Cloud_Aws_Ec2_20090404_DescribeImagesResponse($response);
 		}

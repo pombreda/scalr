@@ -12,6 +12,7 @@ div.viewers-selrolesviewer-blocks {
 div.viewers-selrolesviewer-add {
 	left: 0px;
 	width: 40px;
+	cursor: pointer;
 	border-width: 1px;
 	border-style: none solid none none;
 	border-color: #8DB2E3;
@@ -57,7 +58,7 @@ div.viewers-selrolesviewer-dataview {
 
 #viewers-selrolesviewer ul li div {
 	position: absolute;
-	bottom: 15px;
+	bottom: 25px;
 	width: 110px;
 	text-align: center;
 	padding-left: 5px;
@@ -70,8 +71,9 @@ div.viewers-selrolesviewer-dataview {
 #viewers-selrolesviewer ul li div.full {
 	position: absolute;
 	left: 5px;
-	top: 60px;
+	top: 50px;
 	height: 15px;
+	white-space: nowrap;
 	width: auto;
 	padding: 5px;
 	display: none;
@@ -133,6 +135,14 @@ div.viewers-selrolesviewer-dataview {
 #viewers-selrolesviewer ul li:hover a:hover {
 	background-image: url('/images/ui-ng/viewers/selrolesviewer/close_hover.png');
 	display: block;
+}
+
+#viewers-selrolesviewer div.location {
+	position: absolute;
+	bottom: 10px;
+	height: 12px;
+	width: 110px;
+	text-align: center;
 }
 
 /* Scroll & filter blocks */
@@ -198,6 +208,11 @@ div.viewers-selrolesviewer-filter-input input {
 	height: 23px;
 }
 
+div.viewers-selrolesviewer-empty-text {
+	text-align: center;
+	width: 100%;
+	margin-top: 50px;
+}
 /**
  * AddRolesViewer
  */
@@ -208,12 +223,6 @@ div.viewers-selrolesviewer-filter-input input {
 	padding-right: 23px;
 	padding-bottom: 19px;
 }
-
-#viewers-addrolesviewer div.description {
-	background-color: #E8EDF7;
-	padding: 10px;
-}
-
 
 #viewers-addrolesviewer div.block {
 	overflow: visible;
@@ -277,6 +286,7 @@ div.viewers-selrolesviewer-filter-input input {
 	display: block;
 	height: auto;
 	padding: 19px 23px 5px 23px;
+	position: relative;
 }
 
 #viewers-addrolesviewer ul.hidden {
@@ -285,14 +295,15 @@ div.viewers-selrolesviewer-filter-input input {
 
 #viewers-addrolesviewer ul li {
 	float: left;
-	width: 200px;
-	height: 100px;
+	width: 106px;
+	height: 106px;
 	overflow: hidden;
 	background-color: #FFF;
-	margin-right: 14px;
-	margin-bottom: 14px;
+	margin-right: 28px;
+	margin-bottom: 31px;
 	padding: 6px;
 	font-size: 12px;
+	text-align: center;
 
 	border-width: 1px;
 	border-color: #C0D5FA;
@@ -303,12 +314,64 @@ div.viewers-selrolesviewer-filter-input input {
 	border-radius: 4px;
 }
 
+#viewers-addrolesviewer ul li span {
+	font-size: 11px;
+}
+
+#viewers-addrolesviewer div.fixed {
+	position: relative;
+	height: 0px;
+}
+
+#viewers-addrolesviewer div.arch {
+	position: absolute;
+	top: 90px;
+	text-align: right;
+	width: 106px;
+}
+
+#viewers-addrolesviewer div.platforms {
+	position: absolute;
+	text-align: center;
+	top: 70px;
+	width: 106px;
+}
+
+#viewers-addrolesviewer ul li div.info {
+	position: absolute;
+	visibility: hidden;
+	width: 112px;
+	height: 22px;
+	background-color:#D9EAFD;
+	padding: 3px;
+
+	border-width: 1px;
+	border-color: #C0D5FA;
+	border-style: solid;
+	-moz-border-radius-bottomright: 4px;
+	-moz-border-radius-bottomleft: 4px;
+	-webkit-border-radius-bottomright: 4px;
+	-webkit-border-radius-bottomleft: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+
+#viewers-addrolesviewer ul li img.arch {
+	margin-left: 70px;
+	margin-top: 20px;
+}
+
 #viewers-addrolesviewer ul li:hover {
 	background-color: #EEF5FD;
 }
 
 #viewers-addrolesviewer ul li.addrolesviewer-selected {
-	background-color: #D6EAFC;
+	-moz-border-radius-bottomright: 0px;
+	-moz-border-radius-bottomleft: 0px;
+	-webkit-border-radius-bottomright: 0px;
+	-webkit-border-radius-bottomleft: 0px;
+	border-bottom-right-radius: 0px;
+	border-bottom-left-radius: 0px;
 }
 
 /*
@@ -469,7 +532,7 @@ div.viewers-listview-row-options-btn {
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
-	padding: 5px 5px 5px 30px;
+	padding: 5px 30px 5px 30px;
 	cursor: pointer;
 	margin-top: 3px;
 
@@ -477,20 +540,130 @@ div.viewers-listview-row-options-btn {
 	font-size: 14px;
 }
 
+.viewers-hiddenmessage {
+	display: none;
+}
+
+.viewers-messages-close {
+	position: absolute;
+	right: 5px;
+	top: 4px;
+	display: none;
+}
+
+.viewers-messages-close-show {
+	display: block !important;
+}
+
 .viewers-errormessage {
 	background: #FEF2EB url('/images/ui-ng/icons/message/error.png') no-repeat scroll 5px 4px;
 	border: 1px solid #FD721E;
 	color: #CA4100;
+	position: relative;
 }
 
 .viewers-infomessage {
 	background: #FEFDE0 url('/images/ui-ng/icons/message/info.png') no-repeat scroll 5px 4px;
 	border: 1px solid #A4A4A4;
 	color: #333333;
+	position: relative;
 }
 
 .viewers-successmessage {
 	background: #EDFCEE url('/images/ui-ng/icons/message/success.png') no-repeat scroll 5px 4px;
 	border: 1px solid #5FBF59;
 	color: #3F7D00;
+	position: relative;
+}
+
+.viewers-warningpanel {
+	font-size: 12px;
+	background-image: url("/images/ui-ng/icons/message/warning.png");
+	background-repeat: no-repeat;
+	background-position: 7px 7px;
+	background-color: #F4F4F4;
+	border: 1px solid #A4A4A4;
+	color: #666666;
+	padding: 10px 10px 10px 35px;
+}
+
+/*
+ * Farm roles edit
+ */
+div.viewers-farmrolesedit-tabs {
+	width: 200px;
+	float: left;
+	background-color: #DFE8F6;
+}
+
+div.viewers-farmrolesedit-tab {
+	width: 200px;
+	font-size: 12px;
+	height: 26px;
+	background-color: #D9EAFD;
+	position: relative;
+	border-style: none none solid none;
+	border-width: 1px;
+	border-color: #99BBE8;
+	cursor: pointer;
+	font-family: Arial,"Lucida Grande",Verdana,sans-serif;
+}
+
+div.viewers-farmrolesedit-tab span {
+	position: absolute;
+	top: 5px;
+	left: 5px;
+}
+
+div.viewers-farmrolesedit-tab:hover {
+	background-color: #CFD8E6;
+}
+
+div.viewers-farmrolesedit-tab-selected {
+	background-color: #FFF;
+	color: black;
+	/*border-style: none none solid none;*/
+}
+
+div.viewers-farmrolesedit-content {
+	float: left;
+}
+
+/*
+ * Scripting tab
+ */
+#viewers-farmrolesedit-tab-scripting {
+	background-color: #fff;
+}
+
+#viewers-farmrolesedit-tab-scripting div.element {
+	border-width: 1px;
+	border-style: none none dotted none;
+	border-color: #99BBE8;
+	padding: 5px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+#viewers-farmrolesedit-tab-scripting div.element:hover {
+	background-color: #ebf3fd;
+}
+
+#viewers-farmrolesedit-tab-scripting div.selected {
+	background-color: #DFE8F6 !important;
+}
+
+#viewers-farmrolesedit-tab-scripting div.empty {
+	font-size: 12px;
+	padding: 10px;
+	padding-left: 50px;
+}
+
+/* hack for ie and fieldsets without header */
+.ext-ie .x-fieldset-body-noheader {
+	padding-top: 10px;
+}
+
+.viewers-panel-footer {
+	background-color: #DFE8F6;
 }

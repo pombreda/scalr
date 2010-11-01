@@ -2,9 +2,9 @@
 
 	require(dirname(__FILE__)."/../src/prepend.inc.php");
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 		
@@ -12,7 +12,7 @@
 	{
 		$DBFarm = DBFarm::LoadByID($req_farmid);
 		
-		if ($DBFarm->ClientID != $_SESSION['uid'])
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 			UI::Redirect("/index.php");
 	}
 	else

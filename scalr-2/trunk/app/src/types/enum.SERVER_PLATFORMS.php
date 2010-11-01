@@ -3,22 +3,31 @@
 	{
 		const EC2		= 'ec2';
 		const RDS		= 'rds';
+		const RACKSPACE = 'rackspace';
+		const EUCALYPTUS= 'eucalyptus';
 		
 		//FOR FUTURE USE
-		const RACKSPACE = 'rs';
 		const VPS		= 'vps';
 		const GOGRID	= 'gogrid';
 		const CLOUDCOM	= 'cloud.com';
-		const EUCA		= 'euca';
 		const NOVACC	= 'novacc';
 		
 		
 		public static function GetList()
 		{
 			return array(
-				self::EC2 => 'Amazon EC2',
-				self::RDS => 'Amazon RDS'
+				self::EC2 			=> 'Amazon EC2',
+				self::RDS 			=> 'Amazon RDS',
+				self::EUCALYPTUS 	=> 'Eucalyptus',
+				//self::RACKSPACE		=> 'Rackspace'
 			);
+		}
+		
+		public static function GetName($const)
+		{
+			$list = self::GetList();
+			
+			return $list[$const];
 		}
 	}
 ?>

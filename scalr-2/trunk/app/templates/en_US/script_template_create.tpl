@@ -70,7 +70,7 @@
         <tr>
     		<td width="10%">{t}Version{/t}:</td>
     		<td>
-    			<select name="version" class="text" {if $smarty.session.uid == 0 && $origin != 'Shared'}disabled{/if} onChange="LoadTemplateVersion(this.value);">
+    			<select name="version" class="text" {if $Scalr_Session->getClientId() == 0 && $origin != 'Shared'}disabled{/if} onChange="LoadTemplateVersion(this.value);">
     			{section name=id loop=$versions}
     				<option {if $selected_version == $versions[id]}selected{/if} value="{$versions[id]}">{$versions[id]}</option>
     			{/section}
@@ -134,7 +134,7 @@
 			{assign var="new_version" value=$latest_version+1}
 			{include file="inc/table_footer.tpl" button2=1 button2_name="Save changes in current version" button3=1 button3_name="Save changes as new version ($new_version)" cancel_btn=1}
 			
-			{if $latest_version != $selected_version || ($origin == 'User-contributed' && $smarty.session.uid != 0)}
+			{if $latest_version != $selected_version || ($origin == 'User-contributed' && $Scalr_Session->getClientId() != 0)}
 			<script>
 				Ext.get('cbtn_2').dom.style.display = 'none';
 			</script>

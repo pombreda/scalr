@@ -93,7 +93,7 @@ Ext.onReady(function () {
 		},
 
 		listViewOptions: {
-			emptyText: "No tasks defined",
+			emptyText: "No tasks found",
 			columns: [
 				{ header: "ID", width: 15, dataIndex: 'id', sortable: true, hidden: 'no' },
 				{ header: "Task name", width: 40, dataIndex: 'task_name', sortable: true, hidden: 'no' },

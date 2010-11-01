@@ -75,6 +75,9 @@ class Scalr_Messaging_XmlSerializer {
 	 */
 	function unserialize ($xmlString) {
 		$xml = simplexml_load_string($xmlString);
+		if (!$xml) {
+			throw new Exception('Cannot load XML string: ' . $xmlString);
+		}
 		
 		$ref = new ReflectionClass(Scalr_Messaging_Msg::getClassForName($xml->attributes()->name));
 		$msg = $ref->newInstance();

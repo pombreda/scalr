@@ -33,7 +33,7 @@
 			$farmRoles = $event->DBFarm->GetFarmRoles();
 			foreach ($farmRoles as $farmRole) {
 				// For MySQL role need to reset slave2master flag 
-				if ($farmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL) {
+				if ($farmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL)) {
 					$farmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SLAVE_TO_MASTER, 0);
 				} 
 			}

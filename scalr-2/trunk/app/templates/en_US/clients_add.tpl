@@ -59,20 +59,6 @@
     		</td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
-	
-		{include file="inc/intable_header.tpl" header="Billing settings" color="Gray"}
-        <tr>
-    		<td width="20%">Bill for scalr use:</td>
-    		<td><input type="checkbox" {if $isbilled == 1}checked{/if} name="isbilled" value="1" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Due date:</td>
-    		<td>
-    			<input name="dtdue" style="vertical-align:middle;width:100px;" type="text" class="text" id="dtdue" value="{$dtdue}">
-				<input name="reset" style="margin-left:-7px;height:22px;vertical-align:middle;" type="reset" class="btn" onclick="return showCalendar('dtdue', 'y-mm-dd');" value=" ... ">
-    		</td>
-    	</tr>
-        {include file="inc/intable_footer.tpl" color="Gray"}
                 
 		{include file="inc/intable_header.tpl" header="Account information" color="Gray"}
     	<tr>
@@ -136,29 +122,6 @@
     	<tr>
     		<td width="20%">Fax:</td>
     		<td><input type="text" class="text" name="fax" value="{$fax}" /></td>
-    	</tr>
-        {include file="inc/intable_footer.tpl" color="Gray"}
-        
-        {include file="inc/intable_header.tpl" header="AWS information" color="Gray"}
-        <tr>
-    		<td width="20%">Account ID:</td>
-    		<td><input type="text" class="text" name="aws_accountid" value="{$aws_accountid}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Access key id:</td>
-    		<td><input type="text" class="text" name="aws_accesskeyid" value="{$aws_accesskeyid}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Access key:</td>
-    		<td><input type="text" class="text" name="aws_accesskey" value="{$aws_accesskey}" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Certificate file:</td>
-    		<td><input type="file" class="text" name="cert_file" /></td>
-    	</tr>
-    	<tr>
-    		<td width="20%">Private key file:</td>
-    		<td><input type="file" class="text" name="pk_file" /></td>
     	</tr>
         {include file="inc/intable_footer.tpl" color="Gray"}
 	{include file="inc/table_footer.tpl" edit_page=1}

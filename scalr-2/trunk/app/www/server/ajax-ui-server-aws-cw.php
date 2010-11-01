@@ -8,8 +8,11 @@
     		$this->DB = Core::GetDBInstance();
     		$this->Logger = Logger::getLogger(__CLASS__);
     		
-    		$Client = Client::Load($_SESSION['uid']);
-    		$this->AmazonCloudWatch = AmazonCloudWatch::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
+    		$environment = Scalr_Session::getInstance()->getEnvironment();
+    		$this->AmazonCloudWatch = AmazonCloudWatch::GetInstance(
+    			$environment->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+    			$environment->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+    		);
     	}
     	
     	function GetMetric($MetricName, $StartTime, $EndTime, $Type, $Period, $NameSpace, $DType, $DValue, $DateFormat)

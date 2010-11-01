@@ -4,6 +4,19 @@ Scalr.data.ExceptionReporter = function (store, error) {
 	Scalr.Viewers.ErrorMessage(error);
 }
 
+Scalr.data.ExceptionFormReporter = function (form, action) {
+	if (action.result.error) {
+		if (Ext.isArray(action.result.error)) {
+			for (var i = 0, len = action.result.error.length; i < len; i++)
+				Scalr.Viewers.ErrorMessage(action.result.error[i]);
+		} else {
+			Scalr.Viewers.ErrorMessage(action.result.error);
+		}
+	} else if (action.result.success && action.result.success != false) {
+		Scalr.Viewers.ErrorMessage('Error: ' + action.failureType);
+	}
+}
+
 Scalr.data.JsonReader = Ext.extend(Ext.data.JsonReader, {
 	constructor: function(meta, recordType) {
 		meta = meta || {};
@@ -17,7 +30,6 @@ Scalr.data.JsonReader = Ext.extend(Ext.data.JsonReader, {
 	},
 
 	readRecords: function (o) {
-		var dataBlock = Scalr.data.JsonReader.superclass.readRecords.call(this, o);
 		var meta = this.meta;
 
 		if (meta.errorProperty) {
@@ -25,12 +37,17 @@ Scalr.data.JsonReader = Ext.extend(Ext.data.JsonReader, {
 				if (!this.getError) {
 					this.getError = this.createAccessor(meta.errorProperty);
 				}
-				dataBlock.error = this.getError(o);
+				var error = this.getError(o), dataBlock = {};
+				if (error) {
+					dataBlock[meta.errorProperty] = error;
+					dataBlock[meta.successProperty] = false;
+					return dataBlock;
+				}
 			} catch(e) {
 				alert(e);
 			}
 		}
-		return dataBlock;
+		return Scalr.data.JsonReader.superclass.readRecords.call(this, o);
 	}
 });
 

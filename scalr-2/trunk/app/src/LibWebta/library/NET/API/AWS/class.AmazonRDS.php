@@ -398,8 +398,7 @@
 		{
 			$request_args = array(
 					"Action"						=> "ModifyDBInstance",
-					"DBInstanceIdentifier"			=> $DBInstanceIdentifier,
-					"MultiAZ"						=> ($MultiAZ)?$MultiAZ = 1: $MultiAZ = 0								
+					"DBInstanceIdentifier"			=> $DBInstanceIdentifier								
 					);		
 						
 			foreach ($DBSecurityGroups as $i=>$o)

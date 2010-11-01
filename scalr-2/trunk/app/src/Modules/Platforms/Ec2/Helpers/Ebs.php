@@ -47,7 +47,7 @@
 						$DBEBSVolume->attachmentStatus = EC2_EBS_ATTACH_STATUS::CREATING;
 						$DBEBSVolume->isManual = false;
 						$DBEBSVolume->ec2AvailZone = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE);
-						$DBEBSVolume->ec2Region = $DBFarm->Region;
+						$DBEBSVolume->ec2Region = $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION);
 						$DBEBSVolume->farmId = $DBFarmRole->FarmID;
 						$DBEBSVolume->farmRoleId = $DBFarmRole->ID;
 						$DBEBSVolume->serverId = $DBServer->serverId;

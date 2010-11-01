@@ -87,7 +87,7 @@
 
 	class AmazonELB
 	{
-		const API_VERSION 	= "2009-05-15";
+		const API_VERSION 	= "2009-11-25";
 		const HASH_ALGO 	= 'SHA1';
 		const USER_AGENT 	= 'Libwebta AWS Client (http://webta.net)';
 	    
@@ -200,6 +200,68 @@
             	
             	throw new Exception($message);
             }
+		}
+		
+		public function CreateAppCookieStickinessPolicy($LoadBalancerName, $PolicyName, $CookieName)
+		{
+			$request_args = array(
+				"Action" => "CreateAppCookieStickinessPolicy", 
+				"LoadBalancerName" => $LoadBalancerName,
+				"PolicyName"	=> $PolicyName,
+				"CookieName"	=> $CookieName
+			);
+			
+			$response = $this->Request("GET", "/", $request_args);
+			
+			return $response;
+		}
+		
+		public function CreateLBCookieStickinessPolicy($LoadBalancerName, $PolicyName, $CookieExpirationPeriod = 3600)
+		{
+			$request_args = array(
+				"Action" => "CreateLBCookieStickinessPolicy", 
+				"LoadBalancerName" => $LoadBalancerName,
+				"PolicyName"	=> $PolicyName,
+				"CookieExpirationPeriod"	=> $CookieExpirationPeriod
+			);
+			
+			$response = $this->Request("GET", "/", $request_args);
+			
+			return $response;
+		}
+		
+		public function SetLoadBalancerPoliciesOfListener($LoadBalancerName, $LoadBalancerPort, $PolicyName = "")
+		{
+			$request_args = array(
+				"Action" => "SetLoadBalancerPoliciesOfListener", 
+				"LoadBalancerName" => $LoadBalancerName,
+				"LoadBalancerPort"	=> $LoadBalancerPort
+			);
+			
+			if (!is_array($PolicyName))
+				$request_args['PolicyNames.member.1'] = $PolicyName;
+			else
+			{
+				foreach ($PolicyName as $i=>$n)
+					$request_args['PolicyNames.member.'.($i+1)] = $n;
+			}
+				
+			$response = $this->Request("GET", "/", $request_args);
+			
+			return $response;
+		}
+		
+		public function DeleteLoadBalancerPolicy($LoadBalancerName, $PolicyName)
+		{
+			$request_args = array(
+				"Action" => "DeleteLoadBalancerPolicy", 
+				"LoadBalancerName" => $LoadBalancerName,
+				"PolicyName"	=> $PolicyName
+			);
+			
+			$response = $this->Request("GET", "/", $request_args);
+			
+			return $response;
 		}
 		
 		/**

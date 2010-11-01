@@ -1,15 +1,17 @@
 <?
 	require_once('src/prepend.inc.php');
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 		
 	$display["title"] = _("Bundle task > Failure details");
 	
-	$info = $db->GetRow("SELECT * FROM bundle_tasks WHERE id=? AND client_id=?", array($req_task_id, $_SESSION['uid']));
+	$info = $db->GetRow("SELECT * FROM bundle_tasks WHERE id=? AND env_id=?", 
+		array($req_task_id, Scalr_Session::getInstance()->getEnvironmentId())
+	);
 	if (!$info)
 		UI::Redirect("/bundle_tasks.php");
 	

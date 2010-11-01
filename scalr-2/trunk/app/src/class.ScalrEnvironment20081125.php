@@ -259,7 +259,7 @@
     		
 			$DBFarmRole = $this->DBServer->GetFarmRoleObject();
 			
-			if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::WWW)
+			if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX))
 			{
 				$vhost_info = $this->DB->GetRow("SELECT * FROM apache_vhosts WHERE farm_id=? AND is_ssl_enabled='1'", 
 	            	array($this->DBServer->farmId)
@@ -267,16 +267,13 @@
 				
 	            if ($vhost_info)
 	            {
-					$template_option_name = "nginx_https_vhost_template";
-			    			
-	    			$template = $this->DB->GetOne("SELECT value FROM farm_role_options WHERE hash=? AND farm_roleid=?", 
-	            		array($template_option_name, $DBFarmRole->ID)
+					$template = $this->DB->GetOne("SELECT value FROM farm_role_options WHERE hash IN ('nginx_https_vhost_template','nginx_https_host_template') AND farm_roleid=?", 
+	            		array($DBFarmRole->ID)
 	            	);
 	            	if (!$template)
 	            	{
-	            		$alias_ami_id = $this->DB->GetOne("SELECT ami_id FROM roles WHERE name=?", array($DBFarmRole->GetRoleAlias()));
-	            		$template = $this->DB->GetOne("SELECT defval FROM role_options WHERE ami_id=? AND hash=?", 
-	            			array($alias_ami_id, $template_option_name)
+	            		$template = $this->DB->GetOne("SELECT defval FROM role_parameters WHERE role_id=? AND hash IN ('nginx_https_vhost_template','nginx_https_host_template')", 
+	            			array($DBFarmRole->RoleID)
 	            		);
 	            	}
 	            	
@@ -302,7 +299,7 @@
 	            		throw new Exception("Virtualhost template ({$template_option_name}) not found in database. (farm roleid: {$DBFarmRole->ID})");
 	            }
 			}
-			elseif ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::APP)
+			elseif ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::APACHE))
 			{
 	    		while (count($virtual_hosts) > 0)
 	    		{
@@ -399,9 +396,18 @@
     		if ($this->DBServer->status == SERVER_STATUS::PENDING_TERMINATE || $this->DBServer->status == SERVER_STATUS::TERMINATED)
     			return $ResponseDOMDocument;
     		
-    		$vhost_info = $this->DB->GetRow("SELECT * FROM apache_vhosts WHERE farm_id=? AND is_ssl_enabled='1'", 
-            	array($this->DBServer->farmId)
-            );
+    		if ($this->DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX))
+			{
+	    		$vhost_info = $this->DB->GetRow("SELECT * FROM apache_vhosts WHERE farm_id=? AND is_ssl_enabled='1'", 
+	            	array($this->DBServer->farmId)
+	            );
+			}
+			else 
+			{
+				$vhost_info = $this->DB->GetRow("SELECT * FROM apache_vhosts WHERE farm_roleid=? AND is_ssl_enabled='1'", 
+	            	array($this->DBServer->farmRoleId)
+	            );
+			}
             
             if ($vhost_info)
             {
@@ -444,7 +450,7 @@
 			// Filter by behaviour
 			if ($this->GetArg("behaviour"))
 			{
-				$sql_query .= " AND role_id IN (SELECT id FROM roles WHERE alias=?)";
+				$sql_query .= " AND role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?)";
 				array_push($sql_query_args, $this->GetArg("behaviour"));
 			}
 			
@@ -462,8 +468,8 @@
     			
     			// Create role node
     			$RoleDOMNode = $ResponseDOMDocument->createElement('role');
-    			$RoleDOMNode->setAttribute('behaviour', $DBFarmRole->GetRoleAlias());
-    			$RoleDOMNode->setAttribute('name', $DBFarmRole->GetRoleName());
+    			$RoleDOMNode->setAttribute('behaviour', implode(",", $DBFarmRole->GetRoleObject()->getBehaviors()));
+    			$RoleDOMNode->setAttribute('name', $DBFarmRole->GetRoleObject()->name);
     			
     			$HostsDomNode = $ResponseDOMDocument->createElement('hosts');
     			$RoleDOMNode->appendChild($HostsDomNode);
@@ -484,7 +490,7 @@
     					$HostDOMNode->setAttribute('internal-ip', $DBServer->localIp);
     					$HostDOMNode->setAttribute('external-ip', $DBServer->remoteIp);
     					$HostDOMNode->setAttribute('index', $DBServer->index);
-    					if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL)
+    					if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
     						$HostDOMNode->setAttribute('replication-master', (int)$DBServer->GetProperty(SERVER_PROPERTIES::DB_MYSQL_MASTER));
     						
     					$HostsDomNode->appendChild($HostDOMNode);

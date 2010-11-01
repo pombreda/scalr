@@ -6,7 +6,7 @@
     		<td>{t}Author{/t}:</td>
     		<td>
     			{if $role.client.id}
-					{if $role.client.id == $smarty.session.uid}
+					{if $role.client.id == $Scalr_Session->getClientId()}
 						Me
 					{else}
 						{$role.client.fullname}

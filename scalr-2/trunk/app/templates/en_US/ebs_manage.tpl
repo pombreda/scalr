@@ -4,8 +4,6 @@
 
 <div id="listview-ebs-manage-view"></div>
 <script type="text/javascript">
-
-var uid = '{$smarty.session.uid}';
 var regions = [
 {foreach from=$regions name=id key=key item=item}
 	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}

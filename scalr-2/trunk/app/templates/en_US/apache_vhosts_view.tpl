@@ -58,7 +58,7 @@ Ext.onReady(function() {
 		},
 
 		listViewOptions: {
-			emptyText: "No tasks defined",
+			emptyText: "No vhosts found",
 			columns: [
 				{ header: "ID", width: 15, dataIndex: 'id', sortable:false, hidden: 'no' },
 				{ header: "Virtual host name", width: 40, dataIndex: 'domain_name', sortable:false, hidden: 'no' },

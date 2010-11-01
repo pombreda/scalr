@@ -1,9 +1,9 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 		
@@ -36,17 +36,18 @@
 		}
 	}
 	
-	$Client = Client::Load($_SESSION['uid']);
-	
 	switch($object_type)
 	{
 		case AUTOSNAPSHOT_TYPE::EBSSnap: 
 			{
 				// checks correctness of  EBS instance volume
 				try
-				{
-					$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region)); 
-					$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+				{					
+					$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+						$req_region,
+						Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+						Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+					);
 					
 					$AmazonEC2Client->DescribeVolumes($objectId);
 				}
@@ -60,25 +61,16 @@
 				$display["title"] = _("Auto-snapshots settings for EC2 EBS volume '{$objectId}'");	
 				break;	
 			}
-		case AUTOSNAPSHOT_TYPE::EBSArraySnap: 
-			{
-				// checks correctness of  EBSArray IDs
-				$DBEBSArray = DBEBSArray::Load($objectId);
-				
-				if ($DBEBSArray->ClientID != $_SESSION['uid'])
-					UI::Redirect("ebs_arrays.php");
-				
-				$display["array_id"] = $objectId;
-				$display["title"] = _("Auto-snapshots settings for EC2 EBS array '{$DBEBSArray->Name}'");
-				break;		
-			}
 		case AUTOSNAPSHOT_TYPE::RDSSnap: 
 			{
 				// checks correctness of  RDS instance name
 				try
 				{
-					$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-					$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+					$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+						Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+						Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+						$_SESSION['aws_region']
+					);
 					
 					$AmazonRDSClient->DescribeDBInstances($req_name);
 						
@@ -98,11 +90,11 @@
 	$info = $db->GetRow("SELECT * FROM autosnap_settings WHERE 
 		objectid = ? AND 
 		object_type = ? AND 
-		clientid = ?", 
+		env_id = ?", 
 	array(
 		$objectId,
 		$object_type,
-	 	$Client->ID
+	 	Scalr_Session::getInstance()->getEnvironmentId()
 	));
 		
 	$redirect = false;
@@ -123,14 +115,16 @@
 						rotate		= ?,
 						region		= ?,
 						objectid	= ?,
-						object_type	= ?
+						object_type	= ?,
+						env_id		= ?
 					", array(
-						$Client->ID,						
+						Scalr_Session::getInstance()->getClientId(),						
 						$post_period,
 						$post_rotate,
 						$req_region,
 						$objectId,						
-						$object_type
+						$object_type,
+						Scalr_Session::getInstance()->getEnvironmentId()
 					));
 					
 					$okmsg = sprintf(_("Auto-snapshots successfully enabled for %s"), $objectId);
@@ -145,7 +139,7 @@
 					", array(
 						$post_period,
 						$post_rotate,
-						$Client->ID,
+						Scalr_Session::getInstance()->getClientId(),
 						$objectId,
 						$object_type
 					));
@@ -161,14 +155,14 @@
 		{			
 			// if we don't want to continue  using settings for this instance (or volume)
 			$db->Execute("DELETE FROM autosnap_settings WHERE 
-				objectid=? AND 
-				object_type=? AND 
-				clientid=?",
+				objectid	= ? AND 
+				object_type	= ? AND 
+				env_id		= ?",
 			 array(
 			 	$objectId,
 			 	$object_type,
-			 	$Client->ID)
-			);			
+			 	Scalr_Session::getInstance()->getEnvironmentId()
+			 ));			
 				
 			$okmsg = sprintf(_("Auto-snapshots successfully disabled"));
 			

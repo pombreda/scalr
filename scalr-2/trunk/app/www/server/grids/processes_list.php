@@ -31,7 +31,7 @@
 			$DBFarm = $DBServer->GetFarmObject();
 					
 	        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
-	        if ($_SESSION['uid'] != 0 && $DBServer->clientId != $_SESSION['uid'])
+	        if (Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($farminfo['env_id']));
 	            throw new Exception("Instance not found in database.");
 	            
 			$port = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);

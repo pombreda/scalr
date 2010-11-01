@@ -1,38 +1,45 @@
-<? 
-	require("src/prepend.inc.php"); 
-	
+<?
+	require("src/prepend.inc.php");
+
 	CONTEXTS::$APPCONTEXT = APPCONTEXT::ORDER_WIZARD;
-		
+
 	$display['title'] = _("Self-Scaling Hosting Environment utilizing Amazon's EC2.");
 	$display['meta_descr'] = _("Scalr is fully redundant, self-curing and self-scaling hosting environment utilizing Amazon's EC2.  It is open source, allowing you to create server farms through a web-based interface using pre-built AMI's.");
-	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, self-scaling, hosting environment, cloud computing, open source, web-based interface");		
-	
+	$display['meta_keywords'] = _("Amazon EC2, scalability, AWS, hosting, scaling, self-scaling, hosting environment, cloud computing, open source, web-based interface");
+
 	$isxmlhttp = ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest');
-	
+
 	if (isset($req_logout))
 	{
 		@session_destroy();
-        
+
+        setcookie("scalr_sault", "0", time()-86400);
+		setcookie("scalr_hash", "0", time()-86400);
+		setcookie("scalr_uid", "0", time()-86400);
+		setcookie("scalr_signature", "0", time()-86400);
+
 		$mess = _("Succesfully logged out");
-		
+
 		UI::Redirect("/login.php");
 	}
-	
+
+
 	if (($req_login && $req_pass) || $req_isadmin == 1)
 	{
 	    if (($req_login == CONFIG::$ADMIN_LOGIN) && ($Crypto->Hash($req_pass) == CONFIG::$ADMIN_PASSWORD))
-		{		    
+		{
 		    if (CheckIPAcceess())
 		    {
 				$sault = $Crypto->Sault();
 				$_SESSION["sault"] = $sault;
-				$_SESSION["hash"] = $Crypto->Hash("{$req_login}:".$Crypto->Hash($req_pass).":{$sault}");
-				$_SESSION["uid"] = 0;
+				$_SESSION["hash"] = $Crypto->Hash("{$req_login}:".$Crypto->Hash($req_pass).":{$sault}");;
 				$_SESSION["cpwd"] = $req_pass;
-				
+
 				$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "/admin_dashboard.php";
 				unset($_SESSION["REQUEST_URI"]);
-				
+
+				Scalr_Session::create(0, 0, Scalr_AuthToken::SCALR_ADMIN);
+
 				$redirect = $rpath;
 		    }
 		    else
@@ -46,7 +53,7 @@
 			{
 				$hash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);
 				$valid_hash = ($newhash == $_SESSION["hash"] && !empty($_SESSION["hash"]));
-				
+
 				if ($hash == $valid_hash)
 				{
 					$user = $db->GetRow("SELECT * FROM clients WHERE id=?", array($req_id));
@@ -57,7 +64,7 @@
 			}
 			else
 				$user = $db->GetRow("SELECT * FROM clients WHERE email=?", array($req_login));
-			
+
 			if ($user)
 			{
 			    if ($user["isactive"] == 0)
@@ -82,49 +89,42 @@
 		                    $sault = $Crypto->Sault();
 		        			$_SESSION["sault"] = $sault;
 		        			$_SESSION["hash"] = $Crypto->Hash("{$user['email']}:{$user["password"]}:{$sault}");
-		        			$_SESSION["uid"] = $user["id"];
 		        			$_SESSION["u_email"] = $user["email"];
 		        			$_SESSION["cpwd"] = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-		        			$_SESSION["aws_accesskey"] = $Crypto->Decrypt($user["aws_accesskey"], $_SESSION["cpwd"]);
-		        			$_SESSION["aws_accesskeyid"] = $Crypto->Decrypt($user["aws_accesskeyid"], $_SESSION["cpwd"]);
-		        			$_SESSION["aws_accountid"] = $user["aws_accountid"];
-		        			
-		        			if ($user["aws_private_key_enc"])
-		        				$_SESSION["aws_private_key"] = $Crypto->Decrypt($user["aws_private_key_enc"], $_SESSION["cpwd"]);
-		        				
-		        			if ($user["aws_certificate_enc"])
-		        				$_SESSION["aws_certificate"] = $Crypto->Decrypt($user["aws_certificate_enc"], $_SESSION["cpwd"]);
-		        			
+
 		        			$rpath = ($_SESSION["REQUEST_URI"]) ? $_SESSION["REQUEST_URI"] : "/client_dashboard.php";
 		        			unset($_SESSION["REQUEST_URI"]);
-		        			
+
+		        			Scalr_Session::create($user['id'], $user['id'], Scalr_AuthToken::ACCOUNT_ADMIN);
+
 		        			$errmsg = false;
 		        			$err = false;
-	
+
 		        			$db->Execute("UPDATE clients SET `login_attempts`=0, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
-		        			
+
 		        			if ($post_keep_session)
 		        			{
+		        				setcookie("scalr_uid", $user["id"], time()+86400*2);
 		        				setcookie("scalr_sault", $_SESSION["sault"], time()+86400*2);
 		        				setcookie("scalr_hash", $_SESSION["hash"], time()+86400*2);
-		        				setcookie("scalr_uid", $_SESSION["uid"], time()+86400*2);
-		        				setcookie("scalr_signature", $Crypto->Hash("{$_SESSION["sault"]}:{$_SESSION["hash"]}:{$_SESSION["uid"]}:{$_SERVER['REMOTE_ADDR']}:{$_SESSION["cpwd"]}"), time()+43200);
+		        				setcookie("scalr_signature", $Crypto->Hash("{$_SESSION["sault"]}:{$_SESSION["hash"]}:{$user['id']}:{$_SERVER['REMOTE_ADDR']}:{$_SESSION["cpwd"]}"), time()+43200);
 		        			}
-		        			
+
 		        			$_SESSION['errmsg'] = null;
 		        			$_SESSION['err'] = null;
-		        			
+
 		        			$redirect = $rpath;
+
 					    }
 					    else
-					    { 
+					    {
 		                    $db->Execute("UPDATE clients SET `login_attempts`=`login_attempts` + 1, dtlastloginattempt=NOW() WHERE id=?", array($user["id"]));
 					    	$err[] = _("Incorrect login or password");
 					    }
 			    	}
 			    }
 			}
-			else 
+			else
                 $err[] = _("Incorrect login or password");
 		}
 	}
@@ -149,19 +149,19 @@
 			exit();
 		}
 	}
-	
+
 	function CheckIPAcceess()
 	{
 	    global $db;
-	    
+
 	    $current_ip = $_SERVER["REMOTE_ADDR"];
     	$current_ip_parts = explode(".", $current_ip);
-    	
+
     	$ipaccesstable = $db->Execute("SELECT * FROM ipaccess");
     	while ($row = $ipaccesstable->fetchRow())
     	{
     	    $allowedhost = $row["ipaddress"];
-    	    
+
     	    if (preg_match("/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/si", $allowedhost))
     	    {
     	        if (ip2long($allowedhost) == ip2long($current_ip))
@@ -178,7 +178,7 @@
     			   )
     			return true;
     	    }
-    	    else 
+    	    else
     	    {
     	        $ip = @gethostbyname($allowedhost);
     	        if ($ip != $allowedhost)
@@ -188,9 +188,9 @@
     	        }
     	    }
     	}
-    	
+
         return false;
 	}
-	
+
 	require("src/append.inc.php")
 ?>

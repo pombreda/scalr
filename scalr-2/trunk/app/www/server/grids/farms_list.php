@@ -9,10 +9,10 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		$sql = "SELECT clientid,id,name,status,region,dtadded FROM farms WHERE 1=1";
+		$sql = "SELECT clientid,id,name,status,dtadded FROM farms WHERE 1=1";
 		
-		if ($_SESSION["uid"] != 0)
-		   $sql .= " AND clientid='{$_SESSION['uid']}'";
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+		   $sql .= " AND env_id='".Scalr_Session::getInstance()->getEnvironmentId()."'";
 	
 		if ($req_farmid || $req_id)
 		{
@@ -68,10 +68,12 @@
 			
 			$row['dtadded'] = date("M j, Y H:i:s", strtotime($row["dtadded"]));
 			
-			if ($_SESSION['uid'] == 0)
+			if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 				$row['client_email'] = $db->GetOne("SELECT email FROM clients WHERE id='{$row['clientid']}'"); 
 				
-			$row["havemysqlrole"] = (bool)$db->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT id FROM roles WHERE alias='mysql') AND farmid='{$row['id']}'");
+			$row["havemysqlrole"] = (bool)$db->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?) AND farmid=? AND platform != ?", 
+				array(ROLE_BEHAVIORS::MYSQL, $row['id'], SERVER_PLATFORMS::RDS)
+			);
 			
 			$row['status_txt'] = FARM_STATUS::GetStatusName($row['status']);
 			

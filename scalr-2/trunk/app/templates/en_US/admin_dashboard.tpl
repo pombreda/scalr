@@ -1,5 +1,5 @@
 {include file="inc/header.tpl"}
-    {if $smarty.session.uid == 0}
+    {if $Scalr_Session->getClientId() == 0}
 	<table width="100%" border="0">
 		<tr valign="top">
 			<td>
@@ -18,22 +18,6 @@
 							<td>{$clients.inactive} [<a href="clients_view.php?isactive=0">View</a>]</td>
 						</tr>
 					{include file="inc/intable_footer.tpl" color="Gray"}
-					
-					{include file="inc/intable_header.tpl" header="Farms" color="Gray"}
-						<tr>
-							<td>Total:</td>
-							<td>{$farms.total} {if $farms.total > 0}[<a href="farms_view.php">View</a>]{/if}</td>
-						</tr>
-						<tr>
-							<td>Running:</td>
-							<td>{$farms.running} {if $farms.running > 0}[<a href="farms_view.php?status=1">View</a>]{/if}</td>
-						</tr>
-						<tr>
-							<td>Terminated:</td>
-							<td>{$farms.terminated} {if $farms.terminated > 0}[<a href="farms_view.php?status=0">View</a>]{/if}</td>
-						</tr>
-					{include file="inc/intable_footer.tpl" color="Gray"}
-					
 				{include file="inc/table_footer.tpl" disable_footer_line=1}
 			</td>
 		</tr>

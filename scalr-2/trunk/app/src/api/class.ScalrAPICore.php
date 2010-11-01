@@ -7,7 +7,18 @@
 		const HASH_ALGO = 'SHA256';
 		
 		protected $Request;
+		
+		/**
+		 * 
+		 * @var Client
+		 */
 		protected $Client;
+		
+		/**
+		 * 
+		 * @var Scalr_Environment
+		 */
+		protected $Environment;
 		protected $DB;
     	protected $Logger;
 		
@@ -51,8 +62,10 @@
     			}
     		}
     		
-    		$this->Client = Client::LoadByScalrKeyID($request['KeyID']);
-    		$auth_key = $this->Client->GetScalrAPIKey();
+    		$this->Environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadByApiKeyId($request['KeyID']);
+    		$this->Client = Client::Load($this->Environment->clientId);
+    		
+    		$auth_key = $this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ACCESS_KEY, false);
     		
     		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, $string_to_sign, $auth_key, 1));    		
     		if ($valid_sign != $request['Signature'])
@@ -69,13 +82,16 @@
 					//Authenticate
 					$this->AuthenticateREST($request);
 					
-					if ($this->Client->GetSettingValue(CLIENT_SETTINGS::API_ENABLED) != 1)
-						throw new Exception(_("API disabled for you. You can enable it at 'Settings -> System settings'"));
+					if ($this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ENABLED) != 1)
+						throw new Exception(_("API disabled for you. You can enable it at 'Settings -> Environments'"));
 					
 					//Check IP Addresses
-					$ips = explode(",", $this->Client->GetSettingValue(CLIENT_SETTINGS::API_ALLOWED_IPS));
-					if (!$this->IPAccessCheck($ips) && $_SERVER['REMOTE_ADDR'] != API_SERVER_IP)
-						throw new Exception(sprintf(_("Access to the API is not allowed from your IP '%s'"), $_SERVER['REMOTE_ADDR']));
+					if ($this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ALLOWED_IPS))
+					{
+						$ips = explode(",", $this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ALLOWED_IPS));
+						if (!$this->IPAccessCheck($ips) && $_SERVER['REMOTE_ADDR'] != API_SERVER_IP)
+							throw new Exception(sprintf(_("Access to the API is not allowed from your IP '%s'"), $_SERVER['REMOTE_ADDR']));
+					}
 						
 						
 					//Execute API call
@@ -141,7 +157,8 @@
 						ipaddress		= ?,
 						request			= ?,
 						response		= ?,
-						clientid		= ?
+						clientid		= ?,
+						env_id			= ?
 					",array(
 						$trans_id,
 						time(),
@@ -149,7 +166,8 @@
 						$ipaddr,
 						http_build_query($request),
 						$response,
-						$this->Client->ID
+						$this->Client->ID,
+						$this->Environment->id
 					));
 				}
 				catch(Exception $e) {}

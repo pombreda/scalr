@@ -87,7 +87,7 @@
 		 */
 		public function OnHostUp(HostUpEvent $event)
 		{
-			$update_all = ($event->DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::MYSQL) ? true : false;
+			$update_all = $event->DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) ? true : false;
 			$this->updateZoneServerRecords($event->DBServer->serverId, $event->DBServer->farmId, $update_all);
 		}
 		
@@ -95,7 +95,7 @@
 		{
 			$update_all = false;
 			try {
-				$update_all = ($event->DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::MYSQL) ? true : false;
+				$update_all = $event->DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) ? true : false;
 			}
 			catch(Exception $e){}
 			
@@ -111,7 +111,7 @@
 		{
 			$update_all = false;
 			try {
-				$update_all = ($event->DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::MYSQL) ? true : false;
+				$update_all = $event->DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) ? true : false;
 			}
 			catch(Exception $e){}
 			

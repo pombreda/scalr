@@ -1,16 +1,13 @@
 <?php
-
 	require("src/prepend.inc.php"); 
+	$display['load_extjs'] = true;
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
-	$display['load_extjs'] = true;
-	
-	$Client = Client::Load($_SESSION['uid']);
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon VPC&nbsp;&raquo;&nbsp;Amazon DHCP options");
 	
 	if ($_POST && $post_with_selected)
@@ -18,7 +15,10 @@
 		if ($post_action == 'delete')
 		{		
 			$AmazonVPCClient = AmazonVPC::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region']));
-			$AmazonVPCClient->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);	
+			$AmazonVPCClient->SetAuthKeys(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);	
 					
 			foreach ($post_id as $dhcp_id)
 			{

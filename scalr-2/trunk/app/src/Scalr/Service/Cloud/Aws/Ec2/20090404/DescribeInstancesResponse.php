@@ -5,14 +5,13 @@
 		
 		public function __construct(SimpleXMLElement $response)
 		{			
-			var_dump($response->reservationSet);
 			$this->reservationSet = new stdClass();
 			$this->reservationSet->item = array();
 			foreach ($response->reservationSet->item as $rset)
 			{
 				$itm = new stdClass();
-				$itm->reservationId = $rset->reservationId;
-				$itm->ownerId = $rset->ownerId;
+				$itm->reservationId = (string)$rset->reservationId;
+				$itm->ownerId = (string)$rset->ownerId;
 				foreach ($rset->groupSet->item as $item)
 				{
 					$itm->groupSet = new stdClass();
@@ -49,7 +48,7 @@
 						}
 						elseif ($k == 'monitoring')
 						{
-							$iitm->monitoring->state = $v->state;
+							$iitm->monitoring->state = ((string)$v->state == 'false') ? false : true;
 						}
 						else
 							$iitm->{$k} = (string)$v;

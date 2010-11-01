@@ -9,8 +9,7 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
 		$Client = Client::Load($_SESSION['uid']);
 		
@@ -58,7 +57,7 @@
 				if ($row['farm_roleid'])
 				{
 					$DBFarmRole = DBFarmRole::LoadByID($row['farm_roleid']);
-					$row['role_name'] = $DBFarmRole->GetRoleName();
+					$row['role_name'] = $DBFarmRole->GetRoleObject()->name;
 				}
 			}
 			catch(Exception $e) {}

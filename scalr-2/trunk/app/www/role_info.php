@@ -14,33 +14,31 @@
 		UI::Redirect("roles_view.php");
 	
 	// Check permissions
-	if ($_SESSION['uid'] != 0 && $role_info['clientid'] != 0)
+	if (Scalr_Session::getInstance()->getClientId() != 0 && $role_info['clientid'] != 0)
 	{
 		if (
-			($role_info['roletype'] == ROLE_TYPE::SHARED && $role_info['clientid'] != $_SESSION['uid'] && $role_info['approval_state'] != APPROVAL_STATE::APPROVED) ||
-			($role_info['roletype'] == ROLE_TYPE::CUSTOM && $role_info['clientid'] != $_SESSION['uid'])
+			($role_info['origin'] == ROLE_TYPE::SHARED && $role_info['client_id'] != Scalr_Session::getInstance()->getClientId() && $role_info['approval_state'] != APPROVAL_STATE::APPROVED) ||
+			($role_info['origin'] == ROLE_TYPE::CUSTOM && $role_info['client_id'] != Scalr_Session::getInstance()->getClientId())
 		   )
 		{
 			UI::Redirect("roles_view.php");	
 		}		
 	}
 		
-	$role_info['type'] = ROLE_ALIAS::GetTypeByAlias($role_info["alias"]);
-		
 	if ($role_info['clientid'] != 0)
-		$role_info['client'] = $db->GetRow("SELECT * FROM clients WHERE id=?", array($role_info['clientid']));
+		$role_info['client'] = $db->GetRow("SELECT * FROM clients WHERE id=?", array($role_info['client_id']));
 	
 	$display['role'] = $role_info;
 	
 	
-	if ($role_info['roletype'] == ROLE_TYPE::SHARED)
+	if ($role_info['origin'] == ROLE_TYPE::SHARED)
 	{		
 		$entity_name = COMMENTS_OBJECT_TYPE::ROLE;
 		$redir_link = "role_info.php?id={$role_info['id']}";
-		$object_owner = $role_info['clientid'];
+		$object_owner = $role_info['client_id'];
 		$object_name = $role_info['name'];
 		
-		$display["allow_moderation"] = ($role_info['clientid'] != 0) ? true : false;
+		$display["allow_moderation"] = ($role_info['client_id'] != 0) ? true : false;
 		if ($display["allow_moderation"])
 			$display["approval_state"] = $role_info['approval_state'];
 			

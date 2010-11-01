@@ -1,87 +1,246 @@
 <?
     define("NO_TEMPLATES", true);
-    
+
+    function GetCustomVariables($template)
+	{
+		$text = preg_replace('/(\\\%)/si', '$$scalr$$', $template);
+		preg_match_all("/\%([^\%\s]+)\%/si", $text, $matches);
+		return $matches[1];
+	}
+
     try
     {
-		require(dirname(__FILE__)."/../src/prepend.inc.php"); 
-		
+		require(dirname(__FILE__)."/../src/prepend.inc.php");
+
 	    header('Pragma: private');
 		header('Cache-control: private, must-revalidate');
-	    
-		header("Content-type: text/javascript");
-		
-		if ($req_farmid)
+
+		//header("Content-type: text/javascript");
+
+		if ($req_list == 'scaling_metrics') {
+			$dbmetrics = $db->Execute("SELECT * FROM scaling_metrics WHERE env_id=0 OR env_id=?",
+				array(Scalr_Session::getInstance()->getEnvironmentId())
+			);
+
+			$metrics = array();
+			while ($metric = $dbmetrics->FetchRow())
+			{
+				$metrics[] = array(
+					'id'	=> $metric['id'],
+					'name'	=> $metric['name'],
+					'alias'	=> $metric['alias']
+				);
+			}
+
+			$result = array(
+				'metrics' => $metrics
+			);
+		}
+		elseif ($req_list == 'scripting') {
+			$filter_sql .= " AND (";
+			// Show shared roles
+			$filter_sql .= " origin='".SCRIPT_ORIGIN_TYPE::SHARED."'";
+
+			// Show custom roles
+			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' AND clientid='".Scalr_Session::getInstance()->getClientId()."')";
+
+			//Show approved contributed roles
+			$filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' AND (approval_state='".APPROVAL_STATE::APPROVED."' OR clientid='".Scalr_Session::getInstance()->getClientId()."'))";
+			$filter_sql .= ")";
+
+	    	$sql = "select * from scripts WHERE 1=1 {$filter_sql}";
+
+	    	$scripts = $db->Execute($sql);
+	    	$scriptsList = array();
+	    	while ($script = $scripts->FetchRow())
+	    	{
+		    	$dbversions = $db->Execute("SELECT * FROM script_revisions WHERE scriptid=? AND (approval_state=? OR (SELECT clientid FROM scripts WHERE scripts.id=script_revisions.scriptid) = '".Scalr_Session::getInstance()->getClientId()."')",
+		        	array($script['id'], APPROVAL_STATE::APPROVED)
+		        );
+		        $versions = array();
+		        while ($version = $dbversions->FetchRow())
+		        {
+		        	$vars = GetCustomVariables($version["script"]);
+				    $data = array();
+				    foreach ($vars as $var)
+				    {
+				    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
+				    		$data[$var] = ucwords(str_replace("_", " ", $var));
+				    }
+				    $data = json_encode($data);
+
+		        	$versions[] = array("revision" => $version['revision'], "fields" => $data);
+		        }
+
+	    		$scr = array(
+	    			'id'			=> $script['id'],
+	    			'name'			=> $script['name'],
+	    			'description'	=> $script['description'],
+	    			'issync'		=> $script['issync'],
+	    			'timeout'		=> ($script['issync'] == 1) ? CONFIG::$SYNCHRONOUS_SCRIPT_TIMEOUT : CONFIG::$ASYNCHRONOUS_SCRIPT_TIMEOUT,
+	    			'revisions'		=> $versions
+	    		);
+
+	    		$scriptsList[] = $scr;
+	    	}
+
+			$result = array(
+				'scripts'		=> $scriptsList,
+				'events'		=> array(
+					array(EVENT_TYPE::HOST_UP, EVENT_TYPE::GetEventDescription(EVENT_TYPE::HOST_UP)),
+					array(EVENT_TYPE::HOST_INIT, EVENT_TYPE::GetEventDescription(EVENT_TYPE::HOST_INIT)),
+					array(EVENT_TYPE::HOST_DOWN, EVENT_TYPE::GetEventDescription(EVENT_TYPE::HOST_DOWN)),
+					array(EVENT_TYPE::REBOOT_COMPLETE, EVENT_TYPE::GetEventDescription(EVENT_TYPE::REBOOT_COMPLETE)),
+					array(EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED, EVENT_TYPE::GetEventDescription(EVENT_TYPE::INSTANCE_IP_ADDRESS_CHANGED)),
+					array(EVENT_TYPE::NEW_MYSQL_MASTER, EVENT_TYPE::GetEventDescription(EVENT_TYPE::NEW_MYSQL_MASTER)),
+					array(EVENT_TYPE::EBS_VOLUME_MOUNTED, EVENT_TYPE::GetEventDescription(EVENT_TYPE::EBS_VOLUME_MOUNTED)),
+					array(EVENT_TYPE::BEFORE_INSTANCE_LAUNCH, EVENT_TYPE::GetEventDescription(EVENT_TYPE::BEFORE_INSTANCE_LAUNCH)),
+					array(EVENT_TYPE::BEFORE_HOST_TERMINATE, EVENT_TYPE::GetEventDescription(EVENT_TYPE::BEFORE_HOST_TERMINATE)),
+					array(EVENT_TYPE::DNS_ZONE_UPDATED, EVENT_TYPE::GetEventDescription(EVENT_TYPE::DNS_ZONE_UPDATED)),
+					array(EVENT_TYPE::EBS_VOLUME_ATTACHED, EVENT_TYPE::GetEventDescription(EVENT_TYPE::EBS_VOLUME_ATTACHED))
+				)
+			);
+		}
+		elseif ($req_list == 'roles')
 		{
-		    $DBFarm = DBFarm::LoadByID($req_farmid);
-		    if ($_SESSION["uid"] != 0 && $_SESSION['uid'] != $DBFarm->ClientID)
-		    	throw new Exception("Farm not found");
-		    
-		    $region = $DBFarm->Region;
+			// Enabled platforms list
+			$e_platforms = Scalr_Session::getInstance()->getEnvironment()->getEnabledPlatforms();
+			$platforms = array();
+			$l_platforms = SERVER_PLATFORMS::GetList();
+			foreach ($e_platforms as $platform)
+			{
+				$platforms[$platform] = $l_platforms[$platform];
+				$locations_list[$platform] = PlatformFactory::NewPlatform($platform)->getLocations();
+			}
+
+			$roles = array();
+
+		    $roles_sql = "SELECT id FROM roles WHERE (env_id = 0 OR env_id=?) AND id IN (SELECT role_id FROM role_images WHERE platform IN ('".implode("','", array_keys($platforms))."'))";
+			$args[] = Scalr_Session::getInstance()->getEnvironmentId();
+
+			$dbroles = $db->Execute($roles_sql, $args);
+			while ($role = $dbroles->FetchRow())
+			{
+				$dbRole = DBRole::loadById($role['id']);
+
+				if ($dbRole->origin == ROLE_TYPE::SHARED && $dbRole->clientId != 0)
+		        {
+		        	if (($dbRole->clientId != Scalr_Session::getInstance()->getClientId()  && $dbRole->approvalState != APPROVAL_STATE::APPROVED))
+		        		continue;
+		        }
+
+		        $role_platforms = $dbRole->getPlatforms();
+		        $role_locations = array();
+		        foreach ($role_platforms as $platform)
+		        	$role_locations[$platform] = $dbRole->getCloudLocations($platform);
+
+		        $roles[] = array(
+		        	'role_id'				=> $dbRole->id,
+		        	'arch'					=> $dbRole->architecture,
+		        	'group'					=> ROLE_GROUPS::GetConstByBehavior($dbRole->getBehaviors()),
+		        	'name'					=> $dbRole->name,
+		        	'generation'			=> $dbRole->generation,
+		        	'behaviors'				=> implode(",", $dbRole->getBehaviors()),
+		        	'origin'				=> $dbRole->origin,
+		        	'isstable'				=> (bool)$dbRole->isStable,
+		        	'platforms'				=> implode(",", $role_platforms),
+		        	'locations'				=> $role_locations,
+		        	'os'					=> $dbRole->os == 'Unknown' ? 'Unknown OS' : $dbRole->os
+		        );
+			}
+
+			$result = array(
+				'roles'			=> $roles,
+				'groups'		=> ROLE_GROUPS::GetName(null, true),
+				'platforms'		=> $platforms,
+				'locations'		=> $locations_list
+			);
 		}
 		else
-			$region = $req_region;
-		
-		$roles = array();
-		    
-	    $roles_sql = "SELECT id, roletype, ami_id, approval_state, name, clientid, platform, alias, architecture, description, isstable, region FROM roles WHERE 1=1";
-		if ($_SESSION['uid'] != 0)
 		{
-			$roles_sql .= " AND (roletype = ? OR (roletype = ? AND clientid=?))";
-			$args[] = ROLE_TYPE::SHARED;
-			$args[] = ROLE_TYPE::CUSTOM;
-			$args[] = $_SESSION['uid'];
+			$farm_roles = array();
+
+			if ($req_farmid)
+			{
+				try
+				{
+					$dbFarm = DBFarm::LoadByID($req_farmid);
+					if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($dbFarm->EnvID))
+						throw new Exception("No access");
+
+					foreach ($dbFarm->GetFarmRoles() as $dbFarmRole)
+					{
+						$scripts = $db->GetAll("SELECT farm_role_scripts.*, scripts.name FROM farm_role_scripts
+						INNER JOIN scripts ON scripts.id = farm_role_scripts.scriptid
+						WHERE farm_roleid=? AND issystem='1'",
+							array($dbFarmRole->ID)
+						);
+						$scripts_object = array();
+						foreach ($scripts as $script)
+						{
+							$scripts_object[] = array(
+								'script_id'		=> $script['scriptid'],
+								'script'		=> $script['name'],
+								'params'		=> unserialize($script['params']),
+								'target'		=> $script['target'],
+								'version'		=> $script['version'],
+								'timeout'		=> $script['timeout'],
+								'issync'		=> $script['issync'],
+								'order_index'	=> $script['order_index'],
+								'event' 		=> $script['event_name'],
+								'order_index'	=> $script['order_index']
+							);
+						}
+
+						$scalingManager = new Scalr_Scaling_Manager($dbFarmRole);
+						$scaling = array();
+						foreach ($scalingManager->getFarmRoleMetrics() as $farmRoleMetric)
+							$scaling[$farmRoleMetric->metricId] = $farmRoleMetric->getSettings();
+
+						$dbPresets = $db->GetAll("SELECT * FROM farm_role_service_config_presets WHERE farm_roleid=?", array($dbFarmRole->ID));
+						$presets = array();
+						foreach ($dbPresets as $preset)
+							$presets[$preset['behavior']] = $preset['preset_id'];
+
+						$farm_role = array(
+				        	'role_id'		=> $dbFarmRole->RoleID,
+							'platform'		=> $dbFarmRole->Platform,
+							'arch'			=> $dbFarmRole->GetRoleObject()->architecture,
+							'group'			=> ROLE_GROUPS::GetConstByBehavior($dbFarmRole->GetRoleObject()->getBehaviors()),
+				        	'name'			=> $dbFarmRole->GetRoleObject()->name,
+				        	'behaviors'		=> implode(",", $dbFarmRole->GetRoleObject()->getBehaviors()),
+			        		'scripting'		=> $scripts_object,
+			        		'settings'		=> $dbFarmRole->GetAllSettings(),
+							'cloud_location'=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION),
+			        		'launch_index'	=> (int)$dbFarmRole->LaunchIndex,
+							'scaling'		=> $scaling,
+							'config_presets'=> $presets
+		        		);
+
+						array_push($farm_roles, $farm_role);
+					}
+
+					$farm = array(
+						'name' 				=> $dbFarm->Name,
+						'description'		=> $dbFarm->Comments,
+						'roles_launch_order'=> $dbFarm->RolesLaunchOrder
+					);
+				}
+				catch (Exception $e)
+				{
+					var_dump($e->getMessage());
+				}
+			}
+
+			$result = array('farm_roles' => $farm_roles, 'farm' => $farm);
 		}
-				
-		$dbroles = $db->Execute($roles_sql, $args);
-		while ($role = $dbroles->FetchRow())
-		{
-			if ($role['roletype'] == ROLE_TYPE::SHARED && $role['clientid'] != 0 && $_SESSION['uid'] != 0)
-	        {
-	        	if ($DBFarm && ($role['clientid'] != $DBFarm->ClientID  && $role['approval_state'] != APPROVAL_STATE::APPROVED))
-	        		continue;
-	        }
-		    	
-	        if (($role['name'] == 'mysql' || $role['name'] == 'mysql64'))
-	        	continue;
-		        	
-	        if (in_array($role['platform'], array(SERVER_PLATFORMS::EC2, SERVER_PLATFORMS::RDS)))
-	        {
-	        	if ($region != $role['region'])
-	        		continue;
-	        }
-	
-	        if ($role['roletype'] == ROLE_TYPE::SHARED)
-	        {
-	        	if ($role['clientid'] == 0)
-	        		$origin = 'Public roles';
-	        	else
-	        		$origin = 'Contributed roles';
-	        }
-	        else
-	        	$origin = 'Private roles';
-	        
-	        $roles[] = array(
-	        	'role_id'				=> $role['id'],
-	        	'arch'					=> $role['architecture'],
-	        	'group_description'		=> ROLE_ALIAS::GetTypeByAlias($role["alias"]),
-	        	'name'					=> $role['name'],
-	        	'alias'					=> $role['alias'],
-	        	'description'			=> $role['description'],
-	        	'image_id'				=> $role['ami_id'],
-	        	'comments_count'		=> '0',
-	        	'platform'				=> $role['platform'],
-	        	'origin'				=> $origin,
-	        	'isstable'				=> (bool)$role['isstable'],
-	        	'dtbuilt'				=> $role['dtbuilt']
-	        );
-		} 
     }
     catch(Exception $e)
     {
     	var_dump($e->getMessage());
     }
 
-    $result = json_encode($roles); 
+    $result = json_encode($result);
     header("Content-length: ".strlen($result));
     print $result;
     exit();

@@ -9,10 +9,9 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_ADMIN);
 
-		$sql = "SELECT * from api_log WHERE id > 0 AND clientid='{$_SESSION['uid']}'";
+		$sql = "SELECT * from api_log WHERE id > 0 AND clientid='".Scalr_Session::getInstance()->getClientId()."'";
 	
 		if ($req_query)
 		{

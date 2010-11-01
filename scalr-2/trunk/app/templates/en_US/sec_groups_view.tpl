@@ -5,16 +5,9 @@
 <div id="listview-sec-groups-view"></div>
 
 <script type="text/javascript">
-
-var uid = '{$smarty.session.uid}';
-
-var regions = [
-{foreach from=$regions name=id key=key item=item}
-	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
-{/foreach}
-];
-
-var region = '{$smarty.session.aws_region}';
+var cloud_locations = {$locations};
+var cloud_location = '{$location}';
+var platform = '{$platform}';
 
 {literal}
 Ext.onReady(function () {
@@ -26,7 +19,7 @@ Ext.onReady(function () {
 			]
 		}),
 		remoteSort: true,
-		url: '/server/grids/sec_groups_list.php?a=1{/literal}{$grid_query_string}{literal}'
+		url: '/server/grids/sec_groups_list.php?a=1&platform='+platform+'{/literal}{$grid_query_string}{literal}'
 	});
 
 	var panel = new Scalr.Viewers.ListView({
@@ -44,9 +37,15 @@ Ext.onReady(function () {
 			new Ext.form.ComboBox({
 				allowBlank: false,
 				editable: false, 
-				store: regions,
-				value: region,
-				displayField: 'state',
+				store:new Ext.data.ArrayStore({
+					id:0,
+					fields: ['id','title'],
+					data:cloud_locations
+				}),
+				valueField:'id',
+				displayField:'title',
+				hiddenName:'locationCombo',
+				value: cloud_location,
 				typeAhead: false,
 				mode: 'local',
 				triggerAction: 'all',
@@ -54,7 +53,7 @@ Ext.onReady(function () {
 				width: 100,
 				listeners: {
 					select: function(combo, record, index) {
-						store.baseParams.region = combo.getValue(); 
+						store.baseParams.location = combo.getValue(); 
 						store.load();
 					}
 				}
@@ -82,7 +81,11 @@ Ext.onReady(function () {
 		},
 
     	rowOptionsMenu: [
-			{itemId: "option.edit", 		text:'Edit', 			  	href: "/sec_group_edit.php?name={name}"}
+			{itemId: "option.edit", 		text:'Edit',
+				menuHandler: function(item) {
+					document.location = "/sec_group_edit.php?name="+item.currentRecordData.name+"&platform="+platform+"&location="+Ext.get('locationCombo').dom.value;
+				}
+			}
      	],
 
 		listViewOptions: {

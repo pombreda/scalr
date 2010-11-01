@@ -9,10 +9,12 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-		   throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
-		$info = $db->GetOne("SELECT id FROM bundle_tasks WHERE id=? AND client_id=?", array($req_task_id, $_SESSION['uid']));
+		$info = $db->GetOne("SELECT id FROM bundle_tasks WHERE id=? AND env_id=?", 
+			array($req_task_id, Scalr_Session::getInstance()->getEnvironmentId())
+		);
+		
 		if (!$info)
 			throw new Exception(_("Task not found"));
 		

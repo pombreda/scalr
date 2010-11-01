@@ -18,16 +18,17 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$Client = Client::Load($_SESSION['uid']);
-		
-		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region']));		 
-		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(AWSRegions::GetAPIURL($_SESSION['aws_region']));		 
+		$AmazonEC2Client->SetAuthKeys(
+		    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY)
+		);
 	
 		switch($req_ownerFilter)
 		{
 			case 	'amazon': 	$owner = array('amazon'); 				break;
 			case	'all': 		$owner = null; 							break;
-			case	'my': 		$owner = array($Client->AWSAccountID); 	break;
+			case	'my': 		$owner = array(Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID)); 	break;
 		}
 		
 		// describe amis
@@ -87,13 +88,13 @@
 		foreach ($rowz as $row)
 		{
 			$response["data"][] = array(
-					"imageId"			=> (string)$row['imageId'], // have to call only like "id" for correct script work in template
-					"imageState"		=> (string)$row['imageState'],
-					"imageOwnerId"		=> (string)$row['imageOwnerId'],
-					"architecture"		=> (string)$row['architecture'],
-					"imageType"			=> (string)$row['imageType'],
-					"rootDeviceType"	=> (string)$row['rootDeviceType']
-					);				
+				"imageId"			=> (string)$row['imageId'], // have to call only like "id" for correct script work in template
+				"imageState"		=> (string)$row['imageState'],
+				"imageOwnerId"		=> (string)$row['imageOwnerId'],
+				"architecture"		=> (string)$row['architecture'],
+				"imageType"			=> (string)$row['imageType'],
+				"rootDeviceType"	=> (string)$row['rootDeviceType']
+			);				
 		} 
 		
 		$response["types_i386"]   = array(I386_TYPE::M1_SMALL,I386_TYPE::C1_MEDIUM);

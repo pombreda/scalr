@@ -1,19 +1,20 @@
 Ext.ns("Scalr.Viewers");
 
 Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
-	
+
 	height: 130,
 	mouseDrag: false,
-	
+
 	initComponent: function() {
 		Scalr.Viewers.SelRolesViewer.superclass.initComponent.call(this);
-		
+
 		this.addEvents(
 			"addrole",
 			"deleterole"
 		);
-		
+
 		this.dataView = new Ext.DataView({
+			onAdd: Ext.emptyFn,
 			fixWidth: function(obj) {
 				if (this.rendered) {
 					if (this.store.getCount()) {
@@ -23,7 +24,9 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 					}
 
 					var scrollOffset = parseInt(obj.dataViewEl.dom.scrollLeft) || 0;
+					//console.log(1);
 					obj.dataViewEl.dom.scrollLeft = scrollOffset; // browser will clean scrollLeft if needed
+					//console.log(2);
 
 					var el = this.getEl().child("ul");
 
@@ -48,7 +51,7 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 						var record = this.dataView.getStore().getAt(this.dataView.indexOf(item));
 						if (record) {
 							handler = function(e) {
-								Ext.Msg.confirm("Delete", "Delete role \"" + this.record.get("name") + "\" ?", function(btn) {
+								Ext.Msg.confirm("Delete", "Delete role \"" + this.record.get("name") + "\" from farm ?", function(btn) {
 									if (btn == 'yes') {
 										this.obj.fireEvent("deleterole", this.record);
 									}
@@ -68,7 +71,7 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 						var sib = el.next('div.full');
 						if (sib) sib.addClass('full-show');
 					}, el);
-					
+
 					el.on('mouseout', function(e) {
 						var el = e.getTarget("", 10, true).findParent("div.short", 10, true);
 						var sib = el.next('div.full');
@@ -80,12 +83,13 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 			id: 'viewers-selrolesviewer',
 			store: this.store,
 			height: this.height,
-			emptyText: 'No roles',
+			emptyText: '<div class="viewers-selrolesviewer-empty-text">No roles were added to farm</div>',
+			deferEmptyText: false,
 			tpl: new Ext.XTemplate(
 				'<ul>',
 					'<tpl for=".">',
 						'<li>',
-							'<img src="/images/ui-ng/icons/roles/{icon}" class="icon" />',
+							'<img src="/images/ui-ng/icons/{[this.getLocationIcon(values)]}.png" class="icon" />',
 							'<img src="/images/ui-ng/icons/platform/{platform}.png" class="platform" />',
 							'<img src="/images/ui-ng/icons/arch/{arch}.png" class="arch" />',
 							'<div class="short">',
@@ -97,11 +101,31 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 									'<span class="short">{name}</span>',
 								'</tpl>',
 							'</div>',
+							'<div class="location">{cloud_location}</div>',
 							'<a>&nbsp;</a>',
 						'</li>',
 					'</tpl>',
-				'</ul>'
-			),
+				'</ul>', {
+				getLocationIcon: function (values) {
+					var groups = [ "base", "database", "app", "lb", "cache", "mixed" ];
+					var behaviors = [ "app_app", "app_tomcat", "cache_memcached", "database_cassandra", "database_mysql" ];
+
+					var b = (values['behaviors1'] || '').split(','), key;
+					for (var i = 0, len = b.length; i < len; i++) {
+						key = values['group'] + '_' + b[i];
+
+						for (var k = 0; k < behaviors.length; k++ ) {
+							if (behaviors[k] == key)
+								return 'behaviors/' + key;
+						}
+					}
+
+					for (var i = 0; i < groups.length; i++ ) {
+						if (groups[i] == values['group'])
+							return 'groups/' + groups[i];
+					}
+				}
+			}),
 			singleSelect: true,
 			itemSelector: 'li',
 			selectedClass: 'selrolesviewer-selected'
@@ -140,7 +164,7 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 				if (this.dataView.mouseDrag) {
 					var xy = e.getXY(), s = this.dataView.lastXY;
 					this.dataView.lastXY = xy;
-					
+
 					var scrollOffset = parseInt(this.dataViewEl.dom.scrollLeft) || 0;
 					this.dataViewEl.scrollTo('left', scrollOffset + s[0] - xy[0]);
 				}
@@ -151,28 +175,45 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 				this.dataViewEl.scrollTo('left', scrollOffset - e.getWheelDelta() * 130, true);
 				e.preventDefault();
 			}, this);
+
+			this.dataView.refresh.call(this.dataView);
 		}, this);
+
+		this.dataView.on('containerclick', function () {
+			return false;
+		});
 
 		handler = function() {
 			this.dataView.fixWidth(this);
 			this.dataView.createLinks(this);
 		};
 
-		this.dataView.getStore().on('remove', handler, this);
 		Ext.apply(this.dataView, { refresh: this.dataView.refresh.createSequence(handler, this) });
+
+		this.dataView.getStore().on('add', this.dataView.refresh, this.dataView);
+		//this.dataView.getStore().un('remove', this.dataView.onRemove);
+		//this.dataView.getStore().on('remove', this.dataView.fixWidth, this);
 
 		// TODO: check all variants (include browser window/parent window resize)
 		this.on('resize', function() {
 			// set width of dataView (indent from left and right)
 			this.dataViewEl.setWidth(this.getEl().getWidth() - 80 - 40); // 80 (left), 40 (right)
+			this.dataView.fixWidth.call(this.dataView, this);
 		});
 	},
 
-	onRender: function(ct, position) {
+	clearFilter: function () {
+		this.dataView.store.clearFilter();
+		if (this.rendered)
+			this.filterInputEl.child("input").dom.value = '';
+	},
+
+	onRender: function (ct, position) {
 		Scalr.Viewers.SelRolesViewer.superclass.onRender.call(this, ct, position);
-		
+
 		this.el.setStyle('overflow', 'hidden');
 		this.el.setStyle('position', 'relative');
+		this.el.setStyle('background-color', '#FFF');
 		this.el.setHeight(this.height);
 
 		this.dataViewEl = this.el.createChild({
@@ -204,7 +245,7 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 			e.stopEvent();
 			this.fireEvent('addrole', this);
 		}, this);
-		
+
 		this.filterButtonEl.on('click', function() {
 			if (this.filterButtonEl.is("div.viewers-selrolesviewer-filter-button-click")) {
 				this.filterInputEl.hide();
@@ -225,8 +266,33 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 			this.dataViewEl.scrollTo('left', scrollOffset - 130, true);
 		}, this);
 
+		this.dataViewEl.on('scroll', function () {
+			var scrollOffset = parseInt(this.dataViewEl.dom.scrollLeft) || 0, el = this.dataViewEl.child('ul');
+			//console.log(scrollOffset);
+
+			//if (this.)
+
+/*
+
+					if (el && el.getWidth() > this.getEl().getWidth()) {
+						obj.buttonMoveLeftEl.removeClass('viewers-selrolesviewer-scroll-disabled');
+						obj.buttonMoveRightEl.removeClass('viewers-selrolesviewer-scroll-disabled');
+						obj.buttonMoveLeftEl.child('img').dom.src = '/images/ui-ng/viewers/selrolesviewer/previous.png';
+						obj.buttonMoveRightEl.child('img').dom.src = '/images/ui-ng/viewers/selrolesviewer/next.png';
+					} else {
+						obj.buttonMoveLeftEl.addClass('viewers-selrolesviewer-scroll-disabled');
+						obj.buttonMoveRightEl.addClass('viewers-selrolesviewer-scroll-disabled');
+						obj.buttonMoveLeftEl.child('img').dom.src = '/images/ui-ng/viewers/selrolesviewer/previous_disable.png';
+						obj.buttonMoveRightEl.child('img').dom.src = '/images/ui-ng/viewers/selrolesviewer/next_disable.png';
+					}
+
+*/
+
+			//console.log('scroll');
+		}, this);
+
 		this.dataView.render(this.dataViewEl);
-		
+
 		this.dataViewEl.unselectable();
 		this.buttonMoveLeftEl.unselectable();
 		this.buttonMoveRightEl.unselectable();

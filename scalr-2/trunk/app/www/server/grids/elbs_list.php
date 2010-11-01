@@ -9,13 +9,13 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-			throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
-		$Client = Client::Load($_SESSION['uid']);
-		
-		$AmazonELBClient = AmazonELB::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey); 
-		$AmazonELBClient->SetRegion($_SESSION['aws_region']);
+		$AmazonELBClient = Scalr_Service_Cloud_Aws::newElb(
+			$_SESSION['aws_region'], 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+		);
 		
 		// Rows
 		$aws_response = $AmazonELBClient->DescribeLoadBalancers();
@@ -43,7 +43,7 @@
 					$DBFarmRole = DBFarmRole::LoadByID($roleid);
 					$farmid = $DBFarmRole->FarmID;
 					$farm_name = $db->GetOne("SELECT name FROM farms WHERE id=?", array($DBFarmRole->FarmID));
-					$role_name = $DBFarmRole->GetRoleName();
+					$role_name = $DBFarmRole->GetRoleObject()->name;
 				}
 				catch(Exception $e)
 				{

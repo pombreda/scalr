@@ -8,18 +8,46 @@
 			parent::__construct();
 		}
 
+		public function OnServiceConfigurationPresetChanged(ServiceConfigurationPresetChangedEvent $event)
+		{
+			$farmRolesPresetInfo = $this->DB->GetAll("SELECT * FROM farm_role_service_config_presets WHERE
+				preset_id = ? AND behavior = ?
+			", array($event->ServiceConfiguration->id, $event->ServiceConfiguration->roleBehavior));
+			if (count($farmRolesPresetInfo) > 0)
+			{
+				$msg = new Scalr_Messaging_Msg_UpdateServiceConfiguration(
+					$event->ServiceConfiguration->roleBehavior,
+					$event->ResetToDefaults,
+					$farmRolesPresetInfo['restart_service']
+				);
+				
+				foreach ($farmRolesPresetInfo as $farmRole)
+				{
+					try
+					{
+						$dbFarmRole = DBFarmRole::LoadByID($farmRole['farm_roleid']);
+						
+						foreach ($dbFarmRole->GetServersByFilter(array('status' => SERVER_STATUS::RUNNING)) as $dbServer)
+						{
+							if ($dbServer->IsSupported("0.6"))
+								$dbServer->SendMessage($msg);
+						}
+					}
+					catch(Exception $e){}
+				}
+			}
+		}
+		
 		public function OnRoleOptionChanged(RoleOptionChangedEvent $event) 
 		{	
 			switch($event->OptionName)
 			{
-				case RESERVED_ROLE_OPTIONS::APACHE_HTTPS_VHOST_TEMPLATE:
-				case RESERVED_ROLE_OPTIONS::APACHE_HTTP_VHOST_TEMPLATE:
 				case RESERVED_ROLE_OPTIONS::NGINX_HTTPS_VHOST_TEMPLATE:
 					
 					$servers = DBFarm::LoadByID($this->FarmID)->GetServersByFilter(array('status' => array(SERVER_STATUS::INIT, SERVER_STATUS::RUNNING)));
 					foreach ((array)$servers as $DBServer)
 					{
-						if ($DBServer->GetFarmRoleObject()->GetRoleOrigin() == ROLE_ALIAS::APP || $DBServer->GetFarmRoleObject()->GetRoleOrigin() == ROLE_ALIAS::WWW)
+						if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::APACHE) || $DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX))
 							$DBServer->SendMessage(new Scalr_Messaging_Msg_VhostReconfigure());
 					}
 					
@@ -35,8 +63,8 @@
 			foreach ((array)$servers as $DBServer)
 			{
 				$msg = new Scalr_Messaging_Msg_Mysql_NewMasterUp(
-					$event->DBServer->GetFarmRoleObject()->GetRoleAlias(),
-					$event->DBServer->GetFarmRoleObject()->GetRoleName(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name,
 					$event->DBServer->localIp,
 					$event->DBServer->remoteIp,
 					$event->SnapURL
@@ -60,10 +88,10 @@
 			{
 				if ($event->DBServer->platform == SERVER_PLATFORMS::EC2)
 				{
-					$msg->awsAccountId = $event->DBServer->GetClient()->AWSAccountID;
+					$msg->awsAccountId = $event->DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID);
 				}
 			}
-			if ($dbFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL)
+			if ($dbFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
 			{
 				$isMaster = (int)$dbServer->GetProperty(SERVER_PROPERTIES::DB_MYSQL_MASTER);
 
@@ -89,8 +117,8 @@
 				if ($DBServer->serverId != $event->DBServer->serverId)
 				{
 					$msg = new Scalr_Messaging_Msg_HostInit(
-						$event->DBServer->GetFarmRoleObject()->GetRoleAlias(),
-						$event->DBServer->GetFarmRoleObject()->GetRoleName(),
+						$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(),
+						$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name,
 						$event->DBServer->localIp,
 						$event->DBServer->remoteIp
 					);
@@ -105,8 +133,8 @@
 			foreach ((array)$servers as $DBServer)
 			{
 				$msg = new Scalr_Messaging_Msg_HostUp(
-					$event->DBServer->GetFarmRoleObject()->GetRoleAlias(),
-					$event->DBServer->GetFarmRoleObject()->GetRoleName(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name,
 					$event->DBServer->localIp,
 					$event->DBServer->remoteIp
 				);
@@ -120,8 +148,8 @@
 			foreach ($servers as $DBServer)
 			{									
 				$msg = new Scalr_Messaging_Msg_BeforeHostTerminate(
-					$event->DBServer->GetFarmRoleObject()->GetRoleAlias(),
-					$event->DBServer->GetFarmRoleObject()->GetRoleName(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(),
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name,
 					$event->DBServer->localIp,
 					$event->DBServer->remoteIp
 				);
@@ -140,14 +168,17 @@
 			{
 				$DBFarmRole = $event->DBServer->GetFarmRoleObject();
 				$is_synchronize = ($DBFarmRole->NewRoleID) ? true : false;
-				$alias = $DBFarmRole->GetRoleAlias();
 			}
 			catch(Exception $e)
 			{
 				$is_synchronize = false;
-				$alias = $this->DB->GetOne("SELECT alias FROM roles WHERE id=?", array($event->DBServer->roleId));
 			}
 
+			try
+			{
+				$DBRole = DBRole::loadById($event->DBServer->roleId);
+			}
+			catch(Exception $e){}
 
 			$first_in_role_handled = false;
 			$first_in_role_server = null;
@@ -157,13 +188,11 @@
 					continue;
 				
 				$isfirstinrole = '0';
-				$calias = $this->DB->GetOne("SELECT alias FROM roles WHERE id=?", array($DBServer->roleId));
-				
 				if ($event->DBServer->GetProperty(SERVER_PROPERTIES::DB_MYSQL_MASTER) && !$first_in_role_handled)
 				{
 					if (!$is_synchronize || $DBServer->farmRoleId != $event->DBServer->farmRoleId)
 					{
-						if ($calias == ROLE_ALIAS::MYSQL)
+						if (DBRole::loadById($DBServer->roleId)->hasBehavior(ROLE_BEHAVIORS::MYSQL))
 						{
 							$first_in_role_handled = true;
 							$first_in_role_server = $DBServer;
@@ -171,21 +200,10 @@
 						}
 					}	
 				}
-
-				if ($DBFarmRole)
-				{
-					$role_name = $DBFarmRole->GetRoleName();
-					$role_alias = $DBFarmRole->GetRoleAlias();
-				}
-				else
-				{
-					$role_name = '*Unknown*';
-					$role_alias = '*Unknown*';
-				}
 				
 				$msg = new Scalr_Messaging_Msg_HostDown(
-					$role_alias,
-					$role_name,
+					($DBRole) ? $DBRole->getBehaviors() : '*Unknown*',
+					($DBRole) ? $DBRole->name : '*Unknown*',
 					$event->DBServer->localIp,
 					$event->DBServer->remoteIp
 				);

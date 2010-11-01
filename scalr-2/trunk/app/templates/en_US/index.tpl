@@ -1,5 +1,5 @@
 {include file="inc/header.tpl"}
-    {if $smarty.session.uid == 0}
+    {if $Scalr_Session->getClientId() == 0}
 	<table width="100%" border="0">
 		<tr valign="top">
 			<td>

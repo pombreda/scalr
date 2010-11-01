@@ -13,19 +13,19 @@
 
 		public function OnStartForking()
 		{
-			$this->ThreadArgs = array('http://status.aws.amazon.com/rss/CloudFront.rss', // CF is common for all regions
-			// US region
+			$this->ThreadArgs = array('http://status.aws.amazon.com/rss/CloudFront.rss', // CF is common for all locations
+			// US location
 			'http://status.aws.amazon.com/rss/EC2NoCal.rss',
 			'http://status.aws.amazon.com/rss/EC2.rss',
 			'http://status.aws.amazon.com/rss/RelationalDBServiceNoCal.rss',
 			'http://status.aws.amazon.com/rss/RelationalDBService.rss',
 			'http://status.aws.amazon.com/rss/S3NoCal.rss',
 			'http://status.aws.amazon.com/rss/S3US.rss',
-			// Europe region
+			// Europe location
 			'http://status.aws.amazon.com/rss/EC2EU.rss',
 			'http://status.aws.amazon.com/rss/RelationalDBServiceEU.rss',
 			'http://status.aws.amazon.com/rss/S3EU.rss',
-			// Asia Pacific region
+			// Asia Pacific location
 			'http://status.aws.amazon.com/rss/EC2APac.rss',
 			'http://status.aws.amazon.com/rss/RelationalDBServiceAPac.rss',
 			'http://status.aws.amazon.com/rss/S3APac.rss'

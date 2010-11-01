@@ -32,7 +32,8 @@
 	$rows = array();
 	foreach ($search_queries as $sq)
 	{
-		$sql = str_replace('{$_SESSION[\'uid\']}', $_SESSION["uid"], $sq["sql"]);
+		$sql = str_replace('{CLIENT_ID}', Scalr_Session::getInstance()->getClientId(), $sq["sql"]);
+		$sql = str_replace('{ENV_ID}', Scalr_Session::getInstance()->getEnvironmentId(), $sql);
 		$sql = str_replace('%s', '%' . addslashes($req_search) . '%', $sql);
 		
 		$count = $db->GetOne($sql);

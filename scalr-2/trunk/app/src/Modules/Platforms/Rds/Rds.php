@@ -1,7 +1,14 @@
 <?php
-	class Modules_Platforms_Rds implements IPlatformModule
+	class Modules_Platforms_Rds extends Modules_Platforms_Aws implements IPlatformModule
 	{
 		private $db;
+		
+		/** Properties **/
+		const ACCOUNT_ID 	= 'rds.account_id';
+		const ACCESS_KEY	= 'rds.access_key';
+		const SECRET_KEY	= 'rds.secret_key';
+		const PRIVATE_KEY	= 'rds.private_key';
+		const CERTIFICATE	= 'rds.certificate';
 		
 		/**
 		 * 
@@ -14,6 +21,22 @@
 			$this->db = Core::GetDBInstance();
 		}	
 		
+		public function getPropsList()
+		{
+			return array(
+				self::ACCOUNT_ID	=> 'AWS Account ID',
+				self::ACCESS_KEY	=> 'AWS Access Key',
+				self::SECRET_KEY	=> 'AWS Secret Key',
+				self::CERTIFICATE	=> 'AWS x.509 Certificate',
+				self::PRIVATE_KEY	=> 'AWS x.509 Private Key'
+			);
+		}
+		
+		public function GetServerCloudLocation(DBServer $DBServer)
+		{
+			return $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION);
+		}
+		
 		public function GetServerID(DBServer $DBServer)
 		{
 			return $DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID);
@@ -23,7 +46,16 @@
 		{
 			return in_array(
 				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID), 
-				array_keys($this->GetServersList($DBServer->GetClient(), $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)))
+				array_keys($this->GetServersList($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)))
+			);
+		}
+		
+		public function getRdsClient(Scalr_Environment $environment, $region)
+		{			
+			return Scalr_Service_Cloud_Aws::newRds(
+				$environment->getPlatformConfigValue(self::ACCESS_KEY),
+				$environment->getPlatformConfigValue(self::SECRET_KEY),
+				$region
 			);
 		}
 		
@@ -31,8 +63,10 @@
 		{
 			$Client = $DBServer->GetClient();
 			
-			$RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-		    $RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION));
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			);
 	        
 	        
 	        $iinfo = $RDSClient->DescribeDBInstances($DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID));
@@ -50,12 +84,14 @@
 		    }
 		}
 		
-		private function GetServersList(Client $Client, $region, $skipCache = false)
+		private function GetServersList(Scalr_Environment $environment, $region, $skipCache = false)
 		{
-			if (!isset($this->instancesListCache[$Client->AWSAccountID][$region]))
+			if (!isset($this->instancesListCache[$environment->id][$region]))
 			{
-				$RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-		        $RDSClient->SetRegion($region);
+				$RDSClient = $this->getRdsClient(
+					$environment,
+					$region
+				);
 				
 		        try
 				{
@@ -69,24 +105,24 @@
 			
 				if ($results->DBInstances)
 	            	foreach ($results->DBInstances->children() as $item)
-	                	$this->instancesListCache[$Client->AWSAccountID][$region][(string)$item->DBInstanceIdentifier] = (string)$item->DBInstanceStatus;
+	                	$this->instancesListCache[$environment->id][$region][(string)$item->DBInstanceIdentifier] = (string)$item->DBInstanceStatus;
 			}
 			
-			return $this->instancesListCache[$Client->AWSAccountID][$region];
+			return $this->instancesListCache[$environment->id][$region];
 		}
 		
 		public function GetServerRealStatus(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-
 			$region = $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION);
 			
-			if (!$this->instancesListCache[$Client->AWSAccountID][$region][$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID)])
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$region
+			);
+			
+			if (!$this->instancesListCache[$DBServer->GetEnvironmentObject()->id][$region][$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID)])
 			{
 		        try {
-					$RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			        $RDSClient->SetRegion($region);
-			        
 			        $iinfo = $RDSClient->DescribeDBInstances($DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID));
 			        $iinfo = $iinfo->DescribeDBInstancesResult->DBInstances->DBInstance;
 			        $status = (string)$iinfo->DBInstanceStatus;
@@ -101,7 +137,7 @@
 			}
 			else
 			{
-				$status = $this->instancesListCache[$Client->AWSAccountID][$region][$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID)];
+				$status = $this->instancesListCache[$DBServer->GetEnvironmentObject()->id][$region][$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID)];
 			}
 			
 	        return Modules_Platforms_Rds_Adapters_Status::load($status);
@@ -109,10 +145,10 @@
 		
 		public function TerminateServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-	        $RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION));     
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			);     
 
 	        //TODO: Snapshot
 	        $RDSClient->DeleteDBInstance($DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID));
@@ -122,10 +158,10 @@
 		
 		public function RebootServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-	        $RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)); 
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			);
 	        
 	        $RDSClient->RebootDBInstance($DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID));
 	        
@@ -134,22 +170,26 @@
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
 		{
-			$Client = Client::Load($DBRole->clientId);
+			/*
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			);
 			
-			$RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$RDSClient->SetRegion($DBRole->region);
+			$RDSClient->DeleteDBSnapshot($DBRole->getImageId(SERVER_PLATFORMS::RDS));
+			*/
 			
-			$RDSClient->DeleteDBSnapshot($DBRole->imageId);
+			//TODO:
 		}
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
 		{
 			$DBServer = DBServer::LoadByID($BundleTask->serverId);
 			
-			$Client = $DBServer->GetClient();
-			
-	        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION));
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			); 
 			
 			try
 			{
@@ -179,10 +219,10 @@
 		{
 			$DBServer = DBServer::LoadByID($BundleTask->serverId);
 			
-			$Client = $DBServer->GetClient();
-			
-	        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)); 
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			); 
 	        
 	        try
 	        {
@@ -213,10 +253,10 @@
 		{
 			try
 			{
-				$Client = $DBServer->GetClient();
-				
-		        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-		        $RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)); 
+				$RDSClient = $this->getRdsClient(
+					$DBServer->GetEnvironmentObject(),
+					$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+				);  
 		        
 		        $iinfo = $RDSClient->DescribeDBInstances($DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID));		        
 		        $iinfo = $iinfo->DescribeDBInstancesResult->DBInstances->DBInstance;
@@ -271,10 +311,10 @@
 		
 		public function LaunchServer(DBServer $DBServer)
 		{
-			$Client = $DBServer->GetClient();
-			
-	        $RDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-	        $RDSClient->SetRegion($DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)); 
+			$RDSClient = $this->getRdsClient(
+				$DBServer->GetEnvironmentObject(),
+				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
+			); 
 	        
 	        $DBRole = DBRole::loadById($DBServer->roleId);
 	        
@@ -284,7 +324,7 @@
 	        
 	        try
 	        {
-		        if ($DBRole->imageId == 'ScalrEmpty')
+		        if ($DBRole->getImageId(SERVER_PLATFORMS::RDS, $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)) == 'ScalrEmpty')
 		        {
 			        $RDSClient->CreateDBInstance(
 			        	$server_id,
@@ -306,7 +346,7 @@
 		        else
 		        {
 		        	$RDSClient->RestoreDBInstanceFromDBSnapshot(
-		        		$DBRole->imageId,
+		        		$DBRole->getImageId(SERVER_PLATFORMS::RDS, $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)),
 		        		$server_id,
 						$DBServer->GetProperty(RDS_SERVER_PROPERTIES::INSTANCE_CLASS),
 						$DBServer->GetProperty(RDS_SERVER_PROPERTIES::PORT),
@@ -315,7 +355,7 @@
 		        }
 		        
 		        $DBServer->SetProperty(RDS_SERVER_PROPERTIES::INSTANCE_ID, $server_id);
-		        $DBServer->SetProperty(RDS_SERVER_PROPERTIES::SNAPSHOT_ID, $DBRole->imageId);
+		        $DBServer->SetProperty(RDS_SERVER_PROPERTIES::SNAPSHOT_ID, $DBRole->getImageId(SERVER_PLATFORMS::RDS, $DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)));
 		        return $DBServer;
 	        }
 	        catch(Exception $e)
@@ -326,6 +366,12 @@
 		
 		public function PutAccessData(DBServer $DBServer, Scalr_Messaging_Msg $message)
 		{
+			
+		}
+		
+		public function ClearCache()
+		{
+			$this->instancesListCache = array();
 		}
 	}
 

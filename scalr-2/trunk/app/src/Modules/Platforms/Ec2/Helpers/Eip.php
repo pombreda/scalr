@@ -11,6 +11,8 @@
 		{
 			$db = Core::GetDBInstance();
 			
+			$DBFarm = $DBFarmRole->GetFarmObject();
+			
 			if (!$oldSettings[DBFarmRole::SETTING_AWS_USE_ELASIC_IPS] && $newSettings[DBFarmRole::SETTING_AWS_USE_ELASIC_IPS])
 			{
 				$servers = $DBFarmRole->GetServersByFilter(array('status' => SERVER_STATUS::RUNNING));
@@ -18,9 +20,11 @@
 				if (count($servers) == 0)
 					return;
 				
-				$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBFarmRole->GetFarmObject()->Region)); //TODO: region
-				$Client = Client::Load($DBFarmRole->GetFarmObject()->ClientID);
-				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+				$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+					$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION), 
+					$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+					$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+				);
 				
 				foreach ($servers as $DBServer)
 				{

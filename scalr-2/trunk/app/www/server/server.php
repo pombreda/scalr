@@ -7,9 +7,11 @@
     
 	    	try
 	    	{
-    			$Client = Client::Load($_SESSION['uid']);
-	    		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region));
-				$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+    			$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+					$req_region,
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+				);
 			
 				$response = $AmazonEC2Client->PurchaseReservedInstancesOffering($req_offeringID);
 				exit();
@@ -54,13 +56,13 @@
     	case "check_role_name":
     		
     		$role_name = $req_name;
-    		$ami_id = $req_ami_id;
+    		$image_id = $req_ami_id;
     		
     		if (!preg_match("/^[A-Za-z0-9-]+$/", $role_name))
             	die(_("Allowed chars for role name is [A-Za-z0-9-]"));
     		
-            $role_info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND clientid=? AND roletype=?",
-            	array($ami_id, $_SESSION['uid'], ROLE_TYPE::CUSTOM)
+            $role_info = $db->GetRow("SELECT * FROM roles WHERE id = (SELECT role_id FROM role_images WHERE image_id=?) AND env_id=? AND origin=?",
+            	array($image_id, Scalr_Session::getInstance()->getEnvironmentId(), ROLE_TYPE::CUSTOM)
             );
             if (!$role_info)
             	die("REDIRECT");
@@ -92,9 +94,9 @@
     			array($script_id, $version)
     		);
     		
-    		if ($_SESSION['uid'] != 0)
+    		if (Scalr_Session::getInstance()->getClientId() != 0)
     		{
-    			if ($script_info['origin'] != SCRIPT_ORIGIN_TYPE::SHARED && $script_info['clientid'] != $_SESSION['uid'])
+    			if ($script_info['origin'] != SCRIPT_ORIGIN_TYPE::SHARED && $script_info['clientid'] != Scalr_Session::getInstance()->getClientId())
     				die();
     		}
     		
@@ -106,11 +108,21 @@
     	case "get_role_params":
     		
     		$farmid = (int)$req_farmid;
-    		$ami_info = $db->GetRow("SELECT * FROM roles WHERE id=?", array($req_role_id));
-    		if ($ami_info['clientid'] != 0 && $ami_info['clientid'] != $_SESSION['uid'] && $_SESSION['uid'] != 0)
-    			die(_("There are no parameters for this role"));
     		
-    		$params = $db->GetAll("SELECT * FROM role_options WHERE ami_id=? AND hash NOT IN('apache_http_vhost_template','apache_https_vhost_template')", array($ami_info['ami_id']));
+    		try
+    		{
+    			$DBRole = DBRole::loadById($req_role_id);
+    			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBRole->envId))
+    				throw new Exception("");
+    		}
+    		catch(Exception $e)
+    		{
+    			die(_("There are no parameters for this role"));
+    		}
+    		
+    		$params = $db->GetAll("SELECT * FROM role_parameters WHERE role_id=? AND hash NOT IN('apache_http_vhost_template','apache_https_vhost_template')", 
+    			array($DBRole->id)
+    		);
     		if (count($params) > 0)
     		{
     			$DataForm = new DataForm();
@@ -180,9 +192,9 @@
     		$version = $req_version;
     		
 			$templateinfo = $db->GetRow("SELECT * FROM scripts WHERE id=?", array($id));
-    		if ($_SESSION['uid'] != 0)
+    		if (Scalr_Session::getInstance()->getClientId() != 0)
     		{
-    			if ($templateinfo['origin'] == SCRIPT_ORIGIN_TYPE::CUSTOM && $templateinfo['clientid'] != $_SESSION['uid'])
+    			if ($templateinfo['origin'] == SCRIPT_ORIGIN_TYPE::CUSTOM && $templateinfo['clientid'] != Scalr_Session::getInstance()->getClientId())
     				die(_('There is no source avaiable for selected script'));
     		}
     		
@@ -200,7 +212,7 @@
     		
     		if ($templateinfo['origin'] == SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED)
     		{
-    			if ($templateinfo['clientid'] != $_SESSION['uid'] && $script['approval_state'] != APPROVAL_STATE::APPROVED)
+    			if ($templateinfo['clientid'] != Scalr_Session::getInstance()->getClientId() && $script['approval_state'] != APPROVAL_STATE::APPROVED)
     				die(_('There is no source avaiable for selected script'));
     		}
     		

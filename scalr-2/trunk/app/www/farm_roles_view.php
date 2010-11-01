@@ -5,11 +5,11 @@
     try
     {
     	$DBFarm = DBFarm::LoadByID($req_farmid);
-    	if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+    	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
     		throw new Exception("Farm not found");
     }
     catch(Exception $e)
-    {
+    {	
     	UI::Redirect("/farms_view.php");
     }
     
@@ -21,6 +21,36 @@
 		$display['grid_query_string'] .= "&farm_roleid={$req_farm_roleid}";
 	// Post actions
 	
+	if ($req_action == 'download_private_key')
+	{
+		try
+		{
+			$DBFarmRole = DBFarmRole::LoadByID($req_farm_roleid);
+			$DBFarm = $DBFarmRole->GetFarmObject();
+			
+			$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+				$DBFarm->ID, 
+				$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+			);
+			
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
+				throw new Exception("Farm role not found");
+		}
+		catch(Exception $e)
+		{
+			UI::Redirect("/farm_roles_view.php?farmid={$DBFarm->ID}");
+		}
+		
+		header('Pragma: private');
+		header('Cache-control: private, must-revalidate');
+	    header('Content-type: plain/text');
+        header('Content-Disposition: attachment; filename="'.$DBFarm->Name.'-'.$DBFarmRole->GetRoleObject()->name.'.pem"');
+        header('Content-Length: '.strlen($sshKey->getPrivate()));
+
+        print $sshKey->getPrivate();
+        exit();
+	}
+		
 	if ($req_action == "launch_new_instance" && $DBFarm->Status == FARM_STATUS::RUNNING)
 	{		
 		try
@@ -28,7 +58,7 @@
 			$DBFarmRole = DBFarmRole::LoadByID($req_farm_roleid);
 			$DBFarm = $DBFarmRole->GetFarmObject();
 			
-			if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 				throw new Exception("Farm role not found");
 			
 			$roleinfo = $db->GetRow("SELECT * FROM roles WHERE id=?", array($DBFarmRole->RoleID));
@@ -52,19 +82,11 @@
 	
 	        	$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES, $min_instances+1);
 	        	
-	        	$ServerCreateInfo = new ServerCreateInfo(SERVER_PLATFORMS::EC2, $DBFarmRole);
-				$ServerCreateInfo->SetProperties(array(
-					EC2_SERVER_PROPERTIES::AMIID => $DBFarmRole->AMIID,
-					EC2_SERVER_PROPERTIES::AVAIL_ZONE => $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE),
-					EC2_SERVER_PROPERTIES::REGION => $DBFarmRole->GetFarmObject()->Region
-				));
+	        	$ServerCreateInfo = new ServerCreateInfo($DBFarmRole->Platform, $DBFarmRole);
                 
-				$DBServer = Scalr::LaunchServer($ServerCreateInfo);
+				Scalr::LaunchServer($ServerCreateInfo);
                       
-	            if (!$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID))
-	            	$errmsg = _("Cannot launch new server. See system log for details.");
-				else
-	            	$okmsg = _("Instance successfully launched");
+	            $okmsg = _("Instance successfully launched");
 			}
 			else
 				$errmsg = _("Role not found in database.");

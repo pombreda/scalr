@@ -9,10 +9,9 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] == 0)
-		   throw new Exception(_("Requested page cannot be viewed from the admin account"));
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);
 		
-		$sql = "SELECT * FROM bundle_tasks WHERE client_id = '{$_SESSION["uid"]}'";
+		$sql = "SELECT * FROM bundle_tasks WHERE env_id = '".Scalr_Session::getInstance()->getEnvironmentId()."'";
 		
 		//
 		// If specified user id

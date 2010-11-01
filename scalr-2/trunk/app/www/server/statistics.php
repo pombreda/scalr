@@ -21,7 +21,7 @@
     			$role_name = "FR_{$role_name}";
     	}
     	
-    	$farminfo = $db->GetRow("SELECT status, id, clientid FROM farms WHERE id=?", array($farmid));
+    	$farminfo = $db->GetRow("SELECT status, id, env_id FROM farms WHERE id=?", array($farmid));
     	if ($farminfo["status"] != FARM_STATUS::RUNNING)
     		$result = array("type" => "error", "msg" => _("Statistics not available for terminated farm"));
     	else
@@ -30,8 +30,8 @@
 	    	{
 	    		define("SCALR_SERVER_TZ", date("T"));
 	    		
-	    		$Client = Client::Load($farminfo['clientid']);
-	    		$tz = $Client->GetSettingValue(CLIENT_SETTINGS::TIMEZONE);
+	    		$env = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($farminfo['env_id']);
+    			$tz = $env->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
 	    		if ($tz)
 		    		date_default_timezone_set($tz);
 	    	}

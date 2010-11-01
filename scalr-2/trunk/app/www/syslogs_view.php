@@ -2,8 +2,11 @@
 	require("src/prepend.inc.php");
 	$display['load_extjs'] = true;	
 	
-	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 			
 	$display["title"] = _("Logs");
 	$display["help"] = _("Almost all Scalr activity being logged. You should check logs in case of any issues.");

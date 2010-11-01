@@ -12,8 +12,7 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 			
-		if ($_SESSION["uid"] != 0)
-		   UI::Redirect("index.php");
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::SCALR_ADMIN);
 		
 		if (!$get_trnid && !$get_strnid)
 		   exit();

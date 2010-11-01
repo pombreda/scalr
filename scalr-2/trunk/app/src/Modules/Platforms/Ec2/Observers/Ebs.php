@@ -15,16 +15,14 @@
 		 *
 		 * @return AmazonEC2
 		 */
-		private function GetAmazonEC2ClientObject($region)
+		private function GetAmazonEC2ClientObject(Scalr_Environment $environment, $region)
 		{
-	    	$clientid = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
-			
-			// Get Client Object
-			$Client = Client::Load($clientid);
-	
 	    	// Return new instance of AmazonEC2 object
-			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
-			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+			$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$region, 
+				$environment->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+				$environment->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
 			
 			return $AmazonEC2Client;
 		}
@@ -36,10 +34,13 @@
 			
 			$DBFarm = $event->DBServer->GetFarmObject();
 			$DBFarmRole = $event->DBServer->GetFarmRoleObject();
-			$AmazonEC2Client = $this->GetAmazonEC2ClientObject($DBFarm->Region);
+			$AmazonEC2Client = $this->GetAmazonEC2ClientObject(
+				$event->DBServer->GetEnvironmentObject(), 
+				$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+			);
 
 			// Create EBS volume for MySQLEBS
-			if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL 
+			if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) 
 				&& $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
 			{
 				$server = $event->DBServer;
@@ -156,7 +157,10 @@
 						$DBEBSVolume->mountStatus = ($DBEBSVolume->mount) ? EC2_EBS_MOUNT_STATUS::AWAITING_ATTACHMENT : EC2_EBS_MOUNT_STATUS::NOT_MOUNTED;
 						$DBEBSVolume->save();
 					}
-					catch(Exception $e){}
+					catch(Exception $e)
+					{
+						$this->Logger->fatal($e->getMessage());
+					}
 				}
 			}
 		}
@@ -183,7 +187,7 @@
 					$DBEBSVolume->attachmentStatus = EC2_EBS_ATTACH_STATUS::CREATING;
 					$DBEBSVolume->isManual = 0;
 					$DBEBSVolume->ec2AvailZone = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_AVAIL_ZONE);
-					$DBEBSVolume->ec2Region = $event->DBServer->GetFarmObject()->Region;
+					$DBEBSVolume->ec2Region = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION);
 					$DBEBSVolume->farmId = $DBFarmRole->FarmID;
 					$DBEBSVolume->farmRoleId = $DBFarmRole->ID;
 					$DBEBSVolume->serverId = $event->DBServer->serverId;
@@ -194,6 +198,7 @@
 					$DBEBSVolume->mountPoint = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT);
 					$DBEBSVolume->mountStatus = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT)) ? EC2_EBS_MOUNT_STATUS::AWAITING_ATTACHMENT : EC2_EBS_MOUNT_STATUS::NOT_MOUNTED;
 					$DBEBSVolume->clientId = $event->DBServer->GetFarmObject()->ClientID;
+					$DBEBSVolume->envId = $event->DBServer->envId;
 					
 					$DBEBSVolume->Save();
 				}
@@ -219,7 +224,7 @@
 			$slave_volume = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID);
 			if ($slave_volume)
 			{
-				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
+				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($event->DBServer->GetEnvironmentObject(), $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
 				$AmazonEC2Client->DeleteVolume($slave_volume);
 			}
 		}

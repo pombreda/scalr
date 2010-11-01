@@ -344,7 +344,8 @@
 						{
 							$query = (string)$node->getAttribute('search');
 							
-							$query = str_replace('{$_SESSION[\'uid\']}', $_SESSION["uid"], $query);
+							$query = str_replace('{ENV_ID}', Scalr_Session::getInstance()->getEnvironmentId(), $query);
+							$query = str_replace('{CLIENT_ID}', Scalr_Session::getInstance()->getClientId(), $query);
 							
 							$this->SearchString = str_replace('\'', '', $this->SearchString);
 							

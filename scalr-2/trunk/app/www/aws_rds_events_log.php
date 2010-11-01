@@ -2,16 +2,11 @@
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
-	else
-		$clientid = $_SESSION['uid'];
-	
-	// Load Client Object
-    $Client = Client::Load($clientid);
         
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Events log");
 

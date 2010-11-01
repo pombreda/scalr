@@ -2,27 +2,36 @@
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
 	
-	// Load Client Object
-    $Client = Client::Load($_SESSION['uid']);
-    
-    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region)); 
-	$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+	try {
+		$DBServer = DBServer::LoadByID($req_server_id);
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
+			UI::Redirect("/servers_view.php");
+	}
+	catch(Exception $e) {
+		UI::Redirect("/servers_view.php");
+	}
+	
+    $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+		$DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+		$DBServer->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
 
 	$MonitorInstanceType = new MonitorInstancesType();
-    $MonitorInstanceType->AddInstance($req_iid);
+    $MonitorInstanceType->AddInstance($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID));
 	
     if ($req_action == "Disable")
     {	
     	$res = $AmazonEC2Client->UnmonitorInstances($MonitorInstanceType);    	
-    	$okmsg = "Disabling Cloudwatch monitoring for instance {$req_iid}. It could take a few minutes.";	
+    	$okmsg = "Disabling Cloudwatch monitoring... It could take a few minutes.";	
     }
     elseif ($req_action == "Enable")
     {
     	$AmazonEC2Client->MonitorInstances($MonitorInstanceType);
-    	$okmsg = "Enabling Cloudwatch monitoring for instance {$req_iid}. It could take a few minutes.";
+    	$okmsg = "Enabling Cloudwatch monitoring... It could take a few minutes.";
     }
 	
-    UI::Redirect("/aws_ec2_instance_info.php?iid={$req_iid}&region={$req_region}");
+    UI::Redirect("/server_view_extended_info.php?server_id={$DBServer->serverId}");
     
 	require("src/append.inc.php"); 
 ?>

@@ -2,9 +2,9 @@
 	
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 		
@@ -15,9 +15,11 @@
 	{ 
 		if ($post_action == 'delete')
 		{			
-			$Client = Client::Load($_SESSION['uid']);
-			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region']));
-			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);	
+			$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$_SESSION['aws_region'],
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
 			
 			try 
     		{      			

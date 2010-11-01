@@ -51,7 +51,7 @@
 		roleCombo = FarmRoleServerHelper.newRoleCombo(
 				null,			
 				// roleStore:
-				{	baseParams: {action: "LoadFarmRoles", sqlFilter: "AND roles.alias='app'"},
+				{	baseParams: {action: "LoadFarmRoles", behavior: "app"},
 					listeners:
 					{
 						load:function(params, reader, callback, scope, arg)

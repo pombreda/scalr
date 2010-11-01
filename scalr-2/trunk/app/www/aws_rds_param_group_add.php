@@ -1,10 +1,11 @@
 <?php
 	require("src/prepend.inc.php"); 
 		
-	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
-	
-	$Client = Client::Load($_SESSION['uid']);
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Add  new group");
 		
@@ -21,8 +22,11 @@
     else  // if region was set
     	$display['region'] = $req_region;
     	
-	$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-	$AmazonRDSClient->SetRegion($req_region);
+	$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY),
+		$req_region
+	);
 	
 	if ($_POST && $_POST['step'] == 2)
 	{	

@@ -5,7 +5,7 @@
 	try
 	{
 		$DBDNSZone = DBDNSZone::loadById($req_zone_id);
-		if ($DBDNSZone->clientId != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBDNSZone->envId))
 			throw new Exception('Not found');
 	}
 	catch(Exception $e)
@@ -21,7 +21,7 @@
 			if ($req_farmid)
 			{
 				$DBFarm = DBFarm::LoadByID($req_farmid);
-				if ($DBFarm->ClientID != $_SESSION['uid'])
+				if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 					throw new Exception(_("Farm not found"));
 					
 				$DBDNSZone->farmId = $DBFarm->ID;
@@ -54,7 +54,7 @@
 	if ($DBDNSZone->farmRoleId)
 	{
 		$DBFarmRole = DBFarmRole::LoadByID($DBDNSZone->farmRoleId);
-		$display['role_name'] = $DBFarmRole->GetRoleName();
+		$display['role_name'] = $DBFarmRole->GetRoleObject()->name;
 		$display['farm_name'] = $DBFarmRole->GetFarmObject()->Name;
 	}
 	

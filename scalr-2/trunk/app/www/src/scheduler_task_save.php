@@ -2,7 +2,7 @@
 // functions adds new task to scheduler task table or edits 
 // available tasks
     
-	if ($_SESSION['uid'] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
     {
     	$err[] = _("Request cannot be executed from admin account");
     	throw new Exception(_("Request cannot be executed from admin account"));
@@ -71,7 +71,7 @@
 				throw new Exception(_("Unknown or empty task type"));
 			}
 							
-			if (($_SESSION['uid'] && $target_object_clientid != $_SESSION['uid']) || $target_id == 0)
+			if ((Scalr_Session::getInstance()->getClientId() && $target_object_clientid != Scalr_Session::getInstance()->getClientId()) || $target_id == 0)
 				throw new Exception(_("Specified target not found, please select correct target object"));
 								
 		}
@@ -147,12 +147,12 @@
 				
 					// Show custom roles
 					$script_filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::CUSTOM."' 
-							AND clientid='{$_SESSION['uid']}')";
+							AND clientid='".Scalr_Session::getInstance()->getClientId()."')";
 					
 					//Show approved contributed roles
 					$script_filter_sql .= " OR (origin='".SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED."' 
 							AND (scripts.approval_state='".APPROVAL_STATE::APPROVED."' 
-							OR clientid='{$_SESSION['uid']}'))";
+							OR clientid='".Scalr_Session::getInstance()->getClientId()."'))";
 					$script_filter_sql .= ")";				
 					
 					// check script availble for current user
@@ -217,7 +217,9 @@
 					restart_every = ?,
 					task_config = ?,
 					order_index = ?,
-					status = ?
+					status = ?,
+					env_id	= ?,
+					timezone	= ?
 					WHERE id = ? AND client_id = ?",
 				array(
 					$req_task_name,
@@ -229,8 +231,10 @@
 					($req_config) ? serialize($req_config) : null,
 					(int)$req_order_index,
 					TASK_STATUS::ACTIVE,
+					Scalr_Session::getInstance()->getEnvironmentId(),
+					$req_timezone,
 					(int)$req_task_id,						
-					$_SESSION['uid']						
+					Scalr_Session::getInstance()->getClientId()						
 					)
 				);
 				
@@ -253,7 +257,9 @@
 					task_config = ?,
 					order_index = ?,
 					status = ?,				
-					client_id = ?",
+					client_id = ?,
+					env_id	= ?,
+					timezone	= ?",
 				array($req_task_name,
 					$req_task_type,
 					$target_id,
@@ -265,7 +271,9 @@
 					($req_config)? serialize($req_config):null,
 					$req_order_index,
 					TASK_STATUS::ACTIVE,						
-					$_SESSION['uid']
+					Scalr_Session::getInstance()->getClientId(),
+					Scalr_Session::getInstance()->getEnvironmentId(),
+					$req_timezone
 					)
 				);
 			

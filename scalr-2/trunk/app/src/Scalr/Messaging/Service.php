@@ -12,7 +12,7 @@ class Scalr_Messaging_Service {
 	private $logger;
 	
 	function __construct () {
-		$this->cryptoTool = new Scalr_Messaging_CryptoTool();
+		$this->cryptoTool = Scalr_Messaging_CryptoTool::getInstance();
 		$this->serializer = new Scalr_Messaging_XmlSerializer();
 		$this->logger = Logger::getLogger(__CLASS__);
 	}
@@ -30,7 +30,7 @@ class Scalr_Messaging_Service {
 			try{
     			$DBServer = DBServer::LoadByID($_SERVER["HTTP_X_SERVER_ID"]);
 			} catch (Exception $e) {
-				throw new Exception(sprintf("Server '%s' is not known by Scalr", $_SERVER["HTTP_X_SERVER_ID"]));
+				throw new Exception(sprintf(_("Server '%s' is not known by Scalr"), $_SERVER["HTTP_X_SERVER_ID"]));
 			}
 			
 	    	$cryptoKey = $DBServer->GetKey(true);
@@ -38,10 +38,10 @@ class Scalr_Messaging_Service {
 	    	$isOneTimeKey = false; //FIXME:
 	    	$keyExpired = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_ONETIME_KEY_EXPIRED);
 	    	if ($isOneTimeKey && $keyExpired) {
-	    		throw new Exception("One-time crypto key expired");
+	    		throw new Exception(_("One-time crypto key expired"));
 	    	}
 	    	
-			$this->logger->info("Validating signature '%s'");	    	
+			$this->logger->info(sprintf(_("Validating signature '%s'"), $_SERVER["HTTP_X_SIGNATURE"]));	    	
 	    	$this->validateSignature($cryptoKey, $payload, $_SERVER["HTTP_X_SIGNATURE"], $_SERVER["HTTP_DATE"]);
 	    	
 	    	if ($isOneTimeKey) {
@@ -54,14 +54,14 @@ class Scalr_Messaging_Service {
 		
     	// Decrypt and decode message
 		try {
-			$this->logger->info(sprintf("Decrypting message '%s'", $payload));
+			$this->logger->info(sprintf(_("Decrypting message '%s'"), $payload));
 			$xmlString = $this->cryptoTool->decrypt($payload, $cryptoKey);
 			
-			$this->logger->info(sprintf("Unserializing message '%s'", $xmlString));
+			$this->logger->info(sprintf(_("Unserializing message '%s'"), htmlspecialchars($xmlString)));
 			$message = $this->serializer->unserialize($xmlString);
 			
 			if ($isOneTimeKey && !$message instanceof Scalr_Messaging_Msg_HostInit) {
-				return array(401, "One-time crypto key valid only for HostInit message");	
+				return array(401, _("One-time crypto key valid only for HostInit message"));	
 			}
 			
 		}

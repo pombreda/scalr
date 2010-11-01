@@ -5,7 +5,7 @@
 <div id="listview-script-templates-view"></div>
 
 <script type="text/javascript">
-var uid = {$smarty.session.uid};
+var uid = {$Scalr_Session->getClientId()};
 
 {literal}
 Ext.onReady(function () {

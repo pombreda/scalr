@@ -1,16 +1,56 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
         
 	$display['load_extjs'] = true;
 	
-    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+	if (!in_array($req_platform, array(SERVER_PLATFORMS::EC2, SERVER_PLATFORMS::EUCALYPTUS)))
+		UI::Redirect("index.php");
+		
+	if (!Scalr_Session::getInstance()->getEnvironment()->isPlatformEnabled($req_platform))
+	{
+		$errmsg = sprintf(_("%s platform is not enabled for current environment"), ucfirst($req_platform));
+		UI::Redirect("index.php");
+	}
+	
+	$locations = PlatformFactory::NewPlatform($req_platform)->getLocations();
+	$display['locations'] = array();
+	foreach ($locations as $k => $v)
+		$display['locations'][] = array($k, $v);
+	
+	$display['locations'] = json_encode($display['locations']);
+	if (!$req_location || !$locations[$req_location])
+		$display['location'] = array_shift(array_keys($locations));
+	else
+		$display['location'] = $req_location;
+	
+	switch($req_platform)
+	{
+		case SERVER_PLATFORMS::EC2:
+			
+			$platformClient = Scalr_Service_Cloud_Aws::newEc2(
+				$display['location'],
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
+			
+			break;
+			
+		case SERVER_PLATFORMS::EUCALYPTUS:
+			
+			$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+			);
+			
+			break;
+	}
                         
 	$display["title"] = "Roles&nbsp;&raquo;&nbsp;Security groups";
 	
@@ -23,7 +63,7 @@
 			{
 				try
 				{
-					$AmazonEC2Client->DeleteSecurityGroup($group_name);
+					$platformClient->DeleteSecurityGroup($group_name);
 					$i++;
 				}
 				catch(Exception $e)
@@ -38,6 +78,8 @@
 			UI::Redirect("sec_groups_view.php");
 		}
 	}
+	
+	$display['platform'] = $req_platform;
 	
 	require("src/append.inc.php"); 	
 ?>

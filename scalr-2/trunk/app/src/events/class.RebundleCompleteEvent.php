@@ -4,6 +4,7 @@
 	{
 		public $SnapshotID;
 		public $BundleTaskID;
+		public $MetaData;
 		
 		/**
 		 * 
@@ -11,13 +12,14 @@
 		 */
 		public $DBServer;
 		
-		public function __construct(DBServer $DBServer, $SnapshotID, $BundleTaskID)
+		public function __construct(DBServer $DBServer, $SnapshotID, $BundleTaskID, $MetaData=array())
 		{
 			parent::__construct();
 			
 			$this->DBServer = $DBServer;
 			$this->SnapshotID = $SnapshotID;
 			$this->BundleTaskID = $BundleTaskID;
+			$this->MetaData = $MetaData;
 		}
 	}
 ?>

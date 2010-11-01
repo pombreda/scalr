@@ -9,8 +9,8 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 		
-		if ($_SESSION["uid"] != 0)
-			$auth_sql = " AND (SELECT clientid FROM farms WHERE id = scripting_log.farmid) = '{$_SESSION["uid"]}'";
+		if (Scalr_Session::getInstance()->getClientId() != 0)
+			$auth_sql = " AND (SELECT clientid FROM farms WHERE id = scripting_log.farmid) = '".Scalr_Session::getInstance()->getClientId()."'";
 		
 		$sql = "SELECT * from scripting_log WHERE id > 0 {$auth_sql}";
 	

@@ -1,10 +1,24 @@
 <?php
 	
+	class ServerSnapshotDetails
+	{
+		public function getOsName()
+		{
+			
+		}
+		
+		public function getSoftwareList()
+		{
+			
+		}
+	}
+
 	class BundleTask
 	{			
 		public $id;
 		public $clientId;
 		public $serverId;
+		public $envId;
 		public $replaceType;
 		public $prototypeRoleId;
 		public $status;
@@ -20,13 +34,16 @@
 		public $description;
 		public $roleId;
 		public $farmId;
-				
+		public $cloudLocation;		
+		
 		private $Db;
 		private $tz;
+		private $metaData;
 		
 		private static $FieldPropertyMap = array(
 			'id'			=> 'id',
 			'client_id'		=> 'clientId',
+			'env_id'		=> 'envId',
 			'prototype_role_id'	=> 'prototypeRoleId',
 			'server_id' 	=> 'serverId',
 			'replace_type' 	=> 'replaceType',
@@ -42,7 +59,9 @@
 			'snapshot_id'	=> 'snapshotId',
 			'description'	=> 'description',
 			'role_id'		=> 'roleId',
-			'farm_id'		=> 'farmId'
+			'farm_id'		=> 'farmId',
+			'cloud_location'=> 'cloudLocation',
+			'meta_data'		=> 'metaData'
 		);
 		
 		public function __construct($id)
@@ -71,8 +90,8 @@
 		{
 			if (!$this->tz)
 			{
-				$Client = Client::Load($this->clientId);
-    			$this->tz = $Client->GetSettingValue(CLIENT_SETTINGS::TIMEZONE);
+				$env = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($this->envId);
+    			$this->tz = $env->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
 			}
 			
     		if ($this->tz)
@@ -110,7 +129,7 @@
 		{
 			$db = Core::GetDBInstance();
 			
-			$n = $DBFarmRole->GetRoleName();
+			$n = $DBFarmRole->GetRoleObject()->name;
 			preg_match('/^([A-Za-z0-9-]+)-([0-9]+)-([0-9]+)$/si', $n, $m);
 			if ($m[0] == $n)
 			{
@@ -133,7 +152,7 @@
 				$i = 1;
 			}
 			
-            $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND clientid=?", array($name, $DBServer->clientId));
+            $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND env_id=?", array($name, $DBServer->envId));
             if ($role)
             {
                 while ($role)
@@ -143,17 +162,27 @@
 					$s = ($i < 10) ? "0{$i}" : $i;
 					$name = "{$m[1]}-{$m[2]}-{$s}";
                         
-                    $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND clientid=?", array($name, $DBServer->clientId));                    
+                    $role = $db->GetOne("SELECT id FROM roles WHERE name=? AND env_id=?", array($name, $DBServer->envId));                    
                 }
             }
             
             return $name;
 		}
 		
-		public function SnapshotCreationComplete($snapshotId)
+		/**
+		 * @return ServerSnapshotDetails
+		 * Enter description here ...
+		 */
+		public function getSnapshotDetails()
+		{
+			return unserialize($this->metaData);
+		}
+		
+		public function SnapshotCreationComplete($snapshotId, $metaData=array())
 		{
 			$this->snapshotId = $snapshotId;
 			$this->status = SERVER_SNAPSHOT_CREATION_STATUS::CREATING_ROLE;
+			$this->metaData = serialize($metaData);
 			
 			$this->Log(sprintf(_("Snapshot creation complete. SnapshotID: '%s'. Bundle task status changed to: %s"), 
 				$snapshotId, $this->status
@@ -228,6 +257,7 @@
 			
 			$db->Execute("INSERT INTO bundle_tasks SET
 				client_id	= ?,
+				env_id		= ?,
 				server_id	= ?,
 				farm_id		= ?,
 				prototype_role_id	= ?,
@@ -239,6 +269,7 @@
 				description	= ?
 			", array(
 				$ServerSnapshotCreateInfo->DBServer->clientId,
+				$ServerSnapshotCreateInfo->DBServer->envId,
 				$ServerSnapshotCreateInfo->DBServer->serverId,
 				$ServerSnapshotCreateInfo->DBServer->farmId,
 				$ServerSnapshotCreateInfo->DBServer->roleId,

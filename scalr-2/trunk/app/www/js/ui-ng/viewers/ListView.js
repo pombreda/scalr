@@ -3,11 +3,15 @@ Ext.ns("Scalr.Viewers.list");
 
 Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 	columnOrderPlugin: false,
+	overClass: 'viewers-listview-row-over',
+	selectedClass: 'viewers-listview-row-selected',
+	itemSelector: 'dl.viewers-listview-row',
+	elementSelector: 'dt',
 
 	initComponent: function() {
 		this.colResizer = new Scalr.Viewers.list.ColumnResizer();
 		this.colResizer.init(this);
-		
+
 		this.colSorter = new Scalr.Viewers.list.ListViewSorter();
 		this.colSorter.init(this);
 
@@ -17,6 +21,11 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		if (this.columnOrderPlugin) {
 			this.columnOrderPlugin = new Scalr.Viewers.list.OrderColumnPlugin();
 			this.columnOrderPlugin.init(this);
+		}
+
+		if (this.actionColumnPlugin) {
+			this.actionColumnPlugin = new Scalr.Viewers.list.ActionColumnPlugin();
+			this.actionColumnPlugin.init(this);
 		}
 
 		this.internalTpl = new Ext.XTemplate(
@@ -44,7 +53,7 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 			'<tpl for="rows">',
 				'<dl class="viewers-listview-row {[xindex % 2 === 0 ? "viewers-listview-row-alt" : ""]}">',
 					'<tpl for="parent.columns">',
-						'<dt style="text-align: {align}; ',
+						'<dt dataindex="{dataIndex}" style="text-align: {align}; ',
 							'<tpl if="typeof(values.hidden) == \'undefined\' || values.hidden == \'no\' || values.hidden == \'disabled\'">',
 								'width:{values.widthPx}px;',
 							'</tpl>',
@@ -79,6 +88,11 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		}
 
 		this.columns = columns;
+		this.emptyText = '<div class="viewers-listview-empty">' + this.emptyText + '</div>';
+
+		if (! this.singleSelect)
+			this.onClick = Ext.emptyFn;
+
 		Ext.list.ListView.superclass.initComponent.call(this);
 
 		this.addEvents('refresh');
@@ -89,7 +103,6 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		});
 	},
 
-	onClick: function() { },
 	getRowClass: function (data) {
 		return '';
 	},
@@ -122,13 +135,13 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		}
 		var bdp = bd.parentNode;
 
-		if(Ext.isNumber(w)){
+		if (Ext.isNumber(w)){
 			var sw = w - 19; // width of columns-icon
 			bd.style.width = sw + 'px';
 			hd.style.width = sw + 'px';
 		}
 
-		if(Ext.isNumber(h) && h > 0){
+		if (Ext.isNumber(h) && h > 0){
 			bdp.style.height = (h - hd.parentNode.offsetHeight) + 'px';
 		}
 
@@ -229,7 +242,7 @@ Scalr.Viewers.list.OrderColumnPlugin = Ext.extend(Ext.util.Observable, {
 			sortable: false,
 			tpl: '<img src="/images/up_icon.png" class="up" style="cursor: pointer"> <img src="/images/down_icon.png" class="down" style="cursor: pointer">'
 		});
-		
+
 		this.view.on('refresh', this.onRefresh, this);
 	},
 
@@ -257,6 +270,31 @@ Scalr.Viewers.list.OrderColumnPlugin = Ext.extend(Ext.util.Observable, {
 		}
 
 		this.refresh();
+	}
+});
+
+Scalr.Viewers.list.ActionColumnPlugin = Ext.extend(Ext.util.Observable, {
+	constructor: function (config) {
+		Ext.apply(this, config);
+		Scalr.Viewers.list.ActionColumnPlugin.superclass.constructor.call(this);
+	},
+
+	init: function(listView) {
+		listView.on('afterrender', function () {
+			var cache = {};
+			for (var i = 0; i < this.columns.length; i++) {
+				if (this.columns[i].clickHandler)
+					cache[this.columns[i].dataIndex] = this.columns[i].clickHandler;
+			}
+
+			this.getTemplateTarget().on('click', function (e) {
+				var column = e.getTarget(this.elementSelector, this.getTemplateTarget(), true).getAttribute('dataindex');
+				if (column && cache[column]) {
+					var item = e.getTarget(this.itemSelector, this.getTemplateTarget()), index = this.indexOf(item), record = this.store.getAt(index);
+					cache[column].call(this, this, this.store, record);
+				}
+			}, this);
+		}, listView);
 	}
 });
 
@@ -405,7 +443,7 @@ Scalr.Viewers.list.HideColumn = Ext.extend(Ext.util.Observable, {
 								this.setBodyWidths();
 								this.saveState();
 
-								if (column) 
+								if (column)
 									this.fireEvent(column.hidden == 'no' ? 'columnshow' : 'columnhide', column);
 							},
 							scope: this
@@ -466,9 +504,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 	defaultListViewOptions: {
 		emptyText: 'No records to display',
-		autoScroll: true,
-		overClass: 'viewers-listview-row-over',
-		selectedClass: 'viewers-listview-row-selected'
+		autoScroll: true
 	},
 
 	stateful: false,
@@ -478,16 +514,16 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 	enableFilter: true,
 	enablePaging: true,
+	enableAutoLoad: true,
 	maximize: true,
-	
+
 	defaultPageSize: 10,
 	pageSizes: [10, 15, 25, 50, 100],
 
 	initComponent: function() {
 		Ext.applyIf(this.listViewOptions, this.defaultListViewOptions);
 		Ext.apply(this.listViewOptions, {
-			store: this.store,
-			emptyText: '<div class="viewers-listview-empty">' + this.listViewOptions.emptyText + '</div>'
+			store: this.store
 		});
 
 		// create paging toolbar
@@ -519,7 +555,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 					this.refresh.enable();
 					this.updateInfo();
 					this.fireEvent('change', this, d);
-				}, 
+				},
 				pageSize: this.defaultPageSize,
 				store: this.store
 			});
@@ -585,7 +621,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			}
 
 			withSelectedMenu.on('click', this.withSelectedMenuHandler, this);
-			
+
 			this.listViewOptions.multiSelect = true;
 			this.listViewOptions.columns.push({
 				header: '<input type="checkbox" class="withselected" />',
@@ -651,7 +687,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 					form.dom.submit();
 				} else if (method == "ajax") {
-					
+
 					if (typeof (item.progressMessage) != "undefined") {
 						Ext.MessageBox.show({
 							progress: true,
@@ -686,7 +722,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 					msg: item.confirmationMessage,
 					buttons: Ext.Msg.YESNO,
 					fn: function(btn) {
-						if (btn == 'yes') 
+						if (btn == 'yes')
 							proccessMenuHandler();
 					}
 				});
@@ -697,7 +733,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			Ext.Msg.alert('Notice', this.messages.blankSelection);
 		}
 	},
-	
+
 	applyState: function(state) {
 		this.state = state;
 	},
@@ -745,7 +781,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 						continue; // don't overwrite fixed width
 					}
 
-					if (this.listViewOptions.columns[i].width && this.state.pageColumns[i].width) 
+					if (this.listViewOptions.columns[i].width && this.state.pageColumns[i].width)
 						this.listViewOptions.columns[i].width = this.state.pageColumns[i].width;
 
 					if (this.listViewOptions.columns[i].hidden && this.state.pageColumns[i].hidden)
@@ -780,7 +816,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 					}
 				}, this);
 			}, this.listView);
-			
+
 			this.listView.on('afterrender', function() {
 				this.innerHd.select('input.withselected').on('click', function(ev, el) {
 					this.innerBody.select('input.withselected').each(function(elem) {
@@ -805,18 +841,20 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		if (this.rowOptionsMenu) {
 			this.rowOptionsMenu.render();
 		}
-		
+
 		// call super
 		Scalr.Viewers.ListView.superclass.onRender.call(this, container, position);
 
 		this.loadMask = new Ext.LoadMask(this.getEl(), { store: this.store });
 
-		this.on('bodyresize', function(p, width, height) {
-			width = width - p.body.getBorderWidth('lr');
-			height = height - p.body.getBorderWidth('tb');
+		if (this.maximize) {
+			this.on('bodyresize', function(p, width, height) {
+				width = width - p.body.getBorderWidth('lr');
+				height = height - p.body.getBorderWidth('tb');
 
-			this.listView.setSize(width, height);
-		});
+				this.listView.setSize(width, height);
+			});
+		}
 
 		this.add(this.listView);
 	},
@@ -847,9 +885,9 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			var menu = [];
 			for (var i = 0; i < this.pageSizes.length; i++) {
 				menu.push({
-					group: 'pagesize', 
-					text: this.pageSizes[i].toString(), 
-					checked: this.pageSizes[i] == this.defaultPageSize, 
+					group: 'pagesize',
+					text: this.pageSizes[i].toString(),
+					checked: this.pageSizes[i] == this.defaultPageSize,
 					handler: this.changePageSize,
 					scope: this
 				});
@@ -870,7 +908,8 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 			this.pagingToolbar.on('change', this.saveState, this);
 		} else {
-			this.store.load();
+			if (this.enableAutoLoad)
+				this.store.load();
 		}
 	},
 
@@ -878,7 +917,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		var i = this.listView.indexOf(ev.getTarget("dl.viewers-listview-row"));
 		var record = this.store.getAt(i), data = record.data;
     	this.fireEvent("beforeshowoptions", this, record, this.rowOptionsMenu, ev);
-    	
+
     	this.rowOptionsMenu.items.each(function (item) {
     		var display = this.getRowOptionVisibility(item, record);
 			item.currentRecordData = record.data; // save for future use
@@ -891,7 +930,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
     			item.el.dom.href = tpl.apply(record.data);
     		}
     	}, this);
-    	
+
      	var btnEl = Ext.get(ev.getTarget('div.viewers-listview-row-options-btn'));
     	var xy = btnEl.getXY();
     	this.rowOptionsMenu.showAt([xy[0] - (this.rowOptionsMenu.getEl().getWidth() - btnEl.getWidth()), xy[1] + btnEl.getHeight()]);
@@ -900,7 +939,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 	getRowMenuVisibility: function (data) {
 		return true;
 	},
-	
+
 	getRowOptionVisibility: function (menuItem, record) {
 		return true;
 	},

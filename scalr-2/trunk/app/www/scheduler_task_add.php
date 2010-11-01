@@ -2,11 +2,11 @@
 
 	require("src/prepend.inc.php");
 	
-    if ($_SESSION['uid'] == 0)
-    {
-    	$errmsg = _("Requested page cannot be viewed from admin account");
-    	UI::Redirect("index.php");
-    }
+    if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
     
 	////////////////////////////////
 	//// Ajax request for task save
@@ -68,7 +68,7 @@
 	    	else
 	    		throw new Exception(_("Task #{$taskId} not found"));
 
-	    	if ($_SESSION['uid'] && $_SESSION['uid'] != $taskInfo['client_id'])
+	    	if (Scalr_Session::getInstance()->getClientId() && Scalr_Session::getInstance()->getClientId() != $taskInfo['client_id'])
 				UI::Redirect("scheduler.php");
 				
 			// display the using farm, role or instance
@@ -175,6 +175,7 @@
     	
     	$display['task_type'] = $taskInfo["task_type"];
     	$display['taskinfo'] = $taskInfo;
+    	$display['timezone'] = $display['taskinfo']['timezone']; 
     }
 	///////////////////
 	// CREATE NEW TASK
@@ -212,7 +213,20 @@
 	//////////////////////////////////
 	// CONTINUE TO SHOW TASK EDIT MENU
 	//////////////////////////////////
-
+	$timezones = array();
+	$timezoneAbbreviationsList = timezone_abbreviations_list();
+	foreach ($timezoneAbbreviationsList as $timezoneAbbreviations) {
+		foreach ($timezoneAbbreviations as $value) {
+			if (preg_match( '/^(America|Antartica|Arctic|Asia|Atlantic|Europe|Indian|Pacific|Australia)\//', $value['timezone_id']))
+				$timezones[$value['timezone_id']] = $value['offset'];
+		}
+	}
+	ksort($timezones);
+	$display['timezones'] = array_keys($timezones);
+	if (!$display['timezone'])
+		$display['timezone'] = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
+	
+	
  	$display["formData"] = json_encode(array("task_type"=>$taskInfo['task_type'],"task"=>$req_task,"task_id"=>$taskId)); 		
 	$display['task'] = $req_task;
 	require("src/append.inc.php"); 

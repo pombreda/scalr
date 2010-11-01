@@ -16,7 +16,7 @@
 	}
 	else
 		CONTEXTS::$APPCONTEXT = $context;
-	
+		
 	if (!defined("NO_AUTH"))
 	{
     	Core::load("Data/JSON/JSON.php");
@@ -35,23 +35,19 @@
     		{
     			$_SESSION["sault"] = $_COOKIE['scalr_sault'];
         		$_SESSION["hash"] = $_COOKIE['scalr_hash'];
-        		$_SESSION["uid"] = $_COOKIE['scalr_uid'];
+        		//$_COOKIE['scalr_uid'];
         		$_SESSION["cpwd"] = $cpwd;
-        		$_SESSION["aws_accesskey"] = $Client->AWSAccessKey;
-        		$_SESSION["aws_accesskeyid"] = $Client->AWSAccessKeyID;
-        		$_SESSION["aws_accountid"] = $Client->AWSAccountID;
         		
-        		$_SESSION["aws_private_key"] = $Client->AWSPrivateKey;
-        		$_SESSION["aws_certificate"] = $Client->AWSCertificate;
+        		Scalr_Session::create($_COOKIE["scalr_uid"], $_COOKIE["scalr_uid"], Scalr_AuthToken::ACCOUNT_ADMIN);
     		}
     	}
     	
     	// Auth
-    	if ($_SESSION["uid"] == 0)
+    	if (Scalr_Session::getInstance()->getClientId() == 0)
         	$newhash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);
     	else 
     	{
-    	    $user = $db->GetRow("SELECT * FROM clients WHERE id=?", $_SESSION['uid']);
+    	    $user = $db->GetRow("SELECT * FROM clients WHERE id=?", Scalr_Session::getInstance()->getClientId());
     	    $newhash = $Crypto->Hash("{$user['email']}:{$user['password']}:".$_SESSION["sault"]);
     	}
     	
@@ -62,7 +58,6 @@
     		if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST)
     		{
 	    		$_SESSION["REQUEST_URI"] = $_SERVER['REQUEST_URI'];
-	    		$_SESSION["uid"] = null;
 	    		$err[] = "Please login";
 	    		UI::Redirect("/login.php");
     		}
@@ -75,7 +70,7 @@
     		}
     	}
 
-    	if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST)
+    	if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST && ($user || $valid))
     	{
 	    	//
 	    	// Load menu
@@ -94,39 +89,29 @@
     	// title 
     	$display["title"] = "Scalr CP";
     	
-    	if ($_SESSION['uid'] != 0)
-    	{
-    		if (!$_SESSION["aws_accesskey"] || 
-    			!$_SESSION["aws_private_key"] || 
-    			!$_SESSION["aws_certificate"]
-    		) {
-    			if (!stristr($_SERVER['PHP_SELF'], 'aws_settings.php') && 
-    				!stristr($_SERVER['PHP_SELF'], 'login.php') &&
-    				!stristr($_SERVER['PHP_SELF'], 'profile.php') &&
-    				!stristr($_SERVER['PHP_SELF'], 'client_dashboard.php')
-    			)
-    			{
-    				$errmsg = "Welcome to Scalr - in order to get started, we need some additional information.  Please enter the requested information below.";
-    				UI::Redirect("/aws_settings.php");
-    			}
-    		}
-    	}
-    	
-    	if ($_SESSION['uid'] != 0)
+    	if (Scalr_Session::getInstance()->getClientId() != 0)
     	{
     		define("SCALR_SERVER_TZ", date_default_timezone_get());
     		
-    		$Client = Client::Load($_SESSION['uid']);
-    		$tz = $Client->GetSettingValue(CLIENT_SETTINGS::TIMEZONE);
+    		$tz = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
     		if ($tz)
 	    		date_default_timezone_set($tz);
+	    		
+	    	$display['logged_as'] = Client::Load(Scalr_Session::getInstance()->getClientId())->Email; 
+    	}
+    	
+    	if (Scalr_Session::getInstance()->getEnvironment())
+    	{
+	    	$locations = Scalr_Session::getInstance()->getEnvironment()->getLocations();
+	    	$display['locations'] = $locations;
     	}
     }
+    
+    //TODO: MOVE TO SESSION
     
     if ($req_region)
     	$_SESSION['aws_region'] = $req_region; 
     
-    //TODO: Move default region to config
     if (!$_SESSION['aws_region'])
     	$_SESSION['aws_region'] = 'us-east-1';
 ?>

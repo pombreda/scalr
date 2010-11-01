@@ -1,10 +1,12 @@
 <?
     require("src/prepend.inc.php"); 
     
-    if ($_SESSION['uid'] == 0)
+    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
         $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
     else 
-        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND clientid=?", array($req_farmid, $_SESSION['uid']));
+        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND env_id=?", 
+        	array($req_farmid, Scalr_Session::getInstance()->getEnvironmentId())
+        );
 
     if (!$farminfo || $post_cancel)
         UI::Redirect("farms_view.php");
@@ -12,7 +14,7 @@
     if ($req_action == "Launch")
     {    	
     	if ($post_cbtn_3)
-    		UI::Redirect("farms_add.php?id={$farminfo['id']}");
+    		UI::Redirect("farms_builder.php?id={$farminfo['id']}");
     	
     	Scalr::FireEvent($farminfo['id'], new FarmLaunchedEvent($req_mark_active));
         

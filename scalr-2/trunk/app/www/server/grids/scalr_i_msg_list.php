@@ -10,7 +10,7 @@
 		include("../../src/prepend.inc.php");
 
 		$DBServer = DBServer::LoadByID($req_server_id);
-		if ($DBServer->clientId != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 			throw new Exception("Server not found");
 		
 		$sql = "SELECT * FROM messages WHERE server_id='{$DBServer->serverId}'";

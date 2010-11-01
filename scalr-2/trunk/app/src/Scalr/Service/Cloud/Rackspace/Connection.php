@@ -112,7 +112,7 @@
  				
 				if(!$url)
 					$url = $this->xSessionUrl."/{$uri}";
-				
+					
 				$this->setRequestOptions($url, $method, $args);				
 				$response = $this->sendRequest();  
 			

@@ -4,7 +4,7 @@
     try
     {
     	$DBFarm = DBFarm::LoadByID($req_farmid);
-    	if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+    	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
     		throw new Exception("Farm not found");
     		
     	$display['farmid'] = $DBFarm->ID;
@@ -14,12 +14,14 @@
 		UI::Redirect("farms_view.php");	
 	}
 
-	//TODO:
-	$mysql_farm_role_id = $db->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT id FROM roles WHERE alias='mysql') AND farmid=?", 
-		array($DBFarm->ID)
+	$mysql_farm_role_id = $db->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?) AND farmid=?", 
+		array(ROLE_BEHAVIORS::MYSQL, $DBFarm->ID)
 	);
 	
 	$DBFarmRole = DBFarmRole::LoadByID($mysql_farm_role_id);
+	
+	if ($DBFarmRole->Platform == SERVER_PLATFORMS::RDS)
+		UI::Redirect("farms_view.php");
 	
 	$display["title"] = "Farm '<a href='farms_view.php?id={$DBFarm->ID}'>{$DBFarm->Name}</a>'&nbsp;&raquo;&nbsp;Mysql information";		
 	

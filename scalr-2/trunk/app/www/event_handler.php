@@ -52,15 +52,9 @@
 				{
 					try
 					{
-						$Client = $DBServer->GetClient();
-
-						$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($farminfo['region'])); 
-						$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
-						
-				    	$response = $AmazonEC2Client->DescribeInstances($req_InstanceID);
-				    	$ip = @gethostbyname($response->reservationSet->item->instancesSet->item->dnsName);
+						$ips = PlatformFactory::NewPlatform($DBServer->platform)->GetServerIPAddresses($DBServer);
 				    	
-				    	$_SERVER['REMOTE_ADDR'] = $ip;
+				    	$_SERVER['REMOTE_ADDR'] = $ips['remoteIp'];
 				    	
 				    	$Logger->info(sprintf("Instance external ip = '%s'", $_SERVER['REMOTE_ADDR']));
 					}
@@ -196,9 +190,9 @@
 						else
 						{
 							// Single volume
-							$ebsinfo = $db->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($data['name']));
+							$ebsinfo = $db->GetRow("SELECT * FROM ec2_ebs WHERE volume_id=?", array($data['name']));
 							if ($ebsinfo)
-								$db->Execute("UPDATE farm_ebs SET state=?, isfsexists='1' WHERE id=?", array(AWS_SCALR_EBS_STATE::MOUNTED, $ebsinfo['id']));
+								$db->Execute("UPDATE ec2_ebs SET mount_status=?, isfsexists='1' WHERE id=?", array(EC2_EBS_MOUNT_STATUS::MOUNTED, $ebsinfo['id']));
 						}
 						
 						if ($data['mountpoint'] && $data['success'] == 1)

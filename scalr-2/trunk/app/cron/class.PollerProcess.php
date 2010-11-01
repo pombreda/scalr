@@ -77,7 +77,6 @@
         	Scalr::ReconfigureObservers();
         	
         	$db = Core::GetDBInstance();
-            $SNMP = new SNMP();
             
             $DBFarm = DBFarm::LoadByID($farminfo['id']);
             
@@ -166,25 +165,21 @@
 	                			//TODO: Log
 	                		}
 	                	}
-	                	else
-	                	{
+	                	else {
 		                	$dtadded = strtotime($DBServer->dateAdded);
 		                	$DBFarmRole = $DBServer->GetFarmRoleObject();
-							$launch_timeout = $DBFarmRole->LaunchTimeout > 0 ? $DBFarmRole->LaunchTimeout : CONFIG::$LAUNCH_TIMEOUT;
+							$launch_timeout = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SYSTEM_LAUNCH_TIMEOUT) > 0 ? $DBFarmRole->GetSetting(DBFarmRole::SETTING_SYSTEM_LAUNCH_TIMEOUT) : CONFIG::$LAUNCH_TIMEOUT;
 		                            
-							if ($DBServer->status == SERVER_STATUS::PENDING)
-							{
+							if ($DBServer->status == SERVER_STATUS::PENDING) {
 								$event = "hostInit";
 								$scripting_event = EVENT_TYPE::HOST_INIT;
 							}
-							elseif ($DBServer->status == SERVER_STATUS::INIT)
-							{ 
+							elseif ($DBServer->status == SERVER_STATUS::INIT) { 
 								$event = "hostUp";
 								$scripting_event = EVENT_TYPE::HOST_UP;
 							}
 								
-							if ($scripting_event)
-							{
+							if ($scripting_event) {
 								$scripting_timeout = (int)$db->GetOne("SELECT sum(timeout) FROM farm_role_scripts  
 									WHERE event_name=? AND 
 									farm_roleid=? AND issync='1'",
@@ -194,18 +189,14 @@
 								if ($scripting_timeout)
 									$launch_timeout = $launch_timeout+$scripting_timeout;
 									
-																		
-		                        if ($dtadded+$launch_timeout < time())
-		                        {
+								if ($dtadded+$launch_timeout < time()) {
 		                            //Add entry to farm log
 		                    		Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, "Server '{$DBServer->serverId}' did not send '{$event}' event in {$launch_timeout} seconds after launch (Try increasing timeouts in role settings). Considering it broken. Terminating instance."));
 		                                
-		                            try
-		                            {
+		                            try {
 		                            	Scalr::FireEvent($DBFarm->ID, new BeforeHostTerminateEvent($DBServer));
 		                            }
-		                            catch (Exception $err)
-		                            {
+		                            catch (Exception $err) {
 										$this->Logger->fatal($err->getMessage());
 		                            }
 								}
@@ -228,67 +219,6 @@
 						}
 						
 						//TODO: Check health:
-						/*
-							$chk = @fsockopen("udp://{$instance_dns}", 161, $errno, $errstr, 5);
-                                    if ($chk)
-                                    Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($farminfo['id'], "Instance {$db_item_info['instance_id']} ({$db_item_info['external_ip']}) doesn't respond to SNMP. Scalr was able to open connection to UDP port 161, but snmp doesn't respond. Most likely snmpd is hung up. Try to restart it with /etc/init.d/snmpd restart"));
-                                    else
-                                    Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($farminfo['id'], "Cannot retrieve LA. Instance {$db_item_info['instance_id']} did not respond on {$db_item_info['external_ip']}:161. (Error {$errno}: {$errstr})"));
-                                    
-                                    if ($db_ami['status_timeout'] != 0 && $DBFarmRole->GetSetting(DBFarmRole::SETTING_TERMINATE_IF_SNMP_FAILS) == 1)
-                                    {
-                                    if (!$db_item_info['dtlaststatusupdate'])
-                                    $db_item_info['dtlaststatusupdate'] = strtotime($db_item_info['dtadded'])+$db_ami['launch_timeout'];
-                                    
-                                    if ($db_item_info['dtlaststatusupdate']+$db_ami['status_timeout']*60 < time())
-                                    {
-                                    $action = $DBFarmRole->GetSetting(DBFarmRole::SETTING_TERMINATE_ACTION_IF_SNMP_FAILS);
-                                    if (!$action)
-                                    $action = 'terminate';
-                                    
-                                    if ($db_item_info['isrebootlaunched'] != 1)
-	                        {
-                                    Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage(
-                                		$farminfo['id'], 
-                                		sprintf(
-                                			_("Failed to retrieve LA on instance %s for %s minutes. Try increasing '{$action} instance if cannot retrieve it's status' setting on %s configuration tab."),
-                                			$db_item_info['instance_id'],
-                                			$db_ami['status_timeout'],
-                                			$roleinfo['name']
-                                		)
-                                ));
-                                
-                                    try
-		                        {	//  reboots or terminates instance depending on the selected value in the farm edit menu	
-		                            switch ($action)
-		                            {
-										default:
-											$this->Logger->info("The instance will be terminated by default");
-		                            	case "terminate":
-											Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Scheduled termination for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). It will be terminated in 3 minutes."));														
-		                            		Scalr::FireEvent($farminfo['id'], new BeforeHostTerminateEvent(DBInstance::LoadByID($db_item_info['id'])));						                            		
-		                            		break;
-		                            		
-		                            	case "reboot":	
-
-												Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Sending reboot request to instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). "));															
-												// reboot instance 
-												$AmazonEC2Client->RebootInstances(array($db_item_info['instance_id'])); 															
-		                            		
-											break;
-		                            } 
-		                            
-									Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farminfo['id'], "Reboot/terminate for instance '{$db_item_info["instance_id"]}' ({$db_item_info["external_ip"]}). successfully completed "));
-
-		                        }
-		                        catch (Exception $e)
-		                        {
-		                            $this->Logger->fatal("[FarmID: {$farminfo['id']}] Cannot terminate {$db_item_info['instance_id']}': {$e->getMessage()}");
-		                        }
-	                        }
-                                    }
-                                    }
-						 */
 					}
 					else
 					{

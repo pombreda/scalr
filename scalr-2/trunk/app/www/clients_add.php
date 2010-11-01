@@ -34,9 +34,6 @@
         		    $db->Execute("INSERT INTO clients SET
 						email           = ?,
 						password        = ?,
-						aws_accesskeyid = ?,
-						aws_accesskey = ?,
-						aws_accountid   = ?,
 						farms_limit     = ?,
 						fullname	= ?,
 						org			= ?,
@@ -53,10 +50,7 @@
 						isactive	= '1'
         			 ", array(
         		    	$post_email, 
-        		    	$Crypto->Hash($post_password), 
-        		    	$Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), 
-        		    	$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"]), 
-        		    	$post_aws_accountid, 
+        		    	$Crypto->Hash($post_password),  
         		    	$post_farms_limit,
         		    	$post_name, 
 						$post_org, 
@@ -70,52 +64,41 @@
 						$post_fax,
 						$post_comments
         		    ));
+        		    
+        		    $clientid = $db->Insert_Id();
+        		    
+        		    $keys = Scalr::GenerateAPIKeys();
+				
+		            /*
+		            Create environment
+		            */
+					$db->Execute("INSERT INTO client_environments SET
+						name		= ?,
+						client_id	= ?,
+						dt_added	= NOW(),
+						is_system	= '1'
+					", array("default", $clientid));
+					$env_id = $db->Insert_Id();
+
+					$config = array();
+	
+					$config_n[ENVIRONMENT_SETTINGS::MAX_INSTANCES_LIMIT] = 20;
+					$config_n[ENVIRONMENT_SETTINGS::MAX_EIPS_LIMIT] = 5;
+					$config_n[ENVIRONMENT_SETTINGS::SYNC_TIMEOUT] = 86400;
+					$config_n[ENVIRONMENT_SETTINGS::TIMEZONE] = "America/Adak";
+					$config_n[ENVIRONMENT_SETTINGS::API_KEYID] = $keys['id'];
+					$config_n[ENVIRONMENT_SETTINGS::API_ACCESS_KEY] = $keys['key'];
+				
+					foreach ($config_n as $key => $value) {
+						$db->Execute("INSERT INTO client_environment_properties SET env_id = ?, name = ?, value = ? ON DUPLICATE KEY UPDATE value = ?", 
+						array($env_id, $key, $value, $value));
+					}
         		}
                 catch (Exception $e)
                 {
                     throw new ApplicationException($e->getMessage(), E_ERROR);
                 }
-                    	
-    			$clientid = $db->Insert_ID();
-    				    			
-    			// Write cert.pem and pk.pem to clients keys folder
-	    		if ($_FILES['cert_file']['tmp_name'])
-	            {
-					$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);
-					if ($contents)
-					{
-						$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
-						$db->Execute("UPDATE clients SET
-							aws_certificate_enc = ?
-							WHERE id = ?
-						", array($enc_contents, $clientid));
-					}
-					else
-					{
-						$Logger->fatal(_("Internal error: cannot read uploaded file"));
-						$err[] = _("Internal error: cannot read uploaded file");
-					}
-	            }
-	                    
-	            if ($_FILES['pk_file']['tmp_name'])
-	            {
-	            	$contents = @file_get_contents($_FILES['pk_file']['tmp_name']);
-					if ($contents)
-					{
-						$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
-						$db->Execute("UPDATE clients SET
-							aws_private_key_enc = ?
-							WHERE id = ?
-						", array($enc_contents, $clientid));
-					}
-					else
-					{
-						$Logger->fatal(_("Internal error: cannot read uploaded file"));
-						$err[] = _("Internal error: cannot read uploaded file");
-					}
-	            }
                 
-	            
 	            if (count($err) == 0)
                 {
                     $okmsg = _("Client successfully added!");
@@ -138,9 +121,6 @@
             		    $db->Execute("UPDATE clients SET
 							email           = ?,
 							{$password}
-							aws_accesskeyid = ?,
-							aws_accesskey   = ?,
-							aws_accountid   = ?,
 							farms_limit     = ?,
 							fullname	= ?,
 							org			= ?,
@@ -157,9 +137,6 @@
             			    ", 
 							array(
 								$post_email, 
-								$Crypto->Encrypt($post_aws_accesskeyid, $_SESSION["cpwd"]), 
-								$Crypto->Encrypt($post_aws_accesskey, $_SESSION["cpwd"]), 
-								$post_aws_accountid,
 								$post_farms_limit,
 								$post_name, 
 								$post_org, 
@@ -179,42 +156,6 @@
                     {
                         throw new ApplicationException($e->getMessage(), E_ERROR);
                     }
-    			    
-	    			if ($_FILES['cert_file']['tmp_name'])
-		            {
-						$contents = @file_get_contents($_FILES['cert_file']['tmp_name']);
-						if ($contents)
-						{
-							$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
-							$db->Execute("UPDATE clients SET
-								aws_certificate_enc = ?
-								WHERE id = ?
-							", array($enc_contents, $post_id));
-						}
-						else
-						{
-							$Logger->fatal(_("Internal error: cannot read uploaded file"));
-							$err[] = _("Internal error: cannot read uploaded file");
-						}
-		            }
-		                    
-		            if ($_FILES['pk_file']['tmp_name'])
-		            {
-		            	$contents = @file_get_contents($_FILES['pk_file']['tmp_name']);
-						if ($contents)
-						{
-							$enc_contents = $Crypto->Encrypt($contents, $_SESSION['cpwd']);
-							$db->Execute("UPDATE clients SET
-								aws_private_key_enc = ?
-								WHERE id = ?
-							", array($enc_contents, $post_id));
-						}
-						else
-						{
-							$Logger->fatal(_("Internal error: cannot read uploaded file"));
-							$err[] = _("Internal error: cannot read uploaded file");
-						}
-		            }
 		            
         		    if (count($err) == 0)
         		    {
@@ -236,8 +177,6 @@
 	if ($get_id)
 	{
 		$info = $db->GetRow("SELECT * FROM `clients` WHERE id=?", array($get_id));
-		$info["aws_accesskeyid"] = $Crypto->Decrypt($info["aws_accesskeyid"], $_SESSION["cpwd"]);
-		$info["aws_accesskey"] = $Crypto->Decrypt($info["aws_accesskey"], $_SESSION["cpwd"]);
 		
 		$display = array_merge($info, $display);
 	}

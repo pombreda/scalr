@@ -1,8 +1,11 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	if ($req_role_name)
 		$req_name = CONFIG::$SECGROUP_PREFIX.$req_role_name;
@@ -15,22 +18,51 @@
 	
 	
 	$display["title"] = "Security group&nbsp;&raquo;&nbsp;Edit group '{$req_name}'";
+	$display["group_name"] = $req_name;
+	$display["platform"] = $req_platform;
+	$display["location"] = $req_location;
 	
-	$display["group_name"] = $req_name;	
-	
-	$region = ($req_region) ? $req_region : $_SESSION['aws_region'];
-	
-	$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
-	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+	switch($req_platform)
+	{
+		case SERVER_PLATFORMS::EC2:
+			
+			$platformClient = Scalr_Service_Cloud_Aws::newEc2(
+				$req_location,
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
+			
+			$account_id = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID);
+			
+			break;
+			
+		case SERVER_PLATFORMS::EUCALYPTUS:
+			
+			$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+			);
+			
+			$account_id = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCOUNT_ID);
+			
+			break;
+	}
 	
 	// Rows
 	try
 	{
-		$response = $AmazonEC2Client->DescribeSecurityGroups($req_name);
+		if ($req_platform == SERVER_PLATFORMS::EC2)
+			$response = $platformClient->DescribeSecurityGroups($req_name);
+		else
+			$response = $platformClient->describeSecurityGroups(array($req_name));
 		
 		$group = $response->securityGroupInfo->item;
+		if (!($group instanceof stdClass))
+			$group = $group[0];
+		
 		if ($group && $group instanceof stdClass)
-		{
+		{	
 			$rules = $group->ipPermissions->item;
 			
 			if ($rules instanceof stdClass)
@@ -42,7 +74,7 @@
 		$errmsg = $e->getMessage();
 		UI::Redirect("sec_groups_view.php");
 	}
-
+	
 	$group_rules = array();
 		
 	foreach ($rules as $rule)
@@ -109,8 +141,8 @@
 	
 	if ($_POST)
 	{	    		
-		$IpPermissionSet = new IpPermissionSetType();
-	    $exists_rules = array();
+		$addRulesSet = array();
+		$exists_rules = array();
 		foreach ((array)$post_rules as $rule)
         {
 			if (!$group_rules[md5($rule)] && $rule)
@@ -118,12 +150,39 @@
         		$group_rule = explode(":", $rule);
         		
         		if ($group_rule[0] != 'user')
-					$IpPermissionSet->AddItem($group_rule[0], $group_rule[1], $group_rule[2], null, array($group_rule[3]));
+        		{
+					$addRulesSet[] = array(
+						'IpProtocol'	=> $group_rule[0],
+						'FromPort'		=> $group_rule[1],
+						'ToPort'		=> $group_rule[2],
+						'CidrIp'		=> $group_rule[3]
+					);
+        		}
         		else
         		{
-        			$IpPermissionSet->AddItem("tcp", 1, 65535, array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
-        			$IpPermissionSet->AddItem("udp", 1, 65535, array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
-        			$IpPermissionSet->AddItem("icmp", -1, -1,  array('userId' => $group_rule[1], 'groupName' => $group_rule[2]), null);
+        			$addRulesSet[] = array(
+						'IpProtocol'	=> 'tcp',
+						'FromPort'		=> 1,
+						'ToPort'		=> 65535,
+						'GroupName'		=> $group_rule[2],
+        				'UserId'		=> $group_rule[1]
+					);
+					
+					$addRulesSet[] = array(
+						'IpProtocol'	=> 'udp',
+						'FromPort'		=> 1,
+						'ToPort'		=> 65535,
+						'GroupName'		=> $group_rule[2],
+        				'UserId'		=> $group_rule[1]
+					);
+					
+					$addRulesSet[] = array(
+						'IpProtocol'	=> 'icmp',
+						'FromPort'		=> -1,
+						'ToPort'		=> -1,
+						'GroupName'		=> $group_rule[2],
+        				'UserId'		=> $group_rule[1]
+					);
         		}
 
 				$new_rules_added = true;
@@ -132,20 +191,45 @@
 			$exists_rules[md5($rule)] = true;
 		}
 		
-		$RevokeIpPermissionSet = new IpPermissionSetType();
+		$remRulesSet = array();
 		foreach ($group_rules as $rule_hash=>$rule)
 		{
 			if (!$exists_rules[$rule_hash])
 			{
 				if ($rule->type != 'user')
 				{
-					$RevokeIpPermissionSet->AddItem($rule->ipProtocol, $rule->fromPort, $rule->toPort, null, array($rule->ip));
+					$remRulesSet[] = array(
+						'IpProtocol'	=> $rule->ipProtocol,
+						'FromPort'		=> $rule->fromPort,
+						'ToPort'		=> $rule->toPort,
+						'CidrIp'		=> $rule->ip
+					);
 				}
 				else
 				{
-					$RevokeIpPermissionSet->AddItem("tcp", 1, 65535, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
-					$RevokeIpPermissionSet->AddItem("udp", 1, 65535, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
-					$RevokeIpPermissionSet->AddItem("icmp", -1, -1, array('userId' => $rule->userId, 'groupName' => $rule->groupname), null);
+					$remRulesSet[] = array(
+						'IpProtocol'	=> 'tcp',
+						'FromPort'		=> 1,
+						'ToPort'		=> 65535,
+						'GroupName'		=> $rule->groupname,
+        				'UserId'		=> $rule->userId
+					);
+					
+					$remRulesSet[] = array(
+						'IpProtocol'	=> 'udp',
+						'FromPort'		=> 1,
+						'ToPort'		=> 65535,
+						'GroupName'		=> $rule->groupname,
+        				'UserId'		=> $rule->userId
+					);
+					
+					$remRulesSet[] = array(
+						'IpProtocol'	=> 'icmp',
+						'FromPort'		=> -1,
+						'ToPort'		=> -1,
+						'GroupName'		=> $rule->groupname,
+        				'UserId'		=> $rule->userId
+					);
 				}
 								
 				$remove_rules = true;
@@ -153,13 +237,90 @@
 		}
 		
 		if ($new_rules_added)
-			$AmazonEC2Client->AuthorizeSecurityGroupIngress($_SESSION['aws_accountid'], $req_name, $IpPermissionSet);
+		{
+			if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
+			{
+				foreach ($addRulesSet as $rule)
+					$platformClient->authorizeSecurityGroupIngress(
+						$req_name, 
+						$rule['IpProtocol'], 
+						$rule['FromPort'], 
+						$rule['ToPort'], 
+						$rule['CidrIp'], 
+						$rule['GroupName'], 
+						$rule['UserId']
+					);
+			}
+			else
+			{
+				$IpPermissionSet = new IpPermissionSetType();
+				foreach ($addRulesSet as $rule) {
+					if ($rule['GroupName'])
+						$IpPermissionSet->AddItem(
+							$rule['IpProtocol'], 
+							$rule['FromPort'], 
+							$rule['ToPort'], 
+							array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
+							null
+						);
+					else
+						$IpPermissionSet->AddItem(
+							$rule['IpProtocol'], 
+							$rule['FromPort'], 
+							$rule['ToPort'], 
+							null, 
+							array($rule['CidrIp'])
+						);
+				}
+				
+				$platformClient->AuthorizeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
+			}
+		}
 		
 		if ($remove_rules)
-			$AmazonEC2Client->RevokeSecurityGroupIngress($_SESSION['aws_accountid'], $req_name, $RevokeIpPermissionSet);
+		{
+			if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
+			{
+				foreach ($remRulesSet as $rule)
+					$platformClient->revokeSecurityGroupIngress(
+						$req_name, 
+						$rule['IpProtocol'], 
+						$rule['FromPort'], 
+						$rule['ToPort'], 
+						$rule['CidrIp'], 
+						$rule['GroupName'], 
+						$rule['UserId']
+					);
+			}
+			else
+			{
+				$IpPermissionSet = new IpPermissionSetType();
+				foreach ($remRulesSet as $rule) {
+					
+					if ($rule['GroupName'])
+						$IpPermissionSet->AddItem(
+							$rule['IpProtocol'], 
+							$rule['FromPort'], 
+							$rule['ToPort'], 
+							array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
+							null
+						);
+					else
+						$IpPermissionSet->AddItem(
+							$rule['IpProtocol'], 
+							$rule['FromPort'], 
+							$rule['ToPort'], 
+							null, 
+							array($rule['CidrIp'])
+						);
+				}
+				
+				$platformClient->RevokeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
+			}
+		}
 			
 		$okmsg = _("Security group successfully updated");
-		UI::Redirect("/sec_group_edit.php?name={$req_name}");
+		UI::Redirect("/sec_group_edit.php?name={$req_name}&platform={$req_platform}&location={$req_location}");
 	}
 	
 	require("src/append.inc.php"); 

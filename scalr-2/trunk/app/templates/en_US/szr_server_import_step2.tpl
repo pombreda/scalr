@@ -55,24 +55,20 @@ pre {
 				<h2>Install Scalarizr.</h2>
 				
 				<h3 >For RHEL/CentOS/Fedora</h3>
-				<p>Add scalarizr repo:</p>
-<pre>$ vim /etc/yum.repos.d/scalarizr.repo
-[scalarizr]
-name=scalarizr
-baseurl=&lt;url&gt; 
-enabled=1
-gpgcheck=0</pre>
-				<p>
-				Where <code>&lt;url&gt;</code> is<br/>
-				For RHEL/CentOS: <code>http://rpm.scalr.net/rpm/rhel/$releasever/$basearch</code><br/>
-				For Fedora: <code>http://rpm.scalr.net/rpm/fedora/$releasever/$basearch</code><br/>
-				</p>
+				
+				<p>Install scalr repository package:</p>
+				<pre>rpm -Uvh http://rpm.scalr.net/rpm/scalr-release-2-1.noarch.rpm</pre>
+				
 				<p>Install scalarizr:</p>
 				<pre>$ yum install scalarizr</pre>
 				
-				<p>NOTE! on RHEL5/CentOS5 you need to install python26. <a href="http://iuscommunity.org/packages/">IUS community</a> maintains latest python versions for RHEL5<br/>
-				Here is the <a href="http://wiki.iuscommunity.org/Doc/ClientUsageGuide#Configuration">quick sample</a> how to enable their repository and install python26
+				<p>NOTE! on RHEL5/CentOS5 you need to install python26. <a href="http://fedoraproject.org/wiki/EPEL">EPEL community</a> maintains latest python versions for RHEL5<br/>
+				Here is the <a href="http://fedoraproject.org/wiki/EPEL/FAQ#howtouse">quick sample</a> how to enable their repository<br>
+				Then you should install python 2.6
 				</p>
+				<pre>$ yum install python26</pre>
+				
+				
 
 				<h3>For Debian/Ubuntu</h3>
 <p>Download and install scalr_repository package:</p>

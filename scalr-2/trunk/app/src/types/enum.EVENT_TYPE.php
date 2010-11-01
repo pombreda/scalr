@@ -32,6 +32,10 @@
 		
 		const EBS_VOLUME_ATTACHED = "EBSVolumeAttached";
 		
+		CONST ROLE_OPTION_CHANGED = "RoleOptionChanged";
+		
+		const SERVICE_CONFIGURATION_PRESET_CHANGED = "ServiceConfigurationPresetChanged";
+		
 		public static function GetEventDescription($event_type)
 		{
 			$descriptions = array(
@@ -56,6 +60,8 @@
 				self::BEFORE_HOST_TERMINATE			=> _("Instance will be terminated in 3 minutes"),
 				self::DNS_ZONE_UPDATED				=> _("DNS zone updated"),
 				self::EBS_VOLUME_ATTACHED			=> _("EBS volume attached to instance."),
+				self::ROLE_OPTION_CHANGED			=> _("Role option/parameter was changed"),
+				self::SERVICE_CONFIGURATION_PRESET_CHANGED => _("Service configuration preset was modified")
 			);
 			
 			return $descriptions[$event_type];

@@ -3,10 +3,16 @@
 	
 	$display["title"] = "DNS zone&nbsp;&raquo;&nbsp;Edit";
 
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER, Scalr_AuthToken::MODULE_DNS))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
+	
 	try
 	{
 		$DBDNSZone = DBDNSZone::loadById($req_zone_id);
-		if ($DBDNSZone->clientId != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBDNSZone->envId))
 			throw new Exception('Not found');
 	}
 	catch(Exception $e)

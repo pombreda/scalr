@@ -32,12 +32,18 @@
 		$display["errmsg"] = $errmsg ? $errmsg : "The following errors occured:";
 		$display["err"] = $err;
 	}
-
+		
+	$display["errmsg"] = preg_replace("/[\n\r]+/", "<br />", $display["errmsg"]);
 	
+	foreach ($display["err"] as &$r)
+		$r = preg_replace("/[\n\r]+/", "<br />",$r);
+		
 	$Smarty->assign($display);
 	
 	if (!$template_name)
 	   $template_name = NOW.".tpl";
+	
+	$Smarty->assign_by_ref("Scalr_Session", Scalr_Session::getInstance());
 	
     $Smarty->display($template_name);
 ?>

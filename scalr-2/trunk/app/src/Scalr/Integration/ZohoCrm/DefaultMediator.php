@@ -228,16 +228,6 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 				$this->db->GetOne("SELECT COUNT(*) FROM zones WHERE clientid = ?", array($client->ID)));
 				
 		$account->setProperty(
-				Scalr_Integration_ZohoCrm_CustomFields::ACCOUNT_CUSTOM_ROLES,
-				$this->db->GetOne("SELECT COUNT(*) FROM roles 
-						WHERE clientid = ? AND roletype = ?", 
-						array($client->ID, ROLE_TYPE::CUSTOM)));
-						
-		$account->setProperty(
-				Scalr_Integration_ZohoCrm_CustomFields::ACCOUNT_AWS_ACCOUNT,
-				(bool)$client->AWSAccountID);
-				
-		$account->setProperty(
 				Scalr_Integration_ZohoCrm_CustomFields::ACCOUNT_ACTIVE,
 				(bool)$client->IsActive);
 	}

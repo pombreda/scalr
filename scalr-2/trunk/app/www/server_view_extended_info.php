@@ -6,19 +6,19 @@
 	if (!$req_server_id)
 		UI::Redirect("index.php");
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
 	}
-		
+
 	try 
 	{
 		$DBServer = DBServer::LoadByID($req_server_id);
 		
-		if ($DBServer->clientId != $_SESSION['uid'])
+		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 			UI::Redirect("index.php");
-		
+
 		$info = PlatformFactory::NewPlatform($DBServer->platform)->GetServerExtendedInformation($DBServer);
 
 		$display['server'] = $DBServer;

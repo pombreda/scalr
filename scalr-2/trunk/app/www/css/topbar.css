@@ -5,15 +5,15 @@ body {
 }
 
 #topbar-wrap {
-	position:relative; 
-	top:0; 
+	position:relative;
+	top:0;
 	left:0;
-	padding:5px 5px 10px;	
+	padding:5px 5px 10px;
 }
 
 #topbar-wrap #topbar {
-	position:relative; 
-	top:0; 
+	position:relative;
+	top:0;
 	left:0;
 	height:45px;
  	padding:5px;
@@ -31,7 +31,7 @@ body {
 	font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;
 	font-size:10pt;
 	overflow:hidden;
-} 
+}
 #topbar #logo {
 	width:50px;
 	height:44px;
@@ -40,14 +40,14 @@ body {
 	display: block;
 	width:50px;
 	height:44px;
-	overflow:hidden;	
+	overflow:hidden;
 	text-indent:-9999px;
-	background:transparent url(/images/logo-topbar.png) no-repeat	
+	background:transparent url(/images/logo-topbar.png) no-repeat
 }
 
 #topbar #searchbox {
-	position:absolute; 
-	left:61px; 
+	position:absolute;
+	left:61px;
 	top:15px;
 }
 #topbar #searchbox input[type="text"] {
@@ -61,7 +61,7 @@ body {
 
 #search_string
 {
-	margin-top:1px;	
+	margin-top:1px;
 }
 
 .ext-safari #search_string
@@ -71,20 +71,23 @@ body {
 
 #search_button
 {
-	vertical-align:middle;	
-} 
+	vertical-align:middle;
+}
 
 #topbar #logout_button {
 	display: inline-block;
 	vertical-align: middle;
+	position:absolute;
+	top:14px;
+	right:10px;
 }
 
 
 
 
 #topbar #navmenu {
-	position:absolute; 
-	left:280px; 
+	position:absolute;
+	left:280px;
 	top:16px;
 }
 .ext-safari #topbar #navmenu {
@@ -94,7 +97,7 @@ body {
 /** Customize ExtJS toolbar  */
 #topbar #navmenu .x-toolbar {
 	padding:0;
-	border:none;	
+	border:none;
 	background:none;
 	font-size:10pt;
 	font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
@@ -106,9 +109,9 @@ body {
 #navmenu .x-toolbar select,
 #navmenu .x-toolbar label,
 #navmenu .x-toolbar .x-btn button,
-#topbar .x-btn-text {
-	font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
-	font-size:9pt;
+.x-btn-text {
+	font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif !important;
+	font-size:9pt !important;;
 }
 #topbar .x-btn-small .x-btn-text {
 	height: auto;
@@ -124,10 +127,10 @@ body {
 #navmenu .x-btn-with-menu .x-btn-center em {
 	background-position: right 2px;
 }
- 
+
 #topbar #toplinks {
 	position:absolute;
-	right:5px;
+	right:70px;
 	top:15px;
 	font-size:10pt;
 }
@@ -157,7 +160,6 @@ body {
 	float: left;
 	height: 14px;
 
-	margin-right: 10px;
 	padding: 6px 9px 6px 9px;
 	border-width: 1px;
 	border-style: none solid solid solid;
@@ -176,6 +178,13 @@ body {
 	-webkit-border-bottom-right-radius: 4px;
 }
 
+#top-title-info {
+	padding-left: 4px;
+	padding-bottom: 2px;
+	cursor: help;
+	display: none;
+}
+
 #top-messages {
 	left: 25%;
 	position: absolute;
@@ -184,14 +193,44 @@ body {
 	width: 50%;
 }
 
-#top-environment {
+#top-messages-icons {
+	left: 75%;
+	position: absolute;
+	height: 20px;
+	z-index: 2;
+	width: 48px;
+	padding: 5px;
+}
+
+#top-messages-icons img {
+	padding: 2px;
 	display: none;
+}
+
+#top-environment {
 	float: right;
+	width: 180px;
+	position: relative;
 
-	margin-left: 10px;
+	font-family: "Arial";
+	font-size: 14px;
+	color: #0D2C5F;
+}
 
-	padding: 3px;
+#top-environment-item {
+	height: 14px;
+
+	padding: 6px;
 	border-width: 1px;
 	border-style: none solid solid solid;
-	border-color: #000;
+	border-color: #99BBE8;
+	background-image: url('/images/ui-ng/topbar_title_canvas_1px.png');
+	cursor: pointer;
+
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	-moz-border-radius-bottomleft: 4px;
+	-moz-border-radius-bottomright: 4px;
+	-webkit-border-bottom-left-radius: 4px;
+	-webkit-border-bottom-right-radius: 4px;
 }

@@ -78,10 +78,10 @@
          			
          			$BundleTask->Log(sprintf("Bundle task replacement type: %s", $BundleTask->replaceType));
          			
+         			$DBFarm = DBFarm::LoadByID($BundleTask->farmId);
+         			
          			if ($BundleTask->replaceType == SERVER_REPLACEMENT_TYPE::REPLACE_FARM)
-         			{	
-         				$DBFarm = DBFarm::LoadByID($BundleTask->farmId);
-		         		
+         			{			         		
          				try {
          					$r_farm_roles[] = $DBFarm->GetFarmRoleByRoleID($BundleTask->prototypeRoleId);	
          				} catch (Exception $e) {
@@ -114,7 +114,7 @@
 		         		
 		         		$BundleTask->Log(sprintf("Found %s servers that need to be replaced with new ones. Role '%s' (ID: %s), farm '%s' (ID: %s)", 
 		         			count($servers), 
-		         			$DBFarmRole->GetRoleName(),
+		         			$DBFarmRole->GetRoleObject()->name,
 		         			$DBFarmRole->ID,
 		         			$DBFarm->Name,
 		         			$DBFarm->ID
@@ -148,6 +148,10 @@
 		         				{
 		         					$DBServer->roleId = $BundleTask->roleId;
 		         					$DBServer->Save();
+		         					
+		         					$BundleTask->Log(sprintf("Server '%s', on which snapshot has been taken, already has all modifications. No need to replace it.", 
+					         			$DBServer->serverId
+					         		));
 		         					
 		         					if ($DBServer->GetFarmObject()->Status == FARM_STATUS::SYNCHRONIZING)
 		         					{
@@ -227,23 +231,28 @@
          			{
          				if ($BundleTask->replaceType == SERVER_REPLACEMENT_TYPE::REPLACE_ALL)
          				{
-	         				$role_id = $db->GetOne("SELECT id FROM roles WHERE name=? AND clientid=?", 
-	         					array($BundleTask->roleName, $BundleTask->clientId
-	         				));
-	         				if ($role_id)
+	         				try {
+	         					$dbRole = DBRole::loadByFilter(array('name' => $BundleTask->roleName, 'env_id' => $BundleTask->envId));
+	         				}
+	         				catch(Excpetion $e){
+	         					//NO OLD ROLE
+	         				}
+	         				
+	         				if ($dbRole)
 	         				{
 	         					if ($DBServer)
 	         						$new_role_name = BundleTask::GenerateRoleName($DBServer->GetFarmRoleObject(), $DBServer);
 	         					else
 	         						$new_role_name = $BundleTask->roleName."-".rand(1000, 9999);
 	         					
-	         					$db->Execute("UPDATE roles SET name=? WHERE id=?", array(
-	         						$new_role_name, $role_id
-	         					));
+	         					
+	         					$dbRole->name = $new_role_name;
 	         					
 	         					$BundleTask->Log(sprintf(_("Old role '%s' (ID: %s) renamed to '%s'"), 
-		         					$BundleTask->roleName, $role_id, $new_role_name
+		         					$BundleTask->roleName, $dbRole->id, $new_role_name
 		         				));
+		         				
+		         				$dbRole->save();
 	         				}
          				}
          				

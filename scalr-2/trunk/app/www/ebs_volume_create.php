@@ -1,23 +1,24 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
 	$display["title"] = _("Elastic block storage > Create new volume");
-	
-	$Client = Client::Load($_SESSION['uid']);
 	
 	if ($post_cancel)
         UI::Redirect("ebs_manage.php");
 	
 	if ($req_region)
 	{
-		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($req_region)); 
-		$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+			$req_region,
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+		);
 	}
 	
     if ($_POST)

@@ -439,36 +439,38 @@
 			method: 'POST',
 			form: 'frm',
 			failure: function()
-					{			
-						if(formData.task == 'edit')			
-							typeCombo.disable();
-						
-						ShowError("Some connection problems occurred");						
-					},	
+			{			
+				if(formData.task == 'edit')			
+					typeCombo.disable();
+				
+				Scalr.Viewers.ErrorMessage("Some connection problems occurred");						
+			},	
 					
 			success: function(transport) 
-					{ 						
-						try
-						{
-							if(formData.task == 'edit')
-								typeCombo.disable();
+			{ 						
+				try
+				{
+					if(formData.task == 'edit')
+						typeCombo.disable();
 							
-							loadingMask.hide();
+					loadingMask.hide();
 							
-							if (transport.responseText)
-							{
+					if (transport.responseText)
+					{
 								var data = Ext.decode(transport.responseText);	
                             
 								if(data.result == "error")
-									ShowError(data.msg);
+									Scalr.Viewers.ErrorMessage(data.msg);
 								
 								if(data.result == "ok")
 								{
-									ShowOk(data.msg);
+									Scalr.Viewers.SuccessMessage(data.msg);
 													
 									loadedScriptId 		 = scriptCombo.value;														 
 									loadedScriptRevision = scriptRevisionCombo.value;
 									loadedScriptArgs 	 = Ext.decode(data.args);
+
+									document.location = '/scheduler.php';
 								}	
 							}							
 						}
@@ -656,6 +658,16 @@
 			<td class="td_with_padding">Priority:</td>
 			<td class="td_with_padding">
 				<div><input type='text' class='text'  id="order_index" name="order_index" value="{if $taskinfo.order_index}{$taskinfo.order_index}{else}0{/if}" style="width:186px; margin:0px;" >  0 - the highest priority</div>
+			</td>
+		</tr>
+		<tr>
+			<td class="td_with_padding">Timezone:</td>
+			<td class="td_with_padding">
+				<select name="timezone" id="timezone" class="text" style="margin:0px;padding:0px;">
+				{section name=id loop=$timezones}
+					<option value="{$timezones[id]}" {if $timezones[id] == $timezone}selected="selected"{/if}>{$timezones[id]}</option>
+				{/section}
+				</select>
 			</td>
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}

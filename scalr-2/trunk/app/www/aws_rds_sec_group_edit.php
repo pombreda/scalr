@@ -1,8 +1,11 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	if (!$req_name)
 	{
@@ -10,15 +13,15 @@
 	    UI::Redirect("aws_rds_security_groups.php");
 	}
 	
-	$Client = Client::Load($_SESSION['uid']);
-	
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;Security Groups&nbsp;&raquo;&nbsp;Edit group ({$req_name})");
 	
 	$display["group_name"] = $req_name;	
 	
-	$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey); 
-	
-	$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+	$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds( 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+		$_SESSION['aws_region']
+	);
 		
 	// Rows
 	try

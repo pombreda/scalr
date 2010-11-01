@@ -73,6 +73,7 @@
 		// Check files & folders permissions
 		$files = array(
 			realpath(dirname(__FILE__)."/../etc/.passwd"),
+			realpath(dirname(__FILE__)."/../etc/.cryptokey"),
 			realpath(dirname(__FILE__)."/../cache"),
 			realpath(dirname(__FILE__)."/../cache/smarty_bin")
 		);
@@ -94,37 +95,14 @@
 		else
 			$err[] = "Cannot parse etc/config.ini file.";
 			
-		require_once (dirname(__FILE__).'/../src/prepend.inc.php');
-		
-		$keys = glob(dirname(__FILE__).'/../etc/pk-*.pem');
-		if (count($keys) == 0)
-			$err[] = "Cannot find your AWS keys. Please configure Scalr as described in <a href='http://code.google.com/p/scalr/wiki/Installation'>wiki</a>.";
-		else
+		if (count($err) == 0)
 		{
-			foreach ($keys as $key)
-			{
-				$key = realpath($key);
-				try
-				{
-					$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL(AWSRegions::US_EAST_1)); 
-					$AmazonEC2->SetAuthKeys(
-						$keys[0], 
-						str_replace("pk-", "cert-", $key), 
-						true
-					);
-					
-					$AmazonEC2->DescribeInstances();
-				}
-				catch(Exception $e)
-				{
-					$err[] = "Cannot use {$key} key: {$e->getMessage()}";
-				}
-			}
+			require_once (dirname(__FILE__).'/../src/prepend.inc.php');
+			
+			// Check path to SNMP Trap
+			if (!file_exists(CONFIG::$SNMPTRAP_PATH) || !is_executable(CONFIG::$SNMPTRAP_PATH))
+				$err[] = CONFIG::$SNMPTRAP_PATH." not exists or not executable. Please check path to snmpinformer on Settings > Core Settings page.";
 		}
-		
-		// Check path to SNMP Trap
-		if (!file_exists(CONFIG::$SNMPTRAP_PATH) || !is_executable(CONFIG::$SNMPTRAP_PATH))
-			$err[] = CONFIG::$SNMPTRAP_PATH." not exists or not executable. Please check path to snmpinformer on Settings > Core Settings page.";
 	}
 	
 	if (!$CLI)

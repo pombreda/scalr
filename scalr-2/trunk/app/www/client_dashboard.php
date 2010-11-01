@@ -1,13 +1,16 @@
 <? 
 	require("src/prepend.inc.php"); 
-		
-	if ($_SESSION['uid'] == 0)
-		UI::Redirect("/index.php");
+	
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
+	
+	$Client = Client::Load(Scalr_Session::getInstance()->getClientId());
 	
 	if ($req_redirect_to == 'support')
 	{	
-		$Client = Client::Load($_SESSION['uid']);
-		
 		$farms_rs = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array($Client->ID));
 		$farms = array();
 		foreach ($farms_rs as $frm)
@@ -19,7 +22,6 @@
         	"name"		=> $Client->Fullname,
 			"Package"	=> $db->GetOne("SELECT CONCAT(name,' ($',cost,')') FROM billing_packages WHERE id=?", array($Client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE))),
         	"Farms"		=> $farms,
-			"AWS Account ID" => $Client->AWSAccountID,
 			"ClientID"	=> $Client->ID,
 			"email"		=> $Client->Email,
         	"expires" => date("D M d H:i:s O Y", time()+120)
@@ -34,55 +36,6 @@
 	$display["title"] = _("Dashboard");
 	$display['load_extjs'] = true;
 	$display["table_title_text"] = sprintf(_("Current time: %s"), date("M j, Y H:i:s"));
-
-	/*
-	$info = $db->GetRow("SELECT TO_DAYS(NOW())-TO_DAYS(dtdue) as due_days, dtdue FROM clients WHERE id = '{$Client->ID}'");
-
-	if (!$Client->GetSettingValue(CLIENT_SETTINGS::BILLING_CGF_CID))
-	{
-		$packageid = $Client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE);
-		if ($packageid)
-			$info['package'] = $db->GetRow("SELECT * FROM billing_packages WHERE id=?", array($packageid));
-		
-		if ($Client->IsBilled == 1)
-		{
-				
-			if ($info['due_days'] <= -1)
-				$status = 'Active';
-			else
-				$status = 'Overdue';
-		}
-	}
-	else
-	{
-		if ($Client->IsBilled != 1)
-		{
-			$info['package'] = array('name' => 'Development', 'cost' => '0.00');
-			$status = 'Active';
-		}
-		else
-		{
-			if ($Client->GetSettingValue(CLIENT_SETTINGS::BILLING_CGF_PKG) == 'production')
-				$info['package'] = array('name' => 'Production', 'cost' => '99.00');
-			else
-				$info['package'] = array('name' => 'Beta-legacy', 'cost' => '50.00');
-			$status = 'Active';
-		}
-		
-		if ($Client->GetSettingValue(CLIENT_SETTINGS::BILLING_CGF_SID))
-		{
-			require_once(dirname(__FILE__)."/site/src/Lib/ChargifyClient/class.ChargifyConnector.php");
-			require_once(dirname(__FILE__)."/site/src/Lib/ChargifyClient/class.ChargifyCreditCard.php");
-			require_once(dirname(__FILE__)."/site/src/Lib/ChargifyClient/class.ChargifyCustomer.php");
-			require_once(dirname(__FILE__)."/site/src/Lib/ChargifyClient/class.ChargifyProduct.php");
-			require_once(dirname(__FILE__)."/site/src/Lib/ChargifyClient/class.ChargifySubscription.php");
-			
-			$c = new ChargifyConnector();
-			
-			$c->getSubscriptionsByCustomerID($Client->GetSettingValue(CLIENT_SETTINGS::BILLING_CGF_CID));
-		}
-	}
-	*/
 	
 	//
 	//	Aws problems

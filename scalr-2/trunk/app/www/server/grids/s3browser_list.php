@@ -10,16 +10,18 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");	
 		
-		if ($_SESSION["uid"] == 0)
-		{
-			$errmsg = _("Requested page cannot be viewed from admin account");
-			UI::Redirect("index.php");
-		}     	
+		Scalr_Session::getInstance()->getAuthToken()->hasAccessEx(Scalr_AuthToken::ACCOUNT_USER);  	
 		
 	    
 	    // Create Amazon s3 client object
-	    $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
-        $AmazonCloudFront = new AmazonCloudFront($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
+	    $AmazonS3 = new AmazonS3(
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+	    );
+        $AmazonCloudFront = new AmazonCloudFront(
+        	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+	    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+        );
 
     	//Create cloundfront object
     	$distributions = $AmazonCloudFront->ListDistributions(); 	    	

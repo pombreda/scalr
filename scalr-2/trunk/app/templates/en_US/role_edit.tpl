@@ -1,256 +1,703 @@
-{include file="inc/header.tpl"}
-    <script language="Javascript" src="/js/class.DataFormField.js"></script>
-    
-    {literal}
-    <script language="Javascript" type="text/javascript">
-    
-    Ext.onReady(function()
-    {   
-		 window.df_action = 'create';	 
-		 window.df = new DataForm(Ext.get('role_data_form'));
-		 
-		 {/literal}
-		 {if $role_options_dataform}
-		 	var data_form = {$role_options_dataform|replace:"\'":"\\\'"};
-		 	window.df.Load(data_form);
-		 {/if}
-		 {literal}
-	
-		 SetFieldForm();
-		 AllowMultipleChoice(false);
-	});
-    
-    </script>
-	<style>
-	
-	.item_key
-	{
-	    padding:2px;float:left;width:150px;
-	}
-	
-	.item_value
-	{
-	    padding:2px;float:left;width:150px;
-	}
-	
-	.item_def
-	{
-	    padding:2px;float:left;width:75px;
-	}
-	
-	
-	.item_delete
-	{
-	    padding:2px;float:left;width:46px;
-	    cursor:pointer;
-	}
-	
-	</style>
-{/literal}
-    <br>
-	{include file="inc/table_header.tpl" nofilter=1 tabs=1}
-		{include intable_classname="tab_contents" intableid="tab_contents_general" visible="" file="inc/intable_header.tpl" header="Role information" color="Gray"}
-    	<tr>
-    		<td width="20%" style="padding:5px;">Image ID:</td>
-    		<td style="padding:5px;">{$ami_id}<input type="hidden" name="id" value="{$id}"></td>
-    	</tr>
-    	<tr>
-    		<td width="20%" style="padding:5px;">Architecture:</td>
-    		<td style="padding:5px;">{$arch}</td>
-    	</tr>
-		<tr>
-    		<td width="20%" style="padding:5px;">Role name:</td>
-    		<td style="padding:5px;">{$name}</td>
-    	</tr>
-    	<tr>
-    		<td width="20%" style="padding:5px;">Type:</td>
-    		<td style="padding-left:0px;">
-				<select name="alias" class="text" id="alias">
-					<option {if $alias == 'app'}selected{/if} value="app">Application servers</option>
-					<option {if $alias == 'www'}selected{/if} value="www">Load balancers</option>
-					<option {if $alias == 'mysql'}selected{/if} value="mysql">Database servers</option>
-					<option {if $alias == 'base'}selected{/if} value="base">Base images</option>
-					<option {if $alias == 'memcached'}selected{/if} value="memcached">Caching servers</option>
-				</select>
-			</td>
-    	</tr>
-    	<tr valign="middle">
-    		<td style="padding:5px;" width="20%">Default SSH port:</td>
-    		<td style="padding:5px;padding-left:0px;">
-    		<div style="float:left;vertical-align:middle;height:30px;">
-    			<input type="text" class="text" style="margin-top:4px;" name="default_SSH_port" value="{if $default_SSH_port}{$default_SSH_port}{else}22{/if}" />
-    		</div>
-    		<div style="float:left;vertical-align:middle;height:30px;">
-	    		<div class="Webta_ExperimentalMsg" style="margin-top:2px;font-size:10px;line-height:;">
-					This setting WON'T change default SSH port on the servers. This port should be opened in the security groups.
-				</div>
-			</div>
-    		</td>
-    	</tr>
-    	<tr valign="top">
-    		<td style="padding:5px;" width="20%">Description:</td>
-    		<td style="padding:5px;padding-left:0px;">
-    			<textarea rows="5" cols="50" name="description" class="text">{$description}</textarea>
-    		</td>
-    	</tr>
-        {include file="inc/intable_footer.tpl" color="Gray"}
+{include file="inc/header.tpl" noheader=1}
+<script type="text/javascript" src="/js/ui-ng/data.js"></script>
+<script type="text/javascript" src="/js/ui-ng/viewers/ListView.js"></script>
 
-		<div id="tab_contents_options" class="tab_contents" style="padding:7px;display:none;">
-		<p class="placeholder">
-			These options will appear in the Parameters tab on farm/role edit Page.
-			<a target="_blank" href="http://code.google.com/p/scalr/wiki/RoleOptions">How do I retrieve these values on my instances?</a>
-		</p>
-		<table border="0" cellpadding="0" cellspacing="0" width="100%">
-		<tr>
-			<td width="7" class="TableHeaderCenter_Gray"></td>
-			<td class="Inner_Gray">
-				<table width="100%" cellspacing="0" cellpadding="0" id="Webta_InnerTable_roleopts">
-		        <tr>
-		    		<td colspan="2">
-		    			<table width="100%" cellspacing="0" cellpadding="0">
-		    				<tr valign="top">
-		    					<td width="50%" style="padding:10px;">
-		    						<table width="100%" border="0" cellspacing="0" cellpadding="0">
-		    							<tr>
-											<td width="7"><div class="TableHeaderLeft_Gray"></div></td>
-											<td>
-												<div id="webta_table_header" style="line-height:20px;" class="SettingsHeader_Gray">Field Name</div>
-											</td>
-											<td>
-												<div id="webta_table_header" style="line-height:20px;" class="SettingsHeader_Gray">Field type</div>
-											</td>
-											<td>
-												<div id="webta_table_header" style="line-height:20px;" class="SettingsHeader_Gray">Required</div>
-											</td>
-											<td>
-												<div id="webta_table_header" style="line-height:20px;" class="SettingsHeader_Gray"></div>
-											</td>
-											<td width="7"><div class="TableHeaderRight_Gray"></div></td>
-										</tr>
-										<tbody id="no_fields">
-		    								<tr>
-		    									<td colspan="10" align="center">No options defined</td>
-		    								</tr>
-		    							</tbody>
-		    							<tbody id="role_data_form">
-		    							
-		    							</tbody>
-		    						</table>
-		    					</td>
-		    					<td width="4" align="center" style="border-right:4px solid #cccccc;">
-		    					&nbsp;
-		    					</td>
-		    					<td width="50%" style="padding-left:10px;padding-top:3px;padding-right:0px;">
-		    						<div id="role_data_form_builder">
-		    							{include file="inc/intable_header.tpl" no_first_row=1 header="Field" color="Gray"}
-		    							<tr>
-		    								<td colspan="2">
-							    				<div style="padding-left:0px;">
-							    					<div style="margin-top:0px;">
-							    						<div style="float:left;line-height:25px;height:25px;width:150px;">Type:</div>
-							    						<div style="float:left;line-height:25px;height:25px;">
-							    							<select class="text" name="fieldtype" id="fieldtype" onChange='SetFieldForm()' style="vertical-align:middle;">
-										    					<option value="text">Text</option>
-										    					<option value="textarea">Textarea</option>
-										    					<option value="select">List</option>
-										    					<option value="checkbox">Boolean</option>
-										    				</select>
-							    						</div>
-							    						<div style="clear:both;"></div>
-							    					</div>
-							    					<div style="margin-top:5px;">
-							    						<div style="float:left;line-height:25px;height:25px;width:150px;">Name:</div>
-							    						<div style="float:left;line-height:25px;height:25px;"><input style="vertical-align:middle;" type="text" id="fieldname" class="text" name="fieldname" value=""></div>
-							    						<div style="clear:both;"></div>
-							    					</div>
-							    					<div style="margin-top:5px;">
-							    						<div style="float:left;line-height:25px;height:25px;width:150px;">Required?</div>
-							    						<div style="float:left;line-height:25px;height:25px;"><input style="vertical-align:middle;" type="checkbox" id="fieldrequired" name="fieldrequired" value="1"></div>
-							    						<div style="clear:both;"></div>
-							    					</div>
-							    					<div id="text_properties" style="display:none;">
-							    						<div style="margin-top:5px;">
-								    						<div style="float:left;line-height:25px;height:25px;width:150px;">Default value:</div>
-								    						<div style="float:left;line-height:25px;height:25px;"><input style="vertical-align:middle;" type="text" class="text" name="fielddefval" value=""></div>
-								    						<div style="clear:both;"></div>
-								    					</div>	
-							    					</div>
-							    					<div id="checkbox_properties" style="display:none;">
-							    						<!-- TODO: -->	
-							    					</div>
-							    					<div id="textarea_properties" style="display:none;">
-							    						<div style="margin-top:5px;">
-								    						<div style="float:left;line-height:25px;height:25px;width:150px;">Default value:</div>
-								    						<div style="float:left;margin-bottom:10px;"><textarea style="vertical-align:middle;" cols="50" rows="10" type="text" class="text" name="fielddefval" value=""></textarea></div>
-								    						<div style="clear:both;"></div>
-								    					</div>	
-							    					</div>
-							    					<div id="select_properties" style="display:none;">
-							    						<div style="25px;margin-top:5px;">
-								    						<div style="float:left;line-height:25px;height:25px;width:150px;">Allow multiple choice:</div>
-								    						<div style="float:left;line-height:10px;">
-								    							<input style="vertical-align:middle;margin-top:4px;" type="checkbox" onClick="AllowMultipleChoice(this.checked)" name="allow_multiplechoise" id="allow_multiplechoise" value="1">
-								    						</div>
-								    						<div style="clear:both;"></div>
-								    					</div>
-								    				</div>
-							    				</td>
-							    			</tr>
-							    			{include file="inc/intable_footer.tpl" color="Gray"}
-					    					{include intableid='list_options' no_first_row=1 visible='none' file="inc/intable_header.tpl" header="Options" color="Gray"}
-					    					<tr>
-					    						<td colspan="2">
-						    					<div style="">
-						    						<div style="float:left;">
-						    							<div style="padding:2px;">
-													         <div id="item1" style="width:440px;padding-left:0px;">
-												                 <div style="padding:2px;float:left;width:150px;"><b>Value</b></div>
-												                 <div style="padding:2px;float:left;width:150px;"><b>Name</b></div>
-												                 <div style="padding:2px;float:left;width:75px;" align="center"><b>Default</b></div>
-												                 <div style="padding:2px;float:left;width:auto;" align="center"><b>Delete</b></div>
-													         </div>
-													         <div id="Items" style="margin-left:0px;width:360px;">
-													             <div id="no_items" align="center" style="display:;">No items defined</div>
-													         </div>
-													     </div>
-													     <div style="clear:both;"></div>
-													     <div style="padding:2px;width:440px;">
-													         <div style="padding:2px;float:left;width:150px;"><input style="width:100px;" type="text" class="text" id="ikey" value=""></div>
-													         <div style="padding:2px;float:left;width:150px;"><input style="width:100px;" type="text" class="text" id="iname" value=""></div>
-													         <div style="padding:2px;float:left;width:75px;" align="center">
-													         	<input type="checkbox" name="idef_add" id="idef_add" value="1">
-													         </div>
-													         <div style="padding:2px;float:left;width:auto;" align="center"><input onclick="AddItem();" type="button" class="btn" id="iname" value="Add"></div>
-													     </div>
-						    						</div>
-						    					</div>	
-						    					</td>
-							    			</tr>
-							    			{include file="inc/intable_footer.tpl" color="Gray"}
-					    					<div id="field_buttons_add" style="clear:both;height:50px;padding-left:16px;">
-					    						<br />
-					    						<input type="Button" name="setfield" onClick="window.df_action = 'create'; SetField();" value="Add" class="btn">
-					    						<br />
-					    					</div>
-					    					<div id="field_buttons_edit" style="clear:both;height:50px;padding-left:16px;display:none;">
-					    						<br />
-					    						<input type="Button" name="setfield" onClick="window.df_action = 'edit'; SetField();" value="Edit" class="btn">
-					    						&nbsp;
-					    						<input type="Button" name="setfield" onClick="ResetFieldForm();" value="Cancel" class="btn">
-					    						<br />
-					    					</div>
-					    				</div>
-					    			</div>
-		    					</td>
-		    				</tr>
-		    			</table>
-		    		</td>
-		    	</tr>
-				</table>
-				</td>
-				<td width="7" class="TableHeaderCenter_Gray"></td>
-			</tr>
-			</table>
-		</div>
-	{include file="inc/table_footer.tpl" button_js=1 button_js_action="return PrepareSubmit();" button_js_name="Save" show_js_button=1}
+<div id="form-role-edit-view"></div>
+
+<script type="text/javascript">
+
+var role = eval({$role});
+var params = eval({$params});
+
+{literal}
+Ext.onReady(function () {
+	var checkboxBehaviorListener = function(checkbox, checked) {
+		var value = '';
+		panel.findOne('itemId', 'behaviors').items.each(function() {
+			if (this.checked && value != '')
+				value = 'Mixed images'
+			else if (this.checked) {
+				if (this.inputValue == 'app')
+					value = 'Application servers'
+				else if (this.inputValue == 'base')
+					value = 'Base images'
+				else if (this.inputValue == 'mysql')
+					value = 'Database servers'
+				else if (this.inputValue == 'www')
+					value = 'Load balancers'
+				else if (this.inputValue == 'memcached')
+					value = 'Caching servers'
+				else if (this.inputValue == 'cassandra')
+					value = 'Database servers';
+			}
+		});
+
+		panel.findOne('name', 'group').setValue(value);
+	};
+
+	var removeImages = [];
+
+	var imagesStore = new Ext.data.JsonStore({
+		fields: [ 'platform', 'location', 'platform_name', 'location_name', 'image_id' ]
+	});
+
+	imagesStore.loadData(role.images);
+
+	var optionsStore = new Ext.data.JsonStore({
+		id: 'name',
+		fields: [ 'name', 'type', 'required', 'defval' ]
+	});
+
+	optionsStore.loadData(role.parameters);
+
+	var platformsStore = new Ext.data.JsonStore({
+		id: 'id',
+		fields: [ 'id', 'name', 'locations' ],
+		data: params.platforms
+	});
+
+	var locationsStore = new Ext.data.JsonStore({
+		id: 'id',
+		fields: [ 'id', 'name' ]
+	});
+
+	var panel = new Ext.TabPanel({
+		renderTo: "form-role-edit-view",
+		xtype: 'tabpanel',
+		itemId: 'tabs',
+		activeTab: 0,
+		bodyStyle: 'border-style: none solid none solid;',
+		plugins: [ new Scalr.Viewers.Plugins.findOne() ],
+		items: [{
+			title: 'Role Information',
+			xtype: 'form',
+			itemId: 'form',
+			bodyStyle: { padding: '10px' },
+			autoHeight: true,
+			border: false,
+			items: [{
+				xtype: 'fieldset',
+				items: [{
+					xtype: 'textfield',
+					fieldLabel: 'Name',
+					width: 200,
+					name: 'name',
+					readOnly: role.id != 0 ? true : false,
+					value: role.name
+				}, {
+					xtype: 'combo',
+					fieldLabel: 'Arch',
+					name: 'arch',
+					width: 200,
+					readOnly: role.id != 0 ? true : false,
+					store: [ 'i386', 'x86_64' ],
+					value: role.arch,
+					mode: 'local',
+					allowBlank: false,
+					editable: false,
+					triggerAction: 'all'
+				}, {
+					xtype: 'combo',
+					fieldLabel: 'Scalr agent',
+					name: 'agent',
+					width: 200,
+					readOnly: role.id != 0 ? true : false,
+					store: [ [ '1', 'ami-scripts' ], [ '2', 'scalarizer' ] ],
+					value: role.agent,
+					mode: 'local',
+					allowBlank: false,
+					editable: false,
+					triggerAction: 'all'
+				}, {
+					xtype: 'textfield',
+					fieldLabel: 'OS',
+					width: 200,
+					name: 'os',
+					readOnly: role.id != 0 ? true : false,
+					value: role.os
+				}, {
+					xtype: 'textarea',
+					fieldLabel: 'Description',
+					width: '90%',
+					height: 100,
+					name: 'description',
+					value: role.description
+				}, {
+					xtype: 'textarea',
+					fieldLabel: 'Software',
+					width: '90%',
+					height: 100,
+					name: 'software',
+					hidden: role.id != 0 ? true : false,
+					hideLabel: role.id != 0 ? true : false,
+					value: ''
+				}, {
+					xtype: 'hidden',
+					name: 'id',
+					value: role.id
+				}]
+			}, {
+				xtype: 'fieldset',
+				title: 'Behaviors',
+				items: [{
+					xtype: 'checkboxgroup',
+					columns: 4,
+					fieldLabel: 'Behaviors',
+					itemId: 'behaviors',
+					disabled: role.id != 0 ? true : false,
+					items: [{
+						boxLabel: 'Base',
+						inputValue: 'base',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}, {
+						boxLabel: 'MySQL',
+						inputValue: 'mysql',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}, {
+						boxLabel: 'Apache',
+						inputValue: 'app',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}, {
+						boxLabel: 'Nginx',
+						inputValue: 'www',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}, {
+						boxLabel: 'Memcached',
+						inputValue: 'memcached',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}, {
+						boxLabel: 'Cassandra',
+						inputValue: 'cassandra',
+						name: 'behaviors[]',
+						handler: checkboxBehaviorListener
+					}]
+				}, {
+					xtype: 'textfield',
+					readOnly: true,
+					fieldLabel: 'Group',
+					name: 'group',
+					width: 200
+				}]
+			}]
+		}, {
+			title: 'Images',
+			layout: 'hbox',
+			itemId: 'images',
+			plugins: [ new Scalr.Viewers.Plugins.findOne() ],
+			layoutConfig: {
+				align: 'stretch',
+				pack: 'start'
+			},
+			items: [{
+				layout: 'form',
+				bodyStyle: { 'border-style': 'none solid none none', padding: '10px' },
+				width: 300,
+				labelWidth: 60,
+				items: [{
+					xtype: 'combo',
+					fieldLabel: 'Platform',
+					store: platformsStore,
+					valueField: 'id',
+					displayField: 'name',
+					allowBlank: false,
+					editable: false,
+					name: 'image_platform',
+					typeAhead: false,
+					mode: 'local',
+					triggerAction: 'all',
+					selectOnFocus: false,
+					width: 200,
+					listeners: {
+						select: function (field, rec) {
+							panel.findOne('name', 'image_location').enable().reset();
+							locationsStore.loadData(rec.get('locations'));
+						}
+					}
+				}, {
+					xtype: 'combo',
+					fieldLabel: 'Location',
+					store: locationsStore,
+					valueField: 'id',
+					displayField: 'name',
+					disabled: true,
+					allowBlank: false,
+					editable: false,
+					name: 'image_location',
+					typeAhead: false,
+					mode: 'local',
+					triggerAction: 'all',
+					selectOnFocus: false,
+					width: 200
+				}, {
+					xtype: 'textfield',
+					fieldLabel: 'Image ID',
+					allowBlank: false,
+					name: 'image_id',
+					width: 200
+				}, {
+					layout: 'column',
+					border: false,
+					items: [{
+						text: 'Add',
+						itemId: 'image_add',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}, {
+						text: 'Save',
+						itemId: 'image_save',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}, {
+						xtype: 'displayfield',
+						value: '&nbsp;'
+					}, {
+						text: 'Cancel',
+						itemId: 'image_cancel',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}, {
+						xtype: 'displayfield',
+						value: '&nbsp;'
+					}, {
+						text: 'Delete',
+						itemId: 'image_delete',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}]
+				}]
+			}, new Scalr.Viewers.list.ListView({
+				flex: 1,
+				itemId: 'images_view',
+				border: false,
+				emptyText: 'No images found',
+				singleSelect: true,
+				columns: [
+					{ header: "Platform", width: 35, dataIndex: 'platform_name', sortable: false, hidden: 'no' },
+					{ header: "Location", width: 35, dataIndex: 'location_name', sortable: false, hidden: 'no' },
+					{ header: "Image ID", width: 35, dataIndex: 'image_id', sortable: false, hidden: 'no' }
+				],
+				store: imagesStore,
+				deferEmptyText: false
+			})]
+		}, {
+			title: 'Properties',
+			itemId: 'properties',
+			layout: 'form',
+			bodyStyle: { padding: '10px' },
+			items: {
+				xtype: 'fieldset',
+				items: {
+					xtype: 'compositefield',
+					hideLabel: true,
+					items: [{
+						xtype: 'displayfield',
+						cls: 'x-form-check-wrap',
+						value: 'SSH port'
+					}, {
+						xtype: 'textfield',
+						hideLabel: true,
+						name: 'default_ssh_port',
+						value: role['properties']['system.ssh-port']
+					}, {
+						xtype: 'displayfield',
+						id: 'default_ssh_port_help',
+						cls: 'x-form-check-wrap',
+						value: '<img src="/images/ui-ng/icons/warn_icon_16x16.png" style="padding: 2px; cursor: help;">'
+					}]
+				}
+			}
+		}, {
+			title: 'Parameters',
+			layout: 'hbox',
+			itemId: 'options',
+			plugins: [ new Scalr.Viewers.Plugins.findOne() ],
+			layoutConfig: {
+				align: 'stretch',
+				pack: 'start'
+			},
+			items: [{
+				width: 400,
+				bodyStyle: { 'border-style': 'none solid none none', padding: '10px' },
+				items: [{
+					xtype: 'fieldset',
+					title: 'Field',
+					layout: 'form',
+					defaults: {
+						anchor: '100%'
+					},
+					labelWidth: 80,
+					items: [{
+						xtype: 'combo',
+						fieldLabel: 'Type',
+						store: [ ['text', 'Text'], ['textarea', 'Textarea'], ['checkbox', 'Boolean']],
+						editable: false,
+						name: 'fieldtype',
+						value: 'text',
+						typeAhead: false,
+						mode: 'local',
+						triggerAction: 'all',
+						allowBlank: false
+					}, {
+						xtype: 'textfield',
+						name: 'fieldname',
+						fieldLabel: 'Name',
+						allowBlank: false
+					}, {
+						xtype: 'checkbox',
+						fieldLabel: 'Required?',
+						name: 'fieldrequired',
+						labelSeparator: ''
+					}, {
+						xtype: 'textfield',
+						fieldLabel: 'Default value',
+						name: 'fielddefval_textfield'
+					}, {
+						xtype: 'textarea',
+						fieldLabel: 'Default value',
+						name: 'fielddefval_textarea'
+					}, {
+						xtype: 'hidden',
+						name: 'fieldeditname'
+					}]
+				}, {
+					layout: 'column',
+					border: false,
+					items: [{
+						text: 'Add',
+						itemId: 'field_add',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}, {
+						text: 'Save',
+						itemId: 'field_save',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}, {
+						xtype: 'displayfield',
+						value: '&nbsp;'
+					}, {
+						text: 'Cancel',
+						itemId: 'field_cancel',
+						xtype: 'button',
+						hideMode: 'offsets',
+						width: 70
+					}]
+				}]
+			}, new Scalr.Viewers.list.ListView({
+				flex: 1,
+				itemId: 'options_view',
+				border: false,
+				emptyText: 'No parameters found',
+				singleSelect: true,
+				actionColumnPlugin: true,
+				columns: [
+					{ header: "Name", width: 35, dataIndex: 'name', sortable: false, hidden: 'no' },
+					{ header: "Type", width: 35, dataIndex: 'type', sortable: false, hidden: 'no' },
+					{ header: "Required", width: 35, dataIndex: 'required', sortable: false, hidden: 'no', tpl:
+						'<tpl if="required == 1"><img src="/images/true.gif"></tpl>' +
+						'<tpl if="required != 1"><img src="/images/false.gif"></tpl>'
+					},
+					{ header: "&nbsp;", width: '24px', sortable: false, dataIndex: 'id', align:'center', hidden: 'no',
+						tpl: '<img src="/images/ui-ng/icons/delete_icon_16x16.png">', clickHandler: function (comp, store, record) {
+							store.remove(record);
+						}
+					}
+				],
+				store: optionsStore,
+				deferEmptyText: false
+			})]
+		}],
+		buttonAlign: 'center',
+		buttons: [{
+			type: 'submit',
+			text: 'Save',
+			handler: function() {
+				var params = {};
+				var data = [], records = imagesStore.getRange();
+				for (var i = 0; i < records.length; i++)
+					data[data.length] = { image_id: records[i].get('image_id'), platform: records[i].get('platform'), location: records[i].get('location') };
+
+				params['images'] = Ext.encode(data);
+				params['remove_images'] = Ext.encode(removeImages);
+
+				var parameters = [], records = optionsStore.getRange();
+				for (var i = 0; i < records.length; i++)
+					parameters[parameters.length] = records[i].data;
+
+				params['parameters'] = Ext.encode(parameters);
+
+				params['properties'] = Ext.encode({
+					'system.ssh-port': panel.findOne('name', 'default_ssh_port') ?
+						panel.findOne('name', 'default_ssh_port').getValue() :
+						role['properties']['system.ssh-port']
+				});
+
+				panel.findOne('itemId', 'form').getForm().submit({
+					url: '/role_edit.php',
+					params: params,
+					success: function(form, action) {
+						document.location.href = '/roles_view.php?saved=1';
+					},
+					failure: Scalr.data.ExceptionFormReporter
+				});
+			}
+		}, {
+			type: 'reset',
+			text: 'Cancel',
+			handler: function() {
+				document.location.href = '/roles_view.php';
+			}
+		}]
+	});
+
+	var panel_image_add_reset = function() {
+		panel.findOne('name', 'image_platform').reset();
+		panel.findOne('name', 'image_location').disable().reset();
+		panel.findOne('name', 'image_id').reset();
+
+		panel.findOne('name', 'image_platform').enable();
+
+		panel.findOne('itemId', 'image_add').show();
+		panel.findOne('itemId', 'image_save').hide();
+		panel.findOne('itemId', 'image_delete').hide();
+		panel.findOne('itemId', 'image_cancel').hide();
+	};
+
+	panel.findOne('itemId', 'images').on('afterrender', function () {
+		panel_image_add_reset();
+
+		this.findOne('itemId', 'image_add').on('click', function () {
+			if (
+				this.findOne('name', 'image_platform').isValid() &&
+				this.findOne('name', 'image_location').isValid() &&
+				this.findOne('name', 'image_id').isValid()
+			) {
+				var platform = this.findOne('name', 'image_platform').getValue(),
+					location = this.findOne('name', 'image_location').getValue(),
+					image_id = this.findOne('name', 'image_id').getValue();
+
+				if (imagesStore.findBy(function (record) {
+					if (record.get('platform') == platform && record.get('location') == location) {
+						Scalr.Viewers.ErrorMessage('Image on this platform/location already exist');
+						return true;
+					}
+
+					if (record.get('image_id') == image_id) {
+						Scalr.Viewers.ErrorMessage('Image ID ' + image_id + ' already used');
+						return true;
+					}
+				}) == -1) {
+					var record = new imagesStore.recordType({
+						platform: platform,
+						platform_name: platformsStore.getById(platform).get('name'),
+						location: location,
+						location_name: locationsStore.getById(location).get('name'),
+						image_id: image_id
+					});
+					imagesStore.add(record);
+					panel_image_add_reset();
+				}
+			}
+		}, this);
+
+		this.findOne('itemId', 'images_view').on('afterrender', function (comp) {
+			comp.on('selectionchange', function(c, selections) {
+				if (selections.length) {
+					var rec = c.store.getAt(c.indexOf(selections[0]));
+					panel.findOne('name', 'image_platform').disable().setValue(rec.get('platform'));
+					panel.findOne('name', 'image_location').disable().setValue(rec.get('location'));
+					panel.findOne('name', 'image_id').setValue(rec.get('image_id'));
+
+					panel.findOne('itemId', 'image_add').hide();
+					panel.findOne('itemId', 'image_save').show();
+					panel.findOne('itemId', 'image_delete').show();
+					panel.findOne('itemId', 'image_cancel').show();
+				} else
+					panel_image_add_reset();
+			});
+		}, this);
+
+		this.findOne('itemId', 'image_save').on('click', function() {
+			var view = panel.findOne('itemId', 'images_view'), records = view.getSelectedRecords();
+			if (records[0]) {
+				records[0].set('image_id', panel.findOne('name', 'image_id').getValue());
+				panel_image_add_reset();
+			}
+		});
+
+		this.findOne('itemId', 'image_cancel').on('click', function () {
+			panel.findOne('itemId', 'images_view').clearSelections();
+			panel_image_add_reset.call(this);
+		});
+
+		this.findOne('itemId', 'image_delete').on('click', function() {
+			var view = panel.findOne('itemId', 'images_view'), records = view.getSelectedRecords();
+			if (records[0]) {
+				view.clearSelections();
+				view.store.remove(records[0]);
+				removeImages[removeImages.length] = records[0].get('image_id');
+				panel_image_add_reset();
+			}
+		});
+	});
+
+	panel.findOne('itemId', 'properties').on('afterrender', function() {
+		new Ext.ToolTip({
+			target: 'default_ssh_port_help',
+			dismissDelay: 0,
+			html: "This setting WON'T change default SSH port on the servers. This port should be opened in the security groups."
+		});
+	});
+
+	panel.findOne('itemId', 'options').on('afterrender', function () {
+		(function() {
+			var get_value = function () {
+				var data = {}, valid = true;
+
+				data['name'] = this.findOne('name', 'fieldname').getValue();
+				data['type'] = this.findOne('name', 'fieldtype').getValue()
+				data['required'] = this.findOne('name', 'fieldrequired').getValue() ? 1 : 0;
+
+				valid = this.findOne('name', 'fieldname').isValid() && valid;
+				valid = this.findOne('name', 'fieldtype').isValid() && valid;
+
+				if (! valid)
+					return;
+
+				if (data['type'] == 'text')
+					data['defval'] = this.findOne('name', 'fielddefval_textfield').getValue();
+
+				if (data['type'] == 'textarea')
+					data['defval'] = this.findOne('name', 'fielddefval_textarea').getValue();
+
+				return data;
+			};
+
+			var clear_value = function () {
+				this.findOne('name', 'fieldname').reset();
+				this.findOne('name', 'fieldrequired').reset();
+				this.findOne('name', 'fielddefval_textarea').reset();
+				this.findOne('name', 'fielddefval_textfield').reset();
+			};
+
+			this.findOne('name', 'fieldtype').on('select', function (field, record) {
+				this.findOne('name', 'fielddefval_textfield').container.up('div.x-form-item').setVisibilityMode(Ext.Element.DISPLAY);
+				this.findOne('name', 'fielddefval_textarea').container.up('div.x-form-item').setVisibilityMode(Ext.Element.DISPLAY);
+
+				this.findOne('name', 'fielddefval_textfield').container.up('div.x-form-item').hide();
+				this.findOne('name', 'fielddefval_textarea').container.up('div.x-form-item').hide();
+
+				if (record.get(field.valueField) == 'text') {
+					this.findOne('name', 'fielddefval_textfield').container.up('div.x-form-item').show();
+				}
+
+				if (record.get(field.valueField) == 'textarea') {
+					this.findOne('name', 'fielddefval_textarea').container.up('div.x-form-item').show();
+				}
+
+			}, this);
+
+			this.findOne('itemId', 'field_add').on('click', function () {
+				var data = get_value.call(this);
+
+				if (Ext.isObject(data)) {
+					var store = this.findOne('itemId', 'options_view').store;
+					if (store.findExact('name', data['name']) == -1) {
+						store.add(new store.recordType(data));
+						clear_value.call(this);
+					} else
+						this.findOne('name', 'fieldname').markInvalid('Such param name already exist');
+				}
+			}, this);
+
+			this.findOne('itemId', 'field_cancel').on('click', function () {
+				clear_value.call(this);
+
+				this.findOne('itemId', 'options_view').clearSelections();
+
+				this.findOne('itemId', 'field_add').show();
+				this.findOne('itemId', 'field_save').hide();
+				this.findOne('itemId', 'field_cancel').hide();
+			}, this);
+
+			this.findOne('itemId', 'field_save').on('click', function () {
+				var data = get_value.call(this);
+
+				if (Ext.isObject(data)) {
+					var store = this.findOne('itemId', 'options_view').store;
+					var record = store.getAt(store.findExact('name', this.findOne('name', 'fieldeditname').getValue()));
+
+					for (i in data)
+						record.set(i, data[i]);
+
+					clear_value.call(this);
+
+					this.findOne('itemId', 'options_view').clearSelections();
+
+					this.findOne('itemId', 'field_add').show();
+					this.findOne('itemId', 'field_save').hide();
+					this.findOne('itemId', 'field_cancel').hide();
+				}
+			}, this);
+
+			this.findOne('itemId', 'options_view').on('selectionchange', function (c, selections) {
+				if (selections.length) {
+					var rec = c.store.getAt(c.indexOf(selections[0])), fieldtype = this.findOne('name', 'fieldtype');
+
+					fieldtype.setValue(rec.get('type')).fireEvent('select', fieldtype,
+						fieldtype.store.getAt(fieldtype.store.find(fieldtype.valueField, rec.get('type')))
+					);
+					this.findOne('name', 'fieldname').setValue(rec.get('name'));
+					this.findOne('name', 'fieldeditname').setValue(rec.get('name'));
+					this.findOne('name', 'fieldrequired').setValue(rec.get('required') == 1 ? true : false);
+
+					if (rec.get('type') == 'text')
+						this.findOne('name', 'fielddefval_textfield').setValue(rec.get('defval'));
+
+					if (rec.get('type') == 'textarea')
+						this.findOne('name', 'fielddefval_textarea').setValue(rec.get('defval'));
+
+					this.findOne('itemId', 'field_add').hide();
+					this.findOne('itemId', 'field_save').show();
+					this.findOne('itemId', 'field_cancel').show();
+				} else {
+					clear_value.call(this);
+
+					this.findOne('itemId', 'field_add').show();
+					this.findOne('itemId', 'field_save').hide();
+					this.findOne('itemId', 'field_cancel').hide();
+				}
+			}, this);
+
+			this.findOne('itemId', 'field_save').hide();
+			this.findOne('itemId', 'field_cancel').hide();
+
+			this.findOne('name', 'fielddefval_textarea').container.up('div.x-form-item').setVisibilityMode(Ext.Element.DISPLAY);
+			this.findOne('name', 'fielddefval_textarea').container.up('div.x-form-item').hide();
+
+		}).defer(100, this);
+	});
+
+	panel.findOne('itemId', 'behaviors').items.each(function() {
+		var beh = role.behaviors.join(' ');
+		if (beh.match(this.inputValue))
+			this.setValue(true);
+	});
+
+	var autosize = new Scalr.Viewers.autoSize();
+	autosize.init(panel);
+});
+{/literal}
+</script>
 {include file="inc/footer.tpl"}

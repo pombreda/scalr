@@ -47,9 +47,11 @@
 					{
 						try
 						{					
-							$Client = Client::Load($DBFarm->ClientID);
-							$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBFarm->Region)); 
-							$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+							$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+								$DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION),
+								$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+								$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+							);
 							
 							while (count($old_snapshots) > $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATE))
 							{
@@ -91,10 +93,13 @@
 			{
 				try
 				{
-					$Client = Client::Load($snapshot_settings['clientid']);
+					$environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($snapshot_settings['env_id']);
 					
-					$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($snapshot_settings['region'])); 
-					$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+					$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+						$snapshot_settings['region'],
+						$environment->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+						$environment->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+					);
 					
 					// Check volume
 					try
@@ -177,9 +182,13 @@
         	
         	$DBEBSVolume = DBEBSVolume::loadById($volume['id']);
         	
-        	$EC2Client = $this->GetEC2Client($DBEBSVolume);
+        	$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+				$DBEBSVolume->ec2Region,
+				$DBEBSVolume->getEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+				$DBEBSVolume->getEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+			);
         	
-        	if ($DBEBSVolume->volumeId)
+			if ($DBEBSVolume->volumeId)
         	{
 	        	try
 	        	{
@@ -400,15 +409,6 @@
 				   		$this->logger->warn("Cannot attach volume: volume status: {$result->status} ({$volumeinfo->status}). Database ID: {$DBEBSVolume->id}. Volume ID: {$DBEBSVolume->volumeId}");
         		}
         	}
-        }
-        
-        private function GetEC2Client(DBEBSVolume $DBEBSVolume)
-        {
-        	$Client = Client::Load($DBEBSVolume->clientId);
-            $ec2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($DBEBSVolume->ec2Region)); 
-		    $ec2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
-        	       	
-        	return $ec2Client;
         }
     }
 ?>

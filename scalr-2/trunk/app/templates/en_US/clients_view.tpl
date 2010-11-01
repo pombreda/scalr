@@ -18,7 +18,7 @@ Ext.onReady(function () {
 	        	
 	        fields: [
 				{name: 'id', type: 'int'},
-				'email', 'aws_accountid', 'dtadded', 'farms', 'roles', 'apps', 'instances', 'payments', 'isactive', 'farms_limit','fullname', 'overdue_days', 'dtdue', 'comments', 'billing_type'
+				'email', 'dtadded', 'farms', 'roles', 'apps', 'instances', 'isactive', 'farms_limit','fullname', 'comments'
 	        ]
     	}),
     	remoteSort: true,
@@ -27,7 +27,7 @@ Ext.onReady(function () {
     });
 	
 	function farmRenderer(value, p, record) {
-		return record.data.farms+' [<a href="/farms_view.php?clientid='+record.data.id+'">View</a>]';
+		return record.data.farms;
 	}
 
 	function commentRenderer(value, p, record)
@@ -39,19 +39,15 @@ Ext.onReady(function () {
 	}
 	
 	function roleRenderer(value, p, record) {
-		return record.data.roles+' [<a href="/roles_view.php?clientid='+record.data.id+'">View</a>]';
+		return record.data.roles;
 	}
 
 	function appRenderer(value, p, record) {
-		return record.data.apps+' [<a href="/sites_view.php?clientid='+record.data.id+'">View</a>]';
+		return record.data.apps;
 	}
 
 	function isactiveRenderer(value, p, record) {
 		return (record.data.isactive == 1) ? '<img src=\'/images/true.gif\' />' : '<img src=\'/images/false.gif\' />';
-	}
-
-	function paymentRenderer(value, p, record) {
-		return record.data.payments+' [<a href="/payments.php?clientid='+record.data.id+'">View</a>]';
 	}
 	
 	function limitRenderer(value, p, record) {
@@ -74,16 +70,11 @@ Ext.onReady(function () {
         columns:[
 			{header: "E-mail", width: 120, dataIndex: 'email', sortable: true},
 			{header: "Name", width: 120, dataIndex: 'fullname', sortable: true, hidden: true},
-			{header: "AWS Account ID", width: 100, dataIndex: 'aws_accountid', sortable: true},
-			{header: "Package", width: 70, dataIndex: 'billing_type', sortable: true},
 			{header: "Farms", width: 70, dataIndex: 'farms', renderer:farmRenderer, sortable: false},
 			{header: "Custom roles", width: 70, dataIndex: 'roles', renderer:roleRenderer, sortable: false, hidden:true},
 			{header: "Applications", width: 70, dataIndex: 'apps', renderer:appRenderer, sortable: false},
 			{header: "Running servers", width: 70, dataIndex: 'instances', sortable: false},
 			{header: "Farms limit", width: 70, dataIndex: 'farms_limit', renderer: limitRenderer, sortable: false, hidden:true},
-			{header: "Payments", width: 70, dataIndex: 'payments', renderer:paymentRenderer, sortable: true, hidden:true},
-			{header: "Overdue days", width: 70, dataIndex: 'overdue_days', sortable: false, hidden:true},
-			{header: "Due date", width: 70, dataIndex: 'dtdue', sortable: false, hidden:true},
 			{header: "Added at", width: 70, dataIndex: 'dtadded', sortable: true, hidden:true},
 			{header: "Comment", width: 50, dataIndex: 'comments', renderer:commentRenderer, sortable: false, hidden:true, align:'center'},
 			{header: "Active", width: 70, dataIndex: 'isactive', renderer:isactiveRenderer, sortable: false, align:'center'}

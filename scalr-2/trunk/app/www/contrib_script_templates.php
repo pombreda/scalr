@@ -1,8 +1,11 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION['uid'] != 0)
-		UI::Redirect("script_templates.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = _("Contrinuted script templates");
 	if (isset($post_cancel))

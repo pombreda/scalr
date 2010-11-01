@@ -3,10 +3,10 @@
 	$display["title"] = _("Scripting log&nbsp;&raquo;&nbsp;View");
 	$display['load_extjs'] = true;
     	
-	if (!$_SESSION["uid"])
+	if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 		$farms = $db->GetAll("SELECT * FROM farms");
 	else
-		$farms = $db->GetAll("SELECT * FROM farms WHERE clientid='{$_SESSION['uid']}'");
+		$farms = $db->GetAll("SELECT * FROM farms WHERE env_id=?", array(Scalr_Session::getInstance()->getEnvironmentId()));
 		
 	$disp_farms = array(array('',''));
 	foreach ($farms as $farm)

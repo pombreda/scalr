@@ -1,40 +1,19 @@
 {include file="inc/header.tpl"}
-<script src="/js/farm_role_server_loader.js"></script>
-<script type="text/javascript">
-{literal}
-/*
-Ext.onReady(function () {
-	var farmCombo = FarmRoleServerHelper.newFarmsCombo({
-		renderTo: 'farm_combo',
-		mode: 'remote',
-		name: 'farmid',
-		readOnly: true
-	});
-});
-function toggleFarmCombo (checkbox) {
-	Ext.get('farm-combo-row').setStyle('display', checkbox.checked ? '' : 'none');
-	
-}
-*/
-{/literal}
-</script>
-
-
 	{include file="inc/table_header.tpl"}
 	{include file="inc/intable_header.tpl" header="Import server &mdash; Step 1 (Server details)" color="Gray"}
 	    <tr>
 			<td width="20%">Platform:</td>
 			<td colspan="6">
 				<select name="platform" class="text">
-					<option value="ec2" {if $platform == "ec2"}selected{/if}>Amazon EC2</option>
+					{html_options options=$platforms selected=$platform}
 				</select>
 			</td>
 		</tr>
 	    <tr>
 			<td width="20%">Behavior:</td>
 			<td colspan="6">
-				<select name="behaviour" class="text">
-					{html_options options=$behaviours selected=$behaviour}
+				<select name="behavior" class="text">
+					{html_options options=$behaviors selected=$behavior}
 				</select>
 			</td>
 		</tr>

@@ -2,14 +2,19 @@
 	require("src/prepend.inc.php"); 
 	$display['load_extjs'] = true;
 	
-	
-	// Load Client Object
-    $Client = Client::Load($_SESSION['uid']);
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
     
         
 	$display["title"] = _("CloudWatch Request Builder");
-
-	$AmazonCloudWatch = AmazonCloudWatch::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey); 
+	
+	$AmazonCloudWatch = AmazonCloudWatch::GetInstance(
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+	); 
 	$res = $AmazonCloudWatch->ListMetrics();
 	
 	

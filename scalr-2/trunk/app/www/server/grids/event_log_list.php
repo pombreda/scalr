@@ -9,9 +9,9 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");
 	
-		if ($_SESSION["uid"] != 0)
+		if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_ADMIN))
 		{
-			$farms = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array($_SESSION['uid']));
+			$farms = $db->GetAll("SELECT id FROM farms WHERE env_id=?", array(Scalr_Session::getInstance()->getEnvironmentId()));
 			$frms = array();
 			foreach ($farms as $f)
 				array_push($frms, $f['id']);	
@@ -21,7 +21,7 @@
 			if ($frms == '')
 				$frms = '0';
 			
-			$auth_sql = " AND farmid IN ({$frms})";
+			$auth_sql = " AND farmid IN ({$frms}) AND farmid > 0";
 		}
 		
 		$sql = "SELECT * from logentries WHERE id > 0 {$auth_sql}";

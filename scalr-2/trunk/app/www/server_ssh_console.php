@@ -4,30 +4,45 @@
 	$DBServer = DBServer::LoadByID($req_server_id);
 	$DBFarm = $DBServer->GetFarmObject();
 	
-	if ($DBServer->clientId == $_SESSION['uid'] || $_SESSION['uid'] == 0)
+	if (Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 	{
 		if ($DBServer->remoteIp)
 		{
-			$ssh_port = $db->GetOne("SELECT default_ssh_port FROM roles WHERE id=?", array($DBServer->roleId));
+			$dbRole = DBRole::loadById($DBServer->roleId);
+			
+			$ssh_port = $dbRole->getProperty(DBRole::PROPERTY_SSH_PORT);
 			if (!$ssh_port)
 				$ssh_port = 22;
 			
+			try
+			{
+				$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+					$DBServer->farmId,
+					$DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+				);
+			}
+			catch(Exception $e)
+			{
+				UI::Redirect("/server_view.php");
+			}
+				
 			$Smarty->assign(
 				array(
 					"DBServer" => $DBServer, 
+					"DBFarm"	=> $DBServer->GetFarmObject(),
+					"DBRole"	=> $DBServer->GetFarmRoleObject()->GetRoleObject(),
 					"host" => $DBServer->remoteIp, 
 					"port" => $ssh_port, 
-					"key" => base64_encode($DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY))
+					"key" => base64_encode($sshKey->getPrivate())
 				)
 			);
 			$Smarty->display("ssh_applet.tpl");
 			exit();
 		}
 		else
-			$errmsg = _("Server not initialized yet.");
+			$errmsg = _("Server not initialized yet");
 	}
-	
-	
+
 	UI::Redirect("/server_view.php");
 	
 	require("src/append.inc.php"); 

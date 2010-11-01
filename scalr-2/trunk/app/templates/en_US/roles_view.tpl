@@ -6,10 +6,10 @@
 
 <script type="text/javascript">
 
-var uid = '{$smarty.session.uid}';
+var uid = '{$Scalr_Session->getClientId()}';
 
-var regions = [
-{foreach from=$regions name=id key=key item=item}
+var locations = [
+{foreach from=$locations name=id key=key item=item}
 	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
 {/foreach}
 ];
@@ -27,9 +27,9 @@ Ext.onReady(function () {
 			id: 'id',
 			fields: [
 				{name: 'id', type: 'int'},
-				{name: 'clientid', type: 'int'},
-				'name', 'type', 'ami_id', 'architecture', 'iscompleted', 'isreplaced','approval_state',
-				'client_name', 'fail_details', 'abort_id', 'dtbuilt', 'roletype', 'platform'
+				{name: 'client_id', type: 'int'},
+				'name', 'origin', 'architecture', 'approval_state',
+				'client_name', 'behaviors', 'os', 'platforms','generation'
 			]
 		}),
 		remoteSort: true,
@@ -43,27 +43,27 @@ Ext.onReady(function () {
 		savePagingSize: true,
 		savePagingNumber: true,
 		saveFilter: true,
-		stateId: 'listview-roles-view',
-		stateful: true,
+		stateId: 'listview-roles-view-5',
+		//stateful: true,
 		title: 'Roles',
 
 		tbar: [
 			' ',
 			'Location:',
 			new Ext.form.ComboBox({
-				itemId: 'region',
+				itemId: 'cloud_location',
 				allowBlank: false,
 				editable: false, 
-				store: regions,
+				store: locations,
 				value: region,
 				typeAhead: false,
 				mode: 'local',
 				triggerAction: 'all',
 				selectOnFocus: false,
-				width: 100,
+				width: 150,
 				listeners: {
 					select: function(combo, record, index) {
-						store.baseParams.region = combo.getValue(); 
+						store.baseParams.cloud_location = combo.getValue();
 						store.load();
 					}
 				}
@@ -120,7 +120,32 @@ Ext.onReady(function () {
 		
 		// Row menu
 		rowOptionsMenu: [
-			{itemId: "option.view", 		text:'View details', 			  	href: "/role_info.php?id={id}"},
+			{itemId: "option.view", 		text:'View details', 			  	menuHandler: function(menuItem) {
+				var loadMask = new Ext.LoadMask(Ext.getBody(), { msg: "Loading role information ..." });
+				loadMask.show();
+				Ext.Ajax.request({
+					url: '/server/ajax-ui-server.php',
+					params: { action: 'GetRoleInfo', roleId: menuItem.currentRecordData.id },
+					success: function (response) {
+						var result = Ext.decode(response.responseText);
+						if (result.result == 'ok') {
+							var win = new Ext.Window({
+								title: 'Role information',
+								html: result.data,
+								modal: true,
+								draggable: false,
+								resizable: false,
+								bodyStyle: 'background-color: white'
+							});
+							win.show();
+						}
+						loadMask.hide();
+					},
+					failure: function() {
+						loadMask.hide();
+					}
+				});
+			}},
 			{itemId: "option.edit", 		text:'Edit', 			  			href: "/role_edit.php?id={id}"},
 			new Ext.menu.Separator({itemId: "option.editSep"}),
 			{itemId: "option.switch", 		text:'Switch AMI', 			  			href: "/role_edit.php?task=switch&id={id}"},
@@ -131,7 +156,7 @@ Ext.onReady(function () {
 			if (item.itemId == 'option.view')
 				return true;
 
-			if (record.data.roletype == 'CUSTOM') {
+			if (record.data.origin == 'CUSTOM') {
 				if (item.itemId == 'option.edit' || item.itemId == 'option.editSep' || item.itemId == 'option.share' || item.itemId == 'option.shareSep' || item.itemId == 'option.switch' || item.itemId == 'option.switchSep') {
 					if (uid != 0)
 						return true;
@@ -144,6 +169,7 @@ Ext.onReady(function () {
 			else
 				return false;
 		},
+		/*
 		withSelected: {
 			menu: [
 				{
@@ -155,19 +181,21 @@ Ext.onReady(function () {
 				}
 			]
 		},
+		*/
 
 		listViewOptions: {
 			emptyText: "No roles found",
 			columns: [
-				{ header: "Platform", width: 10, dataIndex: 'platform', sortable: true, hidden: 'no'},
-				{ header: "Image ID", width: 30, dataIndex: 'ami_id', sortable: true, hidden: 'no'},
-				{ header: "Role name", width: 70, dataIndex: 'name', sortable: true, hidden: 'no'},
-				{ header: "Owner", width: 50, dataIndex: 'clientid', sortable: false, hidden: 'no',
-					tpl: '<tpl if="uid == 0 && clientid != &quot;&quot;"><a href="clients_view.php?clientid={clientid}"></tpl>{clientname}<tpl if="uid == 0 && clientid != &quot;&quot;"></a></tpl>' },
-				{ header: "Behavior", width: 60, dataIndex: 'type', sortable: false, hidden: 'no'},
-				{ header: "Arch", width: 30, dataIndex: 'architecture', sortable: true, hidden: 'no'},
+				{ header: "Role name", width: 50, dataIndex: 'name', sortable: true, hidden: 'no'},
+				{ header: "OS", width: 25, dataIndex: 'os', sortable: true, hidden: 'no'},
+				{ header: "Owner", width: 30, dataIndex: 'client_id', sortable: false, hidden: 'no',
+					tpl: '<tpl if="uid == 0 && client_id != &quot;&quot;"><a href="clients_view.php?client_id={client_id}"></tpl>{client_name}<tpl if="uid == 0 && client_id != &quot;&quot;"></a></tpl>' },
+				{ header: "Behaviors", width: 40, dataIndex: 'behaviors', sortable: false, hidden: 'no'},
+				{ header: "Available on", width: 60, dataIndex: 'platforms', sortable: false, hidden: 'no'},
+				{ header: "Arch", width: 15, dataIndex: 'architecture', sortable: true, hidden: 'no'},
+				{ header: "Scalr agent", width: 10, dataIndex: 'generation', sortable: false, hidden: 'no'},
 				{ header: "Contributed", width: 10, dataIndex: 'contributed', sortable: false, hidden: 'yes', align: 'center', 
-					tpl: '<tpl if="roletype == &quot;SHARED&quot;"><img src="/images/true.gif"></tpl><tpl if="roletype != &quot;SHARED&quot;""><img src="/images/false.gif"></tpl>' },
+					tpl: '<tpl if="origin == &quot;SHARED&quot;"><img src="/images/true.gif"></tpl><tpl if="origin != &quot;SHARED&quot;""><img src="/images/false.gif"></tpl>' },
 				{ header: "Moderation phase", width: 10, dataIndex: 'moderation', sortable: false, hidden: 'yes', align: 'center',
 					tpl:	'<tpl if="approval_state == &quot;Approved&quot;"><img src="/images/true.gif" title="Approved" /></tpl>' +
 							'<tpl if="approval_state == &quot;Pending&quot;"><img src="/images/pending.gif" title="Pending" /></tpl>' +

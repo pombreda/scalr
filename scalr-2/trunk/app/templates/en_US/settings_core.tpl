@@ -79,22 +79,6 @@
 		
 		{include file="inc/intable_header.tpl" header="AWS settings" color="Gray"}
 		<tr>
-			<td width="18%">Account ID:</td>
-			<td width="82%"><input name="aws_accountid" type="text" class="text" id="aws_accountid" value="{$aws_accountid}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">Key name:</td>
-			<td width="82%"><input name="aws_keyname" type="text" class="text" id="aws_keyname" value="{$aws_keyname}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">Secret Access key:</td>
-			<td width="82%"><input name="aws_accesskey" type="text" class="text" id="aws_accesskey" value="{$aws_accesskey}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">Access key ID:</td>
-			<td width="82%"><input name="aws_accesskey_id" type="text" class="text" id="aws_accesskey_id" value="{$aws_accesskey_id}" size="30"></td>
-		</tr>
-		<tr>
 			<td width="18%">Security groups prefix:</td>
 			<td width="82%"><input name="secgroup_prefix" type="text" class="text" id="secgroup_prefix" value="{$secgroup_prefix}" size="30"></td>
 		</tr>
@@ -169,40 +153,6 @@
 		<tr>
 			<td width="18%">Server IP address:</td>
 			<td width="82%"><input name="app_sys_ipaddress" type="text" class="text" id="app_sys_ipaddress" value="{$app_sys_ipaddress}"></td>
-		</tr>
-		{include file="inc/intable_footer.tpl" color="Gray"}
-		
-		{include file="inc/intable_header.tpl" header="Billing settings" color="Gray"}
-		<tr>
-			<td width="18%">Price:</td>
-			<td width="82%">$<input name="price" type="text" class="text" id="price" value="{$price}" size="3"> every <input name="payment_term" type="text" class="text" id="payment_term" value="{$payment_term}" size="1"> month(s)</td>
-		</tr>
-		<tr>
-			<td width="18%">Payment description:</td>
-			<td width="82%"><input name="payment_description" type="text" class="text" id="payment_description" value="{$payment_description}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">PayPal business:</td>
-			<td width="82%"><input name="paypal_business" type="text" class="text" id="paypal_business" value="{$paypal_business}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">PayPal receiver:</td>
-			<td width="82%"><input name="paypal_receiver" type="text" class="text" id="paypal_receiver" value="{$paypal_receiver}" size="30"></td>
-		</tr>
-		<tr>
-			<td>Test mode:</td>
-			<td><input name="paypal_isdemo" type="checkbox" id="paypal_isdemo" {if $paypal_isdemo}checked{/if} value="1"></td>
-		</tr>
-		{include file="inc/intable_footer.tpl" color="Gray"}
-		
-		{include file="inc/intable_header.tpl" header="Apache settings" color="Gray"}
-		<tr>
-			<td width="18%">Default document root:</td>
-			<td width="82%"><input name="apache_docroot_dir" type="text" class="text" id="apache_docroot_dir" value="{$apache_docroot_dir}" size="30"></td>
-		</tr>
-		<tr>
-			<td width="18%">Default logs dir:</td>
-			<td width="82%"><input name="apache_logs_dir" type="text" class="text" id="apache_logs_dir" value="{$apache_logs_dir}" size="30"></td>
 		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 	{include file="inc/table_footer.tpl" edit_page=1}

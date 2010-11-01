@@ -11,15 +11,12 @@
 
     	public function RebootDBInstance($instance)
     	{
-    		
-    		$clientid = $_SESSION['uid'];
-            $region = $_SESSION['aws_region'];
-            	
-            $Client = Client::Load($clientid);
-          	$AmazonRDSCLient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-			$AmazonRDSCLient->SetRegion($_SESSION['aws_region']);
-
-          	//TODO:
+    		$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+				$_SESSION['aws_region']
+			);
+           
     		$AmazonRDSCLient->RebootDBInstance($instance);
           	
     		return true;
@@ -28,13 +25,12 @@
     	public function TerminateDBInstance($instance)
     	{
     		
-    		$clientid = $_SESSION['uid'];
-            $region = $_SESSION['aws_region'];
-            	
-            $Client = Client::Load($clientid);
-          	$AmazonRDSCLient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-          	$AmazonRDSCLient->SetRegion($region);
-          	//TODO:
+    		$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+				$_SESSION['aws_region']
+			);
+			
     		$AmazonRDSCLient->DeleteDBInstance($instance);
           	
     		return true;

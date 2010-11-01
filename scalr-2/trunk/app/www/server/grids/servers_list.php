@@ -11,8 +11,8 @@
 	
 		$sql = "SELECT * FROM servers WHERE 1=1";
 		
-		if ($_SESSION["uid"] != 0)
-		   $sql .= " AND client_id='{$_SESSION['uid']}'";
+		if (Scalr_Session::getInstance()->getClientId() != 0)
+		   $sql .= " AND env_id='".Scalr_Session::getInstance()->getEnvironmentId()."'";
 	
 		if ($req_farmid)
 		{

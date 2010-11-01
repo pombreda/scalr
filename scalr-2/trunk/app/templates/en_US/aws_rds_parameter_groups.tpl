@@ -1,10 +1,9 @@
 {include file="inc/header.tpl"}
-<link rel="stylesheet" href="css/grids.css" type="text/css" />
-<div id="maingrid-ct" class="ux-gridviewer"></div>
+<script type="text/javascript" src="/js/ui-ng/data.js"></script>
+<script type="text/javascript" src="/js/ui-ng/viewers/ListView.js"></script>
+
+<div id="listview-rds-parameter-groups-view"></div>
 <script type="text/javascript">
-
-var uid = '{$smarty.session.uid}';
-
 var regions = [
 {foreach from=$regions name=id key=key item=item}
 	['{$key}','{$item}']{if !$smarty.foreach.id.last},{/if}
@@ -15,97 +14,80 @@ var region = '{$smarty.session.aws_region}';
 
 {literal}
 Ext.onReady(function () {
+	var panel = new Scalr.Viewers.ListView({
+		renderTo: 'listview-rds-parameter-groups-view',
+		autoRender: true,
+		store: new Scalr.data.Store({
+			reader: new Scalr.data.JsonReader({
+				id: 'id',
+				fields: [ 'id','engine','name','description' ]
+			}),
+			remoteSort: true,
+			url: '/server/grids/aws_rds_param_groups_list.php?a=1{/literal}{$grid_query_string}{literal}'
+		}),
+		savePagingSize: true,
+		enableFilter: false,
+		stateId: 'listview-rds-parameter-groups-view',
+		stateful: true,
+		title: 'Parameter groups',
 
-Ext.QuickTips.init();
-	// create the Data Store
-    var store = new Ext.ux.scalr.Store({
-    	reader: new Ext.ux.scalr.JsonReader({
-	        root: 'data',
-	        successProperty: 'success',
-	        errorProperty: 'error',
-	        totalProperty: 'total',
-	        id: 'id',
-	        	
-	        fields: [
-				'id','engine','name','description'
-	        ]
-    	}),
-    	remoteSort: true,
-		url: '/server/grids/aws_rds_param_groups_list.php?a=1{/literal}{$grid_query_string}{literal}',
-		listeners: { dataexception: Ext.ux.dataExceptionReporter }
-    });
-		
-    var renderers = Ext.ux.scalr.GridViewer.columnRenderers;
-	var grid = new Ext.ux.scalr.GridViewer({
-        renderTo: "maingrid-ct",
-        height: 500,
-        title: "Parameter groups",
-        id: 'paramgroups_list_'+GRID_VERSION,
-        store: store,
-        maximize: true,
-        viewConfig: { 
-        	emptyText: "No db parameter groups found"
-        },
+		listViewOptions: {
+			emptyText: 'No db parameter groups found',
+			columns: [
+				{ header: "Name", width: 70, dataIndex: 'name', sortable: true, hidden: 'no' },
+				{ header: "Description", width: 50, dataIndex: 'description', sortable: false, hidden: 'no' }
+			]
+		},
 
-        enableFilter: false,
-
-        tbar: ['Region:', new Ext.form.ComboBox({
+		tbar: [
+			'Region:',
+			new Ext.form.ComboBox({
 				allowBlank: false,
-				editable: false, 
-		        store: regions,
-		        value: region,
-		        displayField:'state',
-		        typeAhead: false,
-		        mode: 'local',
-		        triggerAction: 'all',
-		        selectOnFocus:false,
-		        width:100,
-		        listeners:{select:function(combo, record, index){
-		        	store.baseParams.region = combo.getValue(); 
-		        	store.load();
-	        }}
-	    	}),
-			 {
+				editable: false,
+				store: regions,
+				value: region,
+				typeAhead: false,
+				mode: 'local',
+				triggerAction: 'all',
+				selectOnFocus:false,
+				width: 100,
+				listeners: {
+					select: function (combo, record, index) {
+						panel.store.baseParams.region = combo.getValue();
+						panel.store.load();
+					}
+				}
+			}), {
 				icon: '/images/add.png', // icons can also be specified inline
 				cls: 'x-btn-icon',
 				tooltip: 'Add new parameter group',
-				handler: function()
-				{
+				handler: function() {
 					document.location.href = '/aws_rds_param_group_add.php';
 				}
 			 }
-	    ], 
-		
-        // Columns
-        columns:[
-			{header: "Name", width: 70, dataIndex: 'name', sortable: true},
-			{header: "Description", width: 50, dataIndex: 'description', sortable: false}
 		],
-		
-    	// Row menu
-    	rowOptionsMenu: [
-      	             	
-			{id: "option.edit", 		text:'Edit', 			  	href: "/aws_rds_param_group_edit.php?name={name}"},
-			new Ext.menu.Separator({id: "option.editSep"}),
-			{id: "option.events",       text: 'Events log', href: "/aws_rds_events_log.php?type=db-parameter-group&name={name}"}
-     	],
-     	getRowOptionVisibility: function (item, record) {
 
-			return true;
-		},
+		rowOptionsMenu: [
+			{ itemId: "option.edit", 		text:'Edit', 			  	href: "/aws_rds_param_group_edit.php?name={name}"},
+			new Ext.menu.Separator({ itemId: "option.editSep"}),
+			{ itemId: "option.events",       text: 'Events log', href: "/aws_rds_events_log.php?type=db-parameter-group&name={name}"}
+		],
+
 		withSelected: {
 			menu: [
-				{text: "Delete", value: "delete"}
+				{
+					text: "Delete",
+					method: 'post',
+					params: {
+						action: 'delete',
+						with_selected: 1
+					},
+					confirmationMessage: 'Delete selected parameter group(s)?',
+					url: '/aws_rds_parameter_groups.php'
+				}
 			],
-			hiddens: {with_selected : 1},
-			action: "act"
 		}
     });
-    
-    grid.render();
-    store.load();
-
-	return;
 });
 {/literal}
 </script>

@@ -2,8 +2,11 @@
 	require("src/prepend.inc.php"); 
 	$display["title"] = _("Shared roles&nbsp;&raquo;&nbsp;View");
 	
-	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	   
 	if ($req_task == "add")
 	{
@@ -11,25 +14,8 @@
 	}
 	elseif ($req_task == "delete")
 	{
-	    $info = $db->GetRow("SELECT * FROM roles WHERE ami_id=? AND roletype=?", array($req_ami_id, ROLE_TYPE::SHARED));
-	    if ($info)
-	    {
-	        $db->Execute("DELETE FROM roles WHERE id='{$info['id']}'");
-	        $db->Execute("DELETE FROM security_rules WHERE roleid='{$info['id']}'");
-	        
-	        $okmsg = _("Role successfully unassigned from AMI");
-	        UI::Redirect("shared_roles.php");
-	    }
-	    else 
-	       $errmsg = _("Role not found");
+	    //
 	}
-	
-	$AmazonEC2 = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2->SetAuthKeys(
-		APPPATH . "/etc/pk-".CONFIG::$AWS_KEYNAME.".pem", 
-		APPPATH . "/etc/cert-".CONFIG::$AWS_KEYNAME.".pem", 
-		true
-	);
 	
 	$roles = array(
 	'ec2' => 
@@ -106,19 +92,19 @@
 					if (!$images[$name] && $_POST[$name])
 					{
 						if (stristr($name, 'app-'))
-							$alias = ROLE_ALIAS::APP;
+							$alias = ROLE_BEHAVIORS::APACHE;
 						elseif (stristr($name, 'lb-nginx'))
-							$alias = ROLE_ALIAS::WWW;
+							$alias = ROLE_BEHAVIORS::NGINX;
 						elseif (stristr($name, 'mysql'))
-							$alias = ROLE_ALIAS::MYSQL;
+							$alias = ROLE_BEHAVIORS::MYSQL;
 						elseif (stristr($name, 'base'))
-							$alias = ROLE_ALIAS::BASE;
+							$alias = ROLE_BEHAVIORS::BASE;
 						elseif (stristr($name, 'memc'))
-							$alias = ROLE_ALIAS::MEMCACHED;	
+							$alias = ROLE_BEHAVIORS::MEMCACHED;	
 						
 						if ($_POST[$name] == 'empty-db')
 						{
-							$alias = ROLE_ALIAS::MYSQL;
+							$alias = ROLE_BEHAVIORS::MYSQL;
 						}
 							
 						if (stristr($name, '64'))
@@ -161,26 +147,27 @@
 						
 						if ($post_platform == SERVER_PLATFORMS::EC2)
 						{
+							
 							foreach ($rules as $rule)
 							{
-								$db->Execute("INSERT INTO security_rules SET `roleid`=?, `rule`=?", array(
+								$db->Execute("INSERT INTO role_security_rules SET `role_id`=?, `rule`=?", array(
 									$id, $rule
 								));
 							}
 							
-							if ($alias == ROLE_ALIAS::MYSQL)
+							if ($alias == ROLE_BEHAVIORS::MYSQL)
 							{
-								$db->Execute("INSERT INTO security_rules SET `roleid`=?, `rule`=?", array(
+								$db->Execute("INSERT INTO role_security_rules SET `role_id`=?, `rule`=?", array(
 									$id, 'tcp:3306:3306:0.0.0.0/0'
 								));
 							}
-							elseif ($alias == ROLE_ALIAS::APP || $alias == ROLE_ALIAS::WWW)
+							elseif ($alias == ROLE_BEHAVIORS::NGINX || $alias == ROLE_BEHAVIORS::APACHE)
 							{
-								$db->Execute("INSERT INTO security_rules SET `roleid`=?, `rule`=?", array(
+								$db->Execute("INSERT INTO role_security_rules SET `role_id`=?, `rule`=?", array(
 									$id, 'tcp:80:80:0.0.0.0/0'
 								));
 								
-								$db->Execute("INSERT INTO security_rules SET `roleid`=?, `rule`=?", array(
+								$db->Execute("INSERT INTO role_security_rules SET `role_id`=?, `rule`=?", array(
 									$id, 'tcp:443:443:0.0.0.0/0'
 								));
 							}
@@ -214,21 +201,21 @@
 	            proxy_intercept_errors on;  
 	        }
 	    } {/literal}';						
-							if ($alias == ROLE_ALIAS::WWW)
+							if ($alias == ROLE_BEHAVIORS::NGINX)
 							{
-								$db->Execute("INSERT INTO role_options SET
+								$db->Execute("INSERT INTO role_parameters SET
 									name	= 'Nginx HTTPS Vhost Template',
 									type	= 'textarea',
 									isrequired	= '1',
 									defval	= ?,
 									allow_multiple_choice = '0',
 									options	= '',
-									ami_id	= ?,
+									role_id	= ?,
 									hash	= 'nginx_https_host_template',
 									issystem= '1'
 								", array(
 									$val,
-									$_POST[$name]
+									$id
 								));
 							}
 						}
@@ -245,57 +232,6 @@
 	}
 	
 	$display['images'] = $images;
-	
-	/*
-	$sql = "SELECT * FROM roles WHERE roletype='".ROLE_TYPE::SHARED."' AND clientid='0' AND region='".$_SESSION['aws_region']."'";
-			
-	$display["rows"] = $db->GetAll($sql);	
-
-	// Generate DescribeImagesType object
-	$DescribeImagesType = new DescribeImagesType();
-	foreach ($display["rows"] as &$row)
-	{
-		if ($row['platform'] == SERVER_PLATFORMS::EC2)
-			$DescribeImagesType->imagesSet->item[] = array("imageId" => $row['ami_id']);
-	}
-
-	// get information about shared AMIs
-	try
-	{
-		$response = $AmazonEC2->describeImages($DescribeImagesType);
-	}
-	catch(Exception $e)
-	{
-		$errmsg = $e->getMessage();
-	}
-	
-	foreach ($display["rows"] as &$row)
-	{
-		if ($response && $response->imagesSet && $response->imagesSet->item)
-		{
-			if (!is_array($response->imagesSet->item))
-				$response->imagesSet->item = array($response->imagesSet->item);
-			
-			foreach($response->imagesSet->item as $item)
-			{
-				if ($item->imageId == $row["ami_id"])
-				{
-					$row["imageState"] = $item->imageState;
-					$row["imageOwnerId"] = $item->imageOwnerId;
-					break;
-				}
-			}
-		}
-		
-		$row["type"] = ROLE_ALIAS::GetTypeByAlias($row['alias']);
-		$row['farmsCount'] = $db->GetOne("SELECT COUNT(farmid) FROM farm_roles WHERE ami_id=?", array($row['ami_id']));
-	}
-	
-	$display["page_data_options"] = array();
-	
-	$display["page_data_options_add"] = true;
-	$display["page_data_options_add_querystring"] = "?task=add";
-	*/
 	
 	require("src/append.inc.php"); 
 	

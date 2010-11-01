@@ -8,8 +8,7 @@
 
     		$DBFarmRole = $this->DBServer->GetFarmRoleObject();
     		
-    		$alias = $DBFarmRole->GetRoleAlias();
-    		if ($alias == ROLE_ALIAS::MYSQL)
+    		if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
     		{
     			$DOMXPath = new DOMXPath($ResponseDOMDocument);
     			$ParamsDOMNode = $DOMXPath->query("//params")->item(0);

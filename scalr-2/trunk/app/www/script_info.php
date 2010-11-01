@@ -11,13 +11,13 @@
 		UI::Redirect("script_templates.php");
 	
 	// Check permissions
-	if ($_SESSION['uid'] != 0)
+	if (Scalr_Session::getInstance()->getClientId() != 0)
 	{
-		if ($script_info['origin'] == SCRIPT_ORIGIN_TYPE::CUSTOM && $script_info['clientid'] != $_SESSION['uid'])
+		if ($script_info['origin'] == SCRIPT_ORIGIN_TYPE::CUSTOM && $script_info['clientid'] != Scalr_Session::getInstance()->getClientId())
 			UI::Redirect("script_templates.php");
 			
 		if ($script_info['origin'] == SCRIPT_ORIGIN_TYPE::USER_CONTRIBUTED && 
-			$script_info['clientid'] != $_SESSION['uid'] && 
+			$script_info['clientid'] != Scalr_Session::getInstance()->getClientId() && 
 			$script_info['approval_state'] != APPROVAL_STATE::APPROVED
 		)
 			UI::Redirect("script_templates.php");
@@ -28,7 +28,7 @@
 	
 	$display["script_info"] = $script_info;
 	
-	if ($_SESSION['uid'] != 0 && $_SESSION['uid'] != $script_info['clientid'])
+	if (Scalr_Session::getInstance()->getClientId() != 0 && Scalr_Session::getInstance()->getClientId() != $script_info['clientid'])
 	{
 		$dbversions = $db->GetAll("SELECT * FROM script_revisions WHERE scriptid=? AND approval_state=?", 
 	        array($script_info['id'], APPROVAL_STATE::APPROVED)

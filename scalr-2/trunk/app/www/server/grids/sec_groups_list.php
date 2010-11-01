@@ -17,12 +17,38 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-		$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+		$ls = PlatformFactory::NewPlatform($req_platform)->getLocations();		
+		if (!$req_location || !$ls[$req_location])
+			$location = array_shift(array_keys($ls));
+		else
+			$location = $req_location;
+		
+		switch($req_platform)
+		{
+			case SERVER_PLATFORMS::EC2:
+				
+				$platformClient = Scalr_Service_Cloud_Aws::newEc2(
+					$location,
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+				);
+				
+				break;
+				
+			case SERVER_PLATFORMS::EUCALYPTUS:
+				
+				$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+				);
+				
+				break;
+		}
 		
 	
 		// Rows
-		$aws_response = $AmazonEC2Client->DescribeSecurityGroups();
+		$aws_response = $platformClient->DescribeSecurityGroups();
 		
 		$rows = $aws_response->securityGroupInfo->item;
 		foreach ($rows as $row)

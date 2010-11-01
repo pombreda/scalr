@@ -168,7 +168,7 @@ Ext.onReady(function () {
 			new Ext.menu.Separator({itemId: "option.infoSep"}),
 			{itemId: "option.sync",			text: 'Create server snapshot', 			href: "/server_create_image.php?server_id={server_id}"},        	
 			new Ext.menu.Separator({itemId: "option.syncSep"}),
-			{itemId: "option.editRole",		text: 'Configure role in farm', 			href: "/farms_add.php?id={farm_id}&role_id={role_id}&configure=1&return_to=instances_list"},        				
+			{itemId: "option.editRole",		text: 'Configure role in farm', 			href: "/farms_builder.php?id={farm_id}&role_id={role_id}"},        				
 			new Ext.menu.Separator({itemId: "option.procSep"}), //TODO:
 			{itemId: "option.dnsEx",		text: 'Exclude from DNS zone', 				href: "/server_action.php?action=exclude_from_dns&server_id={server_id}"},
 			{itemId: "option.dnsIn",		text: 'Include in DNS zone', 				href: "/server_action.php?action=include_in_dns&server_id={server_id}"},
@@ -369,10 +369,12 @@ Ext.onReady(function () {
 					progressIcon: 'scalr-mb-instance-rebooting',
 					url: '/server/ajax-ui-server.php',
 					dataHandler: function(records) {
+
 						var servers = [];
 						for (var i = 0, len = records.length; i < len; i++) {
-							servers[servers.length] = records[i].server_id;
+							servers[servers.length] = records[i].get('server_id');
 						}
+						
 						return { servers: Ext.encode(servers) };
 					}
 				}, {
@@ -388,7 +390,7 @@ Ext.onReady(function () {
 					dataHandler: function(records) {
 						var servers = [];
 						for (var i = 0, len = records.length; i < len; i++) {
-							servers[servers.length] = records[i].server_id;
+							servers[servers.length] = records[i].get('server_id');
 						}
 						return { servers: Ext.encode(servers) };
 					}

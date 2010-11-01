@@ -2,8 +2,11 @@
 	require_once('src/prepend.inc.php');
 	$display['load_extjs'] = true;
 	
-	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}
 	
 	// Post actions
 	if ($_POST && $post_with_selected)
@@ -52,7 +55,7 @@
                         $db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farm["id"]));
 				    }
 				    
-				    $db->Execute("DELETE FROM roles WHERE clientid='{$clientid}'");
+				    $db->Execute("DELETE FROM roles WHERE client_id='{$clientid}'");
 				}
 				
 				$okmsg = sprintf(_("%s clients deleted"), $i);
@@ -72,11 +75,6 @@
 	{
 		$isactive = (int)$req_isactive;
 		$display['grid_query_string'] .= "&isactive={$isactive}";
-	}
-	
-	if (isset($req_overdue))
-	{
-		$display['grid_query_string'] .= "&overdue=1";
 	}
 	
 	if ($req_cancelled)

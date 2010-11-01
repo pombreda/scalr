@@ -15,17 +15,13 @@
 		 *
 		 * @return AmazonEC2
 		 */
-		private function GetAmazonEC2ClientObject($region)
+		private function GetAmazonEC2ClientObject(Scalr_Environment $environment, $region)
 		{
-	    	// Get ClientID from database;
-			$clientid = $this->DB->GetOne("SELECT clientid FROM farms WHERE id=?", array($this->FarmID));
-			
-			// Get Client Object
-			$Client = Client::Load($clientid);
-	
-	    	// Return new instance of AmazonEC2 object
-			$AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($region)); 
-			$AmazonEC2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+	    	$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		    	$region, 
+		    	$environment->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+		    	$environment->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	    	);
 			
 			return $AmazonEC2Client;
 		}
@@ -77,7 +73,6 @@
 		    	return;
 		    
 		    // TERMINATE RUNNING INSTANCES
-		    $EC2Client = $this->GetAmazonEC2ClientObject($DBDarm->Region);
             foreach ($servers as $DBServer)
             {                
                 if ($this->DB->GetOne("SELECT id FROM bundle_tasks WHERE server_id=? AND status NOT IN ('success','failed')", array($DBServer->serverId)))
@@ -85,7 +80,8 @@
                 
             	if ($DBServer->status != SERVER_STATUS::PENDING_LAUNCH)
                 {
-	            	try {    				
+	            	try {
+	            		$EC2Client = $this->GetAmazonEC2ClientObject($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));    				
 	    				$response = $EC2Client->TerminateInstances(array($DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID)));
 	    					
 	    				if ($response instanceof SoapFault)
@@ -123,8 +119,7 @@
 			
 			if ($event->ForceTerminate)
 			{ 
-				$DBFarm = DBFarm::LoadByID($this->FarmID);
-				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($DBFarm->Region);
+				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($event->DBServer->GetEnvironmentObject(), $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
 				
 				$instance_id = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID);
 				

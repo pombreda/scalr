@@ -2,22 +2,22 @@
 	require_once('src/prepend.inc.php');
     $display['load_extjs'] = false;	    
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = _("Requested page cannot be viewed from admin account");
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 		
 	if (!$req_name)
 		UI::Redirect("index.php");
 	
-	$Client = Client::Load($_SESSION["uid"]);
-		
 	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon RDS&nbsp;&raquo;&nbsp;DB Instance Details ({$req_name})");
 
-	$AmazonRDSClient = AmazonRDS::GetInstance($Client->AWSAccessKeyID, $Client->AWSAccessKey);
-
-	$AmazonRDSClient->SetRegion($_SESSION['aws_region']);
+	$AmazonRDSClient = Scalr_Service_Cloud_Aws::newRds( 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+		$_SESSION['aws_region']
+	);
 
 	$info = $AmazonRDSClient->DescribeDBInstances($req_name);
 	$dbinstance = $info->DescribeDBInstancesResult->DBInstances->DBInstance;

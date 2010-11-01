@@ -3,7 +3,7 @@
 	
 	$display["title"] = _("Delete unused objects");
 	
-	if ($_SESSION["uid"] == 0)
+	if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("Requested page cannot be viewed from admin account");
 		UI::Redirect("index.php");
@@ -13,25 +13,33 @@
 	{
 		$remove_items = serialize(array("buckets" => $_POST['buckets'], "keypairs" => $_POST["keypairs"], "region" => $_SESSION['aws_region']));
 		
-		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array($_SESSION['uid'], $remove_items));
+		$db->Execute("REPLACE INTO garbage_queue SET clientid=?, data=?", array(Scalr_Session::getInstance()->getClientId(), $remove_items));
 		
 		$okmsg = _("Items removal has been scheduled. They will be deleted in approximately 10 minutes.");
 		UI::Redirect("index.php");
 	}
 			
 	// Create AmazonEC2 cleint object
-    $AmazonEC2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonEC2Client->SetAuthKeys($_SESSION["aws_private_key"], $_SESSION["aws_certificate"]);
+    $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+		$_SESSION['aws_region'], 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), 
+		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+	);
     
     // Create Amazon s3 client object
-    $AmazonS3 = new AmazonS3($_SESSION['aws_accesskeyid'], $_SESSION['aws_accesskey']);
+    $AmazonS3 = new AmazonS3(
+    	Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), 
+	    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY)
+    );
+    
+    $account_id = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID); 
     
     // Get list of all user buckets
     $buckets = $AmazonS3->ListBuckets();
     foreach ($buckets as $bucket)
     {
     	// Check is bucket created by scarl all scarl buckets has name FARM-[FARMID]-[AWS_ACCOUNT_ID]
-    	preg_match("/^FARM-([0-9]+)-{$_SESSION['aws_accountid']}$/si", $bucket->Name, $matches);
+    	preg_match("/^FARM-([0-9]+)-{$account_id}$/si", $bucket->Name, $matches);
     	if ($matches[1])
     	{
     		// Check is bucked used by scarl or no

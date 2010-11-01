@@ -6,5 +6,9 @@
 		const EC2_S3I = 'ec2.s3image';
 		
 		const RDS_SPT = 'rds.snapshot';
+		
+		const EUCA_WSI = 'euca.wsimage';
+		const EUCA_WIN = 'euca.win';
+		const EUCA_EBS = 'euca.ebs';
 	}
 ?>

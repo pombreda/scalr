@@ -130,16 +130,19 @@
 		public static $SYNCHRONOUS_SCRIPT_TIMEOUT = 180; // seconds
 		public static $ASYNCHRONOUS_SCRIPT_TIMEOUT = 1200; // seconds
 		
-		public static $SCRIPT_BUILTIN_VARIABLES = array(
-			"external_ip" => 1, 
-			"internal_ip" => 1, 
-			"instance_id" => 1, 
-			"ami_id" => 1, 
-			"role_name" => 1, 
-			"isdbmaster" => 1, 
-			"instance_index" =>1, 
-			"region" => 1, 
-			"avail_zone" => 1
+		public static $SCRIPT_BUILTIN_VARIABLES = array( 
+			"image_id" 		=> 1,
+			"role_name" 	=> 1, 
+			"isdbmaster" 	=> 1, 
+		
+			//TODO: Remove this vars
+			"ami_id" 		=> 1,
+			"instance_index"=> 1, 
+			"region" 		=> 1, 
+			"avail_zone" 	=> 1,
+			"external_ip" 	=> 1, 
+			"internal_ip" 	=> 1, 
+			"instance_id" 	=> 1
 		);
 		
 		public static $PMA_INSTANCE_IP_ADDRESS = '184.73.181.141';

@@ -5,7 +5,7 @@
 	
 	if ($_POST) 
 	{
-		$db->Execute("DELETE FROM default_records WHERE clientid=?", array($_SESSION['uid']));
+		$db->Execute("DELETE FROM default_records WHERE clientid=?", array(Scalr_Session::getInstance()->getClientId()));
 		
 		$records = array();
 		foreach ($post_records as $r)
@@ -28,7 +28,7 @@
 				$record['name'] = str_replace('fakedomainname.qq', '%hostname%', $record['name']);
 					
 				$db->Execute("INSERT INTO default_records SET clientid=?, `type`=?, `ttl`=?, `priority`=?, `value`=?, `name`=?", 
-					array($_SESSION['uid'], $record["type"], (int)$record["ttl"], (int)$record["priority"], $record["value"], $record["name"])
+					array(Scalr_Session::getInstance()->getClientId(), $record["type"], (int)$record["ttl"], (int)$record["priority"], $record["value"], $record["name"])
 				);
 			}
 		}
@@ -46,10 +46,10 @@
 	
 	if (!$display["records"])
 	{
-		if ($_SESSION["uid"] == 0)	
+		if (Scalr_Session::getInstance()->getClientId() == 0)	
 			$display["records"] = $db->GetAll("SELECT * FROM default_records WHERE clientid='0' ORDER BY `type`");
 		else
-			$display["records"] = $db->GetAll("SELECT * FROM default_records WHERE clientid=? ORDER BY `type`", array($_SESSION["uid"]));
+			$display["records"] = $db->GetAll("SELECT * FROM default_records WHERE clientid=? ORDER BY `type`", array(Scalr_Session::getInstance()->getClientId()));
 	}
 		
 	$display["add"] = array(1, 2, 3, 4, 5);

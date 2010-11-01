@@ -9,7 +9,7 @@
 		$enable_json = true;
 		include("../../src/prepend.inc.php");		
 
-		$sql = "SELECT *  FROM `scheduler_tasks` WHERE `client_id` = '{$_SESSION['uid']}'";
+		$sql = "SELECT *  FROM `scheduler_tasks` WHERE `client_id` = '".Scalr_Session::getInstance()->getClientId()."'";
 		
 		if ($req_query)
 		{
@@ -57,7 +57,7 @@
 						try
 						{							
 							$DBFarmRole = DBFarmRole::LoadByID($row['target_id']);
-							$row['target_name'] = $DBFarmRole->GetRoleName();
+							$row['target_name'] = $DBFarmRole->GetRoleObject()->name;
 							$row['farmid'] = $DBFarmRole->FarmID;
 							$row['farm_name'] = $DBFarmRole->GetFarmObject()->Name;					
 						

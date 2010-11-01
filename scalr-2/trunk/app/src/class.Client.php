@@ -25,10 +25,6 @@
 		public $Phone;
 		public $Fax;
 		public $Comments;
-  			
-		
-		public $ScalrKeyID;
-		private $ScalrKey;
 		
 		private $DB;
 		
@@ -41,8 +37,6 @@
 			'fullname'		=> 'Fullname',
 			'aws_accountid' => 'AWSAccountID',
 			'farms_limit'	=> 'FarmsLimit',
-			'scalr_api_keyid' => 'ScalrKeyID',
-			'scalr_api_key' => 'ScalrKey',
 			'dtadded'		=> 'AddDate',
 			'dtdue'			=> 'DueDate',
 			'isbilled'		=> 'IsBilled',
@@ -67,24 +61,6 @@
 			$this->Password = $password;
 			
 			$this->DB = Core::GetDBInstance();
-		}
-		
-		public function GetScalrAPIKey()
-		{
-			return $this->ScalrKey;
-		}
-		
-		public static function GenerateScalrAPIKeys()
-		{
-			$key = Scalr::GenerateRandomKey();
-			
-			$sault = abs(crc32($key));
-			$keyid = dechex($sault).dechex(time());
-			
-			$ScalrKey = $key;
-			$ScalrKeyID = $keyid;
-			
-			return array("id" => $ScalrKeyID, "key" => $ScalrKey);
 		}
 		
 		/**
@@ -114,49 +90,10 @@
 						$Client->{$v} = $clientinfo[$k];
 				}
 				
-				if ($id == $_SESSION['uid'])
-				{
-					$Client->AWSPrivateKey = $_SESSION["aws_private_key"];
-			    	$Client->AWSCertificate = $_SESSION["aws_certificate"];
-			    	
-			    	$Client->AWSAccessKeyID = $_SESSION["aws_accesskeyid"];
-			    	$Client->AWSAccessKey = $_SESSION["aws_accesskey"];
-				}
-				else
-				{
-					if ($clientinfo["aws_private_key_enc"])
-						$Client->AWSPrivateKey = $Crypto->Decrypt($clientinfo["aws_private_key_enc"], $cpwd);
-			    	
-					if ($clientinfo["aws_certificate_enc"])
-						$Client->AWSCertificate = $Crypto->Decrypt($clientinfo["aws_certificate_enc"], $cpwd);
-			    	
-			    	if ($clientinfo["aws_accesskeyid"])
-			    		$Client->AWSAccessKeyID = $Crypto->Decrypt($clientinfo["aws_accesskeyid"], $cpwd);
-			    		
-			    	if ($clientinfo["aws_accesskey"])
-			    		$Client->AWSAccessKey = $Crypto->Decrypt($clientinfo["aws_accesskey"], $cpwd);
-				}
-				
 				self::$ClientsCache[$id] = $Client;
 			}
 
 			return self::$ClientsCache[$id];
-		}
-		
-		/**
-		 * Load Client Object by API key ID
-		 * @param string $keyid
-		 * @return Client
-		 */
-		public static function LoadByScalrKeyID($keyid)
-		{
-			$db = Core::GetDBInstance();
-			
-			$clientid = $db->GetOne("SELECT id FROM clients WHERE scalr_api_keyid=?", array($keyid));
-			if (!$clientid)
-				throw new Exception(sprintf(_("KeyID=%s not found in database"), $keyid));
-				
-			return self::Load($clientid);
 		}
 		
 		/**

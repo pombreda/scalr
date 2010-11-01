@@ -26,7 +26,8 @@
 		
 		protected function request($method, $uri, $args)
 		{
-			$uri = "{$this->serviceUriPrefix}{$uri}";
+			$parsedUrl = parse_url($this->ec2Url);
+			$uri = "{$parsedUrl['path']}{$uri}";
 			
 			$HttpRequest = new HttpRequest();
 			
@@ -47,9 +48,11 @@
 				$CanonicalizedQueryString .= "&{$k}=".urlencode($v);
 			$CanonicalizedQueryString = trim($CanonicalizedQueryString, "&");
 			
-			$args['Signature'] = $this->getSignature(array($method, $this->serviceUrl, $uri, $CanonicalizedQueryString));
+			$url = ($parsedUrl['port']) ? "{$parsedUrl['host']}:{$parsedUrl['port']}" : "{$parsedUrl['host']}";
 			
-			$HttpRequest->setUrl("{$this->serviceProtocol}{$this->serviceUrl}{$uri}");
+			$args['Signature'] = $this->getSignature(array($method, $url, $uri, $CanonicalizedQueryString));
+			
+			$HttpRequest->setUrl("{$parsedUrl['scheme']}://{$url}{$uri}");
 			
 		    $HttpRequest->setMethod(constant("HTTP_METH_{$method}"));
 		    

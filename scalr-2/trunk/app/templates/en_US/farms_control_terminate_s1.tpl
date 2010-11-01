@@ -17,9 +17,12 @@
 				<div style="width:100%;">
 					<div style="float:left;line-height:40px;">
 					<input {if $outdated_farm_roles[id]->IsBundleRunning}checked disabled{/if} onclick="SetSyncChecked('{$outdated_farm_roles[id]->ID}', this.checked);" type="checkbox" name="sync[]" value="{$outdated_farm_roles[id]->ID}" style="vertical-align:middle;"> 
-					{$outdated_farm_roles[id]->GetRoleName()} ({$outdated_farm_roles[id]->GetImageId()}) &nbsp;&nbsp;Last synchronization: {if $outdated_farm_roles[id]->dtLastSync}{$outdated_farm_roles[id]->dtLastSync}{else}Never{/if}
+					
+					{assign var=frole value=$outdated_farm_roles[id]}
+					{assign var=role value=$frole->GetRoleObject()}
+					{$role->name} ({$role->imageId}) &nbsp;&nbsp;Last synchronization: {if $outdated_farm_roles[id]->dtLastSync}{$outdated_farm_roles[id]->dtLastSync}{else}Never{/if}
 					</div>
-					{if $outdated_farm_roles[id]->GetRoleAlias() == 'mysql'}
+					{if $role->hasBehavior('mysql')}
 					<div class="Webta_ExperimentalMsg" style="float:left;margin-left:15px;padding-right:15px;font-size:12px;">
 						The bundle will not include MySQL data. <a href='farm_mysql_info.php?farmid={$farminfo.id}'>Click here if you wish to bundle and save MySQL data</a>.
 					</div> 

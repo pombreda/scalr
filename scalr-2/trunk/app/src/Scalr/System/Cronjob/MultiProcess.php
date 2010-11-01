@@ -120,7 +120,7 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 		}
 	} 
 	
-	protected function init () {
+	protected function init ($options) {
 		// Init process pool
 		$poolConfig = $this->config["processPool"];
 		$poolConfig["worker"] = $this;
@@ -153,6 +153,10 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 		
 		if ($this->config["memoryLimitTick"]) {
 			$this->memoryLimitTimeout = new Scalr_Util_Timeout($this->config["memoryLimitTick"]);
+		}
+		
+		if ($this->worker) {
+			$this->worker->runOptions = $options;
 		}
 	}
 	

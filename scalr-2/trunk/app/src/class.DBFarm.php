@@ -2,35 +2,33 @@
 	
 	class DBFarm
 	{
-		const SETTING_AWS_PRIVATE_KEY 			= 'aws.ssh_private_key';
-		const SETTING_AWS_PUBLIC_KEY 			= 'aws.ssh_public_key';
-		const SETTING_AWS_KEYPAIR_NAME 			= 'aws.keypair_name';
-		const SETTING_AWS_S3_BUCKET_NAME 		= 'aws.s3_bucket_name';
-		
+		const SETTING_AWS_S3_BUCKET_NAME 		= 'aws.s3_bucket_name';	
 		const SETTING_CRYPTO_KEY				= 'crypto.key';
 		
 		public 
 			$ID,
 			$ClientID,
+			$EnvID,
 			$Name,
 			$Hash,
 			$Status,
 			$Comments,
+			$RolesLaunchOrder,
 			$ScalarizrCertificate,
-			$TermOnSyncFail,
-			$Region;
+			$TermOnSyncFail;
 		
-		private $DB;
+		private $DB,
+				$environment;
 		
 		private $SettingsCache = array();
 		
 		private static $FieldPropertyMap = array(
 			'id' 			=> 'ID',
 			'clientid'		=> 'ClientID',
+			'env_id'		=> 'EnvID',
 			'name'			=> 'Name',
 			'hash'			=> 'Hash',
 			'status'		=> 'Status',
-			'region'		=> 'Region',
 			'comments'		=> 'Comments',
 			'scalarizr_cert'=> 'ScalarizrCertificate',
 			'farm_roles_launch_order'	=> 'RolesLaunchOrder',
@@ -42,7 +40,7 @@
 		 * @param $instance_id
 		 * @return void
 		 */
-		public function __construct($id)
+		public function __construct($id = null)
 		{
 			$this->ID = $id;
 			$this->DB = Core::GetDBInstance();
@@ -52,13 +50,24 @@
 		
 		public function __sleep()
 		{
-			return array("ID", "ClientID", "Name", "Region");		
+			return array("ID", "ClientID", "Name");		
 		}
 		
 		public function __wakeup()
 		{
 			$this->DB = Core::GetDBInstance();
 			$this->Logger = Logger::getLogger(__CLASS__);
+		}
+		
+		/**
+		 * @return Scalr_Environment
+		 */
+		public function GetEnvironmentObject()
+		{
+			if (!$this->environment)
+				$this->environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($this->EnvID);
+				
+			return $this->environment;
 		}
 		
 		/**
@@ -87,8 +96,8 @@
 		
 		public function GetMySQLInstances($only_master = false, $only_slaves = false)
 		{
-			$mysql_farm_role_id = $this->DB->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT id FROM roles WHERE alias=?) AND farmid=?", 
-				array(ROLE_ALIAS::MYSQL, $this->ID)
+			$mysql_farm_role_id = $this->DB->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?) AND farmid=?", 
+				array(ROLE_BEHAVIORS::MYSQL, $this->ID)
 			);
 			if ($mysql_farm_role_id)
 			{
@@ -178,7 +187,7 @@
 		 * @return DBFarmRole
 		 * @param DBRole $DBRole
 		 */
-		public function AddRole(DBRole $DBRole)
+		public function AddRole(DBRole $DBRole, $platform, $cloud_location)
 		{
 			$this->DB->Execute("INSERT INTO farm_roles SET 
 				farmid=?, role_id=?, reboot_timeout=?, launch_timeout=?, status_timeout = ?, launch_index = ?, platform = ?", array( 
@@ -188,7 +197,7 @@
 				300,
                 600,
                 0,
-            	$DBRole->platform
+            	$platform
 			));
 			
 			$farm_role_id = $this->DB->Insert_ID();
@@ -196,7 +205,7 @@
 			$DBFarmRole = new DBFarmRole($farm_role_id);
 			$DBFarmRole->FarmID = $this->ID;
 			$DBFarmRole->RoleID = $DBRole->id;
-			$DBFarmRole->Platform = $DBRole->platform;
+			$DBFarmRole->Platform = $platform;
 			
 			$default_settings = array(
 				DBFarmRole::SETTING_SCALING_MIN_INSTANCES => 1,
@@ -205,7 +214,8 @@
 				DBFarmRole::SETTING_EXCLUDE_FROM_DNS => false,
 				DBFarmRole::SETTING_BALANCING_USE_ELB => false,
 				DBFarmRole::SETTING_AWS_AVAIL_ZONE => 'x-scalr-diff',
-				DBFarmRole::SETTING_AWS_INSTANCE_TYPE => $DBRole->instanceType
+				DBFarmRole::SETTING_AWS_INSTANCE_TYPE => $DBRole->instanceType,
+				DBFarmRole::SETTING_CLOUD_LOCATION => $cloud_location
 			);
 			
 			foreach ($default_settings as $k => $v)
@@ -279,6 +289,51 @@
 			}
 			
 			return $DBFarm;
+		}
+		
+		public function save()
+		{
+			if (!$this->ID)
+			{
+				$this->Hash = substr(md5(uniqid(rand(), true)),0, 14);
+				$this->ClientID = Scalr_Session::getInstance()->getClientId();
+				$this->EnvID = Scalr_Session::getInstance()->getEnvironmentId();
+				
+				$this->DB->Execute("INSERT INTO farms SET 
+					status		= ?, 
+					name		= ?, 
+					clientid	= ?,
+					env_id		= ?, 
+					hash		= ?, 
+					dtadded		= NOW(),						
+					farm_roles_launch_order = ?,
+					comments = ?
+				", array(
+                	FARM_STATUS::TERMINATED,
+                	$this->Name, 
+					$this->ClientID,
+					$this->EnvID, 
+					$this->Hash, 
+					$this->RolesLaunchOrder,
+					$this->Comments
+                ));
+                
+                $this->ID = $this->DB->Insert_ID();
+			}
+			else
+			{
+				$this->DB->Execute("UPDATE farms SET 
+					name		= ?, 
+					farm_roles_launch_order = ?,
+					comments = ?
+				WHERE id = ?
+				", array(
+                	$this->Name, 
+					$this->RolesLaunchOrder,
+					$this->Comments,
+					$this->ID
+                ));
+			}
 		}
 	}
 ?>

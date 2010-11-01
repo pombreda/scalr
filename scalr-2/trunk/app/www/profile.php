@@ -1,10 +1,9 @@
 <? 
 	require("src/prepend.inc.php"); 
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_ADMIN))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
-		UI::Redirect("index.php");
+		UI::Redirect("/client_dashboard.php");
 	}
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;Profile";
@@ -18,7 +17,7 @@
             $err[] = "Password is required";
             
         if (!$Validator->AreEqual($post_password, $post_password2))
-            $err[] = "Two passwords are not equal";            
+            $err[] = "Two passwords are not equal";
                   
         if (count($err) == 0)
         {  
@@ -54,7 +53,7 @@
 					$post_address2,
 					$post_phone,
 					$post_fax,
-					$_SESSION['uid']
+					Scalr_Session::getInstance()->getClientId()
 				));
 			}
 			catch (Exception $e)
@@ -72,10 +71,10 @@
 	
 	$display["countries"] = $db->GetAll("SELECT * FROM countries");
 	
-	$info = $db->GetRow("SELECT * FROM `clients` WHERE id='{$_SESSION['uid']}'");
+	$info = $db->GetRow("SELECT * FROM `clients` WHERE id=?", array(Scalr_Session::getInstance()->getClientId()));
 	$display = array_merge($info, $display);
 	
-	$Client = Client::Load($_SESSION['uid']);
+	$Client = Client::Load(Scalr_Session::getInstance()->getClientId());
 	
 	require("src/append.inc.php"); 
 ?>

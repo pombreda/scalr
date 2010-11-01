@@ -1,3 +1,15 @@
+2.1.0 Stable Release [November 1 2010]
+* Eucalyptus support
+* Multi Cloud Farms 
+* Service Configuration Manager 
+* Custom scaling metrics 
+* Multi-images roles 
+* New farm builder interface 
+* Support for ELB sticky sessions 
+* API 2.1.0: added new methods for managing your Apache vhosts
+* Ability to set VPC for farm role
+* Various bugfixes and improvements
+
 2.0.0 Stable Release [September 14 2010]
 * Scalarizr. Supported os: Ubuntu 8.04, Ubuntu 10.04, Debian 5, CentOS 5, Fedora 8, Fedora 12, Fedora 13 (This list will be extended within the next releases) 
 * Ability to import non-scalr instances using Scalarizr. 

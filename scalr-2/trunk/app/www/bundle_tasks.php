@@ -4,9 +4,9 @@
 	
 	set_time_limit(3600);
 	
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
-		$errmsg = "Requested page cannot be viewed from admin account";
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
 	}
 	
@@ -15,8 +15,11 @@
 		try {
 			$task = BundleTask::LoadById($req_task_id);
 			
-			if ($task->clientId != $_SESSION['uid'])
-				throw new Exception("Task not found");
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($task->envId))
+			{
+				$errmsg = _("You have no permissions for viewing requested page");
+				UI::Redirect("/index.php");
+			}
 			
 			if ($task->status != SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS)
 				throw new Exception("Incorrect status for cancelling");

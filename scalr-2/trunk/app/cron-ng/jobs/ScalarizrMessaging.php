@@ -12,7 +12,10 @@
         			"startupTimeout" => 10000, 		// 10 seconds
         			"size" => 3						// 3 workers
         		),
-				"fileName" => __FILE__
+				"fileName" => __FILE__,
+        		"getoptRules" => array(
+        			'farm-id-s' => 'Affect only this farm'
+        		)
         	);
         }
     	
@@ -42,10 +45,19 @@
         
         function enqueueWork ($workQueue) {
         	$this->logger->info("Fetching servers...");
+        	$farmid = $this->runOptions['getopt']->getOption('farm-id');
         	
-        	$rows = $this->db->GetAll("SELECT distinct(server_id) FROM messages 
-        			WHERE type = ? AND status = ? AND isszr = ?",
-        			array("in", MESSAGE_STATUS::PENDING, 1));
+        	if ($farmid) {
+        		$rows = $this->db->GetAll("SELECT distinct(m.server_id) FROM messages m 
+	        			INNER JOIN servers s ON m.server_id = s.server_id
+		        		WHERE m.type = ? AND m.status = ? AND m.isszr = ? AND s.farm_id = ?",
+        				array("in", MESSAGE_STATUS::PENDING, 1, $farmid));
+        	} else {
+	        	$rows = $this->db->GetAll("SELECT distinct(server_id) FROM messages 
+	        			WHERE type = ? AND status = ? AND isszr = ?",
+	        			array("in", MESSAGE_STATUS::PENDING, 1));
+        	}
+        	
         	$this->logger->info("Found ".count($rows)." servers");
         	foreach ($rows as $row) {
         		$workQueue->put($row["server_id"]);
@@ -98,9 +110,12 @@
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_BlockDeviceAttached) {
 	       					if ($dbserver->platform == SERVER_PLATFORMS::EC2) {
 								$Client = Client::Load($dbserver->clientId);
-	            				$ec2Client = AmazonEC2::GetInstance(AWSRegions::GetAPIURL(
-	            						$dbserver->GetProperty(EC2_SERVER_PROPERTIES::REGION))); 
-			    				$ec2Client->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+								
+								$ec2Client = Scalr_Service_Cloud_Aws::newEc2(
+									$dbserver->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+									$dbserver->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+									$dbserver->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+								);
 	
 			    				$instanceId = $dbserver->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID);
 			    				$volumes = $ec2Client->DescribeVolumes()->volumeSet->item;
@@ -147,13 +162,15 @@
 	       					
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_RebundleResult) {
 	       					if ($message->status == Scalr_Messaging_Msg_RebundleResult::STATUS_OK) {
+	       						
 	       						$event = new RebundleCompleteEvent(
 	       							$dbserver, 
 	       							$message->snapshotId, 
-	       							$message->bundleTaskId
+	       							$message->bundleTaskId,
+	       							array('os' => $message->os, 'software' => $message->software)
 	       						);
 	       					} else if ($message->status == Scalr_Messaging_Msg_RebundleResult::STATUS_FAILED) {
-	       						$event = new RebundleFailedEvent($dbserver);
+	       						$event = new RebundleFailedEvent($dbserver, $message->bundleTaskId);
 	       					}
 	       					
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_Mysql_PromoteToMasterResult) {
@@ -210,14 +227,30 @@
         
         private function onHello($message, $dbserver) {
        		if ($dbserver->status == SERVER_STATUS::IMPORTING) {
-       			$dbserver->SetProperties(array(
-       				EC2_SERVER_PROPERTIES::AMIID => $message->awsAmiId,
-       				EC2_SERVER_PROPERTIES::INSTANCE_ID => $message->awsInstanceId,
-       				EC2_SERVER_PROPERTIES::INSTANCE_TYPE => $message->awsInstanceType,
-       				EC2_SERVER_PROPERTIES::AVAIL_ZONE => $message->awsAvailZone,
-       				EC2_SERVER_PROPERTIES::REGION => substr($message->awsAvailZone, 0, -1),
-       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
-       			));
+       			
+       			if ($dbserver->platform == SERVER_PLATFORMS::EC2)
+       			{
+	       			$dbserver->SetProperties(array(
+	       				EC2_SERVER_PROPERTIES::AMIID => $message->awsAmiId,
+	       				EC2_SERVER_PROPERTIES::INSTANCE_ID => $message->awsInstanceId,
+	       				EC2_SERVER_PROPERTIES::INSTANCE_TYPE => $message->awsInstanceType,
+	       				EC2_SERVER_PROPERTIES::AVAIL_ZONE => $message->awsAvailZone,
+	       				EC2_SERVER_PROPERTIES::REGION => substr($message->awsAvailZone, 0, -1),
+	       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
+	       			));
+       			}
+       			elseif ($dbserver->platform == SERVER_PLATFORMS::EUCALYPTUS)
+       			{
+       				$dbserver->SetProperties(array(
+       					EUCA_SERVER_PROPERTIES::EMIID => $message->awsAmiId,
+	       				EUCA_SERVER_PROPERTIES::INSTANCE_ID => $message->awsInstanceId,
+	       				EUCA_SERVER_PROPERTIES::INSTANCE_TYPE => $message->awsInstanceType,
+	       				EUCA_SERVER_PROPERTIES::AVAIL_ZONE => $message->awsAvailZone,
+	       				EUCA_SERVER_PROPERTIES::REGION => 'Eucalyptus',
+	       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
+       					
+       				));
+       			}
     			
        			// Bundle image
        			$creInfo = new ServerSnapshotCreateInfo(
@@ -249,7 +282,7 @@
 				
        			// MySQL specific
        			$dbFarmRole = $dbserver->GetFarmRoleObject();
-       			if ($dbFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL) {
+       			if ($dbFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL)) {
                     $master = $dbFarmRole->GetFarmObject()->GetMySQLInstances(true);
                     // If no masters in role this server becomes it
                     if (!$master[0] && 
@@ -283,10 +316,10 @@
        			$event = new HostUpEvent($dbserver, "");
        			
        			$dbFarmRole = $dbserver->GetFarmRoleObject();
-       			if ($dbFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL) {
+       			if ($dbFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL)) {
        				if (!$message->mysql) {
        					$this->logger->error(sprintf(
-       							"Strange situation. HostUp message from MySQL behaviour doesn't contains `mysql` property. Server %s (%s)", 
+       							"Strange situation. HostUp message from MySQL behavior doesn't contains `mysql` property. Server %s (%s)", 
        							$dbserver->serverId, $dbserver->remoteIp));
        					return;
        				}

@@ -5,6 +5,7 @@
 		public 
 			$id,
 			$clientId,
+			$envId,
 			$farmId,
 			$farmRoleId,
 			$zoneName,
@@ -31,7 +32,8 @@
 			'id' 			=> 'id',
 			'farm_roleid'	=> 'farmRoleId',
 			'farm_id'		=> 'farmId',
-			'client_id'		=> 'clientId',		
+			'client_id'		=> 'clientId',
+			'env_id'		=> 'envId',		
 			'zone_name'		=> 'zoneName',
 			'status' 		=> 'status',
 			'soa_owner'		=> 'soaOwner',
@@ -213,10 +215,10 @@
 			}
 				
 			$int_record_alias = $DBFarmRole->GetSetting(DBFarmRole::SETTING_DNS_INT_RECORD_ALIAS);
-			$int_record = ($int_record_alias) ? $int_record_alias : "int-{$DBFarmRole->GetRoleName()}";
+			$int_record = ($int_record_alias) ? $int_record_alias : "int-{$DBFarmRole->GetRoleObject()->name}";
 			
 			$ext_record_alias = $DBFarmRole->GetSetting(DBFarmRole::SETTING_DNS_EXT_RECORD_ALIAS);
-			$ext_record = ($ext_record_alias) ? $ext_record_alias : "ext-{$DBFarmRole->GetRoleName()}";
+			$ext_record = ($ext_record_alias) ? $ext_record_alias : "ext-{$DBFarmRole->GetRoleObject()->name}";
 			
 			$records = array(
 				array(
@@ -249,7 +251,7 @@
 				));
 			}
 			
-			if ($DBFarmRole->GetRoleAlias() == ROLE_ALIAS::MYSQL)
+			if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
 			{
 				array_push($records, array(
 					"name" 		=> "int-mysql",

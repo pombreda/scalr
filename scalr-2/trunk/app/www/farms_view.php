@@ -7,7 +7,7 @@
 	    try
 	    {
 	    	$DBFarm = DBFarm::LoadByID($get_id);
-	    	if ($DBFarm->ClientID != $_SESSION['uid'] && $_SESSION['uid'] != 0)
+	    	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 	    		throw new Exception("Farm not found");
 	    }
 	    catch(Exception $e)
@@ -15,16 +15,9 @@
 	    	$errmsg = _("Farm not found");
 	        UI::Redirect("farms_view.php");
 	    }
-
-	    	    
-	    header('Pragma: private');
-		header('Cache-control: private, must-revalidate');
-	    header('Content-type: plain/text');
-        header('Content-Disposition: attachment; filename="'.$DBFarm->Name.'.pem"');
-        header('Content-Length: '.strlen($DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY)));
-
-        print $DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY);
-        exit();
+	    
+	    $errmsg = _("Please download private key for farm role.");
+	    UI::Redirect("/farm_roles_view.php?farmid={$get_id}");
 	}
 		
 	if (!$_POST && !$get_task && $get_code)

@@ -1,10 +1,12 @@
 <?php
 	require("src/prepend.inc.php"); 
 		
-	if ($_SESSION["uid"] == 0)
-	   UI::Redirect("index.php");	
-	   
-	$Client = Client::Load($_SESSION['uid']);	
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER, Scalr_AuthToken::MODULE_VHOSTS))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
+		UI::Redirect("index.php");
+	}	
+	   	
 	$display["title"] = _("Apache vhosts view");	
 
 	if($req_action)
@@ -21,11 +23,28 @@
 							
 			if($req_action == "delete")
 			{
-				$db->Execute("DELETE FROM apache_vhosts WHERE id = ? AND client_id = ?",
-					array($vhost_id, $_SESSION['uid'])
+				$dbFarmId = $db->GetOne("SELECT farm_id FROM apache_vhosts WHERE id = ? AND env_id = ?",
+					array($vhost_id, Scalr_Session::getInstance()->getEnvironmentId())
 				);
 				
-				$okmsg = _("Selected virtual host(s) successfully removed");
+				if ($dbFarmId)
+				{
+					$db->Execute("DELETE FROM apache_vhosts WHERE id = ? AND env_id = ?",
+						array($vhost_id, Scalr_Session::getInstance()->getEnvironmentId())
+					);
+					
+					$dbFarm = DBFarm::LoadByID($dbFarmId);
+					
+					$servers = $dbFarm->GetServersByFilter(array('status' => array(SERVER_STATUS::INIT, SERVER_STATUS::RUNNING)));
+					foreach ($servers as $DBServer)
+					{
+						if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX) || 
+							$DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::APACHE))
+							$DBServer->SendMessage(new Scalr_Messaging_Msg_VhostReconfigure());
+					}
+					
+					$okmsg = _("Selected virtual host(s) successfully removed");
+				}
 			}
 		}
 	}

@@ -19,10 +19,11 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$Client = Client::Load($_SESSION['uid']);	
-		
-		$AmazonVPCClient = AmazonVPC::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-		$AmazonVPCClient->SetAuthKeys($Client->AWSPrivateKey, $Client->AWSCertificate);
+		$AmazonVPCClient = Scalr_Service_Cloud_Aws::newVpc(
+			($req_cloud_location) ? $req_cloud_location : $_SESSION['aws_region'], 
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+		);
 				
 		// Rows	
 		$aws_response = $AmazonVPCClient->DescribeSubnets();

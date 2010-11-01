@@ -96,3 +96,25 @@
 	padding-left:5px;
 	padding-right:5px;
 }
+
+.role-info-field
+{
+	padding:5px;
+	padding-bottom:8px;
+	font-size:12px;
+	font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;
+	clear: both;
+}
+
+.role-info-field-name
+{
+	width:120px;
+	float:left;
+	margin-right:5px;
+}
+
+.role-info-field-value
+{
+	float:left;
+	width:160px;
+}

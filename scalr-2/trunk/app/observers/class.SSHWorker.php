@@ -35,18 +35,15 @@
 			
 			// Get farm info and client info from database;
 			$DBFarm = DBFarm::LoadByID($this->FarmID);
-						
-			// Get AMI info
-			$ssh_port = $this->DB->GetOne("SELECT default_ssh_port FROM roles WHERE id=?", array($event->DBServer->roleId));
-			if (!$ssh_port)
-				$ssh_port = 22;
+			$DBRole = DBRole::loadById($event->DBServer->roleId);		
 			
-			$Client = $event->DBServer->GetClient();
+			// Get Role info
+			$ssh_port = ($DBRole->getProperty(DBRole::PROPERTY_SSH_PORT)) ? $DBRole->getProperty(DBRole::PROPERTY_SSH_PORT) : 22;
 		
 			// Generate s3cmd config file
 			$s3cfg = CONFIG::$S3CFG_TEMPLATE;
-			$s3cfg = str_replace("[access_key]", $Client->AWSAccessKeyID, $s3cfg);
-			$s3cfg = str_replace("[secret_key]", $Client->AWSAccessKey, $s3cfg);
+			$s3cfg = str_replace("[access_key]", $DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY), $s3cfg);
+			$s3cfg = str_replace("[secret_key]", $DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::SECRET_KEY), $s3cfg);
 			$s3cfg = str_replace("\r\n", "\n", $s3cfg);
 
 			// Prepare public key for SSH connection
@@ -54,9 +51,22 @@
 			$res = file_put_contents($pub_key_file, $event->PublicKey);
 			$this->Logger->debug("Creating temporary file for public key: {$res}");
 			
+			try {
+				$key = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+					$event->DBServer->farmId,
+					$event->DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+				);
+				
+				if (!$key)
+					throw new Exception(_("There is no SSH key for server: {$event->DBServer->serverId}"));
+			}
+			catch(Exception $e){
+				throw new Exception("Cannot init SshKey object: {$e->getMessage()}");
+			}
+			
 			// Prepare private key for SSH connection
 			$priv_key_file = tempnam("/tmp", "AWSK");
-			$res = file_put_contents($priv_key_file, $DBFarm->GetSetting(DBFarm::SETTING_AWS_PRIVATE_KEY));
+			$res = file_put_contents($priv_key_file, $key->getPrivate());
 			$this->Logger->debug("Creating temporary file for private key: {$res}");
 			
 			// Connect to SSH
@@ -65,8 +75,8 @@
 			if ($SSH2->connect($event->ExternalIP, $ssh_port))
 			{
 				// Upload keys and s3 config to instance
-				$res = $SSH2->sendFile("/etc/aws/keys/pk.pem", $Client->AWSPrivateKey, "w+", false);
-				$res2 = $SSH2->sendFile("/etc/aws/keys/cert.pem", $Client->AWSCertificate, "w+", false);
+				$res = $SSH2->sendFile("/etc/aws/keys/pk.pem", $DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY), "w+", false);
+				$res2 = $SSH2->sendFile("/etc/aws/keys/cert.pem", $DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE), "w+", false);
 				$res3 = $SSH2->sendFile("/etc/aws/keys/s3cmd.cfg", $s3cfg, "w+", false);
 				
 				// remove temporary files

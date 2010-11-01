@@ -1,8 +1,11 @@
 <?php
 	require("src/prepend.inc.php"); 
 		
-	if ($_SESSION["uid"] == 0)
+	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER, Scalr_AuthToken::MODULE_VHOSTS))
+	{
+		$errmsg = _("You have no permissions for viewing requested page");
 		UI::Redirect("index.php");
+	}
 	
 	$display["title"] = _("Add virtual host");
 	$display['task'] = 'create';
@@ -16,7 +19,7 @@
 			//
 			$vhost = DBApacheVhost::loadById($req_vhost_id);  	
 	   				
-			if ($vhost->clientId != $_SESSION['uid'])
+			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($vhost->envId))
 				throw new Exception("Virtualhost not found");
 			
 	   		$display['vhost_id']		 	= $vhost->id;
@@ -71,7 +74,7 @@
 			
 			$DBFarm = DBFarm::LoadByID($req_farm_target);
 
-			if($DBFarm->ClientID != $_SESSION['uid'])
+			if(!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBFarm->EnvID))
 				$err[] = _("farm not found");	
 
 			if($req_role_target)
@@ -189,12 +192,14 @@
 					$vhost = DBApacheVhost::create($req_domain_name,
 						(int)$req_farm_target,
 						(int)$req_role_target,
-						(int)$_SESSION['uid'],
+						(int)Scalr_Session::getInstance()->getClientId(),
 						$advancedMode,
 						$httpConfigTemplate,
 						$httpConfigTemplateSSL,
 						$options
 					);
+					
+					$vhost->envId = (int)Scalr_Session::getInstance()->getEnvironmentId();
 					
 					$str_action = 'added';
 				}
@@ -203,7 +208,6 @@
 					$vhost->domainName 		= $req_domain_name;
 					$vhost->farmId 			= (int)$req_farm_target;
 					$vhost->farmRoleId 		= (int)$req_role_target;
-					$vhost->clientId		= (int)$_SESSION['uid'];
 					$vhost->advancedMode	= $advancedMode;
 					$vhost->httpdConf		= $httpConfigTemplate;
 					$vhost->httpdConfSsl		= $httpConfigTemplateSSL;
@@ -230,8 +234,8 @@
 			$servers = $DBFarm->GetServersByFilter(array('status' => array(SERVER_STATUS::INIT, SERVER_STATUS::RUNNING)));
 			foreach ($servers as $DBServer)
 			{
-				if ($DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::WWW || 
-					$DBServer->GetFarmRoleObject()->GetRoleAlias() == ROLE_ALIAS::APP)
+				if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX) || 
+					$DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::APACHE))
 					$DBServer->SendMessage(new Scalr_Messaging_Msg_VhostReconfigure());
 			}
 

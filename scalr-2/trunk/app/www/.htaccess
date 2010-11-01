@@ -7,6 +7,8 @@ RewriteEngine On
 # htaccess forbidden
 RewriteRule .htaccess - [F]
 
+RewriteRule ^index.php$ client_dashboard.php    [NE,L]
+
 RewriteRule ^$ login.php    [NE,L]
 
 RewriteRule ^farm_amis\.xml$ farm_amis_xml.php?%{QUERY_STRING}    [NE,L]

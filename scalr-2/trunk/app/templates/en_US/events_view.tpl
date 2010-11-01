@@ -1,13 +1,12 @@
 {include file="inc/header.tpl"}	
 	<div style="float:right;margin-right:20px;padding:0px;margin:5px;">
-		<img src="/images/dhtmlxtree/csh_vista/folderOpen_scripting.gif" style="vertical-align:middle;margin:0px;padding:0px;"><a style="margin:0px;padding:0px;" href="configure_event_notifications.php?farmid={$farminfo.id}">Configure / RSS Feed</a>
+		<a style="margin:0px;padding:0px;" href="configure_event_notifications.php?farmid={$farminfo.id}">Configure / RSS Feed</a>
 	</div>
 	<div style="clear:both"></div>
 
 	<link rel="stylesheet" href="css/grids.css" type="text/css" />
 	<div id="maingrid-ct" class="ux-gridviewer"></div>
 	<script type="text/javascript">
-	var uid = '{$smarty.session.uid}';	
 	{literal}
 	Ext.onReady(function () {
 		// create the Data Store
