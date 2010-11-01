@@ -1,0 +1,120 @@
+{literal}
+new Scalr.Viewers.FarmRolesEditTab({
+	tabTitle: 'Placement and type',
+	layout: 'form',
+	labelWidth: 30,
+	availZones: {},
+
+	isEnabled: function (record) {
+		return record.get('platform') == 'ec2';
+	},
+
+	getDefaultValues: function (record) {
+		return {
+			'aws.availability_zone': '',
+			'aws.instance_type': record.get('arch') == 'i386' ? 'm1.small' : 'm1.large'
+		};
+	},
+
+	activateTab: function () {
+		this.findOne('name', 'aws.availability_zone').store.loadData({
+			data: [
+				{ id: 'x-scalr-diff', name: 'Place in different zones' },
+				{ id: '', name: 'Choose randomly' }
+			]
+		});
+
+		this.findOne('name', 'aws.availability_zone').on('beforequery', function (qe) {
+			var field = this.findOne('name', 'aws.availability_zone');
+			if (this.availZones[field.region]) {
+				field.store.loadData(this.availZones[field.region]);
+			} else {
+				field.store.baseParams['Region'] = field.region;
+				field.store.load({
+					saveFlag: true
+				});
+				field.expand();
+				qe.cancel = true;
+			}
+		}, this);
+
+		this.findOne('name', 'aws.availability_zone').store.on('load', function (store, record, options) {
+			var t = [];
+
+			if (options.saveFlag) {
+				store.insert(0, [
+					new store.recordType({ id: 'x-scalr-diff', name: 'Place in different zones' }),
+					new store.recordType({ id: '', name: 'Choose randomly' })
+				]);
+
+				var f = this.findOne('name', 'aws.availability_zone'), r = f.findRecord(f.valueField, f.value);
+				f.view.refresh();
+
+				if (r)
+					f.select(f.store.indexOf(r) - 1, true); // hack instead of f.selectByValue
+			}
+
+			store.each(function (rec) {
+				t[t.length] = rec.data;
+			});
+			this.availZones[this.findOne('name', 'aws.availability_zone').region] = { data: t };
+		}, this);
+	},
+
+	showTab: function (record) {
+		var settings = record.get('settings');
+
+		if (record.get('arch') == 'i386') {
+			this.findOne('name', 'aws.instance_type').store.loadData(['t1.micro', 'm1.small', 'c1.medium']);
+			this.findOne('name', 'aws.instance_type').setValue(settings['aws.instance_type'] || 'm1.small');
+		} else {
+			this.findOne('name', 'aws.instance_type').store.loadData(['t1.micro', 'm1.large', 'm1.xlarge', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge']);
+			this.findOne('name', 'aws.instance_type').setValue(settings['aws.instance_type'] || 'm1.large');
+		}
+
+		this.findOne('name', 'aws.availability_zone').setValue(settings['aws.availability_zone'] || '');
+		this.findOne('name', 'aws.availability_zone').region = record.get('cloud_location');
+	},
+
+	hideTab: function (record) {
+		var settings = record.get('settings');
+
+		settings['aws.instance_type'] = this.findOne('name', 'aws.instance_type').getValue();
+		settings['aws.availability_zone'] = this.findOne('name', 'aws.availability_zone').getValue();
+
+		record.set('settings', settings);
+	},
+
+	items: [{
+		xtype: 'fieldset',
+		items: [{
+			xtype: 'combo',
+			store: new Scalr.data.Store({
+				url: '/server/ajax-ui-server-aws-ec2.php',
+				reader: new Scalr.data.JsonReader({
+					id: 'id',
+					fields: [ 'id', 'name' ]
+				}),
+				baseParams: { action: 'GetAvailZonesList' }
+			}),
+			fieldLabel: 'Placement',
+			valueField: 'id',
+			displayField: 'name',
+			editable: false,
+			mode: 'local',
+			name: 'aws.availability_zone',
+			triggerAction: 'all',
+			width: 200
+		}, {
+			xtype: 'combo',
+			store: [],
+			fieldLabel: 'Instance type',
+			editable: false,
+			mode: 'local',
+			name: 'aws.instance_type',
+			triggerAction: 'all',
+			width: 200
+		}]
+	}]
+})
+{/literal}
