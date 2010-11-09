@@ -24,12 +24,18 @@
 		/** DNS PROPERTIES */
 		const EXCLUDE_FROM_DNS	= 'dns.exclude_instance';
 		
+		
+		/** System PROPERTIES **/
 		const ARCHITECTURE = "system.architecture";
+		const REBOOTING = "system.rebooting";
 		
+		/** Healthcheck PROPERTIES **/
+		const HEALTHCHECK_FAILED = "system.healthcheck.failed";
+		const HEALTHCHECK_TIME = "system.healthcheck.time";
 		
+		/** Statistics **/
 		const STATISTICS_BW_IN 	= "statistics.bw.in";
 		const STATISTICS_BW_OUT	= "statistics.bw.out";
 		
-		const REBOOTING = "system.rebooting";
 	}
 ?>

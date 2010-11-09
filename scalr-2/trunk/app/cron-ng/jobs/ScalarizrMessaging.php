@@ -7,11 +7,11 @@
         		"description" => "Process ingoing Scalarizr messages",        	
         		"processPool" => array(
 					"daemonize" => false,
-        			"preventParalleling" => true,
         			"workerMemoryLimit" => 40000,   // 40Mb       	
         			"startupTimeout" => 10000, 		// 10 seconds
         			"size" => 3						// 3 workers
         		),
+    			"waitPrevComplete" => true,        		
 				"fileName" => __FILE__,
         		"getoptRules" => array(
         			'farm-id-s' => 'Affect only this farm'

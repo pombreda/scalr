@@ -30,8 +30,7 @@
 			$DBServer = DBServer::LoadByID($req_server_id);
 			$DBFarm = $DBServer->GetFarmObject();
 					
-	        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($instanceinfo['farmid']));
-	        if (Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($farminfo['env_id']));
+	        if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
 	            throw new Exception("Instance not found in database.");
 	            
 			$port = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
@@ -122,6 +121,7 @@
 		catch(Exception $e)
 		{
 			$error = $e->getMessage();
+			throw $e;
 		}
 			
 		$response["total"] = count($processes);

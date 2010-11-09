@@ -847,14 +847,12 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 		this.loadMask = new Ext.LoadMask(this.getEl(), { store: this.store });
 
-		if (this.maximize) {
-			this.on('bodyresize', function(p, width, height) {
-				width = width - p.body.getBorderWidth('lr');
-				height = height - p.body.getBorderWidth('tb');
+		this.on('bodyresize', function(p, width, height) {
+			width = width - p.body.getBorderWidth('lr');
+			height = height - p.body.getBorderWidth('tb');
 
-				this.listView.setSize(width, height);
-			});
-		}
+			this.listView.setSize(width, height);
+		});
 
 		this.add(this.listView);
 	},

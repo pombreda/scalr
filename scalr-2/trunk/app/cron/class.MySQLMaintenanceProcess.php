@@ -217,8 +217,8 @@
                         	{
 		                    	$DBFarmRole = $DBServer->GetFarmRoleObject();
 		                        
-		                        $pbw_from = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START);
-		                        $pbw_to = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END);
+		                        $pbw_from = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_MM));
+		                        $pbw_to = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_MM));
 		                        if ($pbw_from && $pbw_to)
 		                        {
 		                        	$current_time = (int)date("Hi");

@@ -13,7 +13,7 @@
     	$farmid = (int)$req_farmid;
     	$watchername = $req_watchername;
     	$graph_type = $req_graph_type;
-    	$role_name = $req_role_name;
+    	$role_name = ($req_role_name) ? $req_role_name : $req_role;
     	
     	if ($req_version == 2)
     	{
@@ -50,8 +50,6 @@
 	        	try
 	        	{
 	    			GenerateGraph($farmid, $role_name, $rrddbpath, $watchername, $graph_type, $image_path);
-	    			
-	    			CONFIG::$RRD_STATS_URL = 'https://monitoring-graphs.scalr.net/%fid%/%rn%_%wn%.';
 	    			
 	    			$url = str_replace(array("%fid%","%rn%","%wn%"), array($farmid, $role_name, $watchername), CONFIG::$RRD_STATS_URL);
 					$url = "{$url}{$graph_type}.gif";

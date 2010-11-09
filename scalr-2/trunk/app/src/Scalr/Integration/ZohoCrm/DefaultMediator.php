@@ -96,9 +96,12 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 						$account->id, $client->Fullname, $client->ID, get_class($e), $e->getMessage()));
 			}
 		} else {
+			return $this->addClient($client);
+			/*
 			throw new Scalr_Integration_Exception(sprintf(
 					"Cannot update account. Client has no '%s' setting (client: '%s', clientid: %d)", 
 					CLIENT_SETTINGS::ZOHOCRM_ACCOUNT_ID, $client->Fullname, $client->ID));
+			*/
 		}
 		
 		
@@ -225,7 +228,7 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 		
 		$account->setProperty(
 				Scalr_Integration_ZohoCrm_CustomFields::ACCOUNT_APPLICATIONS,
-				$this->db->GetOne("SELECT COUNT(*) FROM zones WHERE clientid = ?", array($client->ID)));
+				$this->db->GetOne("SELECT COUNT(*) FROM dns_zones WHERE client_id = ?", array($client->ID)));
 				
 		$account->setProperty(
 				Scalr_Integration_ZohoCrm_CustomFields::ACCOUNT_ACTIVE,
@@ -257,12 +260,28 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 					"SELECT name FROM countries WHERE code = ?", array($client->Country));
 		}
 		
-		$packageId = $client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE);
-		if (!$packageId || $packageId == 4) {
-			$contact->leadSource = "Development edition";
+		$adPagesVisited = $client->GetSettingValue(CLIENT_SETTINGS::AD_PAGES_VISITED);
+		if ($adPagesVisited) {
+			$contact->leadSource = 'Adwords';
+			$contact->setProperty(
+				Scalr_Integration_ZohoCrm_CustomFields::CONTACT_AD_PAGES_VISITED,
+				(int)$adPagesVisited
+			);
+			$contact->setProperty(
+				Scalr_Integration_ZohoCrm_CustomFields::CONTACT_AD_VALUE_TRACK,
+				$client->GetSettingValue(CLIENT_SETTINGS::AD_VALUE_TRACK)
+			);
+			$client->ClearSettings('adwords%');
+			
 		} else {
-			$contact->leadSource = "Production edition";
+			$packageId = $client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE);
+			if (!$packageId || $packageId == 4) {
+				$contact->leadSource = "Development edition";
+			} else {
+				$contact->leadSource = "Production edition";
+			}
 		}
+		
 		
 		$unsubscrDate = $client->GetSettingValue(CLIENT_SETTINGS::ZOHOCRM_UNSUBSCR_DATE);
 		$contact->setProperty(

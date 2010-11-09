@@ -264,12 +264,6 @@ class Scalr_System_Cronjob_Distributed extends Scalr_System_Cronjob_MultiProcess
 			"blocking" => true,
 			"autoInit" => true
 		));
-		if ($this->config["processPool"]["preventParalleling"]) {
-			$this->config["processPool"]["nowWorkingSet"] = new Scalr_Service_Zookeeper_Set(array(
-				"zookeeper" => $this->zookeeper,
-				"path" => $this->jobZPath . "/now-working-set"
-			));
-		}
 		
 		// Call parent initialization
 		parent::init($options);

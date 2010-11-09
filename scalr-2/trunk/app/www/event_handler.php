@@ -192,7 +192,7 @@
 							// Single volume
 							$ebsinfo = $db->GetRow("SELECT * FROM ec2_ebs WHERE volume_id=?", array($data['name']));
 							if ($ebsinfo)
-								$db->Execute("UPDATE ec2_ebs SET mount_status=?, isfsexists='1' WHERE id=?", array(EC2_EBS_MOUNT_STATUS::MOUNTED, $ebsinfo['id']));
+								$db->Execute("UPDATE ec2_ebs SET mount_status=?, isfsexist='1' WHERE id=?", array(EC2_EBS_MOUNT_STATUS::MOUNTED, $ebsinfo['id']));
 						}
 						
 						if ($data['mountpoint'] && $data['success'] == 1)

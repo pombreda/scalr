@@ -3,6 +3,8 @@
 class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob 
 		implements Scalr_System_Ipc_Worker {
 
+	private $logger;			
+			
 	/**
 	 * @var Scalr_System_Ipc_ProcessPool
 	 */
@@ -13,12 +15,6 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 	 */
 	protected $worker;
 	
-	/**
-	 * @var Scalr_System_Ipc_Shm
-	 */
-	protected $shm;
-	
-	protected $shmKey;
 	
 	private $workerFileLastMtime;
 	
@@ -26,8 +22,13 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 	 * @var Scalr_Util_Timeout
 	 */
 	private $memoryLimitTimeout;
-	
-	private $logger;
+
+	/**
+	 * @var Scalr_System_Ipc_Shm
+	 */
+	protected $shm;
+	protected $shmKey;
+
 	
 	static function getConfig () {
 		return Scalr_Util_Arrays::mergeReplaceRecursive(parent::getConfig(), array(
@@ -173,27 +174,15 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 			$this->logger->info(sprintf("Cronjob '%s' is already running (pid: %d)", $this->jobName, $poolPid));
 			if ($this->worker) {
 				$this->logger->info("Enqueue work...");
-				$queue = $this->processPool->workQueue;
 				
-				if ($this->config["pendingWorkCoef"]) {
-					// Enqueue and monitor capacity
-					$cap0 = $queue->capacity();
-					$this->worker->enqueueWork($queue);
-					$cap = $queue->capacity();
-					$numtasks = $cap - $cap0;
-					//$this->logger->info(sprintf("Work enqueued capBefore: %d, capAfter: %d", $cap0, $cap));					
-					if ($cap/$numtasks >= $this->config["pendingWorkCoef"]) {
-						$this->logger->warn(sprintf("Too many pending jobs (according to pendingWorkCoef=%.2f)", 
-								$this->config["pendingWorkCoef"]));
-						// Terminate cronjob
-						posix_kill($poolPid, SIGTERM);					
-					}
-					
-				} else {
-					// Simple enqueue
-					$this->worker->enqueueWork($queue);				
+				$queue = $this->processPool->workQueue;
+				if (($cap = $queue->capacity()) && $this->config['waitPrevComplete']) {
+					$this->logger->warn(sprintf("Another cronjob is not complete (%d pending tasks)", $cap));
+					return;
 				}
 				
+				// Enqueue tasks
+				$this->worker->enqueueWork($queue);				
 			}
 			return;
 		}
@@ -233,22 +222,20 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 	}
 
 	function onReady ($pool) {
-		$this->logger->debug("Store process pool (pid: ".$this->processPool->getPid().") in shm");
+		$this->logger->debug("Store process pool (pid: {$this->processPool->getPid()}) in shm");
 		$this->shm->put(0, $this->processPool->getPid());
 	}
 	
-	function onSignal ($pool, $signal) {
-		switch ($signal) {
-			case SIGALRM:
-				if ($this->config["fileName"] && $this->workerFileLastMtime) {
-					clearstatcache();
-					if ($this->workerFileLastMtime < filemtime($this->config["fileName"])) {
-						$this->logger->warn("Cronjob worker file was modified");
-						posix_kill(posix_getpid(), SIGTERM);
-					}
+	function onTick ($pool, $tick) {
+		if ($tick % 10 == 0) { // ~ 1 second
+			if ($this->config["fileName"] && $this->workerFileLastMtime) {
+				clearstatcache();
+				if ($this->workerFileLastMtime < filemtime($this->config["fileName"])) {
+					$this->logger->warn("Cronjob worker file was modified");
+					posix_kill(posix_getpid(), SIGTERM);
 				}
-				$this->checkMemoryLimit();
-				break;
+			}
+			$this->checkMemoryLimit();
 		}
 	}
 }

@@ -79,6 +79,13 @@
 		
 		const SETTING_MYSQL_BUNDLE_WINDOW_START = 		'mysql.bundle_window.start';
 		const SETTING_MYSQL_BUNDLE_WINDOW_END	= 		'mysql.bundle_window.end';
+		
+		const SETTING_MYSQL_BUNDLE_WINDOW_START_HH = 'mysql.pbw1_hh';
+		const SETTING_MYSQL_BUNDLE_WINDOW_START_MM = 'mysql.pbw1_mm';
+		
+		const SETTING_MYSQL_BUNDLE_WINDOW_END_HH = 'mysql.pbw2_hh';
+		const SETTING_MYSQL_BUNDLE_WINDOW_END_MM = 'mysql.pbw2_mm';
+		
 		const SETTING_MYSQL_EBS_SNAPS_ROTATE	= 		'mysql.ebs.rotate';
 		const SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED	= 'mysql.ebs.snaps_rotation_enabled';
 		

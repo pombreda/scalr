@@ -15,13 +15,11 @@
     			"description" => "SNMP stats poller",
     			"processPool" => array(
 					"daemonize" => false,
-					"preventParalleling" => true, 
     				"workerMemoryLimit" => 40000,   		
-    				"size" => 15,
+    				"size" => 12,
     				"startupTimeout" => 10000 // 10 seconds
     			),
-    			# Terminate when pending work 3 times greater then last work portion
-    			"pendingWorkCoef" => 2,  
+    			"waitPrevComplete" => true,
     			"fileName" => __FILE__,
     			"memoryLimit" => 500000
     		);
@@ -133,7 +131,7 @@
             		if ($DBServer->status == SERVER_STATUS::PENDING_TERMINATE || $DBServer->status == SERVER_STATUS::TERMINATED)
             			continue;
             			
-            		if (!$server['remote_ip'])
+            		if (!$DBServer->remoteIp)
             			continue;
             		
             		$port = $DBServer->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);

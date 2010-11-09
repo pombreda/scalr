@@ -12,6 +12,7 @@ interface Scalr_System_Cronjob_MultiProcess_Worker extends Scalr_System_Ipc_Work
 	 * @key int [memoryLimitTick] (optional) Tick time for process group memory limit check   
 	 * @key string [fileName] (optional) Cronjob filename. Control process will check each second 
 	 * for local file modifications and restart cronjob if file was changed.  
+	 * @key bool [waitPrevComplete] Wait for previous tasks completion
 	 * @key array [distributed] (optional) 
 	 * @key string [iniFile] required with distributed* Path or URL to distributed cronjob configuration
 	 * @key string [electorCls] (optional with distributed) Leader elector class name @see Scalr_System_Cronjob_Distributed_Elector

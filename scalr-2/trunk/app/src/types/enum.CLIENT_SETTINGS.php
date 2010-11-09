@@ -19,6 +19,9 @@
 		const ZOHOCRM_LAST_MODIFY_TIME 	= "external.zohocrm.last_modify_time";
 		const ZOHOCRM_UNSUBSCR_DATE 	= "external.zohocrm.unsubscr_date";
 		
+		const AD_PAGES_VISITED 			= 'adwords.pages_visited';
+		const AD_VALUE_TRACK 			= 'adwords.value_track';
+		
 		const BILLING_CGF_CID		= 'billing.chargify.customer_id';
 		const BILLING_CGF_SID		= 'billing.chargify.subscription_id';
 		const BILLING_CGF_PKG		= 'billing.chargify.package_id';

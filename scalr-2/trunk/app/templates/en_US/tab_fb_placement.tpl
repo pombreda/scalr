@@ -24,6 +24,13 @@ new Scalr.Viewers.FarmRolesEditTab({
 			]
 		});
 
+		new Ext.ToolTip({
+			target: this.findOne('itemId', 'aws.availability_zone_warn').id,
+			dismissDelay: 0,
+			autoHide: false,
+			html: ('If you want to change placement, you need to remove Master EBS volume first on <a href="/farm_mysql_info.php?farmid=%FARMID%">MySQL status page</a>.').replace('%FARMID%', this.farmId)
+		});
+
 		this.findOne('name', 'aws.availability_zone').on('beforequery', function (qe) {
 			var field = this.findOne('name', 'aws.availability_zone');
 			if (this.availZones[field.region]) {
@@ -74,6 +81,19 @@ new Scalr.Viewers.FarmRolesEditTab({
 
 		this.findOne('name', 'aws.availability_zone').setValue(settings['aws.availability_zone'] || '');
 		this.findOne('name', 'aws.availability_zone').region = record.get('cloud_location');
+
+		if (
+			record.get('behaviors').match('mysql') &&
+			settings['mysql.data_storage_engine'] == 'ebs' &&
+			settings['mysql.master_ebs_volume_id'] != '' &&
+			settings['mysql.master_ebs_volume_id'] != undefined
+		) {
+			this.findOne('name', 'aws.availability_zone').disable();
+			this.findOne('itemId', 'aws.availability_zone_warn').show();
+		} else {
+			this.findOne('name', 'aws.availability_zone').enable();
+			this.findOne('itemId', 'aws.availability_zone_warn').hide();
+		}
 	},
 
 	hideTab: function (record) {
@@ -88,23 +108,30 @@ new Scalr.Viewers.FarmRolesEditTab({
 	items: [{
 		xtype: 'fieldset',
 		items: [{
-			xtype: 'combo',
-			store: new Scalr.data.Store({
-				url: '/server/ajax-ui-server-aws-ec2.php',
-				reader: new Scalr.data.JsonReader({
-					id: 'id',
-					fields: [ 'id', 'name' ]
-				}),
-				baseParams: { action: 'GetAvailZonesList' }
-			}),
+			xtype: 'compositefield',
 			fieldLabel: 'Placement',
-			valueField: 'id',
-			displayField: 'name',
-			editable: false,
-			mode: 'local',
-			name: 'aws.availability_zone',
-			triggerAction: 'all',
-			width: 200
+			items: [{
+				xtype: 'combo',
+				store: new Scalr.data.Store({
+					url: '/server/ajax-ui-server-aws-ec2.php',
+					reader: new Scalr.data.JsonReader({
+						id: 'id',
+						fields: [ 'id', 'name' ]
+					}),
+					baseParams: { action: 'GetAvailZonesList' }
+				}),
+				valueField: 'id',
+				displayField: 'name',
+				editable: false,
+				mode: 'local',
+				name: 'aws.availability_zone',
+				triggerAction: 'all',
+				width: 200
+			}, {
+				xtype: 'displayfield',
+				itemId: 'aws.availability_zone_warn',
+				value: '<img src="/images/ui-ng/icons/warn_icon_16x16.png" style="padding: 2px; cursor: help;">'
+			}]
 		}, {
 			xtype: 'combo',
 			store: [],

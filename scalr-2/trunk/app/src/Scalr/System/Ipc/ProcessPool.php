@@ -30,10 +30,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	
 	public $termTimeout = 5000; // 5 seconds
 	
-	public $preventParalleling;
-	
-	private $nowWorkingSet;
-	
 	protected $poolPid;
 	
 	protected $childPid;
@@ -88,8 +84,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	 * @key int [workerTimeout] Max execution time for worker process (default infinity)
 	 * @key int [termTimeout] Time to wait after sending SIGTERM to worker process (default 5 seconds)
 	 * @key bool [daemonize] daemonize process pool (default false)
-	 * @key bool [preventParalleling] Prevents same work parallel processing
-	 * @key Scalr_Util_Set [nowWorkingSet] Set of currently blocked item values. Use with [preventParalleling] option
 	 * @key int [slippageLimit] Maximum number of childs crash without processing messages from workQueue
 	 * @key int [workerMemoryLimit] Memory limit for worker process
 	 * @key int [workerMemoryLimitTick] Tick time for worker memory limit check   
@@ -127,14 +121,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			$this->workQueue = new Scalr_System_Ipc_ShmQueue($this->workQueue);
 		}
 		
-		if ($this->preventParalleling) {
-			if (!$this->nowWorkingSet) {
-				$this->nowWorkingSet = new Scalr_System_Ipc_ShmSet(array(
-					"name" => "scalr.ipc.processPool.nowWorkingSet-" . ($this->name ? $this->name : posix_getpid())
-				));
-			}
-		}
-		
 		$this->shm = new Scalr_System_Ipc_Shm(array(
 			"name" => "scalr.ipc.processPool.shm-" . ($this->name ? $this->name : posix_getpid())
 		));
@@ -147,6 +133,14 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			 * @param int $signal
 			 */
 			"signal",
+		
+			/**
+			 * Fires each 100 millis
+			 * @event tick
+			 * @param Scalr_System_Ipc_ProcessPool $ppool
+			 * @param int $tick
+			 */
+			"tick",
 		
 			/**
 			 * Fires when pool ready for processing tasks
@@ -172,7 +166,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 		$t1 = microtime(true);
 		$msg = "Starting process pool (size: {$this->size}";
 		if ($this->daemonize) $msg .= ", daemonize: true";
-		if ($this->preventParalleling) $msg .= ", preventParalleling: true";
 		$msg .= ")";
         $this->logger->info($msg);
 		
@@ -285,11 +278,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 		$this->logger->debug("Process pool is ready");
 		$this->ready = true;
 		$this->fireEvent("ready", $this);
-	
-
-	
-		// Setup SIGALRM 
-		pcntl_alarm(1);
 		
 		$this->wait();		
 	}
@@ -311,27 +299,19 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 				$this->shm->delete();
 			} catch (Exception $ignore) {
 			}
-			
-			try {
-				if ($this->childEventQueue) {
+
+			if ($this->childEventQueue) {			
+				try {
 					$this->childEventQueue->delete();
+				} catch (Exception $ignore) {
 				}
-			} catch (Exception $ignore) {
 			}
-			
-			try {
-				if ($this->workersStat) {
+
+			if ($this->workersStat) {	
+				try {
 					$this->workersStat->delete();
+				} catch (Exception $ignore) {
 				}
-			} catch (Exception $ignore) {
-			}
-			
-			
-			try {
-				if ($this->preventParalleling) {
-					$this->nowWorkingSet->delete();
-				}
-			} catch (Exception $ignore) {
 			}
 			
 			$this->cleanupComplete = true;
@@ -350,26 +330,15 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 		}
 		$this->inWaitLoop = true;
 		
+		$ticks = 0;
 		while ($this->childs) {
-			//$this->logger->info("YAAAAAAAAARRRRRRRRRRRRR!!!!!!!!1111111 wait loop");
-			
-			// Handle child events
+			// Handle children events
 			$this->handleChildEvents(50);			
 			
-			$t1 = microtime(true);
-			// When children die, this gets rid of the zombies
-			$pid = pcntl_wait($status, WNOHANG);
-			if ($pid > 0) {
-				$this->logger->info(sprintf("wait() from child %s. Status: %d", $pid, $status));
-				$this->onSIGCHLD($pid, $status);
-			}
-			//$this->logger->info("time wait: " . round(microtime(true) - $t1) . " sec");
-			
-			$t1 = microtime(true);
+			// Handle children timeouts
 			foreach ($this->childs as $childInfo) {
 				if ($childInfo["termStartTime"]) {
 					// Kill maybe
-					
 					if ($this->timeoutReached($this->termTimeout, $childInfo["termStartTime"])) {
 						$this->logger->info(sprintf("Child %d reached termination timeout and will be KILLED", 
 								$childInfo["pid"]));
@@ -378,7 +347,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 					
 				} else {
 					// Terminate maybe	
-		
 					$term = $this->workTimeout && $childInfo["workStartTime"] &&
 							$this->timeoutReached($this->workTimeout, $childInfo["workStartTime"]);
 					if ($term) {
@@ -398,9 +366,21 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 					}
 				}
 			}
-			//$this->logger->info("time iterate over childs: " . round(microtime(true) - $t1, 4) . " sec");
+
+			// When child dies, this gets rid of the zombies
+			$pid = pcntl_wait($status, WNOHANG);
+			if ($pid > 0) {
+				$this->logger->info(sprintf("wait() from child %s. Status: %d", $pid, $status));
+				$this->onSIGCHLD($pid, $status);
+			}
 			
-			$this->sleepMillis(10);
+			// Check for zombies each 20 iterations (~ 1 second)
+			if ($ticks % 20 == 0) {
+				$this->checkZombies();
+			} 
+			
+			$this->sleepMillis(50);
+			$ticks++;
 		}
 		
 		$this->inWaitLoop = false;
@@ -470,16 +450,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 							"message" => $message
 						));
 						
-						if ($this->preventParalleling) {
-							if ($this->nowWorkingSet->contains($message)) {
-								$this->logger->warn(sprintf("Skip message processing because same message "
-										. "is currently processing by another process (message: '%s')", 
-										serialize($message)));
-							}
-							
-							$this->nowWorkingSet->add($message);
-						}
-						
 						//$this->timeLogger->info("before handle work ($message);; " . (microtime(true) - $t1) . ";;");
 						
 						//$t1 = microtime(true);
@@ -488,9 +458,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 						//$this->timeLogger->info("handle work ($message);;; " . (microtime(true) - $t1) . ";");
 						
 						//$t1 = microtime(true);
-						if ($this->preventParalleling) {
-							$this->nowWorkingSet->remove($message);
-						}
 						
 						// Notify parent after message handler
 						$this->fireChildEvent("afterHandleWork", array(
@@ -541,6 +508,18 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			}
 			
 			exit();
+		}
+	}
+	
+	private function checkZombies() {
+		// Check zomby child processes
+		$this->logger->debug('Check zombies');
+		foreach (array_keys($this->childs) as $pid) {
+			if (!posix_kill($pid, 0)) {
+				unset($this->childs[$pid]);
+			} else {
+				$this->logger->debug(sprintf("process %d is alive", $pid));
+			}
 		}
 	}
 	
@@ -654,19 +633,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 				$this->ready = true;
 				break;
 				
-			// Timer alarm 
-			case SIGALRM:
-				//$this->logger->debug(sprintf("Received %s", self::$signames[$sig]));
-				// Check zomby child processes
-				foreach (array_keys($this->childs) as $pid) {
-					if (!posix_kill($pid, 0)) {
-						unset($this->childs[$pid]);
-					}
-				}
-				
-				pcntl_alarm(1);
-				break;
-				
 			case SIGHUP:
 				// Works when $this->daemonize = true
 				$this->logger->info(sprintf("Received %s", self::$signames[$sig]));
@@ -727,10 +693,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 		}
 
 		if (key_exists($pid, $this->childs)) {
-			// Remove work from nowWorking set 
-			if ($this->childs[$pid]["message"] && $this->preventParalleling) {
-				$this->nowWorkingSet->remove($this->childs[$pid]["message"]);
-			}
 			unset($this->childs[$pid]);
 			
 			$this->logger->debug(sprintf("Child termination options. "

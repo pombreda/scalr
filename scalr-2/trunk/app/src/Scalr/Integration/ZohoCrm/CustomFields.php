@@ -72,4 +72,10 @@ final class Scalr_Integration_ZohoCrm_CustomFields {
 	
 	// text
 	const CONTACT_WHAT_LED_HIM_TO_SIGN_UP = "What led him to sign up?";
+	
+	// int
+	const CONTACT_AD_PAGES_VISITED = 'Ad Pages Visited';
+	
+	// text
+	const CONTACT_AD_VALUE_TRACK = 'Ad ValueTrack';
 }

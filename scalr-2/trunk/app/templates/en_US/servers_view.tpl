@@ -26,7 +26,8 @@ Ext.onReady(function () {
 			id: 'server_id',
 
 			fields: [
-				'cloud_server_id', 'isrebooting', 'dns', 'server_id', 'remote_ip', 'local_ip', 'status', 'platform', 'farm_name', 'role_name', 'index', 'role_id', 'farm_id', 'farm_roleid', 'uptime', 'ismaster'
+				'cloud_server_id', 'isrebooting', 'dns', 'server_id', 'remote_ip', 'local_ip', 'status', 'platform', 'farm_name', 
+				'role_name', 'index', 'role_id', 'farm_id', 'farm_roleid', 'uptime', 'ismaster', 'location'
 			]
 		}),
 		remoteSort: true,
@@ -320,8 +321,11 @@ Ext.onReady(function () {
 						}
 					})
 				},
-				{ header: "Cloud Server ID", width: 60, dataIndex: 'cloud_server_id', sortable: false, hidden: 'yes', tpl:
+				{ header: "Cloud Server ID", width: 30, dataIndex: 'cloud_server_id', sortable: false, hidden: 'yes', tpl:
 					'{cloud_server_id}'
+				},
+				{ header: "Cloud Location", width: 30, dataIndex: 'location', sortable: false, hidden: 'yes', tpl:
+					'{location}'
 				},
 				{ header: "Status", width: 30, dataIndex: 'status', sortable: true, hidden: 'no', tpl:
 					'{status} <tpl if="isrebooting == 1"> (Rebooting ...)</tpl>'

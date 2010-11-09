@@ -82,6 +82,9 @@
 				
 				$row['cloud_server_id'] = $DBServer->GetCloudServerID();
 				$row['ismaster'] = $DBServer->GetProperty(SERVER_PROPERTIES::DB_MYSQL_MASTER);
+				$row['location'] = $DBServer->GetCloudLocation();
+				if ($DBServer->platform == SERVER_PLATFORMS::EC2)
+					$row['location'] .= "/".substr($DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE), -1, 1);
 			}
 			catch(Exception $e){  }
 			
