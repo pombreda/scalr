@@ -548,7 +548,7 @@
 				<tr  class="roleInfo" style="height:1px; display:">	
 					<!-- farm_role -->
 					<td class="td_with_padding" style="width:200px;">On all servers of this role: </td>
-					<td class="td_with_padding"><div id="role_target_combo">{$roleinfo.ami_id}</div></td>
+					<td class="td_with_padding"><div id="role_target_combo">{$roleinfo.name}</div></td>
 				</tr>
 			{/if}
 			{if  !$roleinfo || $task != 'edit'}			

@@ -414,13 +414,15 @@
 		 * @param bool $isImport
 		 * @return DBServer
 		 */
-		public static function Create(ServerCreateInfo $creInfo, $isImport = false)
+		public static function Create(ServerCreateInfo $creInfo, $isImport = false, $setPendingStatus = false)
 		{
 			$db = Core::GetDBInstance();
 			
 			$server_id = Scalr::GenerateUID();
 
 			$status = (!$isImport) ? SERVER_STATUS::PENDING_LAUNCH : SERVER_STATUS::IMPORTING;
+			if ($setPendingStatus)
+				$status = SERVER_STATUS::PENDING;
 			
 			// IF no index defined
 			if (!$creInfo->index && !$isImport)

@@ -86,7 +86,9 @@ new Scalr.Viewers.FarmRolesEditTab({
 			record.get('behaviors').match('mysql') &&
 			settings['mysql.data_storage_engine'] == 'ebs' &&
 			settings['mysql.master_ebs_volume_id'] != '' &&
-			settings['mysql.master_ebs_volume_id'] != undefined
+			settings['mysql.master_ebs_volume_id'] != undefined &&
+			this.findOne('name', 'aws.availability_zone').getValue() != '' &&
+			this.findOne('name', 'aws.availability_zone').getValue() != 'x-scalr-diff'
 		) {
 			this.findOne('name', 'aws.availability_zone').disable();
 			this.findOne('itemId', 'aws.availability_zone_warn').show();

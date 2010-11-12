@@ -163,7 +163,7 @@
 				return;
 			
 			$dbFarm = DBFarm::LoadByID($this->FarmID);
-			$servers = $dbFarm->GetServersByFilter(array('status' => array(SERVER_STATUS::INIT, SERVER_STATUS::RUNNING)));
+			$servers = $dbFarm->GetServersByFilter(array('status' => array(SERVER_STATUS::RUNNING)));
 			try
 			{
 				$DBFarmRole = $event->DBServer->GetFarmRoleObject();
@@ -228,10 +228,10 @@
 					$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID)				
 				);
 				
-				foreach ($server as $server) {
-					if ($server->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE) == $availZone) {
+				foreach ($servers as $DBServer) {
+					if ($DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE) == $availZone) {
 						$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SLAVE_TO_MASTER, 1);
-						$server->SendMessage($msg);
+						$DBServer->SendMessage($msg);
 						return;
 					}
 				}

@@ -322,7 +322,7 @@
 					SERVER_PROPERTIES::SZR_VESION => ($ServerCreateInfo->platform == SERVER_PLATFORMS::RDS) ? '0.0-0' : '0.5'
 				));
 				
-				$DBServer = DBServer::Create($ServerCreateInfo);
+				$DBServer = DBServer::Create($ServerCreateInfo, false, true);
 			}
 			elseif(!$DBServer && !$ServerCreateInfo)
 			{
@@ -347,6 +347,9 @@
 	                	$e->getMessage()
 	                )
 	            ));
+	            
+	            $DBServer->status = SERVER_STATUS::PENDING_LAUNCH;
+				$DBServer->Save();
 			}
 			
 			if ($DBServer->status == SERVER_STATUS::PENDING)

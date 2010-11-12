@@ -128,14 +128,17 @@
 		
 		public function OnBeforeHostTerminate(BeforeHostTerminateEvent $event)
 		{			
-			$msg = new Scalr_Messaging_Msg_BeforeHostTerminate(
-				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
-				$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
-				$event->DBServer->localIp, 
-				$event->DBServer->remoteIp
-			);
-			
-			$this->SendExecMessage($event->DBServer, $event, $msg);
+			if ($event->DBServer->localIp && $event->DBServer->remoteIp)
+			{
+				$msg = new Scalr_Messaging_Msg_BeforeHostTerminate(
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->getBehaviors(), 
+					$event->DBServer->GetFarmRoleObject()->GetRoleObject()->name, 
+					$event->DBServer->localIp, 
+					$event->DBServer->remoteIp
+				);
+				
+				$this->SendExecMessage($event->DBServer, $event, $msg);
+			}
 		}
 		
 		public function OnDNSZoneUpdated(DNSZoneUpdatedEvent $event)

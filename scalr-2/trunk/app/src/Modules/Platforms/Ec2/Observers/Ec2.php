@@ -104,7 +104,7 @@
 	    			}
                 }
     			
-                if ($DBServer->status == SERVER_STATUS::PENDING || $DBServer->status == SERVER_STATUS::PENDING_LAUNCH)
+                if ($DBServer->status == SERVER_STATUS::PENDING || $DBServer->status == SERVER_STATUS::PENDING_LAUNCH || $DBServer->status == SERVER_STATUS::PENDING_TERMINATE)
     			{
     				$DBServer->status = SERVER_STATUS::TERMINATED;
     				$DBServer->Save();

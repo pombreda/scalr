@@ -93,14 +93,13 @@
 
 					$DBFarm = $DBFarmRole->GetFarmObject();
 
-					$roleInfo = $db->GetRow("SELECT ami_id, platform FROM farm_roles WHERE id = ?",array($taskInfo['target_id']));
-
+					$roleInfo = $db->GetRow("SELECT role_id, platform FROM farm_roles WHERE id = ?",array($taskInfo['target_id']));
 					if($roleInfo['platform'])
-						$roleInfo['ami_id'] = $roleInfo['ami_id']." ({$roleInfo['platform']})";						
+						$roleInfo['name'] = $db->GetOne("SELECT name FROM roles WHERE id=?", array($roleInfo['role_id']))." ({$roleInfo['platform']})";						
 
 					$display['farminfo']['name'] = $DBFarm->Name;
 						
-					$display['roleinfo']['ami_id'] = $roleInfo['ami_id'];
+					$display['roleinfo']['name'] = $roleInfo['name'];
 					$display['roleinfo']['farmid'] = $DBFarmRole->FarmID;
 
 
@@ -111,15 +110,12 @@
 					$roleServer = explode(":",$taskInfo['target_id']);
 					$DBFarmRole = DBFarmRole::LoadByID($roleServer[0]);	
 
-					$roleInfo = $db->GetRow("SELECT ami_id, platform FROM farm_roles WHERE id = ?",array($taskInfo['target_id']));
-					
-					if($roleInfo['platform'])
-						$roleInfo['ami_id'] = $roleInfo['ami_id']." ({$roleInfo['platform']})";						
+					$roleInfo['name'] = $db->GetOne("SELECT name FROM roles WHERE id=?", array($DBFarmRole->RoleID))." ({$DBFarmRole->Platform})";					
 
 					$DBFarm = $DBFarmRole->GetFarmObject();
 					$display['farminfo']['name'] = $DBFarm->Name;
 
-					$display['roleinfo']['ami_id'] = $roleInfo['ami_id'];
+					$display['roleinfo']['name'] = $roleInfo['name'];
 					$display['roleinfo']['farmid'] = $DBFarmRole->FarmID;
 
 					$DBServer = DBServer::LoadByFarmRoleIDAndIndex($roleServer[0],$roleServer[1]);

@@ -7,12 +7,6 @@
 			if ($settings[DBFarmRole::SETTING_AWS_USE_EBS] && $settings[DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "")
 				throw new Exception(sprintf(_("EBS cannot be enabled if Placement is set to 'Choose randomly'. Please select a different option for 'Placement' parameter for role '%s'."), $rolename));
 				
-		 	if ($settings[DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE] == MYSQL_STORAGE_ENGINE::EBS) 
-		 	{ 
-		 		if ($settings[DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "" || $settings[DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "x-scalr-diff") 
-		 			throw new Exception(sprintf(_("Requirement for EBS MySQL data storage is specific 'Placement' parameter for role '%s'"), $rolename)); 
-		 	}
-				
 			if ($settings[DBFarmRole::SETTING_AWS_USE_EBS])
 			{
 				if (!$settings[DBFarmRole::SETTING_AWS_EBS_SIZE] && !$settings[DBFarmRole::SETTING_AWS_EBS_SNAPID])

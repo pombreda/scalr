@@ -125,6 +125,15 @@
 				}
 
 				Scalr_Helpers_Dns::farmValidateRoleSettings($role['settings'], $DBRole->name);
+				
+				if ($DBRole->hasBehavior(ROLE_BEHAVIORS::MYSQL))
+				{
+					if ($role['settings'][DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE] == MYSQL_STORAGE_ENGINE::EBS) 
+				 	{ 
+				 		if ($role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "" || $role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "x-scalr-diff") 
+				 			throw new Exception(sprintf(_("Requirement for EBS MySQL data storage is specific 'Placement' parameter for role '%s'"), $DBRole->name)); 
+				 	}
+				}
 			}
 
 			$db->BeginTrans();
