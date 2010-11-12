@@ -143,7 +143,7 @@
 		    return $dt;
 		}
 		
-		private function Request($method, $uri, $args)
+		private function Request($method, $uri, $args, $attempt = 1)
 		{
 			$HttpRequest = new HttpRequest();
 			
@@ -154,7 +154,7 @@
 						
 			$timestamp = $this->GetTimestamp();
 			$URL = "{$this->Region}.elasticloadbalancing.amazonaws.com";
-						
+			
 			$args['Version'] = self::API_VERSION;
 			$args['SignatureVersion'] = 2;
 			$args['SignatureMethod'] = "HmacSHA1";
@@ -197,8 +197,14 @@
             		$message = $e->innerException->getMessage();
             	else
             		$message = $e->getMessage();  
-            	
-            	throw new Exception($message);
+            		
+            	if (stristr($message, "Timeout was reached"))
+            	{
+            		if ($attempt < 3)
+            			return $this->Request($method, $uri, $args, $attempt+1);
+            	}
+            		
+            	throw new Exception("(Attempt: {$attempt}) ".$message);
             }
 		}
 		

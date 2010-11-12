@@ -103,12 +103,18 @@
 				{					
 					$retval = parent::__doRequest($objWSSE->saveXML(), $location, $saction, $version);
 
+					if ($retval instanceOf SoapFault && stristr($retval->getMessage(), "Could not connect to host"))
+						throw new Exception("[{$retry}] ".$retval->getMessage());
+					
 					if ($retval)
 						return $retval;
 					
 					$headers = $this->__getLastResponseHeaders();
 					if ($headers && stristr($headers, "HTTP/1.1 200 OK"))
 						return $retval;
+					
+					if ($this->__soap_fault && stristr($this->__soap_fault->getMessage(), "Could not connect to host"))
+						throw new Exception("[{$retry}] ".$this->__soap_fault->getMessage());
 				}
 				catch (Exception $e)
 				{				
