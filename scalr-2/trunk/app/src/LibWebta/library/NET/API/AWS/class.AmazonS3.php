@@ -476,6 +476,10 @@
 					$request = "<CreateBucketConfiguration><LocationConstraint>ap-southeast-1</LocationConstraint></CreateBucketConfiguration>";
 					break;
 					
+				case "ap-northeast-1":
+					$request = "<CreateBucketConfiguration><LocationConstraint>ap-northeast-1</LocationConstraint></CreateBucketConfiguration>";
+					break;
+					
 				case "eu-west-1":
 					$request = "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>";
 					break;

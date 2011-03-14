@@ -48,7 +48,7 @@
 		
 		public function SetRegion($region)
 		{ // only US region is available now
-			if (in_array($region, array('us-east-1', 'eu-west-1', 'us-west-1', 'ap-southeast-1')))
+			if (in_array($region, array('us-east-1', 'eu-west-1', 'us-west-1', 'ap-southeast-1', 'ap-northeast-1')))
 				$this->Region = $region;	
 		}
 		

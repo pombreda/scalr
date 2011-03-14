@@ -9,12 +9,13 @@
 			$this->Items = array();
 		}
 		
-		function AddListener($protocol, $lb_port, $instance_port)
+		function AddListener($protocol, $lb_port, $instance_port, $certificateId=null)
 		{
 			$o = new stdClass();
 			$o->Protocol = $protocol;
 			$o->LoadBalancerPort = $lb_port;
 			$o->InstancePort = $instance_port;
+			$o->SSLCertificateId = $certificateId;
 			
 			$this->Items[] = $o;
 		}
@@ -87,7 +88,7 @@
 
 	class AmazonELB
 	{
-		const API_VERSION 	= "2009-11-25";
+		const API_VERSION 	= "2010-07-01";
 		const HASH_ALGO 	= 'SHA1';
 		const USER_AGENT 	= 'Libwebta AWS Client (http://webta.net)';
 	    
@@ -120,7 +121,7 @@
 		
 		public function SetRegion($region)
 		{
-			if (in_array($region, array('us-east-1', 'eu-west-1', 'us-west-1', 'ap-southeast-1')))
+			if (in_array($region, array('us-east-1', 'eu-west-1', 'us-west-1', 'ap-southeast-1', 'ap-northeast-1')))
 				$this->Region = $region;	
 		}
 		
@@ -153,7 +154,7 @@
 			                              );
 						
 			$timestamp = $this->GetTimestamp();
-			$URL = "{$this->Region}.elasticloadbalancing.amazonaws.com";
+			$URL = "elasticloadbalancing.{$this->Region}.amazonaws.com";
 			
 			$args['Version'] = self::API_VERSION;
 			$args['SignatureVersion'] = 2;
@@ -336,11 +337,13 @@
 				$request_args['Listeners.member.'.($i+1).".Protocol"] = $o->Protocol;
 				$request_args['Listeners.member.'.($i+1).".LoadBalancerPort"] = $o->LoadBalancerPort;
 				$request_args['Listeners.member.'.($i+1).".InstancePort"] = $o->InstancePort;
+				if ($o->SSLCertificateId)
+					$request_args['Listeners.member.'.($i+1).".SSLCertificateId"] = $o->SSLCertificateId;
 			}
 			
 			foreach ($AvailabilityZonesList as $i=>$o)
 				$request_args['AvailabilityZones.member.'.($i+1)] = $o;
-			
+				
 			$response = $this->Request("GET", "/", $request_args);
 			
 			return (string)$response->CreateLoadBalancerResult->DNSName;

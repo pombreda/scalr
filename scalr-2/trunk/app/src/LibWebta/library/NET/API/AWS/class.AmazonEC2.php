@@ -7,13 +7,13 @@
 		public $resourcesSet;
 		public $tagSet;
 		
-		public function construct(array $resources, array $tags)
+		public function __construct(array $resources, array $tags)
 		{
-			$this->resourcesSet = new sdtClass();
+			$this->resourcesSet = new stdClass();
 			$this->resourcesSet->item = array();
 			
 			$this->tagSet = new stdClass();
-			$this->tagSet = array();
+			$this->tagSet->item = array();
 			
 			foreach ($resources as $v)
 			{
@@ -426,6 +426,11 @@
 	    public $blockDeviceMapping;
 	    public $placement;
 	    
+	    function __construct()
+	    {
+	    	$this->placement = new stdClass();
+	    }
+	    
 	    public function ConfigureRootPartition($use_ebs = false, $snapshotId = false, $volumeSize = false, $deleteOnTermination = true)
 	    {
 	    	$this->blockDeviceMapping = new stdClass();
@@ -461,8 +466,12 @@
 	    
 	    public function SetAvailabilityZone($zoneName)
 	    {
-	    	$this->placement = new stdClass();
 	    	$this->placement->availabilityZone = $zoneName;
+	    }
+	    
+	    public function SetPlacementGroup($groupName)
+	    {
+	    	$this->placement->groupName = $groupName;
 	    }
 	    
 	    public function AddSecurityGroup($groupName)
@@ -589,6 +598,28 @@
 			$this->EC2SoapClient->SetAuthKeys($key, $cert, $isfile);
 		}
 		
+		public function CreatePlacementGroup($GroupName)
+		{
+			try 
+			{
+				$stdClass = new stdClass();
+				$stdClass->groupName = $GroupName;
+				$stdClass->strategy = 'cluster';
+				
+				$response = $this->EC2SoapClient->CreatePlacementGroup($stdClass);
+				
+				if ($response instanceof SoapFault)
+					throw new Exception($response->faultstring, E_ERROR);
+			} 
+			catch (SoapFault $e) 
+			{
+			    throw new Exception($e->getMessage(), E_ERROR);
+			}
+	
+			return $response;
+		}
+		
+		
 		public function DescribeRegions()
 		{
 			try 
@@ -606,7 +637,7 @@
 			return $response;
 		}
 		
-		public function CreateTags(CreateTagsType $CreateImageType)
+		public function CreateTags(CreateTagsType $CreateTagsType)
 		{
 			try 
 			{
@@ -1514,8 +1545,8 @@
 		 * @return object
 		 */
 		public function RunInstances(RunInstancesType $RunInstancesType) 
-		{
-            try 
+		{			
+			try 
             {
                 $response = $this->EC2SoapClient->RunInstances($RunInstancesType);
                 
