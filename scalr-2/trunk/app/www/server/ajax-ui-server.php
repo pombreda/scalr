@@ -9,6 +9,7 @@
     		$this->Logger = Logger::getLogger(__CLASS__);
     	}
 
+    	// used in: tab_fb_params.tpl
 		public function GetRoleParams($farmId, $roleId)
 		{
 			$roleId = intval($roleId);
@@ -82,48 +83,6 @@
     		return $retval;
     	}
 
-    	public function GetRoleInfo($roleId)
-    	{
-    		global $Smarty;
-
-    		$dbRole = DBRole::loadById($roleId);
-
-    		if (Scalr_Session::getInstance()->getClientId() != 0 && $dbRole->clientId != 0)
-			{
-				if (
-					($dbRole->origin == ROLE_TYPE::SHARED && $dbRole->clientId != Scalr_Session::getInstance()->getClientId() && $dbRole->approvalState != APPROVAL_STATE::APPROVED) ||
-					($dbRole->origin == ROLE_TYPE::CUSTOM && $dbRole->clientId != Scalr_Session::getInstance()->getClientId())
-				   )
-				{
-					throw new Exception(_("You have no access to selected role"));
-				}
-			}
-
-    		$dbRole->groupName = ROLE_GROUPS::GetNameByBehavior($dbRole->getBehaviors());
-    		$dbRole->behaviorsList = implode(", ", $dbRole->getBehaviors());
-    		foreach ($dbRole->getSoftwareList() as $soft)
-    			$dbRole->softwareList[] = "{$soft['name']} {$soft['version']}";
-
-    		$dbRole->softwareList = implode(", ", $dbRole->softwareList);
-    		if (!$dbRole->softwareList)
-    			$dbRole->softwareList = _('Software list not available for this role');
-
-    		$dbRole->platformsList = array();
-    		foreach ($dbRole->getPlatforms() as $platform)
-    		{
-    			$dbRole->platformsList[] = array(
-    				'name' 		=> SERVER_PLATFORMS::GetName($platform),
-    				'locations'	=> implode(", ", $dbRole->getCloudLocations($platform))
-    			);
-    		}
-
-    		$Smarty->assign(array(
-    			'dbRole'	=> $dbRole
-    		));
-
-    		return $Smarty->fetch("inc/role_info.tpl");
-    	}
-
     	public function GetServerLA($serverId)
     	{
     		$DBServer = DBServer::LoadByID($serverId);
@@ -140,67 +99,6 @@
     		$snmpClient->connect($DBServer->remoteIp, $port, $DBServer->GetFarmObject()->Hash);
 
     		return $snmpClient->get('.1.3.6.1.4.1.2021.10.1.3.1');
-    	}
-
-    	public function RemoveScript($scriptID)
-    	{
-    		// Get template infor from database
-			$template = $this->DB->GetRow("SELECT * FROM scripts WHERE id=?", array($scriptID));
-
-			// Check permissions
-			if (!$template || ($template['clientid'] == 0 && Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN)) ||
-				($template['clientid'] != 0 && Scalr_Session::getInstance()->getClientId() != $template['clientid'])
-			) {
-				throw new Exception(_("You don't have permissions to edit this template"));
-			}
-
-			// Check template usage
-			$roles_count = $this->DB->GetOne("SELECT COUNT(*) FROM farm_role_scripts WHERE scriptid=? AND event_name NOT LIKE 'CustomEvent-%'",
-				array($scriptID)
-			);
-
-			// If script used redirect and show error
-			if ($roles_count > 0)
-				throw new Exception(_("This template being used and can't be deleted"));
-
-			$this->DB->BeginTrans();
-
-			// Delete tempalte and all revisions
-			$this->DB->Execute("DELETE FROM farm_role_scripts WHERE scriptid=?", array($scriptID));
-			$this->DB->Execute("DELETE FROM scripts WHERE id=?", array($scriptID));
-			$this->DB->Execute("DELETE FROM script_revisions WHERE scriptid=?", array($scriptID));
-
-			$this->DB->CommitTrans();
-
-			return true;
-    	}
-
-    	public function RemoveDNSZones(array $zones)
-    	{
-    		$this->DB->BeginTrans();
-
-		    foreach ($zones as $dd)
-			{
-				try
-				{
-					$zone = DBDNSZone::loadById($dd);
-    				if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($zone->envId))
-    					continue;
-
-    				$zone->status = DNS_ZONE_STATUS::PENDING_DELETE;
-    				$zone->save();
-				}
-				catch(Exception $e)
-				{
-					$this->DB->RollbackTrans();
-					Logger::getLogger("AjaxUIServer.RemoveApplications")->error("Exception thrown during application delete: {$e->getMessage()}");
-					throw new Exception("Can't delete dns zone. Please try again later.");
-				}
-			}
-
-			$this->DB->CommitTrans();
-
-			return true;
     	}
 
     	public function RemoveVolume($volume_id, $region = "")
@@ -227,82 +125,6 @@
     		foreach ($snapshots as $snapshot)
     		{
     			$AmazonEC2Client->DeleteSnapshot($snapshot);
-    		}
-
-    		return true;
-    	}
-
-    	public function RebootServers(array $servers)
-    	{
-    		foreach ($servers as $server_id)
-    		{
-    			try
-    			{
-	    			$DBServer = DBServer::LoadByID($server_id);
-	    			if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
-	    				throw new Exception("no access");
-
-	    			PlatformFactory::NewPlatform($DBServer->platform)->RebootServer($DBServer);
-    			}
-    			catch (Exception $e)
-    			{
-
-    			}
-    		}
-
-    		return true;
-    	}
-
-    	public function TerminateServers(array $servers, $decrease_mininstances_setting = false, $force_terminate = false)
-    	{
-			foreach ($servers as $server_id)
-			{
-				$DBServer = DBServer::LoadByID($server_id);
-				if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
-					throw new Exception();
-				try
-				{
-					if (!$force_terminate)
-					{
-						Logger::getLogger(LOG_CATEGORY::FARM)->info(new FarmLogMessage($farmid,
-							sprintf("Scheduled termination for server %s (%s). It will be terminated in 3 minutes.",
-								$DBServer->serverId,
-								$DBServer->remoteIp
-						)
-						));
-					}
-		            Scalr::FireEvent($DBServer->farmId, new BeforeHostTerminateEvent($DBServer, $force_terminate));
-
-		            $this->DB->Execute("UPDATE servers_history SET
-						dtterminated	= NOW(),
-						terminate_reason	= ?
-						WHERE server_id = ?
-					", array(
-						sprintf("Terminated via user interface"),
-						$DBServer->serverId
-					));
-				}
-				catch (Exception $e)
-				{
-					$this->Logger->fatal(sprintf("Can't terminate %s: %s",
-						$instanceinfo['instance_id'],
-						$e->getMessage()
-					));
-				}
-    		}
-
-    		if ($decrease_mininstances_setting)
-    		{
-    			$DBServer = DBServer::LoadByID($servers[0]);
-    			$DBFarmRole = $DBServer->GetFarmRoleObject();
-
-    			$min_instances = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES);
-    			if ($min_instances > 1)
-    			{
-	    			$DBFarmRole->SetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES,
-	    				$min_instances-1
-	    			);
-    			}
     		}
 
     		return true;
@@ -418,7 +240,7 @@
 				    $data = array();
 				    foreach ($vars as $var)
 				    {
-				    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
+				    	if (!in_array($var, array_keys(CONFIG::getScriptingBuiltinVariables())))
 				    		$data[$var] = ucwords(str_replace("_", " ", $var));
 				    }
 				    $data = json_encode($data);

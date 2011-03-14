@@ -184,7 +184,7 @@
 		if(Ext.get('button_js'))
 			Ext.get('button_js').dom.disabled = true;		
 		
-		document.forms[1].submit();		
+		document.forms[2].submit();		
 	}
 
 	{/literal}
@@ -238,7 +238,7 @@
 				Role:
 			 </td>
 			 <td class="td_with_padding">
-				<div id="role_target_combo" style="float:left; width:400px;">There is no roles assigned to selected farm</div><div class="loadmask" id="loadRoles" style="display:none;">Loading data...</div>
+				<div id="role_target_combo" style="float:left; width:400px;">There are no apache roles assigned to selected farm</div><div class="loadmask" id="loadRoles" style="display:none;">Loading data...</div>
 			 </td>
 		</tr>
 	{include file="inc/intable_footer.tpl" color="Gray"}

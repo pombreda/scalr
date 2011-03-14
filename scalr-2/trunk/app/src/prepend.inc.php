@@ -2,9 +2,6 @@
 	define("TRANSACTION_ID", uniqid("tran"));
 	define("DEFAULT_LOCALE", "en_US");
 
-	// Start session
-	if (!defined("NO_SESSIONS"))
-	session_start();
 	@date_default_timezone_set(@date_default_timezone_get());
 
 	// 	Attempt to normalize settings
@@ -36,24 +33,8 @@
 	//
 	// Locale init
 	//
-	if ($sess_lang)
-		$locale = $sess_lang;
-	else if ($get_lang)
-		$locale = $get_lang;
-	else
-		$locale = DEFAULT_LOCALE;
-
+	$locale = DEFAULT_LOCALE;
 	define("LOCALE", $locale);
-    $_SESSION["LOCALE"] = LOCALE;
-    setcookie("locale", LOCALE, time() + 86400*30);
-	putenv("LANG=".LOCALE);
-	setlocale(LC_ALL, LOCALE);
-	define("TEXT_DOMAIN", "default");
-	bindtextdomain (TEXT_DOMAIN, LANGS_DIR);
-	textdomain(TEXT_DOMAIN);
-	bind_textdomain_codeset(TEXT_DOMAIN, "UTF-8");
-	$display["lang"] = LOCALE;
-
 
 	// Globalize
 	@extract($_GET, EXTR_PREFIX_ALL, "get");
@@ -66,6 +47,7 @@
 	define("SRCPATH", $base);
 	define("APPPATH", "{$base}/..");
 	define("CACHEPATH", "$base/../cache");
+	define("SCALR_VERSION", @file_get_contents(APPPATH."/etc/version"));
 
 	$ADODB_CACHE_DIR = "$cachepath/adodb";
 
@@ -94,15 +76,6 @@
 
 	require_once(SRCPATH."/queue_tasks/class.FireDeferredEventTask.php");
 
-
-	// All uncaught exceptions will raise ApplicationException
-	function exception_handler($exception)
-	{
-		UI::DisplayException($exception);
-	}
-	set_exception_handler("exception_handler");
-
-
 	////////////////////////////////////////
 	// LibWebta		                      //
 	////////////////////////////////////////
@@ -122,7 +95,6 @@
 	Core::Load("NET/API/AWS/AmazonRDS");
 	Core::Load("NET/API/AWS/AmazonCloudWatch");
 	Core::Load("NET/API/AWS/AmazonVPC");
-	Core::Load("NET/SNMP");
 
 	require_once(SRCPATH . '/externals/adodb5/adodb-exceptions.inc.php');
 	require_once(SRCPATH . '/externals/adodb5/adodb.inc.php');
@@ -136,8 +108,6 @@
 	if (!count($cfg)) {
 		die(_("Cannot parse config.ini file"));
 	};
-
-	define("CF_DEBUG_DB", $cfg["debug"]["db"]);
 
 	// ADODB init
 	try
@@ -154,7 +124,6 @@
 
 	// Select config from db
 	foreach ($db->CacheGetAll(3600, "SELECT * FROM config") as $rsk)
-	//foreach ($db->GetAll("SELECT * FROM config") as $rsk)
 		$cfg[$rsk["key"]] = $rsk["value"];
 
 
@@ -188,8 +157,6 @@
 	}
 
 	unset($cfg);
-
-
 
 	// Define log4php contants
 	define("LOG4PHP_DIR", SRCPATH.'/externals/apache-log4php-2.0.0-incubating/src/main/php');
@@ -226,13 +193,6 @@
 		}
 	}
 
-	//
-	// Configure urls
-	//
-
-	CONFIG::$IPNURL = "https://".$_SERVER['HTTP_HOST']."/order/ipn.php";
-	CONFIG::$PDTURL = "https://".$_SERVER['HTTP_HOST']."/order/pdt.php?utm_nooverride=1";
-
 	// Smarty init
 	if (!defined("NO_TEMPLATES"))
 	{
@@ -244,7 +204,7 @@
 			$Smarty->caching = false;
 		}
 		else
-			$Smarty->caching = true;
+			$Smarty->caching = false;
 
 		$Smarty->register_function('get_static_url', 'get_static_url');
 		function get_static_url($params, &$smarty)
@@ -256,39 +216,6 @@
 
 			//return "{$proto}{$domains[$n]}{$params['path']}";
 			return "{$params['path']}";
-		}
-	}
-
-	// Session init
-	if (! defined('NO_SESSIONS')) {
-		Scalr_Session::restore();
-
-		if ( !defined("NO_TEMPLATES")) {
-			if (Scalr_Session::getInstance()->getEnvironment()) {
-				$env = array('list' => array(), 'current' => Scalr_Session::getInstance()->getEnvironment()->name);
-				$current = Scalr_Session::getInstance()->getEnvironment()->id;
-				foreach (Scalr_Session::getInstance()->getEnvironment()->loadByFilter(array('clientId' => Scalr_Session::getInstance()->getClientId())) as $value) {
-					$env['list'][] = array('text' => $value['name'], 'envId' => $value['id'], 'checked' => ($value['id'] == $current) ? true : false, 'group' => 'env', 'style' => 'width: 124px');
-				}
-
-				$Smarty->assign('session_environments', json_encode($env));
-			}
-		}
-
-		if (isset($_REQUEST['change_environment_id']) && intval($_REQUEST['change_environment_id'])) {
-			$redirect = isset($_REQUEST['change_environment_redirect']) ? $_REQUEST['change_environment_redirect'] : '/client_dashboard.php';
-			try {
-				$env = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById(intval($_REQUEST['change_environment_id']));
-				// TODO: replace with authToken->hasAccessEnvironment()
-				if ($env->clientId == Scalr_Session::getInstance()->getClientId()) {
-					Scalr_Session::getInstance()->setEnvironmentId($env->id);
-					$GLOBALS['okmsg'] = _("Current environment successfully switched to \"{$env->name}\"");
-					UI::Redirect($redirect);
-				}
-			} catch (Exception $e) {
-				$GLOBALS['errmsg'] = _("Error switching environment: \"{$e->getMessage()}\"");
-				UI::Redirect($redirect);
-			}
 		}
 	}
 
@@ -304,10 +231,6 @@
 
 	//TODO: Move all timeouts to config UI.
 
-    // Set zone lock timeouts
-    CONFIG::$ZONE_LOCK_WAIT_TIMEOUT = 5000000; // in miliseconds (1000000 = 1 second)
-    CONFIG::$ZONE_LOCK_WAIT_RETRIES = 3;
-
     CONFIG::$HTTP_PROTO = (CONFIG::$HTTP_PROTO) ? CONFIG::$HTTP_PROTO : "http";
 
     // cache lifetime
@@ -318,85 +241,11 @@
     // Get control password
     $cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
 
-    // Set path to SNMP Trap binary
-    SNMP::SetSNMPTrapPath(CONFIG::$SNMPTRAP_PATH);
-
     // Require observer interfaces
     require_once (APPPATH.'/observers/interface.IDeferredEventObserver.php');
     require_once (APPPATH.'/observers/interface.IEventObserver.php');
 
     require_once (SRCPATH.'/class.Scalr.php');
-
-    //
-    // Attach event observers
-    //
-    Scalr::AttachObserver(new SSHWorker());
-	Scalr::AttachObserver(new DBEventObserver());
-	Scalr::AttachObserver(new ScriptingEventObserver());
-	Scalr::AttachObserver(new DNSEventObserver());
-	Scalr::AttachObserver(new MessagingEventObserver());
-	Scalr::AttachObserver(new ScalarizrEventObserver());
-
-	Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Ec2());
-	Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Ebs());
-	Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Eip());
-	Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Elb());
-
-	Scalr::AttachObserver(new Modules_Platforms_Rds_Observers_Rds());
-
-    //
-    // Attach deferred event observers
-    //
-	Scalr::AttachObserver(new MailEventObserver(), true);
-	Scalr::AttachObserver(new RESTEventObserver(), true);
-
-    $ReflectEVENT_TYPE = new ReflectionClass("EVENT_TYPE");
-    $event_types = $ReflectEVENT_TYPE->getConstants();
-    foreach ($event_types as $event_type)
-    {
-    	if (class_exists("{$event_type}Event"))
-    	{
-    		$ReflectClass = new ReflectionClass("{$event_type}Event");
-    		$retval = $ReflectClass->getMethod("GetScriptingVars")->invoke(null);
-    		if (!empty($retval))
-    		{
-    			foreach ($retval as $k=>$v)
-    			{
-    				if (!CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k])
-    				{
-	    				CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
-	    					"PropName"	=> $v,
-	    					"EventName" => "{$event_type}"
-	    				);
-    				}
-    				else
-    				{
-    					if (!is_array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']))
-    						$events = array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']);
-    					else
-    						$events = CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName'];
-
-    					$events[] = $event_type;
-
-    					CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
-	    					"PropName"	=> $v,
-	    					"EventName" => $events
-	    				);
-    				}
-    			}
-    		}
-    	}
-    }
-
-	//
-	// Select AWS regions
-	//
-	$regions = array();
-	foreach (AWSRegions::GetList() as $region)
-	{
-		$regions[$region] = AWSRegions::GetName($region);
-	}
-	$display['regions'] = $regions;
 
 	//
 	// Tender integration
@@ -428,13 +277,4 @@
 
 		return urlencode(base64_encode($encryptedData));
 	}
-
-	//
-	// ZohoCRM integration
-	//
-
-	// Configure default mediator
-	$mediator = new Scalr_Integration_ZohoCrm_DeferredMediator();
-	Scalr_Integration_ZohoCrm_Mediator::setDefaultMediator($mediator);
-	Scalr::AttachInternalObserver($mediator);
 ?>

@@ -39,18 +39,19 @@
 		/**
 		 * Path to snmptrap binary
 		 *
+		 * @todo: move to config
 		 * @var string
 		 */
 		private static $snmpTrapPath = "/usr/bin/snmptrap";
-		
 		private static $snmpGetPath = "/usr/bin/snmpget";
+		
 		
 		/**
 		 * Set path to SNMPtrap binary
 		 *
 		 * @param string $path
 		 */
-		public static function SetSNMPTrapPath($path)
+		public static function setSNMPTrapPath($path)
 		{
 			self::$snmpTrapPath = $path;
 		}
@@ -94,7 +95,7 @@
 			// -t {timeout}
 			$args = "-r {$this->retries} {$view_option} -v 2c -c {$this->community} {$this->host}:{$this->port}";
 			
-			$cmd = self::$snmpGetPath." {$args} {$request}";
+			$cmd = self::$snmpGetPath." {$args} {$request} 2>/dev/null";
 			
 			$cmd = str_replace(array("\r", "\n"), "", $cmd);
 			
@@ -122,7 +123,11 @@
 		
 		public function sendTrap($trap)
 		{
-			return $this->Shell->QueryRaw(self::$SNMPTrapPath.' -v 2c -c '.$this->Community.' '.$this->Connection.' "" '.$trap);
+			@exec(self::$snmpTrapPath . ' -v 2c -c '.$this->community.' '.$this->host.':162 "" '.$trap, $retval);
+			
+			$retval = implode("\n", $retval);
+			
+			return $retval;
 		}
 		
 		/**

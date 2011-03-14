@@ -13,7 +13,7 @@
     	<tr>
     		<td>Server:</td>
     		<td>
-				<a href="server_view_extended_info.php?server_id={$serverId}">{$serverId}</a>
+				<a href="#/servers/{$serverId}/extendedInfo">{$serverId}</a>
     		</td>
     	</tr>
     	{/if}

@@ -20,7 +20,8 @@ new Scalr.Viewers.FarmRolesEditTab({
 			'scaling.min_instances': 1,
 			'scaling.max_instances': 2,
 			'scaling.polling_interval': 1,
-			'scaling.keep_oldest': 0
+			'scaling.keep_oldest': 0,
+			'scaling.safe_shutdown': 0
 		};
 	},
 
@@ -35,6 +36,13 @@ new Scalr.Viewers.FarmRolesEditTab({
 			target: this.findOne('name', 'scaling.max_instances_help').id,
 			dismissDelay: 0,
 			html: "Scalr will not launch more instances."
+		});
+
+		new Ext.ToolTip({
+			target: this.findOne('name', 'scaling.safe_shutdown_help').id,
+			dismissDelay: 0,
+			html: "Scalr will terminate instance ONLY if script '/usr/local/scalarizr/hooks/auth-shutdown' return 1. "+ 
+				"If script not found or return any other value Scalr WON'T terminate this server."
 		});
 
 		this.findOne('name', 'scaling.upscale.timeout_enabled').on('check', function (checkbox, checked) {
@@ -103,10 +111,16 @@ new Scalr.Viewers.FarmRolesEditTab({
 		} else {
 			var settings = record.get('settings'), scaling = record.get('scaling');
 
+			if (record.get('generation') == 2)
+				this.findOne('itemId', 'scaling.safe_shutdown_compositefield').show();
+			else
+				this.findOne('itemId', 'scaling.safe_shutdown_compositefield').hide();
+
 			this.findOne('name', 'scaling.min_instances').setValue(settings['scaling.min_instances'] || 1);
 			this.findOne('name', 'scaling.max_instances').setValue(settings['scaling.max_instances'] || 2);
 			this.findOne('name', 'scaling.polling_interval').setValue(settings['scaling.polling_interval'] || 1);
 			this.findOne('name', 'scaling.keep_oldest').setValue(settings['scaling.keep_oldest'] == 1 ? true : false);
+			this.findOne('name', 'scaling.safe_shutdown').setValue(settings['scaling.safe_shutdown'] == 1 ? true : false);
 
 			if (settings['scaling.upscale.timeout_enabled'] == 1) {
 				this.findOne('name', 'scaling.upscale.timeout_enabled').setValue(true);
@@ -156,6 +170,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 		settings['scaling.max_instances'] = this.findOne('name', 'scaling.max_instances').getValue();
 		settings['scaling.polling_interval'] = this.findOne('name', 'scaling.polling_interval').getValue();
 		settings['scaling.keep_oldest'] = this.findOne('name', 'scaling.keep_oldest').getValue() == true ? 1 : 0;
+		settings['scaling.safe_shutdown'] = this.findOne('name', 'scaling.safe_shutdown').getValue() == true ? 1 : 0;
 
 		if (this.findOne('name', 'scaling.upscale.timeout_enabled').getValue()) {
 			settings['scaling.upscale.timeout_enabled'] = 1;
@@ -231,6 +246,20 @@ new Scalr.Viewers.FarmRolesEditTab({
 			name: 'scaling.keep_oldest',
 			hideLabel: true,
 			boxLabel: 'Keep oldest instance running after scale down'
+		}, {
+			xtype: 'compositefield',
+			itemId: 'scaling.safe_shutdown_compositefield',
+			hideLabel: true,
+			items: [{
+				xtype: 'checkbox',
+				name: 'scaling.safe_shutdown',
+				width: 250,
+				boxLabel: 'Enable safe shutdown during downscaling'
+			}, {
+				xtype: 'displayfield',
+				name: 'scaling.safe_shutdown_help',
+				value: '<img src="/images/ui-ng/icons/info_icon_16x16.png" style="padding: 2px; cursor: help;">'
+			}]
 		}]
 	}, {
 		xtype: 'fieldset',

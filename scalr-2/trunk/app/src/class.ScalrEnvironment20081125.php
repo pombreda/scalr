@@ -10,88 +10,89 @@
     		/************/
     		// Get and Validate Event name
     		$instance_events = array(
-            	"hostInit" 			=> "HostInit",
-            	"hostUp" 			=> "HostUp",
-            	"rebootFinish" 		=> "RebootComplete",
-            	"newMysqlMaster"	=> "NewMysqlMasterUp",
-    			"ebsVolumeAttached"	=> "EBSVolumeAttached"
+            	"hostinit" 			=> "HostInit",
+            	"hostup" 			=> "HostUp",
+            	"rebootfinish" 		=> "RebootComplete",
+            	"newmysqlmaster"	=> "NewMysqlMasterUp",
+    			"ebsvolumeattached"	=> "EBSVolumeAttached",
+    		
+    			"blockdeviceattached" => "EBSVolumeAttached",
+    			"blockdevicemounted"  => "EBSVolumeMounted"
             );
 
             $Reflect = new ReflectionClass("EVENT_TYPE");
             $scalr_events = $Reflect->getConstants();
             
             if (!in_array($this->GetArg("event"), $scalr_events))
-            	$event_name = $instance_events[$this->GetArg("event")];
+            	$event_name = $instance_events[strtolower($this->GetArg("event"))];
             else
             	$event_name = $this->GetArg("event");
 
             if (!$event_name && preg_match("/^(Custom|API)Event-[0-9]+-[0-9]+$/si", $this->GetArg("event")))
             	$custom_event_name = $this->GetArg("event");
-            	
-            if ($this->GetArg("event_id"))
-            {
-            	if (preg_match("/^FRSID-([0-9]+)$/", $this->GetArg("event_id"), $matches))
-            	{
-            		$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND id=? ORDER BY order_index ASC",
-						array($this->DBServer->farmId, $matches[1])
-					);
-            	}
-            	else
-            	{
-            		$event_info = $this->DB->GetRow("SELECT * FROM events WHERE event_id=?", array($this->GetArg("event_id")));
-            		if ($event_info)
-            		{
-            			$Event = unserialize($event_info['event_object']);
-            			if ($Event->DBServer)
-            			{
-            				if ($Event->DBServer->serverId == $this->DBServer->serverId)
-								$is_target = '1';
-							else
-								$is_target = '0';	
-            				
-            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
-			            		AND event_name=? AND (target = ? OR (target = ? AND 1 = {$is_target} AND farm_roleid=?) OR (target = ? AND farm_roleid=?)) ORDER BY order_index ASC",
-								array(
-									$Event->GetFarmID(), 
-									$Event->GetName(), 
-									SCRIPTING_TARGET::FARM,
-									SCRIPTING_TARGET::INSTANCE, 
-									$Event->DBServer->farmRoleId,
-									SCRIPTING_TARGET::ROLE,
-									$Event->DBServer->farmRoleId
-								)
-							);
-							
-							$TargetDBFarmRole = $Event->DBServer->GetFarmRoleObject();
-							$target_instance_id = $Event->DBServer->serverId;
-            			}
-            			else
-            			{
-            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
-			            		AND event_name=? AND target = ? ORDER BY order_index ASC",
-								array(
-									$Event->GetFarmID(), 
-									$Event->GetName(), 
-									SCRIPTING_TARGET::FARM
-								)
-							);
-            			}
-            		}
-            	}
-            }
+
+            try {
+	            if ($this->GetArg("event_id"))
+	            {
+	            	if (preg_match("/^FRSID-([0-9]+)$/", $this->GetArg("event_id"), $matches))
+	            	{
+	            		$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? AND id=? ORDER BY order_index ASC",
+							array($this->DBServer->farmId, $matches[1])
+						);
+	            	}
+	            	else
+	            	{
+	            		$event_info = $this->DB->GetRow("SELECT * FROM events WHERE event_id=?", array($this->GetArg("event_id")));
+	            		if ($event_info)
+	            		{
+	            			$Event = unserialize($event_info['event_object']);
+	            			if ($Event->DBServer)
+	            			{
+	            				if ($Event->DBServer->serverId == $this->DBServer->serverId)
+									$is_target = '1';
+								else
+									$is_target = '0';	
+	            				
+	            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
+				            		AND event_name=? AND (target = ? OR (target = ? AND 1 = {$is_target} AND farm_roleid=?) OR (target = ? AND farm_roleid=?)) ORDER BY order_index ASC",
+									array(
+										$Event->GetFarmID(), 
+										$Event->GetName(), 
+										SCRIPTING_TARGET::FARM,
+										SCRIPTING_TARGET::INSTANCE, 
+										$Event->DBServer->farmRoleId,
+										SCRIPTING_TARGET::ROLE,
+										$Event->DBServer->farmRoleId
+									)
+								);
+								
+								$TargetDBFarmRole = $Event->DBServer->GetFarmRoleObject();
+								$target_instance_id = $Event->DBServer->serverId;
+	            			}
+	            			else
+	            			{
+	            				$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
+				            		AND event_name=? AND target = ? ORDER BY order_index ASC",
+									array(
+										$Event->GetFarmID(), 
+										$Event->GetName(), 
+										SCRIPTING_TARGET::FARM
+									)
+								);
+	            			}
+	            		}
+	            	}
+	            }
+            } catch(Exception $e){ return $ResponseDOMDocument; }
     		/************/
 		            	
             
 			/***********************************************************/
             /** Instance from which request has come **/    		
-    		try
-    		{
+    		try {
     			$DBFarmRole = $this->DBServer->GetFarmRoleObject();
     		}
-    		catch(Exception $e)
-    		{
-    			throw new Exception ("Cannot initialize DBFarmRole object for server: {$this->DBServer->serverId}");
-    		}
+    		catch(Exception $e) { return $ResponseDOMDocument; }
     		
 			$DBFarm = $this->DBServer->GetFarmObject();
 			
@@ -143,7 +144,11 @@
 	            	if (!$targetDBServer)
 		            	exit();
 		            	
-		            $TargetDBFarmRole = $targetDBServer->GetFarmRoleObject();
+		            try {
+		            	$TargetDBFarmRole = $targetDBServer->GetFarmRoleObject();
+		            } catch (Exception $e){
+		            	return $ResponseDOMDocument;
+		            }
 		            						
 					$scripts = $this->DB->GetAll("SELECT * FROM farm_role_scripts WHERE farmid=? 
 	            		AND event_name=? AND (target = ? OR (target = ? AND 1 = {$is_target} AND farm_roleid=?) OR (target = ? AND farm_roleid=?)) ORDER BY order_index ASC",

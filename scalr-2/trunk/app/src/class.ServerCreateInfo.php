@@ -49,6 +49,14 @@
 			{
 				switch($this->platform)
 				{
+					case SERVER_PLATFORMS::NIMBULA:
+						/*
+						$this->SetProperties(array(
+							EUCA_SERVER_PROPERTIES::REGION => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+						));
+						*/
+						break;
+					
 					case SERVER_PLATFORMS::EUCALYPTUS:
 						$this->SetProperties(array(
 							EUCA_SERVER_PROPERTIES::REGION => $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
@@ -82,7 +90,11 @@
 						));
 					break;
 				}
+				
+				$this->SetProperties(array(SERVER_PROPERTIES::SZR_VESION => $DBFarmRole->GetRoleObject()->szrVersion));
 			}
+			else
+				$this->SetProperties(array(SERVER_PROPERTIES::SZR_VESION => '0.5.0'));
 		}
 		
 		public function SetProperties(array $props)

@@ -54,10 +54,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	
 	private $inWaitLoop;
 	
-	protected $slippageLimit = 10;
-	
-	private $slippage = 0;
-	
 	private $cleanupComplete = false;
 	
 	/**
@@ -84,7 +80,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	 * @key int [workerTimeout] Max execution time for worker process (default infinity)
 	 * @key int [termTimeout] Time to wait after sending SIGTERM to worker process (default 5 seconds)
 	 * @key bool [daemonize] daemonize process pool (default false)
-	 * @key int [slippageLimit] Maximum number of childs crash without processing messages from workQueue
 	 * @key int [workerMemoryLimit] Memory limit for worker process
 	 * @key int [workerMemoryLimitTick] Tick time for worker memory limit check   
 	 * 
@@ -288,7 +283,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 		
 		$this->stopForking = true;
 		foreach ($this->childs as $childInfo) {
-			$this->kill($childInfo["pid"], SIGTERM);
+			$this->terminateChild($childInfo["pid"]);
 		}
 		$this->wait();
 	}
@@ -343,6 +338,8 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 						$this->logger->info(sprintf("Child %d reached termination timeout and will be KILLED", 
 								$childInfo["pid"]));
 						$this->kill($childInfo["pid"], SIGKILL);
+						$this->logger->info(sprintf("Kill hanged child PID: %d (Was notified with SIGTERM at %d, now: %d)", 
+								$childInfo["pid"], $childInfo["termStartTime"], time()));
 					}
 					
 				} else {
@@ -350,7 +347,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 					$term = $this->workTimeout && $childInfo["workStartTime"] &&
 							$this->timeoutReached($this->workTimeout, $childInfo["workStartTime"]);
 					if ($term) {
-						$this->logger->info(sprintf("Child %d reached WORK max execution time", 
+						$this->logger->info(sprintf("Child PID: %d reached WORK max execution time", 
 								$childInfo["pid"]));
 					} else {
 						$term = $this->workerTimeout && $childInfo["startTime"] &&
@@ -382,7 +379,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			$this->sleepMillis(50);
 			$ticks++;
 		}
-		
+		$this->logger->info("Leave wait loop");
 		$this->inWaitLoop = false;
 		
 		$this->postShutdown();
@@ -398,7 +395,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			
 		} else if ($pid) {
 			// Current process
-			$this->logger->debug(sprintf("Child %s was forked", $pid));
+			$this->logger->info(sprintf("Child PID: %s was forked", $pid));
 			$this->childs[$pid] = array("pid" => $pid);
 			$this->worker->childForked($pid);
 			
@@ -598,7 +595,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	
 	protected function initSignalHandler () {
 		$fn = array($this, "signalHandler");
-		$signals = array(SIGCHLD, SIGTERM, SIGABRT, SIGALRM, SIGUSR2);
+		$signals = array(SIGCHLD, SIGTERM, SIGABRT, SIGALRM, SIGUSR1, SIGUSR2);
 		if ($this->daemonize) {
 			$signals[] = SIGHUP;
 		}
@@ -633,14 +630,19 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 				$this->ready = true;
 				break;
 				
-			case SIGHUP:
-				// Works when $this->daemonize = true
+			case SIGUSR1:
+				// XXX: SIGHUP doesn't works
 				$this->logger->info(sprintf("Received %s", self::$signames[$sig]));
-				// Restart workers 
-				foreach ($this->childs as $childInfo) {
-					$this->terminateChild($childInfo["pid"]);
+
+				$num = $this->size - count($this->childs);
+				if ($num) {
+					$this->logger->info(sprintf("HUP: Need to fork %d workers", $num));
+					for ($i=0; $i<$num; $i++) {
+						$this->forkChild(false);
+					}
 				}
 				break;
+				
 				
 			// Terminate process
 			case SIGTERM:
@@ -654,7 +656,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 						$this->fireEvent("signal", $this, $sig);
 						$this->shutdown();
 					} else {
-						$this->logger->warn(sprintf("Termination is already initiated"));
+						$this->logger->info(sprintf("Termination is already initiated"));
 					}
 					return;					 		
 				} else {
@@ -688,10 +690,12 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 	}
 	
 	protected function onSIGCHLD ($pid, $status) {
-		if ($pid <= 0) { 
+		if ($pid <= 0) {
+			$this->logger->warn(sprintf('process PID is negative (pid: %s)', $pid)); 
 			return;
 		}
-
+		
+		$this->logger->info(sprintf("Childs: (%s)", join(", ", array_keys($this->childs))));
 		if (key_exists($pid, $this->childs)) {
 			unset($this->childs[$pid]);
 			
@@ -704,29 +708,39 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 			// 1. status=65280 when child process died with fatal error (set by PHP)
 			// 2. exit=9 when child was terminated by parent or by unhandled exception (set by ProcessPool)
 			// 3. stopeed by signal
-			if ((pcntl_wifexited($status) && $status == 65280) ||
+			$crashed = (pcntl_wifexited($status) && $status == 65280) ||
 				(pcntl_wifexited($status) && pcntl_wexitstatus($status) == self::$termExitCode) ||
-				(pcntl_wifsignaled($status))) {
+				(pcntl_wifsignaled($status));
+			
+					
+			if ($crashed) {
+				$this->logger->info(sprintf("Child PID: %s crashed (status: %s, wifexited: %s, wifsignaled: %s)",
+						$pid, $status, pcntl_wifexited($status), pcntl_wifsignaled($status)));
+			} else {
+				$this->logger->info(sprintf("Child PID: %s seems normally terminated (status: %s, wifexited: %s, wifsignaled: %s)",
+						$pid, $status, pcntl_wifexited($status), pcntl_wifsignaled($status)));
+			}
+			$numTasks = $this->workQueue ? $this->workQueue->capacity() : 0;
+			if ($numTasks) {
+				$this->logger->info(sprintf("Work queue still has %d unhandled tasks", $numTasks));
+			}
+			
+			if ($crashed || $numTasks) {
 				try {
 					if (!$this->stopForking) {
-						// Increase slippage
-						$this->slippage++;
-						
-						if ($this->slippage < $this->slippageLimit) {
-							$this->forkChild(false);
-						} else {
-							$this->logger->info(sprintf("Slippage limit: %d exceed. No new childs will be forked", 
-									$this->slippage));
-							$this->stopForking = true;
-						}
+						$this->logger->info("Forking new worker process");
+						$this->forkChild(false);
 					} else {
-						$this->logger->debug("'stopForking' flag prevents new process forking");
+						$this->logger->info("Flag stopForking=1 prevents new process forking");
 					}
 				} catch (Scalr_System_Ipc_Exception $e) {
 					$this->logger->error(sprintf("Cannot fork child. Caught: <%s> %s", 
 							get_class($e), $e->getMessage()));
 				}
 			}
+		} else {
+			$this->logger->info(sprintf("Child PID: %s is unknown. Known childs: (%s)", 
+					$pid, join(",", array_keys($this->childs))));
 		}
 	}
 
@@ -745,9 +759,6 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 				case "afterHandleWork":
 					unset($this->childs[$message["pid"]]["workStartTime"]);
 					unset($this->childs[$message["pid"]]["message"]);
-
-					// Reset slippage counter
-					$this->slippage = 0;
 					break;
 					
 				case "start":
@@ -760,7 +771,7 @@ class Scalr_System_Ipc_ProcessPool extends Scalr_Util_Observable {
 				
 				case "memoryUsage":
 					if ($this->workerMemoryLimit && $message["memory"] > $this->workerMemoryLimit) {
-						$this->logger->warn(sprintf(
+						$this->logger->info(sprintf(
 								"Worker %d allocates %d Kb. Maximum %d Kb is allowed by configuration", 
 								$message["pid"], $message["memory"], $this->workerMemoryLimit));
 						$this->terminateChild($message["pid"]);

@@ -8,7 +8,5 @@
 		const AVAIL_ZONE	= 'ec2.avail-zone';
 		const REGION		= 'ec2.region';
 		const INSTANCE_TYPE	= 'ec2.instance_type';
-		
-		const MYSQL_SLAVE_EBS_VOLUME_ID = 'mysql.slave_ebs_volume_id';
 	}
 ?>

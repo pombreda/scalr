@@ -13,12 +13,12 @@
     		$this->environment = Scalr_Session::getInstance()->getEnvironment();
     	}
     	
-    	function GetAvailZonesList()
+    	function GetAvailZonesList($Region)
     	{
 	    	$client = Scalr_Service_Cloud_Eucalyptus::newCloud(
-				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
-				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
-				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY, true, $Region),
+				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY, true, $Region),
+				$this->environment->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL, true, $Region)
 			);
     		
     		// Get Avail zones

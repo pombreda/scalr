@@ -4,7 +4,7 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 
 	if (!$req_name)
@@ -32,7 +32,7 @@
 	 	
 		$group = $AmazonRDSClient->DescribeDBParameterGroups($req_name);
 		$groupDescription = (string)$group->DescribeDBParameterGroupsResult->DBParameterGroups->DBParameterGroup->Description;		
-			 	
+		
 		foreach ($gp['Parameter'] as &$paramValue)
 		{	
 			$paramValue = (array)$paramValue;
@@ -113,7 +113,16 @@
 											
 					$sendCounter++;
 				}						
-			}		
+			}	
+
+			foreach ($_POST['UserParamName'] as $k => $v)
+			{
+				if ($v != '')
+				{
+					$modifiedParameters->AddParameters($v,$_POST['UserParamValue'][$k],$_POST['UserParamMethod'][$k]);
+					$sendCounter++;
+				}
+			}
 			
 			// modify request for the last 0...19 records			
 			if((int)$sendCounter > 0)			
@@ -130,7 +139,7 @@
 			}
 						
 			if($_POST['cbtn_3'])
-				$okmsg = "DB parameter group successfully set to default";	
+				$okmsg = "DB parameter group successfully reset to default";	
 			else 
 				$okmsg = "DB parameter group successfully updated";	
 			UI::Redirect("aws_rds_param_group_edit.php?name={$req_name}");	

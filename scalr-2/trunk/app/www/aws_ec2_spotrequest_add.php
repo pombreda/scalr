@@ -5,17 +5,12 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 	
-	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon EC2&nbsp;&raquo;&nbsp;Spot requests&nbsp;&raquo;&nbsp;Configure spot request");	
-		
-	$AmazonVPCClient = AmazonVPC::GetInstance(AWSRegions::GetAPIURL($_SESSION['aws_region'])); 
-	$AmazonVPCClient->SetAuthKeys(
-		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
-		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
-	);
-		
+	$display["title"] = _("Tools&nbsp;&raquo;&nbsp;Amazon Web Services&nbsp;&raquo;&nbsp;Amazon EC2&nbsp;&raquo;&nbsp;Spot requests&nbsp;&raquo;&nbsp;Configure spot request");			
+
+	
 	// Get Avail zones
 	$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
 		$_SESSION['aws_region'],

@@ -58,7 +58,7 @@ zone "{name}" {
 		{
 			$rCache = array();
 			
-			foreach ($records_array as $record)
+			foreach ($records_array as $key => $record)
 			{
 				if (!$record['value'] && !$record['name'])
 					continue;
@@ -87,7 +87,7 @@ zone "{name}" {
 				}
 				catch(Scalr_Net_Dns_Exception $e)
 				{
-					$err[] = $e->getMessage();
+					$err[$key] = $e->getMessage();
 				}
 			}
 			

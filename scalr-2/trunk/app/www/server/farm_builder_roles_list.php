@@ -64,7 +64,7 @@
 				    $data = array();
 				    foreach ($vars as $var)
 				    {
-				    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
+				    	if (!in_array($var, array_keys(CONFIG::getScriptingBuiltinVariables())))
 				    		$data[$var] = ucwords(str_replace("_", " ", $var));
 				    }
 				    $data = json_encode($data);
@@ -103,31 +103,24 @@
 		}
 		elseif ($req_list == 'roles')
 		{
-			// Enabled platforms list
+			$roles = array();
+
 			$e_platforms = Scalr_Session::getInstance()->getEnvironment()->getEnabledPlatforms();
 			$platforms = array();
 			$l_platforms = SERVER_PLATFORMS::GetList();
 			foreach ($e_platforms as $platform)
-			{
 				$platforms[$platform] = $l_platforms[$platform];
-				$locations_list[$platform] = PlatformFactory::NewPlatform($platform)->getLocations();
-			}
-
-			$roles = array();
-
+			
 		    $roles_sql = "SELECT id FROM roles WHERE (env_id = 0 OR env_id=?) AND id IN (SELECT role_id FROM role_images WHERE platform IN ('".implode("','", array_keys($platforms))."'))";
 			$args[] = Scalr_Session::getInstance()->getEnvironmentId();
 
 			$dbroles = $db->Execute($roles_sql, $args);
 			while ($role = $dbroles->FetchRow())
 			{
+				if ($db->GetOne("SELECT id FROM roles_queue WHERE role_id=?", array($role['id'])))
+					continue;
+				
 				$dbRole = DBRole::loadById($role['id']);
-
-				if ($dbRole->origin == ROLE_TYPE::SHARED && $dbRole->clientId != 0)
-		        {
-		        	if (($dbRole->clientId != Scalr_Session::getInstance()->getClientId()  && $dbRole->approvalState != APPROVAL_STATE::APPROVED))
-		        		continue;
-		        }
 
 		        $role_platforms = $dbRole->getPlatforms();
 		        $role_locations = array();
@@ -145,15 +138,13 @@
 		        	'isstable'				=> (bool)$dbRole->isStable,
 		        	'platforms'				=> implode(",", $role_platforms),
 		        	'locations'				=> $role_locations,
-		        	'os'					=> $dbRole->os == 'Unknown' ? 'Unknown OS' : $dbRole->os
+		        	'os'					=> $dbRole->os == 'Unknown' ? 'Unknown OS' : $dbRole->os,
+		        	'tags'					=> $dbRole->getTags()
 		        );
 			}
 
 			$result = array(
-				'roles'			=> $roles,
-				'groups'		=> ROLE_GROUPS::GetName(null, true),
-				'platforms'		=> $platforms,
-				'locations'		=> $locations_list
+				'roles'			=> $roles
 			);
 		}
 		else
@@ -205,6 +196,7 @@
 						$farm_role = array(
 				        	'role_id'		=> $dbFarmRole->RoleID,
 							'platform'		=> $dbFarmRole->Platform,
+							'generation'	=> $dbFarmRole->GetRoleObject()->generation,
 							'arch'			=> $dbFarmRole->GetRoleObject()->architecture,
 							'group'			=> ROLE_GROUPS::GetConstByBehavior($dbFarmRole->GetRoleObject()->getBehaviors()),
 				        	'name'			=> $dbFarmRole->GetRoleObject()->name,
@@ -214,7 +206,8 @@
 							'cloud_location'=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION),
 			        		'launch_index'	=> (int)$dbFarmRole->LaunchIndex,
 							'scaling'		=> $scaling,
-							'config_presets'=> $presets
+							'config_presets'=> $presets,
+							'tags'			=> $dbFarmRole->GetRoleObject()->getTags()
 		        		);
 
 						array_push($farm_roles, $farm_role);

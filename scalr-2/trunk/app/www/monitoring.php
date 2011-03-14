@@ -9,12 +9,12 @@
         );
 
     if (!$farminfo)
-        UI::Redirect("farms_view.php");
+        UI::Redirect("/#/farms/view");
         
     if ($farminfo["status"] != FARM_STATUS::RUNNING)
     {
     	$errmsg = _("You cannot view statistics for terminated farm");
-    	UI::Redirect("farms_view.php");
+    	UI::Redirect("/#/farms/view");
     }
 	
     if ($req_role && $get_watcher)
@@ -47,7 +47,7 @@
     	}
     	catch(Exception $e)
     	{
-    		UI::Redirect("farms_view.php");
+    		UI::Redirect("/#/farms_view");
     	}
     	
     	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Statistics for server: {$DBServer->serverId} ({$DBServer->remoteIp})");

@@ -61,27 +61,36 @@
 					// snapshot random unique name
 					$snapshotId = "scalr-auto-".dechex(microtime(true)*10000).rand(0,9); 										
 					
-					// Create new snapshot
-					$AmazonRDSClient->CreateDBSnapshot($snapshotId,$snapshotsSettings['objectid']);					
-					
-					// update last snapshot creation date in settings
-					$db->Execute("UPDATE autosnap_settings SET last_snapshotid=?, dtlastsnapshot=NOW() WHERE id=?", 
-						array($snapshotId, $snapshotsSettings['id']
-					));
-					
-					// create new snapshot record in DB
-					$db->Execute("INSERT INTO rds_snaps_info SET 
-						snapid		= ?,
-						comment		= ?,
-						dtcreated	= NOW(),
-						region		= ?,
-						autosnapshotid = ?", 
-					array( 
-						$snapshotId,
-					 	_("Auto snapshot"),
-		 				$snapshotsSettings['region'],
-		 				$snapshotsSettings['id'])
-		 			);
+					try {
+						// Create new snapshot
+						$AmazonRDSClient->CreateDBSnapshot($snapshotId,$snapshotsSettings['objectid']);					
+						
+						// update last snapshot creation date in settings
+						$db->Execute("UPDATE autosnap_settings SET last_snapshotid=?, dtlastsnapshot=NOW() WHERE id=?", 
+							array($snapshotId, $snapshotsSettings['id']
+						));
+						
+						// create new snapshot record in DB
+						$db->Execute("INSERT INTO rds_snaps_info SET 
+							snapid		= ?,
+							comment		= ?,
+							dtcreated	= NOW(),
+							region		= ?,
+							autosnapshotid = ?", 
+						array( 
+							$snapshotId,
+						 	_("Auto snapshot"),
+			 				$snapshotsSettings['region'],
+			 				$snapshotsSettings['id'])
+			 			);
+					}
+					catch(Exception $e) 
+					{
+						$this->Logger->error(sprintf(
+							_("Cannot create RDS snapshot: %s."),												
+							$e->getMessage()												
+						));
+					}
 					
 					// Remove old snapshots
 					if ($snapshotsSettings['rotate'] != 0)

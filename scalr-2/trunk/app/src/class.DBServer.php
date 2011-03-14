@@ -41,7 +41,8 @@
 			SERVER_PLATFORMS::EC2 => 'EC2_SERVER_PROPERTIES',
 			SERVER_PLATFORMS::RACKSPACE => 'RACKSPACE_SERVER_PROPERTIES',
 			SERVER_PLATFORMS::RDS => 'RDS_SERVER_PROPERTIES',
-			SERVER_PLATFORMS::EUCALYPTUS => 'EUCA_SERVER_PROPERTIES'
+			SERVER_PLATFORMS::EUCALYPTUS => 'EUCA_SERVER_PROPERTIES',
+			SERVER_PLATFORMS::NIMBULA => 'NIMBULA_SERVER_PROPERTIES'
 		);
 					
 		private static $FieldPropertyMap = array(
@@ -70,6 +71,63 @@
 			$this->Db = Core::GetDBInstance();
 		}
 		
+		/**
+		 * @return Scalr_Net_Ssh2_Client
+		 * Enter description here ...
+		 */
+		public function GetSsh2Client()
+		{
+			$ssh2Client = new Scalr_Net_Ssh2_Client();
+	         			
+			switch($this->platform) {
+				case SERVER_PLATFORMS::RACKSPACE:
+					$ssh2Client->addPassword(
+						'root', 
+						$this->GetProperty(RACKSPACE_SERVER_PROPERTIES::ADMIN_PASS)
+					);
+         					
+         		break;
+         		
+				case SERVER_PLATFORMS::EC2:
+					
+					$userName = 'root';
+					
+					// Temporary server for role builder
+					if ($this->status == SERVER_STATUS::TEMPORARY) {
+						$keyName = 'SCALR-ROLESBUILDER';
+					}
+					else {
+						$keyName = "FARM-{$this->farmId}";
+					}
+					
+					try {
+						$key = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByName(
+							$keyName,
+							$this->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+							$this->envId
+						);
+						
+						if (!$key)
+							throw new Exception(_("There is no SSH key for server: {$this->serverId}"));
+					}
+					catch(Exception $e){
+						throw new Exception("Cannot init SshKey object: {$e->getMessage()}");
+					}
+					
+					$priv_key_file = tempnam("/tmp", "AWSK");
+					@file_put_contents($priv_key_file, $key->getPrivate());
+					
+					$pub_key_file = tempnam("/tmp", "AWSK");
+					@file_put_contents($pub_key_file, $key->getPublic());
+					
+					$ssh2Client->addPubkey($userName, $pub_key_file, $priv_key_file);
+					
+					break;
+         	}
+	         			
+			return $ssh2Client;
+		}
+		
 		public function GetCloudUserData()
 		{
 			$retval = array(
@@ -82,14 +140,28 @@
 	        	"region"			=> $this->GetProperty(EC2_SERVER_PROPERTIES::REGION),
 	        	
 	        	/*** For Scalarizr ***/
-	        	"szr_key"			=> $this->GetKey(),
-	        	"serverid"			=> $this->serverId,
+	        	"szr_key"				=> $this->GetKey(),
+	        	"serverid"				=> $this->serverId,
 	        	'p2p_producer_endpoint'	=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/messaging",
-				'queryenv_url'		=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/environment.php"
+				'queryenv_url'			=> CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/query-env"
 	        );
 	        
-	        if ($this->platform == SERVER_PLATFORMS::EC2)
-	        	$retval["s3bucket"]	= $this->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_S3_BUCKET);
+	        switch($this->platform)
+	        {
+	        	case SERVER_PLATFORMS::EC2:
+
+	        		$retval["s3bucket"]	= $this->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_S3_BUCKET);
+	        		$retval["cloud_storage_path"] = "s3://".$this->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_S3_BUCKET);
+	        		
+	        		break;
+	        		
+	        	case SERVER_PLATFORMS::RACKSPACE:
+	        		
+	        		$retval["cloud_storage_path"] = "cf://scalr-{$this->GetFarmObject()->Hash}";
+	        		
+	        		break;
+	        }
+	        	
 	        	
 	        return $retval;
 		}
@@ -237,7 +309,6 @@
 		{						
 			$this->Db->Execute('DELETE FROM servers WHERE server_id=?', array($this->serverId));
 			$this->Db->Execute('DELETE FROM server_properties WHERE server_id=?', array($this->serverId));
-			$this->Db->Execute("DELETE FROM messages WHERE server_id=?", array($this->serverId));
 		}
 		
 		/**
@@ -372,11 +443,7 @@
 			$port = $this->GetProperty(SERVER_PROPERTIES::SZR_SNMP_PORT);
 			$snmpClient->Connect($this->remoteIp, $port ? $port : 161, $DBFarm->Hash, false, false, true);
 			
-			if ($this->IsSupported("0.5")) {
-				$result = implode(":", $snmpClient->getTree("UCD-DISKIO-MIB::diskIOTable"));
-			} else {
-				$result = implode(":", $snmpClient->getTree("UCD-DISKIO-MIB::diskIODevice"));
-			}
+			$result = implode(":", $snmpClient->getTree("UCD-DISKIO-MIB::diskIODevice"));
 			
 			$map = array(
 				"b", "c", "d", "e", "f", "g", "h", "i", "j", 
@@ -480,9 +547,9 @@
 			));
 			
 			$db->Execute("INSERT INTO servers_history SET
-				client_id	= ?,
-				server_id	= ?,
-				platform	= ?
+				`client_id`	= ?,
+				`server_id`	= ?,
+				`platform`	= ?
 			", array(
 				$client_id,
 				$server_id,
@@ -604,7 +671,7 @@
 				return $message;
 			}
 			
-			if ($this->IsSupported("0.5"))
+			if ($this->IsSupported("0.5") && !$isEventNotice)
 			{
 				if (!$this->remoteIp)
 					return;
@@ -673,12 +740,12 @@
 				{
 					$community = $this->Db->GetOne("SELECT hash FROM farms WHERE id=?", array($this->farmId));
 					
-					$SNMP = new SNMP();
-					$SNMP->Connect($this->remoteIp, 162, $community, null, null, true);
+					$snmpClient = new Scalr_Net_Snmp_Client();
+					$snmpClient->connect($this->remoteIp, 162, $community);
 					
 					$converter = Scalr_Messaging_SnmpConverter::getInstance();
 					$trap = $converter->convert($message, $isEventNotice); 
-					$res = $SNMP->SendTrap($trap);
+					$res = $snmpClient->sendTrap($trap);
 					
 					Logger::getLogger('DBServer')->info("[FarmID: {$this->farmId}] Sending message ".$message->getName()." via SNMP ({$trap}) to '{$this->serverId}' ('{$this->remoteIp}') complete ({$res})");
 				}
@@ -694,6 +761,7 @@
 		public function GetScriptingVars()
 		{
 			$retval =  array(
+				'image_id'		=> $this->GetFarmRoleObject()->GetRoleObject()->getImageId($this->platform, $this->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)),
 				'external_ip' 	=> $this->remoteIp,
 				'internal_ip'	=> $this->localIp,
 				'role_name'		=> $this->GetFarmRoleObject()->GetRoleObject()->name,

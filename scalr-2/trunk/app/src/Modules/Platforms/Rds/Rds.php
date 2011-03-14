@@ -21,6 +21,8 @@
 			$this->db = Core::GetDBInstance();
 		}	
 		
+		public function getRoleBuilderBaseImages() {}
+		
 		public function getPropsList()
 		{
 			return array(
@@ -170,16 +172,17 @@
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
 		{
-			/*
-			$RDSClient = $this->getRdsClient(
-				$DBServer->GetEnvironmentObject(),
-				$DBServer->GetProperty(RDS_SERVER_PROPERTIES::REGION)
-			);
+			foreach ($DBRole->getImageId(SERVER_PLATFORMS::EC2) as $location => $imageId)
+			{
+				$RDSClient = $this->getRdsClient(
+					$DBRole->GetEnvironmentObject(),
+					$location
+				);
+				
+				$RDSClient->DeleteDBSnapshot($imageId);
+			}
 			
-			$RDSClient->DeleteDBSnapshot($DBRole->getImageId(SERVER_PLATFORMS::RDS));
-			*/
-			
-			//TODO:
+			return true;
 		}
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
@@ -309,7 +312,7 @@
 			return false;
 		}
 		
-		public function LaunchServer(DBServer $DBServer)
+		public function LaunchServer(DBServer $DBServer, Scalr_Server_LaunchOptions $launchOptions = null)
 		{
 			$RDSClient = $this->getRdsClient(
 				$DBServer->GetEnvironmentObject(),

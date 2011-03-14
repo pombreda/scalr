@@ -10,5 +10,9 @@
 		const EUCA_WSI = 'euca.wsimage';
 		const EUCA_WIN = 'euca.win';
 		const EUCA_EBS = 'euca.ebs';
+		
+		const RS_CFILES = 'rs.cfiles';
+		
+		const NIMBULA_DEF = 'nimbula.default';
 	}
 ?>

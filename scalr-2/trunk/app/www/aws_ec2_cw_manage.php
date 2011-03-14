@@ -5,10 +5,10 @@
 	try {
 		$DBServer = DBServer::LoadByID($req_server_id);
 		if (!Scalr_Session::getInstance()->getAuthToken()->hasAccessEnvironment($DBServer->envId))
-			UI::Redirect("/servers_view.php");
+			UI::Redirect("/#/servers/view");
 	}
 	catch(Exception $e) {
-		UI::Redirect("/servers_view.php");
+		UI::Redirect("/#/servers/view");
 	}
 	
     $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
@@ -31,7 +31,7 @@
     	$okmsg = "Enabling Cloudwatch monitoring... It could take a few minutes.";
     }
 	
-    UI::Redirect("/server_view_extended_info.php?server_id={$DBServer->serverId}");
+    UI::Redirect("/#/servers/{$DBServer->serverId}/extendedInfo");
     
 	require("src/append.inc.php"); 
 ?>

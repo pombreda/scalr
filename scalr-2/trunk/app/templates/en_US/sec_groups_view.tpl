@@ -44,8 +44,8 @@ Ext.onReady(function () {
 				}),
 				valueField:'id',
 				displayField:'title',
-				hiddenName:'locationCombo',
 				value: cloud_location,
+				itemId:'locationCombo',
 				typeAhead: false,
 				mode: 'local',
 				triggerAction: 'all',
@@ -83,7 +83,8 @@ Ext.onReady(function () {
     	rowOptionsMenu: [
 			{itemId: "option.edit", 		text:'Edit',
 				menuHandler: function(item) {
-					document.location = "/sec_group_edit.php?name="+item.currentRecordData.name+"&platform="+platform+"&location="+Ext.get('locationCombo').dom.value;
+
+					document.location = "/sec_group_edit.php?name="+item.currentRecordData.name+"&platform="+platform+"&location="+panel.getTopToolbar().getComponent('locationCombo').getValue();
 				}
 			}
      	],

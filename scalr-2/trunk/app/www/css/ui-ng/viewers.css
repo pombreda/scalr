@@ -415,6 +415,13 @@ dl.viewers-listview-row-red {
 	background-color: pink !important;
 }
 
+/* @TODO: fix auto load elements (discover optimal number elements) */
+dl.viewers-listview-row-expand dt {
+	white-space: normal !important;
+	overflow: auto !important;
+	word-wrap: break-word;
+}
+
 .x-list-header-inner div em, dl.viewers-listview-row em {
 	font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
 	font-size: 14px;
@@ -499,6 +506,87 @@ div.viewers-listview-row-options-btn {
 }
 
 /*
+ * menu icons
+ */
+.scalr-menu-icon-launch {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px 0px;
+}
+
+.scalr-menu-icon-terminate {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -16px;
+}
+
+.scalr-menu-icon-delete {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -32px;
+}
+
+.scalr-menu-icon-execute {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -48px;
+}
+
+.scalr-menu-icon-info {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -64px;
+}
+
+.scalr-menu-icon-reboot {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -80px;
+}
+
+.scalr-menu-icon-logs {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -96px;
+}
+
+.scalr-menu-icon-stats {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -112px;
+}
+
+.scalr-menu-icon-configure {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -128px;
+}
+
+.scalr-menu-icon-edit {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -144px;
+}
+
+.scalr-menu-icon-settings {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -160px;
+}
+
+
+/*
  * mb-icons
  */
 .scalr-mb-instance-terminating {
@@ -512,6 +600,11 @@ div.viewers-listview-row-options-btn {
 }
 
 .scalr-mb-farm-building {
+	background: transparent url('/images/ui-ng/icons/mb/farm_save.anim.gif') no-repeat top left;
+	height: 36px !important;
+}
+
+.scalr-mb-farm-launching {
 	background: transparent url('/images/ui-ng/icons/mb/farm_save.anim.gif') no-repeat top left;
 	height: 36px !important;
 }
@@ -556,24 +649,42 @@ div.viewers-listview-row-options-btn {
 }
 
 .viewers-errormessage {
-	background: #FEF2EB url('/images/ui-ng/icons/message/error.png') no-repeat scroll 5px 4px;
+	background: #FEF2EB url('/images/ui-ng/icons/message/error.png') no-repeat scroll 5px 3px;
 	border: 1px solid #FD721E;
 	color: #CA4100;
 	position: relative;
 }
 
 .viewers-infomessage {
-	background: #FEFDE0 url('/images/ui-ng/icons/message/info.png') no-repeat scroll 5px 4px;
+	background: #FEFDE0 url('/images/ui-ng/icons/message/info.png') no-repeat scroll 5px 3px;
 	border: 1px solid #A4A4A4;
 	color: #333333;
 	position: relative;
 }
 
 .viewers-successmessage {
-	background: #EDFCEE url('/images/ui-ng/icons/message/success.png') no-repeat scroll 5px 4px;
+	background: #EDFCEE url('/images/ui-ng/icons/message/success.png') no-repeat scroll 5px 3px;
 	border: 1px solid #5FBF59;
 	color: #3F7D00;
 	position: relative;
+}
+
+.viewers-warningmessage {
+	background: #FFF4CC url('/images/ui-ng/icons/message/warning.png') no-repeat scroll 5px 3px;
+	border: 1px solid #CEA16D;
+	color: #974706;
+	position: relative;
+}
+
+.viewers-infopanel {
+	font-size: 12px;
+	background-image: url("/images/ui-ng/icons/message/info.png");
+	background-repeat: no-repeat;
+	background-position: 7px 7px;
+	background-color: #FEFDE0;
+	border: 1px solid #A4A4A4;
+	color: #333333;
+	padding: 10px 10px 10px 35px;
 }
 
 .viewers-warningpanel {
@@ -666,4 +777,46 @@ div.viewers-farmrolesedit-content {
 
 .viewers-panel-footer {
 	background-color: #DFE8F6;
+}
+
+/* ultra-large buttons (64px) (on top) */
+
+.x-btn-text-icon .x-btn-icon-ultra-large-top .x-btn-text{
+    background-position: center 0;
+	background-repeat: no-repeat;
+    padding-top: 78px;
+	width: 94px;
+}
+
+/* Red error border on checkgroup */
+.x-form-check-group {
+	border-width: 1px;
+	border-style: solid;
+	border-color: transparent;
+}
+.x-form-check-group.x-form-invalid {
+	border-color: #C30 !important;
+}
+
+/* Download icon */
+.x-btn-download-icon {
+	background-image: url(/images/ui-ng/icons/download_icon_16x16.png) !important;
+}
+
+/* Hack for emprty value combobox */
+.x-combo-list-item {
+	height: 14px;
+}
+
+/* Red error border on composite field */
+.x-form-invalid.x-form-composite {
+	background-color: transparent !important;
+}
+
+.x-item-disabled {
+	color: black !important;
+}
+
+.x-trigger-noedit {
+	color: black !important;
 }

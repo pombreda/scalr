@@ -20,6 +20,7 @@
 			$soaMinTtl,
 			$dateLastModified,
 			$axfrAllowedHosts,
+			$allowedAccounts,
 			$allowManageSystemRecords,
 			$isOnNsServer,
 			$isZoneConfigModified;
@@ -48,7 +49,8 @@
 			'axfr_allowed_hosts'	=> 'axfrAllowedHosts',
 			'allow_manage_system_records'	=> 'allowManageSystemRecords',
 			'isonnsserver'	=> 'isOnNsServer',
-			'iszoneconfigmodified'	=> 'isZoneConfigModified'
+			'iszoneconfigmodified'	=> 'isZoneConfigModified',
+			'allowed_accounts' => 'allowedAccounts'
 		);
 		
 		function __construct($id = null)

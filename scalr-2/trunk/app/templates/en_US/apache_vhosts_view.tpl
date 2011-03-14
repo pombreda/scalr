@@ -63,8 +63,8 @@ Ext.onReady(function() {
 				{ header: "ID", width: 15, dataIndex: 'id', sortable:false, hidden: 'no' },
 				{ header: "Virtual host name", width: 40, dataIndex: 'domain_name', sortable:false, hidden: 'no' },
 				{ header: "Role", width: 40, dataIndex: 'role_name', sortable: false, hidden: 'no', tpl:
-					'Farm: <a href="farms_view.php?id={values.farmid}" title="Farm {values.farm_name}">{values.farm_name}</a>' +
-					'<tpl if="role_name">&nbsp;&rarr;&nbsp;Role: <a href="farm_roles_view.php?farmid={values.farmid}" title="Role {values.role_name}">{values.role_name}</a></tpl>'
+					'Farm: <a href="#/farms/{values.farmid}/view" title="Farm {values.farm_name}">{values.farm_name}</a>' +
+					'<tpl if="role_name">&nbsp;&rarr;&nbsp;Role: <a href="#/farms/{values.farmid}/roles" title="Role {values.role_name}">{values.role_name}</a></tpl>'
 				},
 				{ header: "Last time modified", width: 50, dataIndex: 'last_modified', sortable: false, hidden: 'no' },
 				{ header: "SSL", width: '50px', dataIndex: 'isSslEnabled', sortable: false, align:'center', hidden: 'no', tpl:

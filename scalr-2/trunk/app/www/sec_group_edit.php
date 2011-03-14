@@ -4,13 +4,20 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 	
-	if ($req_role_name)
-		$req_name = CONFIG::$SECGROUP_PREFIX.$req_role_name;
+	if ($req_farm_roleid)
+	{
+		$DBFarmRole = DBFarmRole::LoadByID($req_farm_roleid);
+		
+		if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_SECURITY_GROUP))
+			$req_name = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_SECURITY_GROUP); 
+		else
+			$req_name = CONFIG::$SECGROUP_PREFIX.$DBFarmRole->GetRoleObject()->name;
+	}
 	   
-	if (!$req_name || (!stristr($req_name, CONFIG::$SECGROUP_PREFIX) && !$_SESSION['sg_show_all']))
+	if (!$req_name)
 	{
 	    $errmsg = "Please select security group from list";
 	    UI::Redirect("sec_groups_view.php");
@@ -39,12 +46,12 @@
 		case SERVER_PLATFORMS::EUCALYPTUS:
 			
 			$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY, true, $req_location),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY, true, $req_location),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL, true, $req_location)
 			);
 			
-			$account_id = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCOUNT_ID);
+			$account_id = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCOUNT_ID, true, $req_location);
 			
 			break;
 	}
@@ -236,91 +243,100 @@
 			}
 		}
 		
-		if ($new_rules_added)
-		{
-			if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
+		try {
+			if ($new_rules_added)
 			{
-				foreach ($addRulesSet as $rule)
-					$platformClient->authorizeSecurityGroupIngress(
-						$req_name, 
-						$rule['IpProtocol'], 
-						$rule['FromPort'], 
-						$rule['ToPort'], 
-						$rule['CidrIp'], 
-						$rule['GroupName'], 
-						$rule['UserId']
-					);
-			}
-			else
-			{
-				$IpPermissionSet = new IpPermissionSetType();
-				foreach ($addRulesSet as $rule) {
-					if ($rule['GroupName'])
-						$IpPermissionSet->AddItem(
+				if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
+				{
+					foreach ($addRulesSet as $rule)
+						$platformClient->authorizeSecurityGroupIngress(
+							$req_name, 
 							$rule['IpProtocol'], 
 							$rule['FromPort'], 
 							$rule['ToPort'], 
-							array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
-							null
-						);
-					else
-						$IpPermissionSet->AddItem(
-							$rule['IpProtocol'], 
-							$rule['FromPort'], 
-							$rule['ToPort'], 
-							null, 
-							array($rule['CidrIp'])
+							$rule['CidrIp'], 
+							$rule['GroupName'], 
+							$rule['UserId']
 						);
 				}
-				
-				$platformClient->AuthorizeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
+				else
+				{
+					$IpPermissionSet = new IpPermissionSetType();
+					foreach ($addRulesSet as $rule) {
+						if ($rule['GroupName'])
+							$IpPermissionSet->AddItem(
+								$rule['IpProtocol'], 
+								$rule['FromPort'], 
+								$rule['ToPort'], 
+								array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
+								null
+							);
+						else
+							$IpPermissionSet->AddItem(
+								$rule['IpProtocol'], 
+								$rule['FromPort'], 
+								$rule['ToPort'], 
+								null, 
+								array($rule['CidrIp'])
+							);
+					}
+					
+					$platformClient->AuthorizeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
+				}
+			}
+			
+			if ($remove_rules)
+			{
+				if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
+				{
+					foreach ($remRulesSet as $rule)
+						$platformClient->revokeSecurityGroupIngress(
+							$req_name, 
+							$rule['IpProtocol'], 
+							$rule['FromPort'], 
+							$rule['ToPort'], 
+							$rule['CidrIp'], 
+							$rule['GroupName'], 
+							$rule['UserId']
+						);
+				}
+				else
+				{
+					$IpPermissionSet = new IpPermissionSetType();
+					foreach ($remRulesSet as $rule) {
+						
+						if ($rule['GroupName'])
+							$IpPermissionSet->AddItem(
+								$rule['IpProtocol'], 
+								$rule['FromPort'], 
+								$rule['ToPort'], 
+								array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
+								null
+							);
+						else
+							$IpPermissionSet->AddItem(
+								$rule['IpProtocol'], 
+								$rule['FromPort'], 
+								$rule['ToPort'], 
+								null, 
+								array($rule['CidrIp'])
+							);
+					}
+					
+					$platformClient->RevokeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
+				}
 			}
 		}
-		
-		if ($remove_rules)
+		catch(Exception $e)
 		{
-			if ($req_platform == SERVER_PLATFORMS::EUCALYPTUS)
-			{
-				foreach ($remRulesSet as $rule)
-					$platformClient->revokeSecurityGroupIngress(
-						$req_name, 
-						$rule['IpProtocol'], 
-						$rule['FromPort'], 
-						$rule['ToPort'], 
-						$rule['CidrIp'], 
-						$rule['GroupName'], 
-						$rule['UserId']
-					);
-			}
-			else
-			{
-				$IpPermissionSet = new IpPermissionSetType();
-				foreach ($remRulesSet as $rule) {
-					
-					if ($rule['GroupName'])
-						$IpPermissionSet->AddItem(
-							$rule['IpProtocol'], 
-							$rule['FromPort'], 
-							$rule['ToPort'], 
-							array('userId' => $rule['UserId'], 'groupName' => $rule['GroupName']), 
-							null
-						);
-					else
-						$IpPermissionSet->AddItem(
-							$rule['IpProtocol'], 
-							$rule['FromPort'], 
-							$rule['ToPort'], 
-							null, 
-							array($rule['CidrIp'])
-						);
-				}
-				
-				$platformClient->RevokeSecurityGroupIngress($account_id, $req_name, $IpPermissionSet);
-			}
+			$errmsg = $e->getMessage();
 		}
 			
-		$okmsg = _("Security group successfully updated");
-		UI::Redirect("/sec_group_edit.php?name={$req_name}&platform={$req_platform}&location={$req_location}");
+		if (!$errmsg)
+		{
+			$okmsg = _("Security group successfully updated");
+			UI::Redirect("/sec_group_edit.php?name={$req_name}&platform={$req_platform}&location={$req_location}");
+		}
 	}
 	
 	require("src/append.inc.php"); 

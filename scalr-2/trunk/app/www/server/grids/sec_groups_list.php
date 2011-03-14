@@ -38,9 +38,9 @@
 			case SERVER_PLATFORMS::EUCALYPTUS:
 				
 				$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
-					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
-					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
-					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY, true, $location),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY, true, $location),
+					Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL, true, $location)
 				);
 				
 				break;
@@ -60,7 +60,7 @@
 			}
 			
 			// Show only scalr security groups
-			if (stristr($row->groupName, CONFIG::$SECGROUP_PREFIX) || $_SESSION['sg_show_all'])
+			if (stristr($row->groupName, CONFIG::$SECGROUP_PREFIX) || stristr($row->groupName, "scalr-role.") || $_SESSION['sg_show_all'])
 				$rowz[] = $row;
 		}
 		

@@ -13,7 +13,7 @@
 		Ext.get('btn_hidden_field').dom.name = this.name;
 		Ext.get('btn_hidden_field').dom.value = this.value;
 		
-		document.forms[1].submit();
+		document.forms[2].submit();
     }
     
     {/literal}
@@ -180,7 +180,19 @@
 							</td>						  
 						</tr>
 						{/if}
-					 {/foreach}    				          		      
+					 {/foreach}
+					 <tr id="user1">			
+	      				<td  style="vertical-align:text-top;"><input type="text" class="text" value="" name="UserParamName[]" /></td>
+	      				<td  style="vertical-align:text-top; text-align:left;">		      			
+							<input type="text" class="text" style="width:80%" name="UserParamValue[]" value="">    									
+	      				</td>		      				
+						<td  style="font-style:italic;vertical-align:text-top;font-size:9pt; ">
+							Apply method: <select name="UserParamMethod[]" class="text">
+								<option value="immediate">immediate</option>
+								<option value="pending-reboot">pending-reboot</option>
+							</select>
+						</td>						  
+					</tr>    				          		      
     			</table>
     		</td>
     	</tr>    		

@@ -58,7 +58,7 @@
 								Ext.get('btn_hidden_field').dom.name = this.name;
 								Ext.get('btn_hidden_field').dom.value = this.value;
 								
-								document.forms[1].submit();
+								document.forms[2].submit();
 								
 								return false;
 							}

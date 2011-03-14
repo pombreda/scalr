@@ -32,7 +32,7 @@
 			$HttpRequest = new HttpRequest();
 			
 			$HttpRequest->setOptions(array(
-				"redirect" => 10, 
+				//"redirect" => 10, 
 			    "useragent" => "Scalr (https://scalr.net)"
 			));
 						
@@ -45,7 +45,8 @@
 			ksort($args);
 			
 			foreach ($args as $k=>$v)
-				$CanonicalizedQueryString .= "&{$k}=".urlencode($v);
+				$CanonicalizedQueryString .= "&{$k}=".rawurlencode($v);
+				
 			$CanonicalizedQueryString = trim($CanonicalizedQueryString, "&");
 			
 			$url = ($parsedUrl['port']) ? "{$parsedUrl['host']}:{$parsedUrl['port']}" : "{$parsedUrl['host']}";
@@ -55,19 +56,24 @@
 			$HttpRequest->setUrl("{$parsedUrl['scheme']}://{$url}{$uri}");
 			
 		    $HttpRequest->setMethod(constant("HTTP_METH_{$method}"));
-		    
+		  
 		    if ($args)
-		    	$HttpRequest->addQueryData($args);
+		    	if ($method == 'POST')
+		    	{
+		    		$HttpRequest->setPostFields($args);
+		    		$HttpRequest->setHeaders(array('Content-Type' => 'application/x-www-form-urlencoded'));
+		    	}
+		    	else
+		    		$HttpRequest->addQueryData($args);
 		    	
 			try 
             {
                 $HttpRequest->send();
 
                 $data = $HttpRequest->getResponseData();
-                
                 if ($HttpRequest->getResponseCode() == 200)
                 {
-					$response = simplexml_load_string($data['body']);               
+                	$response = simplexml_load_string($data['body']);               
 	                if ($response->Errors)
 	                	throw new Exception($response->Errors->Error->Message);
 	                else
@@ -75,6 +81,10 @@
                 }
                 else
                 {
+                	$response = @simplexml_load_string($data['body']);
+                	if ($response)
+                		throw new Exception($response->Error->Message);
+                	
                 	throw new Exception(trim($data['body']));
                 }
                 

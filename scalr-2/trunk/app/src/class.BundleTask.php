@@ -178,11 +178,16 @@
 			return unserialize($this->metaData);
 		}
 		
+		public function setMetaData($data)
+		{
+			$this->metaData = serialize($data);
+		}
+		
 		public function SnapshotCreationComplete($snapshotId, $metaData=array())
 		{
 			$this->snapshotId = $snapshotId;
 			$this->status = SERVER_SNAPSHOT_CREATION_STATUS::CREATING_ROLE;
-			$this->metaData = serialize($metaData);
+			$this->setMetaData($metaData);
 			
 			$this->Log(sprintf(_("Snapshot creation complete. SnapshotID: '%s'. Bundle task status changed to: %s"), 
 				$snapshotId, $this->status
@@ -205,6 +210,8 @@
 						FARM_STATUS::RUNNING,
 						$this->farmId
 					));
+					
+					$this->Log(sprintf(_("Farm status set to Running")));
 				}
 			}
 			
@@ -251,7 +258,7 @@
 		 * @param ServerSnapshotCreateInfo $ServerSnapshotCreateInfo
 		 * @return BundleTask
 		 */
-		public static function Create(ServerSnapshotCreateInfo $ServerSnapshotCreateInfo)
+		public static function Create(ServerSnapshotCreateInfo $ServerSnapshotCreateInfo, $isRoleBuilder = false)
 		{
 			$db = Core::GetDBInstance();
 			
@@ -266,7 +273,8 @@
 				status		= ?,
 				platform	= ?,
 				rolename	= ?,
-				description	= ?
+				description	= ?,
+				cloud_location = ?
 			", array(
 				$ServerSnapshotCreateInfo->DBServer->clientId,
 				$ServerSnapshotCreateInfo->DBServer->envId,
@@ -275,15 +283,19 @@
 				$ServerSnapshotCreateInfo->DBServer->roleId,
 				$ServerSnapshotCreateInfo->replaceType,
 				(int)$ServerSnapshotCreateInfo->removePrototypeRole,
-				SERVER_SNAPSHOT_CREATION_STATUS::PENDING,
+				(!$isRoleBuilder) ? SERVER_SNAPSHOT_CREATION_STATUS::PENDING : SERVER_SNAPSHOT_CREATION_STATUS::STARING_SERVER,
 				$ServerSnapshotCreateInfo->DBServer->platform,
 				$ServerSnapshotCreateInfo->roleName,
-				$ServerSnapshotCreateInfo->description
+				$ServerSnapshotCreateInfo->description,
+				$ServerSnapshotCreateInfo->DBServer->GetCloudLocation()
 			));
 
 			$bundleTaskId = $db->Insert_Id();
 			
 			$task = self::LoadById($bundleTaskId);
+			
+			if ($ServerSnapshotCreateInfo->rootVolumeSize)
+				$task->setMetaData(array('rootVolumeSize' => $ServerSnapshotCreateInfo->rootVolumeSize));
 			
 			$task->setDate('added');
 			
@@ -299,15 +311,11 @@
 				$task->status
 			));
 			
-			try
-			{
-				$platformModule = PlatformFactory::NewPlatform($ServerSnapshotCreateInfo->DBServer->platform);
-				$platformModule->CreateServerSnapshot($task);
+			if ($task->status == SERVER_SNAPSHOT_CREATION_STATUS::PENDING) {
+				//TODO:
 			}
-			catch(Exception $e)
-			{	
-				Logger::getLogger(LOG_CATEGORY::BUNDLE)->error($e->getMessage());
-				$task->SnapshotCreationFailed($e->getMessage());
+			else {
+				$task->Log(sprintf(_("Waiting for server...")));
 			}
 			
 			return $task;

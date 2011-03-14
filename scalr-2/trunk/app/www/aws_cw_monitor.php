@@ -5,11 +5,11 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
     
     if ($post_cancel)
-		UI::Redirect("servers_view.php?farmid={$farminfo['id']}");
+		UI::Redirect("#/servers/view?farmId={$farminfo['id']}");
     
 	$AmazonCloudWatch = AmazonCloudWatch::GetInstance(
 		Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCESS_KEY),

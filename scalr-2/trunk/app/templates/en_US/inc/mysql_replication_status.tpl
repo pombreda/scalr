@@ -5,7 +5,7 @@
 		<table width="500" cellpadding="4">
 			<tr>
 				<td colspan="2">
-					{if $status.IsMaster == 1}{t}Master{/t}{else}{t}Slave #{/t}{$status.SlaveNumber}{/if} (<a href="/server_view_extended_info.php?server_id={$server_id}">{$server_id}</a>):
+					{if $status.IsMaster == 1}{t}Master{/t}{else}{t}Slave #{/t}{$status.SlaveNumber}{/if} (<a href="#/servers/{$server_id}/extendedInfo">{$server_id}</a>):
 				</td>
 			</tr>
 			<tr>
@@ -34,16 +34,6 @@
 							{/if}
 						</td>
 					</tr>
-					{if $status.IsSzr}
-					<tr>
-						<td colspan="2">
-							<form action="" method="post">
-								<input type="hidden" name="new_master_serverid" value="{$server_id}" />
-								<input type="submit" name="promote_to_master" class="btn" value="Promote to Replication Master" />
-							</form>
-						</td>
-					</tr>
-					{/if}
 				{else}
 					<tr>
 						<td width="240"><b>{t}Binary log position:{/t}</b></td>

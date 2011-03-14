@@ -16,8 +16,6 @@
         {
             $db = Core::GetDBInstance();
             
-            $cpwd = $this->Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-            
             /** Process garbage queue **/
             $queue = $db->Execute("SELECT * FROM garbage_queue");
             while ($queue_item = $queue->FetchRow())

@@ -8,7 +8,7 @@
 		
 		/**
 		 * 
-		 * @var DBInstance
+		 * @var DBServer
 		 */
 		public $DBServer;
 		

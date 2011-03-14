@@ -37,7 +37,8 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 				{ name: 'isstable', type: 'boolean' },
 				'platforms',
 				'locations',
-				'os'
+				'os',
+				'tags'
 			]
 		});
 
@@ -48,6 +49,7 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 				{ name: 'new', type: 'boolean' },
 				'role_id',
 				'platform',
+				'generation',
 				'cloud_location',
 				'arch',
 				'name',
@@ -57,7 +59,8 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 				'settings',
 				'scaling',
 				'scripting',
-				'config_presets'
+				'config_presets',
+				'tags'
 			]
 		});
 
@@ -95,7 +98,7 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 		}, this);
 		this.panel.buttons[0].setHandler(this.save, this);
 		this.panel.buttons[1].setHandler(function () {
-			document.location.href = '/farms_view.php';
+			document.location.href = '#/farms/view';
 		});
 		this.loadMask.hide();
 
@@ -127,15 +130,6 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 
 		if (result.roles)
 			this.rolesStore.loadData(result.roles);
-
-		if (result.platforms)
-			this.platforms = result.platforms;
-
-		if (result.locations)
-			this.locations = result.locations;
-
-		if (result.groups)
-			this.groups = result.groups;
 
 		if (result.arch64bitTypes)
 			this.arch64bitTypes = result.arch64bitTypes;
@@ -197,8 +191,10 @@ Scalr.FarmRole.Farm = Ext.extend(Ext.util.Observable, {
 				if (result && result.success == true) {
 					if (this.farmId != '')
 						document.location.href = '/farms_builder.php?saved=true&id=' + (result.farm_id);
-					else
-						document.location.href = '/farms_control.php?new=1&farmid=' + (result.farm_id);
+					else {
+						Scalr.Viewers.ErrorMessage('Farm is now launching. It will take few minutes to start all servers.');
+						document.location.href = '#/farms/' + result.farm_id + '/view';
+					}
 				} else {
 					if (result && result.error)
 						Scalr.Viewers.ErrorMessage(result.error);

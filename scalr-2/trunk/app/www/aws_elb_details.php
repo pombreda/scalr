@@ -5,11 +5,11 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 		
 	if (!$req_name)
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 		
 	$display['title'] = 'Elastic Load Balancer details';
 	
@@ -49,7 +49,6 @@
 	
 	$info = $AmazonELBClient->DescribeLoadBalancers(array($req_name));
 	$elb = $info->DescribeLoadBalancersResult->LoadBalancerDescriptions->member;
-	
 	
 	if (!is_array($elb->Policies->AppCookieStickinessPolicies->member))
 		$elb->Policies->AppCookieStickinessPolicies->member = array($elb->Policies->AppCookieStickinessPolicies->member);

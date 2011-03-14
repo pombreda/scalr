@@ -3,6 +3,9 @@ Ext.ns("Scalr.Viewers");
 Ext.ns("Scalr.Viewers.Message");
 Ext.ns("Scalr.state");
 Ext.ns("Scalr.Viewers.Plugins");
+Ext.ns("Scalr.data");
+Ext.ns("Scalr.Module");
+Ext.ns("Scalr.Toolbar");
 
 Scalr.fireOnInputChange = function(el, obj, handler) {
 	el.on('keyup', function() {
@@ -13,6 +16,37 @@ Scalr.fireOnInputChange = function(el, obj, handler) {
 		this.prevLength = len;
 	}, el);
 };
+
+Scalr.Viewers.userLoadFile = function (path) {
+	Ext.getBody().createChild({
+		tag: 'iframe',
+		src: path,
+		width: 0,
+		height: 0,
+		frameborder: 0
+	}).remove.defer(1000);
+};
+
+Scalr.Toolbar.TimeItem = Ext.extend(Ext.Toolbar.TextItem, {
+	updateText: function () {
+		var cur = new Date(), diff = cur.getTime() - this.systemTime.getTime();
+		this.systemTime = cur;
+		this.time = this.time.add(Date.SECOND, diff / 1000);
+		this.setText(this.time.format("M j, Y H:i:s"));
+		if (! this.isDestroyed)
+			this.updateText.defer(1000, this);
+	},
+	
+	onRender: function(ct, position) {
+		this.systemTime = new Date();
+		this.time = new Date(this.time);
+		this.time = this.time.add(Date.SECOND, parseInt(this.timeOffset));
+		this.time = this.time.add(Date.SECOND, 0 - this.systemTime.format('Z'));
+
+		Scalr.Toolbar.TimeItem.superclass.onRender.call(this, ct, position);
+		this.updateText();
+	}
+});
 
 Scalr.Viewers.autoSize = Ext.extend(Ext.util.Observable, {
 	constructor: function (config) {
@@ -44,13 +78,6 @@ Scalr.Viewers.autoSize = Ext.extend(Ext.util.Observable, {
 	    	this.panel.setHeight(Math.max(300, Ext.lib.Dom.getViewHeight() - el.getY() - el.getPadding("tb") - el.getBorderWidth("tb")) - 5);
 		}
 	}
-});
-
-Ext.Ajax.on('requestexception', function() {
-	if (Ext.MessageBox.isVisible())
-		Ext.MessageBox.hide();
-
-	Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
 });
 
 Scalr.Viewers.Message.Add = function(message, errorId, timeout, type) {
@@ -163,8 +190,15 @@ Scalr.Viewers.SuccessMessage = function(message, errorId, timeout) {
 	Scalr.Viewers.Message.Add(message, errorId, timeout, 'success');
 };
 
+Scalr.Viewers.WarningMessage = function(message, errorId, timeout) {
+	Scalr.Viewers.Message.Add(message, errorId, timeout, 'warning');
+};
+
 Scalr.Viewers.FilterField = Ext.extend(Ext.form.TwinTriggerField, {
-	initComponent : function(){
+	initComponent : function() {
+		if (this.store.baseParams['query'] != '')
+			this.value = this.store.baseParams['query'];
+
 		Scalr.Viewers.FilterField.superclass.initComponent.call(this);
 		this.on('specialkey', function(f, e) {
 			if(e.getKey() == e.ENTER){
@@ -230,7 +264,7 @@ Scalr.Viewers.FilterField = Ext.extend(Ext.form.TwinTriggerField, {
 	}
 });
 
-Scalr.state.StorageProvider = function(config) {
+/*Scalr.state.StorageProvider = function(config) {
 	Scalr.state.StorageProvider.superclass.constructor.call(this);
 
 	this.enabled = false;
@@ -284,10 +318,15 @@ Ext.extend(Scalr.state.StorageProvider, Ext.state.Provider, {
 		this.localStorage.clear();
 	}
 });
-
+*/
 Scalr.Viewers.WarningPanel = Ext.extend(Ext.Container, {
 	autoHeight: true,
 	cls: 'viewers-warningpanel'
+});
+
+Scalr.Viewers.InfoPanel = Ext.extend(Ext.Container, {
+	autoHeight: true,
+	cls: 'viewers-infopanel'
 });
 
 Scalr.Viewers.Plugins.findOne = Ext.extend(Ext.util.Observable, {
@@ -311,5 +350,92 @@ Scalr.Viewers.Plugins.findOne = Ext.extend(Ext.util.Observable, {
 					return r;
 			}
 		}
+	}
+});
+
+Scalr.Viewers.Plugins.sessionStorage = Ext.extend(Ext.util.Observable, {
+	get: 'sessionGet',
+	set: 'sessionSet',
+	clear: 'sessionClear',
+
+	init: function (comp) {
+		var apply = {};
+
+		if (typeof(sessionStorage) == "object" && comp.stateful && comp.stateful != '') {
+			apply[this.get] = this.getF;
+			apply[this.set] = this.setF;
+			apply[this.clear] = this.clearF;
+		} else {
+			apply[this.get] = Ext.emptyFn;
+			apply[this.set] = Ext.emptyFn;
+			apply[this.clear] = Ext.emptyFn;
+		}
+
+		Ext.apply(comp, apply);
+	},
+
+	getF: function(name, defaultValue) {
+		try {
+			return Ext.decode(sessionStorage.getItem(this.stateful + '-' + name)) || defaultValue;
+		} catch(e) {
+			return defaultValue;
+		}
+	},
+
+	setF: function(name, value) {
+		if (typeof value == "undefined" || value === null) {
+			sessionStorage.removeItem(this.stateful + '-' + name);
+			return;
+		}
+
+		sessionStorage.setItem(this.stateful + '-' + name, Ext.encode(value));
+	},
+
+	clearF: function(name) {
+		sessionStorage.removeItem(this.stateful + '-' + name);
+	}
+});
+
+
+Scalr.Viewers.Plugins.localStorage = Ext.extend(Ext.util.Observable, {
+	get: 'localGet',
+	set: 'localSet',
+	clear: 'localClear',
+
+	init: function (comp) {
+		var apply = {};
+
+		if (typeof(localStorage) == "object" && comp.stateId && comp.stateId != '') {
+			apply[this.get] = this.getF;
+			apply[this.set] = this.setF;
+			apply[this.clear] = this.clearF;
+		} else {
+			apply[this.get] = Ext.emptyFn;
+			apply[this.set] = Ext.emptyFn;
+			apply[this.clear] = Ext.emptyFn;
+		}
+
+		Ext.apply(comp, apply);
+	},
+
+	getF: function(name, defaultValue) {
+		try {
+			return Ext.decode(localStorage.getItem(this.stateId ? (this.stateId + '-' + name) : name)) || defaultValue;
+		} catch(e) {
+			return defaultValue;
+		}
+	},
+
+	setF: function(name, value) {
+		if (typeof value == "undefined" || value === null) {
+			localStorage.removeItem(this.stateId ? (this.stateId + '-' + name) : name);
+			return;
+		}
+
+		localStorage.setItem(this.stateId ? (this.stateId + '-' + name) : name, Ext.encode(value));
+	},
+
+	clearF: function(name) {
+		localStorage.removeItem(this.stateId ? (this.stateId + '-' + name) : name);
 	}
 });

@@ -65,7 +65,8 @@ new Scalr.Viewers.FarmRolesEditTab({
 				var recordData = {
 					protocol: tbar.getComponent('lb.bbar.proto').getValue(),
 					lb_port: tbar.getComponent('lb.bbar.lb_port').getValue(),
-					instance_port: tbar.getComponent('lb.bbar.i_port').getValue()
+					instance_port: tbar.getComponent('lb.bbar.i_port').getValue(),
+					ssl_certificate: tbar.getComponent('lb.bbar.sslCert').getValue()
 				};
 
 				if (store.findBy(function (record) {
@@ -83,7 +84,27 @@ new Scalr.Viewers.FarmRolesEditTab({
 					tbar.getComponent('lb.bbar.proto').reset();
 					tbar.getComponent('lb.bbar.lb_port').reset();
 					tbar.getComponent('lb.bbar.i_port').reset();
+					tbar.getComponent('lb.bbar.sslCert').reset();
+
+					tbar.getComponent('lb.bbar.sslCert').hide();
+					tbar.getComponent('lb.bbar.sslCertLabel').hide();
 				}
+			}
+		}, this);
+
+		this.findOne('itemId', 'listeners').getBottomToolbar().getComponent('lb.bbar.proto').on('select', function(field, record){
+
+			var toolBar = this.findOne('itemId', 'listeners').getBottomToolbar();
+
+			if (record.get('field1') == 'SSL' || record.get('field1') == 'HTTPS')
+			{
+				toolBar.getComponent('lb.bbar.sslCert').show();
+				toolBar.getComponent('lb.bbar.sslCertLabel').show();
+			}
+			else
+			{
+				toolBar.getComponent('lb.bbar.sslCert').hide();
+				toolBar.getComponent('lb.bbar.sslCertLabel').hide();
 			}
 		}, this);
 	},
@@ -131,7 +152,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 					name: n,
 					boxLabel: items[i].name,
 					hideLabel: true,
-					checked: (settings[n] || 0) == 1? true : false
+					checked: (settings[n] || 0) == 1 ? true : false
 				});
 			}
 
@@ -141,6 +162,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 			tbar.getComponent('lb.bbar.proto').reset();
 			tbar.getComponent('lb.bbar.lb_port').reset();
 			tbar.getComponent('lb.bbar.i_port').reset();
+			tbar.getComponent('lb.bbar.sslCert').reset();
 
 			var data = [];
 			for (i in settings) {
@@ -149,7 +171,8 @@ new Scalr.Viewers.FarmRolesEditTab({
 					data[data.length] = {
 						protocol: lst[0],
 						lb_port: lst[1],
-						instance_port: lst[2]
+						instance_port: lst[2],
+						ssl_certificate: lst[3]
 					};
 				}
 			}
@@ -185,7 +208,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 			}
 
 			this.findOne('itemId', 'listeners_view').store.each(function (rec) {
-				settings['lb.role.listener.' + rec.id] = [ rec.get('protocol'), rec.get('lb_port'), rec.get('instance_port') ].join("#");
+				settings['lb.role.listener.' + rec.id] = [ rec.get('protocol'), rec.get('lb_port'), rec.get('instance_port'), rec.get('ssl_certificate') ].join("#");
 			});
 
 		} else {
@@ -283,17 +306,17 @@ new Scalr.Viewers.FarmRolesEditTab({
 			itemId: 'listeners',
 			items: new Scalr.Viewers.list.ListView({
 				store: new Ext.data.JsonStore({
-					fields: [ 'protocol', 'lb_port', 'instance_port' ]
+					fields: [ 'protocol', 'lb_port', 'instance_port' , 'ssl_certificate']
 				}),
 				itemId: 'listeners_view',
 				autoHeight: true,
 				emptyText: "No listeners defined",
 				deferEmptyText: false,
-				actionColumnPlugin: true,
 				columns: [
 					{ header: "Protocol", width: '150px', sortable: true, dataIndex: 'protocol', hidden: 'no' },
 					{ header: "Load balancer port", width: '180px', sortable: true, dataIndex: 'lb_port', hidden: 'no' },
 					{ header: "Instance port", width: '180px', sortable: true, dataIndex: 'instance_port', hidden: 'no' },
+					{ header: "SSL certificate", width: 2, sortable: true, dataIndex: 'ssl_certificate', hidden: 'no' },
 					{ header: "&nbsp;", width: '20px', sortable: false, dataIndex: 'id', align:'center', hidden: 'no',
 						tpl: '<img src="/images/ui-ng/icons/delete_icon_16x16.png">', clickHandler: function (comp, store, record) {
 							store.remove(record);
@@ -306,7 +329,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 					xtype: 'combo',
 					itemId: 'lb.bbar.proto',
 					editable: false,
-					store: [ 'TCP', 'HTTP' ],
+					store: [ 'TCP', 'HTTP', 'SSL', 'HTTPS' ],
 					mode: 'local',
 					triggerAction: 'all',
 					width: 60,
@@ -336,6 +359,29 @@ new Scalr.Viewers.FarmRolesEditTab({
 						else
 							return true;
 					}
+				}, {
+					itemId: 'lb.bbar.sslCertLabel',
+					text: '&nbsp;&nbsp;&nbsp;SSL Certificate:&nbsp;',
+					hidden: true
+				}, {
+					xtype: 'combo',
+					itemId: 'lb.bbar.sslCert',
+					width: 200,
+					hidden: true,
+					editable: false,
+					store: new Scalr.data.Store({
+						reader: new Scalr.data.JsonReader({
+							id: 'id',
+							fields: [
+								'name','path','arn','id','upload_date'
+							]
+						}),
+						url: '/awsIam/xListViewServerCertificates/'
+					}),
+					valueField: 'arn',
+					displayField: 'name',
+					mode: 'remote',
+					triggerAction: 'all'
 				}, '&nbsp;', {
 					itemId: 'lb.bbar.add',
 					icon: '/images/add.png', // icons can also be specified inline

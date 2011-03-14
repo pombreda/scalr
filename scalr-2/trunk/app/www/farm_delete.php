@@ -9,19 +9,19 @@
         );
 
     if (!$farminfo || $post_cancel)
-        UI::Redirect("farms_view.php");
+        UI::Redirect("/#/farms/view");
         
     if ($farminfo["status"] != FARM_STATUS::TERMINATED)
     {
     	$errmsg = _("Cannot delete a running farm. Please terminate a farm before deleting it.");
-    	UI::Redirect("farms_view.php");
+    	UI::Redirect("/#/farms/view");
     }
 
     $servers = $db->GetOne("SELECT COUNT(*) FROM servers WHERE farm_id=? AND status!=?", array($farminfo['id'], SERVER_STATUS::TERMINATED));
     if ($servers != 0)
     {
     	$errmsg = _("Cannot delete a running farm. {$servers} server are still running on this farm.");
-    	UI::Redirect("farms_view.php");
+    	UI::Redirect("/#/farms/view");
     }
     
     if ($req_action == "delete")
@@ -63,7 +63,7 @@
 	    		$db->RollbackTrans();
 	    		$Logger->fatal("Exception thrown during farm deletion: {$e->getMessage()}");
 	    		$errmsg = _("Cannot delete farm at the moment. Please try again later.");
-	    		UI::Redirect("farms_view.php");
+	    		UI::Redirect("/#/farms/view");
 	    	}
     		
 	    	$db->CommitTrans();
@@ -72,7 +72,7 @@
 	    }
 	    
 	    $okmsg = _("Farm successfully deleted");
-		UI::Redirect("farms_view.php");
+		UI::Redirect("/#/farms/view");
     }
 
     $display['farm_name'] = $farminfo['name'];

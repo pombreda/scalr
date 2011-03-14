@@ -48,18 +48,33 @@
 				
 			ksort($request);
 			$string_to_sign = "";
-    		foreach ($request as $k=>$v)
+			foreach ($request as $k=>$v)
     		{
-    			if (!in_array($k, array("Signature")))
+    			if (!in_array($k, array("Signature", "SysDebug")))
     			{
     				if (is_array($v))
     				{
     					foreach ($v as $kk => $vv)
+    					{
+    						if ($request['AuthVersion'] == 2)
+    							$vv = urldecode($vv);
+    							
     						$string_to_sign.= "{$k}[{$kk}]{$vv}";
+    					}
     				}
     				else
+    				{
+    					if ($request['AuthVersion'] == 2)
+    						$v = urldecode($v);
+    						
     					$string_to_sign.= "{$k}{$v}";
+    				}
     			}
+    		}
+    		
+    		if ($request['AuthVersion'] == 2) {
+    			$string_to_sign = urldecode($string_to_sign);
+    			$request['Signature'] = trim(urldecode($request['Signature']));
     		}
     		
     		$this->Environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadByApiKeyId($request['KeyID']);
@@ -67,7 +82,11 @@
     		
     		$auth_key = $this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ACCESS_KEY, false);
     		
-    		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, $string_to_sign, $auth_key, 1));    		
+    		if ($request['SysDebug']) {
+    			//print "<b>String to sign:</b> ".trim($string_to_sign)."<br>";
+    		}
+    		
+    		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, trim($string_to_sign), $auth_key, 1));    		
     		if ($valid_sign != $request['Signature'])
     			throw new Exception("Signature doesn't match");
 		}

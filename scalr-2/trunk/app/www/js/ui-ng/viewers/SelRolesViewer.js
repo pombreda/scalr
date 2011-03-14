@@ -94,7 +94,7 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 							'<img src="/images/ui-ng/icons/arch/{arch}.png" class="arch" />',
 							'<div class="short">',
 								'<tpl if="name.length &gt; 12">',
-									'<span class="short">{name:substr(0, 6)}...{name:substr(name.length - 5, 5)}</span>',
+									'<span class="short">{[this.getName(values.name)]}</span>',
 									'</div><div class="full">{name}',
 								'</tpl>',
 								'<tpl if="name.length &lt; 13">',
@@ -124,6 +124,9 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 						if (groups[i] == values['group'])
 							return 'groups/' + groups[i];
 					}
+				},
+				getName: function (n) {
+					return n.substr(0, 6) + '...' + n.substr(n.length - 5, 5);
 				}
 			}),
 			singleSelect: true,
@@ -183,14 +186,24 @@ Scalr.Viewers.SelRolesViewer = Ext.extend(Ext.BoxComponent, {
 			return false;
 		});
 
-		handler = function() {
+		/*handler = function() {
 			this.dataView.fixWidth(this);
-			this.dataView.createLinks(this);
-		};
+			//this.dataView.createLinks(this);
+		};*/
 
-		Ext.apply(this.dataView, { refresh: this.dataView.refresh.createSequence(handler, this) });
+		Ext.apply(this.dataView, { refresh: this.dataView.refresh.createSequence(function() {
+			this.dataView.fixWidth(this);
+		}, this) });
+
+		Ext.apply(this.dataView, { updateIndexes: this.dataView.updateIndexes.createSequence(function(startIndex, endIndex) {
+			this.dataView.createLinks(this, startIndex, endIndex);
+		}, this) });
+
+		Ext.apply(this.dataView, { onRemove: this.dataView.refresh });
 
 		this.dataView.getStore().on('add', this.dataView.refresh, this.dataView);
+		this.dataView.getStore().on('remove', this.dataView.refresh, this.dataView);
+		//this.dataView.getStore().on('save', this.dataView.createLinks.createCallback(this), this.dataView);
 		//this.dataView.getStore().un('remove', this.dataView.onRemove);
 		//this.dataView.getStore().on('remove', this.dataView.fixWidth, this);
 

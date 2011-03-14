@@ -20,12 +20,7 @@
 	{/if}
     <div style="height:2px; background-color:#CCCCCC; font-size:1px;"></div>
     <div class="WebtaTable_Footer" id="footer_button_table" style="padding-left:6px;padding-top:2px; padding-bottom:2px;">
-    	{if $post_serialized != ''}
-    		<input type="submit" style="margin-right:6px;" class="btn" id="cbtn_2" name="cbtn_2" value="Retry" />
-    	{else}
-    		<input type="button" style="margin-right:6px;" class="btn" name="retrybtn" value="Retry" onclick="window.location=get_url;return false;" />
-    		<input type="submit" style="margin-right:6px;" class="btn" name="cbtn_3" value="Back" onclick="history.back();return false;" />
-		{/if}
+    	</br>
     </div>
 </div>
 </center>

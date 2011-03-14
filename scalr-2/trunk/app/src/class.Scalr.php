@@ -2,17 +2,41 @@
 
 	class Scalr
 	{
+		private static $observersSetuped = false;
+		private static function setupObservers()
+		{
+			Scalr::AttachObserver(new SSHWorker());
+			Scalr::AttachObserver(new DBEventObserver());
+			Scalr::AttachObserver(new ScriptingEventObserver());
+			Scalr::AttachObserver(new DNSEventObserver());
+			Scalr::AttachObserver(new MessagingEventObserver());
+			Scalr::AttachObserver(new ScalarizrEventObserver());
+		
+			Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Ec2());
+			Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Ebs());
+			Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Eip());
+			Scalr::AttachObserver(new Modules_Platforms_Ec2_Observers_Elb());
+		
+			Scalr::AttachObserver(new Modules_Platforms_Rds_Observers_Rds());
+			
+			Scalr::AttachObserver(new MailEventObserver(), true);
+			Scalr::AttachObserver(new RESTEventObserver(), true);
+			
+			self::$observersSetuped = true;
+		}
+		
+		
+		
 		private static $EventObservers = array();
 		private static $DeferredEventObservers = array();
 		private static $ConfigsCache = array();
 		private static $InternalObservable;
-				
 		/**
 		 * Attach observer
 		 *
 		 * @param EventObserver $observer
 		 */
-		public static function AttachObserver ($observer, $isdeffered)
+		public static function AttachObserver ($observer, $isdeffered = false)
 		{
 			if ($isdeffered)
 				$list = & self::$DeferredEventObservers;
@@ -30,6 +54,9 @@
 		 */
 		public static function ReconfigureObservers()
 		{
+			if (!self::$observersSetuped)
+				self::setupObservers();
+			
 			foreach (self::$EventObservers as &$observer)
 			{
 				if (method_exists($observer, "__construct"))
@@ -194,6 +221,9 @@
 		 */
 		public static function FireDeferredEvent (Event $event)
 		{
+			if (!self::$observersSetuped)
+				self::setupObservers();
+			
 			try
 			{
 				// Notify class observers
@@ -226,6 +256,9 @@
 		 */
 		public static function FireEvent($farmid, Event $event)
 		{
+			if (!self::$observersSetuped)
+				self::setupObservers();
+			
 			try
 			{
 				$event->SetFarmID($farmid);
@@ -235,7 +268,7 @@
 				{
 					$observer->SetFarmID($farmid);					
 					Logger::getLogger(__CLASS__)->info(sprintf("Event %s. Observer: %s", "On{$event->GetName()}", get_class($observer)));
-					call_user_func(array($observer, "On{$event->GetName()}"), &$event);
+					call_user_func(array($observer, "On{$event->GetName()}"), $event);
 				}
 			}
 			catch(Exception $e)
@@ -318,8 +351,7 @@
 			{	
 				$ServerCreateInfo->SetProperties(array(
 					SERVER_PROPERTIES::SZR_KEY => Scalr::GenerateRandomKey(40),
-					SERVER_PROPERTIES::SZR_KEY_TYPE => SZR_KEY_TYPE::ONE_TIME,
-					SERVER_PROPERTIES::SZR_VESION => ($ServerCreateInfo->platform == SERVER_PLATFORMS::RDS) ? '0.0-0' : '0.5'
+					SERVER_PROPERTIES::SZR_KEY_TYPE => SZR_KEY_TYPE::ONE_TIME
 				));
 				
 				$DBServer = DBServer::Create($ServerCreateInfo, false, true);
@@ -357,11 +389,13 @@
 				Scalr::FireEvent($DBServer->farmId, new BeforeInstanceLaunchEvent($DBServer));
 				
 				$db->Execute("UPDATE servers_history SET
-					dtlaunched	= NOW(),
-					cloud_server_id	= ?
+					`dtlaunched` = NOW(),
+					`cloud_server_id` = ?,
+					`type` = ?
 					WHERE server_id = ?
 				", array(
 					$DBServer->GetCloudServerID(),
+					$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE),
 					$DBServer->serverId
 				));
 			}

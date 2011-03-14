@@ -5,6 +5,8 @@
 			<td colspan="3">
 				{if $mysql_pma_credentials}
 					<input class="btn" type="submit" name="pma_launch" value="Launch PHPMyAdmin" />
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input class="btn" type="submit" name="pma_reset" value="Reset PHPMyAdmin credentials" />
 				{elseif $mysql_pma_processing_access_request}
 					MySQL access details for PMA requested. Please refresh this page in a couple minutes...
 				{else}
@@ -22,7 +24,7 @@
 					<td width="150">Last backup: </td>
 					<td width="300">
 						{if $mysql_bcp_running}
-						In progress on <a href="/server_view_extended_info.php?server_id={$mysql_bcp_server_id}">{$mysql_bcp_server_id}</a> server...
+						In progress on <a href="#/servers/{$mysql_bcp_server_id}/extendedInfo">{$mysql_bcp_server_id}</a> server...
 						{else}
 							{if $mysql_last_backup}{$mysql_last_backup}{else}never{/if}
 						{/if}
@@ -35,7 +37,7 @@
 					<td>Last data bundle: </td>
 					<td>
 						{if $mysql_bundle_running}
-						In progress on <a href="/server_view_extended_info.php?server_id={$mysql_bundle_server_id}">{$mysql_bundle_server_id}</a> server...
+						In progress on <a href="#/servers/{$mysql_bundle_server_id}/extendedInfo">{$mysql_bundle_server_id}</a> server...
 						{else}
 							{if $mysql_last_bundle}{$mysql_last_bundle}{else}never{/if}
 						{/if}
@@ -44,6 +46,7 @@
 						<input type="submit" {if $mysql_bundle_running}disabled{/if} name="run_bundle" class="btn" value="Bundle mysql data now" />
 					</td>
 				</tr>
+				<!-- 
 				{if $mysql_data_storage_engine == 'ebs'}
 				<tr>
 					<td colspan="3">&nbsp;</td>
@@ -58,6 +61,7 @@
 					</td>
 				</tr>
 				{/if}
+				 -->
 				<!-- 
 				<tr>
 					<td colspan="10">&nbsp;</td>
@@ -74,7 +78,30 @@
 				</table>
 			</td>
 		</tr>
-		{include file="inc/intable_footer.tpl" color="Gray"}                   		
+		{include file="inc/intable_footer.tpl" color="Gray"}     
+		
+		<!-- 
+		{include file="inc/intable_header.tpl" intable_colspan=2 header="MySQL storage information" intable_first_column_width="150" color="Gray"}
+		<tr>
+			<td>ID: </td>
+			<td colspan="2">
+				{$storage.id}
+			</td>
+		</tr>
+		<tr>
+			<td>Type: </td>
+			<td colspan="2">
+				{$storage.type}
+			</td>
+		</tr>
+		<tr>
+			<td>Version: </td>
+			<td colspan="2">
+				{$storage.version}
+			</td>
+		</tr>
+		{include file="inc/intable_footer.tpl" color="Gray"} 
+		 -->             		
 		{include file="inc/mysql_replication_status.tpl"}
 	{include file="inc/table_footer.tpl" disable_footer_line=1}
 {include file="inc/footer.tpl"}

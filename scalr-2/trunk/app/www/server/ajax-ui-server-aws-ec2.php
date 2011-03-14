@@ -23,8 +23,10 @@
     		
     		// Get Avail zones
 		    $avail_zones_resp = $AmazonEC2Client->DescribeAvailabilityZones();
-		    $retval = array();
+		    if ($avail_zones_resp->availabilityZoneInfo->item instanceOf stdClass)
+		    	$avail_zones_resp->availabilityZoneInfo->item = array($avail_zones_resp->availabilityZoneInfo->item);
 		    
+		    $retval = array();
 		    foreach ($avail_zones_resp->availabilityZoneInfo->item as $zone)
 		    {
 		    	if (stristr($zone->zoneState,'available'))
@@ -52,6 +54,9 @@
 				
 			foreach ($rowz as $pk=>$pv)
 			{		
+				if ($pv->ownerId != Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::ACCOUNT_ID))
+					continue;
+				
 				if ($pv->status == 'completed')
 					$retval[] = array(
 						"snapid" 	=> (string)$pv->snapshotId,

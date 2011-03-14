@@ -20,6 +20,8 @@
 		 */
 		private $instancesListCache = array();
 		
+		public function getRoleBuilderBaseImages() {}
+		
 		public function getPropsList()
 		{
 			return array(
@@ -36,9 +38,23 @@
 		
 		public function getLocations()
 		{
-			return array(
-				'euca-default' => 'Eucalyptus / Default'
-			);
+			try {
+				$envId = Scalr_Session::getInstance()->getEnvironmentId();
+			}
+			catch(Exception $e) {
+				return array();	
+			}
+			
+			//Eucalyptus locations defined by client. Admin cannot get them
+			$db = Core::GetDBInstance();
+			$locations = $db->GetAll("SELECT DISTINCT(`group`) as `name` FROM client_environment_properties WHERE `name` = ? AND env_id = ?", array(
+				self::EC2_URL, $envId
+			));
+			$retval = array();
+			foreach ($locations as $location)
+				$retval[$location['name']] = "Eucalyptus / {$location['name']}";
+				
+			return $retval;
 		}
 		
 		public function __construct()
@@ -68,18 +84,18 @@
 		 * @return Scalr_Service_Cloud_Eucalyptus_Client
 		 * Enter description here ...
 		 */
-		private function getEucaClient(Scalr_Environment $environment)
+		private function getEucaClient(Scalr_Environment $environment, $cloudLocation)
 		{
 			return Scalr_Service_Cloud_Eucalyptus::newCloud(
-				$environment->getPlatformConfigValue(self::SECRET_KEY),
-				$environment->getPlatformConfigValue(self::ACCESS_KEY),
-				$environment->getPlatformConfigValue(self::EC2_URL)
+				$environment->getPlatformConfigValue(self::SECRET_KEY, true, $cloudLocation),
+				$environment->getPlatformConfigValue(self::ACCESS_KEY, true, $cloudLocation),
+				$environment->getPlatformConfigValue(self::EC2_URL, true, $cloudLocation)
 			);
 		}
 		
 		public function GetServerIPAddresses(DBServer $DBServer)
 		{
-			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
+			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
 	        
 	        $iinfo = $eucaClient->DescribeInstances($DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID));
 		    $iinfo = $iinfo->reservationSet->item->instancesSet->item;
@@ -94,7 +110,7 @@
 		{
 			if (!$this->instancesListCache[$environment->id][$region] || $skipCache)
 			{
-				$eucaClient = $this->getEucaClient($environment);
+				$eucaClient = $this->getEucaClient($environment, $region);
 		        
 		        try
 				{
@@ -129,7 +145,7 @@
 			}
 			elseif (!$this->instancesListCache[$environment->id][$region][$iid])
 			{
-		       	$eucaClient = $this->getEucaClient($environment);
+		       	$eucaClient = $this->getEucaClient($environment, $region);
 		        
 		        try {
 		        	$iinfo = $eucaClient->describeInstances(array($iid));
@@ -158,7 +174,7 @@
 		
 		public function TerminateServer(DBServer $DBServer)
 		{
-			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
+			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
 			
 	        $eucaClient->terminateInstances(array($DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID)));
 	        
@@ -167,7 +183,7 @@
 		
 		public function RebootServer(DBServer $DBServer)
 		{
-			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
+			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
 	        $eucaClient->rebootInstances(array($DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID)));
 	        
 	        return true;
@@ -175,38 +191,20 @@
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
 		{
-			//TODO:
 			
-			/*
-			$eucaClient = $this->getEucaClient($DBRole->getEnvironmentObject());
-        
-	        $ami_info = $eucaClient->describeImages(null, $DBRole->getImageId(SERVER_PLATFORMS::EUCALYPTUS), null);
-	        $ami_info = $ami_info->imagesSet->item[0];
-	        
-	        $platfrom = $ami_info->platform;
-	        $rootDeviceType = $ami_info->rootDeviceType;
-	        
-	        if ($rootDeviceType == 'ebs')
-	        {
-	        	//TODO:	
-	        }
-	        else
-	        {
-		        if ($platfrom == 'windows')
-		        {
-					//TODO:		        	
-		        }
-		        else
-		        {    		    	
-    		    	$image_path = (string)$ami_info->imageLocation;
-    		    	
-    		    	//TODO: Remove image	
-    		    			    			    	
-    		    	if ($ami_info)
-    			    	$eucaClient->deregisterImage($DBRole->getImageId(SERVER_PLATFORMS::EUCALYPTUS));
-		        }
-	        }
-	        */
+			foreach ($DBRole->getImageId(SERVER_PLATFORMS::EUCALYPTUS) as $location => $imageId)
+			{
+				$eucaClient = $this->getEucaClient($DBRole->getEnvironmentObject(), $location);
+				
+				try {
+					$eucaClient->deregisterImage($imageId);
+					
+					//TODO: Remove image from Walrus
+				}
+				catch(Exception $e){}
+			}
+			
+			return true;
 		}
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
@@ -218,7 +216,7 @@
 		{
 			$DBServer = DBServer::LoadByID($BundleTask->serverId);
 			
-			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());	
+			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());	
 	        
 	        if (!$BundleTask->prototypeRoleId)
 	        {
@@ -285,7 +283,7 @@
 	        		}
 		        	else
 		        	{
-			        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (MessageID: %s). Bundle task status changed to: %s"), 
+			        	$BundleTask->Log(sprintf(_("Snapshot creation started (MessageID: %s). Bundle task status changed to: %s"), 
 			        		$msg->messageId, $BundleTask->status
 			        	));
 		        	}
@@ -304,7 +302,7 @@
 		
 		public function GetServerConsoleOutput(DBServer $DBServer)
 		{
-			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
+			$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
 	        return $eucaClient->getConsoleOutput($DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID));
 		}
 		
@@ -313,8 +311,8 @@
 			try
 			{	
 				try {
-		        	$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
-		        
+		        	$eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
+		        	
 		        	$iinfo = $eucaClient->describeInstances(array($DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID)));
 		        	$iinfo = $iinfo->reservationSet->item[0];
 				}
@@ -330,8 +328,8 @@
 			        	'Instance ID'			=> $DBServer->GetProperty(EUCA_SERVER_PROPERTIES::INSTANCE_ID),
 			        	'Owner ID'				=> $iinfo->ownerId,
 			        	'Image ID (EMI)'		=> $iinfo->instancesSet->item[0]->imageId,
-			        	'Private DNS name'		=> $iinfo->instancesSet->item[0]->privateDnsName,
-			        	'Public DNS name'		=> $iinfo->instancesSet->item[0]->dnsName,
+			        	'Public IP'				=> $iinfo->instancesSet->item[0]->ipAddress,
+			        	'Private IP'			=> $iinfo->instancesSet->item[0]->privateIpAddress,			        
 			        	'Key name'				=> $iinfo->instancesSet->item[0]->keyName,
 			        	'Instance type'			=> $iinfo->instancesSet->item[0]->instanceType,
 			        	'Launch time'			=> $iinfo->instancesSet->item[0]->launchTime,
@@ -349,11 +347,11 @@
 			return false;
 		}
 		
-		public function LaunchServer(DBServer $DBServer)
+		public function LaunchServer(DBServer $DBServer, Scalr_Server_LaunchOptions $launchOptions = null)
 		{
 			$DBRole = DBRole::loadById($DBServer->roleId);
 			
-	        $eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject());
+	        $eucaClient = $this->getEucaClient($DBServer->GetEnvironmentObject(), $DBServer->GetCloudLocation());
 	        
 	        $i_type = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_EUCA_INSTANCE_TYPE);
 	        
@@ -424,14 +422,14 @@
 			
 			if ($put) {
 	        	$accessData = new stdClass();
-	        	$accessData->accountId = $environment->getPlatformConfigValue(self::ACCOUNT_ID);
-	        	$accessData->keyId = $environment->getPlatformConfigValue(self::ACCESS_KEY);
-	        	$accessData->key = $environment->getPlatformConfigValue(self::SECRET_KEY);
-	        	$accessData->cert = $environment->getPlatformConfigValue(self::CERTIFICATE);
-	        	$accessData->pk = $environment->getPlatformConfigValue(self::PRIVATE_KEY);
-	        	$accessData->ec2_url = $environment->getPlatformConfigValue(self::EC2_URL);
-	        	$accessData->s3_url = $environment->getPlatformConfigValue(self::S3_URL);
-	        	$accessData->cloud_cert = $environment->getPlatformConfigValue(self::CLOUD_CERTIFICATE);
+	        	$accessData->accountId = $environment->getPlatformConfigValue(self::ACCOUNT_ID, true, $DBServer->GetCloudLocation());
+	        	$accessData->keyId = $environment->getPlatformConfigValue(self::ACCESS_KEY, true, $DBServer->GetCloudLocation());
+	        	$accessData->key = $environment->getPlatformConfigValue(self::SECRET_KEY, true, $DBServer->GetCloudLocation());
+	        	$accessData->cert = $environment->getPlatformConfigValue(self::CERTIFICATE, true, $DBServer->GetCloudLocation());
+	        	$accessData->pk = $environment->getPlatformConfigValue(self::PRIVATE_KEY, true, $DBServer->GetCloudLocation());
+	        	$accessData->ec2_url = $environment->getPlatformConfigValue(self::EC2_URL, true, $DBServer->GetCloudLocation());
+	        	$accessData->s3_url = $environment->getPlatformConfigValue(self::S3_URL, true, $DBServer->GetCloudLocation());
+	        	$accessData->cloud_cert = $environment->getPlatformConfigValue(self::CLOUD_CERTIFICATE, true, $DBServer->GetCloudLocation());
 	        	
 	        	$message->platformAccessData = $accessData;
 			}

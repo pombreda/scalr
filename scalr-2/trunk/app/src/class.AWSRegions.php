@@ -6,6 +6,7 @@
 		const US_WEST_1 		= 'us-west-1';
 		const EU_WEST_1 		= 'eu-west-1';		
 		const AP_SOUTHEAST_1 	= 'ap-southeast-1';
+		const AP_NORTHEAST_1	= 'ap-northeast-1';
 				
 		private static $Regions = array(
 			"us-east-1"	=> array(
@@ -22,6 +23,10 @@
 			),
 			"ap-southeast-1" => array(
 				"api_url" => "https://ec2.ap-southeast-1.amazonaws.com",				
+				"name"	  => "EC2 / Asia Pacific 1"
+			),
+			"ap-northeast-1" => array(
+				"api_url" => "https://ec2.ap-northeast-1.amazonaws.com",				
 				"name"	  => "EC2 / Asia Pacific 1"
 			)
 		);

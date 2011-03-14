@@ -40,7 +40,7 @@
 			    $data = array();
 			    foreach ($vars as $var)
 			    {
-			    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
+			    	if (!in_array($var, array_keys(CONFIG::getScriptingBuiltinVariables())))
 			    		$data[$var] = ucwords(str_replace("_", " ", $var));
 			    }
 			    $data = json_encode($data);

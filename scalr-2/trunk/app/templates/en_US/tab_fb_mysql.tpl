@@ -5,10 +5,21 @@ new Scalr.Viewers.FarmRolesEditTab({
 	labelWidth: 150,
 
 	isEnabled: function (record) {
-		return (record.get('behaviors').match('mysql') && record.get('platform') == 'ec2');
+		return (record.get('behaviors').match('mysql') && 
+			(
+				record.get('platform') == 'ec2' ||
+				record.get('platform') == 'rackspace'
+			)
+		);
 	},
 
 	getDefaultValues: function (record) {
+	
+		if (record.get('platform') == 'ec2')
+			var default_storage_engine = 'ebs';
+		else if (record.get('platform') == 'rackspace')
+			var default_storage_engine = 'eph';
+	
 		return {
 			'mysql.enable_bundle': 1,
 			'mysql.bundle_every': 48,
@@ -16,7 +27,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 			'mysql.pbw1_mm': '00',
 			'mysql.pbw2_hh': '09',
 			'mysql.pbw2_mm': '00',
-			'mysql.data_storage_engine': 'ebs',
+			'mysql.data_storage_engine': default_storage_engine,
 			'mysql.ebs_volume_size': 100,
 			'mysql.enable_bcp': 0
 		};
@@ -30,7 +41,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 				"MySQL snapshots contain a hotcopy of mysql data directory, file that holds binary log position and debian.cnf" +
 				"<br>" +
 				"When farm starts:<br>" +
-				"1. MySQL master dowloads and extracts a snapshot from S3<br>" +
+				"1. MySQL master dowloads and extracts a snapshot from storage depends on cloud platfrom<br>" +
 				"2. When data is loaded and master starts, slaves download and extract a snapshot as well<br>" +
 				"3. Slaves are syncing with master for some time"
 		});
@@ -90,18 +101,20 @@ new Scalr.Viewers.FarmRolesEditTab({
 				this.findOne('name', 'mysql.ebs.rotate').disable();
 			}
 			this.findOne('name', 'mysql.ebs.rotate').setValue(settings['mysql.ebs.rotate'] || 5);
+			
+			this.findOne('name', 'mysql.ebs_volume_size').setValue(settings['mysql.ebs_volume_size'] || 100);
+
+			if (record.get('new'))
+				this.findOne('name', 'mysql.ebs_volume_size').enable();
+			else
+				this.findOne('name', 'mysql.ebs_volume_size').disable();
+			
 		} else {
 			this.findOne('name', 'mysql.ebs_volume_size_composite').hide();
 			this.findOne('name', 'mysql.ebs.snaps_rotation').hide();
 		}
 
 		this.findOne('name', 'mysql.storage_data_engine').setValue(settings['mysql.data_storage_engine']);
-		this.findOne('name', 'mysql.ebs_volume_size').setValue(settings['mysql.ebs_volume_size'] || 100);
-
-		if (record.get('new'))
-			this.findOne('name', 'mysql.ebs_volume_size').enable();
-		else
-			this.findOne('name', 'mysql.ebs_volume_size').disable();
 	},
 
 	hideTab: function (record) {

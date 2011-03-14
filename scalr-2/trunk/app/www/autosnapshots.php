@@ -4,7 +4,7 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 		
 	// select autosnapshot type by params
@@ -74,6 +74,7 @@
 					
 					$AmazonRDSClient->DescribeDBInstances($req_name);
 						
+					$req_region = $_SESSION['aws_region']; 
 				}
 				catch(Exception $e)
 				{

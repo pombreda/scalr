@@ -79,15 +79,17 @@
 				$farmList->addAttribute('title', $farm_row['name']);	
 						
 				$itemFarm = $farmList->addChild('item','Manage');
-					$itemFarm->addAttribute('href', "/farms_view.php?farmid={$farm_row['id']}");
+					$itemFarm->addAttribute('href', "#/farms/{$farm_row['id']}/view");
+				$itemFarm = $farmList->addChild('item','Edit');
+					$itemFarm->addAttribute('href', "/farms_builder.php?id={$farm_row['id']}");
 				$itemFarm = $farmList->addChild('separator');			
-				$itemFarm = $farmList->addChild('item','Roles');
-					$itemFarm->addAttribute('href', "/farm_roles_view.php?farmid={$farm_row['id']}");								
-				$itemFarm = $farmList->addChild('item','Servers');
-					$itemFarm->addAttribute('href', "/servers_view.php?farmid={$farm_row['id']}");					
-				$itemFarm = $farmList->addChild('item','DNS Zones');
-					$itemFarm->addAttribute('href', "/dns_zones_view.php?farmid={$farm_row['id']}");
-				$itemFarm = $farmList->addChild('item','Apache virtualhosts');
+				$itemFarm = $farmList->addChild('item',"List farm's roles");
+					$itemFarm->addAttribute('href', "#/farms/{$farm_row['id']}/roles");								
+				$itemFarm = $farmList->addChild('item',"List farm's servers");
+					$itemFarm->addAttribute('href', "#/servers/view?farmId={$farm_row['id']}");					
+				$itemFarm = $farmList->addChild('item', "List farm's DNS zones");
+					$itemFarm->addAttribute('href', "#/dnszones/view?farmId={$farm_row['id']}");
+				$itemFarm = $farmList->addChild('item',"List farm's apache vhosts");
 					$itemFarm->addAttribute('href', "/apache_vhosts_view.php?farm_id={$farm_row['id']}");
 											
 			}

@@ -28,6 +28,7 @@
     		'Modules_Platforms_Rds'		=> SRCPATH.'/Modules/Platforms/Rds/Rds.php',
     		'Modules_Platforms_Eucalyptus'		=> SRCPATH.'/Modules/Platforms/Eucalyptus/Eucalyptus.php',
     		'Modules_Platforms_Rackspace'		=> SRCPATH.'/Modules/Platforms/Rackspace/Rackspace.php',
+    		'Modules_Platforms_Nimbula'		=> SRCPATH.'/Modules/Platforms/Nimbula/Nimbula.php',
 
     		'IModules_Platforms_Adapters_Status' => SRCPATH.'/Modules/Platforms/interface.IModules_Platforms_Adapters_Status.php',
     		'IPlatformModule'		=> SRCPATH.'/Modules/interface.IPlatformModule.php',
@@ -43,6 +44,8 @@
 
 
     		'Modules_Platforms_Rackspace_Adapters_Status'	=> SRCPATH.'/Modules/Platforms/Rackspace/Adapters/Status.php',
+    		'Modules_Platforms_Nimbula_Adapters_Status'	=> SRCPATH.'/Modules/Platforms/Nimbula/Adapters/Status.php',
+    	
 
 
     		'Modules_Platforms_Rds_Helpers_Rds'	=> SRCPATH.'/Modules/Platforms/Rds/Helpers/Rds.php',
@@ -62,6 +65,7 @@
 
     		'ScalrAPI_2_0_0'		=> SRCPATH.'/api/class.ScalrAPI_2_0_0.php',
     		'ScalrAPI_2_1_0'		=> SRCPATH.'/api/class.ScalrAPI_2_1_0.php',
+    		'ScalrAPI_2_2_0'		=> SRCPATH.'/api/class.ScalrAPI_2_2_0.php',
 
     		/****************************** Messaging  ***************************/
     		'ScalrMessagingService'				=> SRCPATH.'/class.ScalrMessagingService.php',
@@ -120,6 +124,7 @@
 			'ROLE_BEHAVIORS'		=> SRCPATH."/types/enum.ROLE_BEHAVIORS.php",
     		'ROLE_GROUPS'			=> SRCPATH."/types/enum.ROLE_GROUPS.php",
 			'ROLE_TYPE'				=> SRCPATH."/types/enum.ROLE_TYPE.php",
+    		'ROLE_TAGS'				=> SRCPATH."/types/enum.ROLE_TAGS.php",
 			'AWS_SCALR_EBS_STATE'	=> SRCPATH."/types/enum.AWS_SCALR_EBS_STATE.php",
     		'AWS_SCALR_EIP_STATE'	=> SRCPATH."/types/enum.AWS_SCALR_EIP_STATE.php",
 			'AMAZON_EBS_STATE'		=> SRCPATH."/types/enum.AMAZON_EBS_STATE.php",
@@ -150,6 +155,7 @@
     		'VPS_SERVER_PROPERTIES'	=> SRCPATH."/types/enum.VPS_SERVER_PROPERTIES.php",
     		'EUCA_SERVER_PROPERTIES'=> SRCPATH."/types/enum.EUCA_SERVER_PROPERTIES.php",
     		'RACKSPACE_SERVER_PROPERTIES'	=> SRCPATH."/types/enum.RACKSPACE_SERVER_PROPERTIES.php",
+    		'NIMBULA_SERVER_PROPERTIES'	=> SRCPATH."/types/enum.NIMBULA_SERVER_PROPERTIES.php",
     		'SZR_KEY_TYPE'			=> SRCPATH."/types/enum.SZR_KEY_TYPE.php",
     		'SERVER_REPLACEMENT_TYPE'	=> SRCPATH."/types/enum.SERVER_REPLACEMENT_TYPE.php",
     		'SERVER_SNAPSHOT_CREATION_TYPE'	=> SRCPATH."/types/enum.SERVER_SNAPSHOT_CREATION_TYPE.php",

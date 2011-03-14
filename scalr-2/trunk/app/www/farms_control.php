@@ -9,19 +9,9 @@
         );
 
     if (!$farminfo || $post_cancel)
-        UI::Redirect("farms_view.php");
+        UI::Redirect("/#/farms/view");
                 
-    if ($req_action == "Launch")
-    {    	
-    	if ($post_cbtn_3)
-    		UI::Redirect("farms_builder.php?id={$farminfo['id']}");
-    	
-    	Scalr::FireEvent($farminfo['id'], new FarmLaunchedEvent($req_mark_active));
-        
-        $okmsg = sprintf(_("Farm %s is now launching. It will take few minutes to start all servers."), $farminfo['name']);
-        UI::Redirect("farms_view.php");
-    }
-    elseif ($req_action == "Terminate")
+    if ($req_action == "Terminate")
     {			        	
     	if ($req_term_step == 2 && $farminfo['status'] == FARM_STATUS::RUNNING)
 	    {
@@ -73,7 +63,7 @@
 			    Scalr::FireEvent($farminfo['id'], $event);
 				
 				$okmsg = _("Farm successfully terminated");
-			    UI::Redirect("farms_view.php");
+			    UI::Redirect("/#/farms/view");
 		    }
     	}
     }

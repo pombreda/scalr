@@ -71,7 +71,7 @@ Scalr.Viewers.AllRolesViewer = Ext.extend(Ext.Panel, {
 		}, '-', 'Origin:', {
 			itemId: 'origin',
 			xtype: 'combo',
-			store: [ '', 'Shared', 'Custom', 'Community' ],
+			store: [ [ '', '' ], [ 'Shared', 'Scalr' ], [ 'Custom', 'Private' ] ],
 			value: '',
 			mode: 'local',
 			forceSelection: true,
@@ -277,28 +277,35 @@ Scalr.Viewers.AllRolesViewer = Ext.extend(Ext.Panel, {
 
 					d.child('img.info').removeAllListeners();
 					d.child('img.info').on('click', function (e) {
-						var loadMask = new Ext.LoadMask(Ext.getBody(), { msg: "Loading role information ..." });
-						loadMask.show();
+						// temporary, in future: #/roles/1/info
+						Ext.Msg.wait("Loading role information ...");
 						Ext.Ajax.request({
-							url: '/server/ajax-ui-server.php',
-							params: { action: 'GetRoleInfo', roleId: t.getAttribute("itemid") },
+							url: '/roles/info',
+							params: { roleId: t.getAttribute("itemid") },
 							success: function (response) {
 								var result = Ext.decode(response.responseText);
-								if (result.result == 'ok') {
-									var win = new Ext.Window({
-										title: 'Role information',
-										html: result.data,
+								if (result.success == true) {
+									result.module = "(function() { return " + result.module + "; })();";
+									var obj = eval(result.module);
+									var formObj = obj.create({}, result.moduleParams);
+
+									new Ext.Window({
 										modal: true,
-										draggable: false,
+										title: formObj.title,
+										closable: true,
+										width: 700,
+										autoHeight: true,
 										resizable: false,
-										bodyStyle: 'background-color: white'
-									});
-									win.show();
+										bodyStyle: 'background-color: white; padding: 5px',
+										items: formObj.initialConfig.items
+									}).show();
+
+									delete formObj;
 								}
-								loadMask.hide();
+								Ext.Msg.hide();
 							},
 							failure: function() {
-								loadMask.hide();
+								Ext.Msg.hide();
 							}
 						});
 						e.preventDefault();
@@ -316,15 +323,19 @@ Scalr.Viewers.AllRolesViewer = Ext.extend(Ext.Panel, {
 						if (cnt > 1) {
 							plat = platforms[0][0];
 						} else {
+
 							if (rLocations[plat].length == 1) {
+								// TODO: create one place add function (see later)
 								this.fireEvent('addrole', {
 									role_id: t.getAttribute('itemid'),
 									platform: plat,
 									cloud_location: rLocations[plat][0],
 									arch: role.get('arch'),
+									generation: role.get('generation'),
 									name: role.get('name'),
 									behaviors: role.get('behaviors'),
-									group: role.get('group')
+									group: role.get('group'),
+									tags: role.get('tags')
 								});
 								return;
 							}
@@ -401,14 +412,17 @@ Scalr.Viewers.AllRolesViewer = Ext.extend(Ext.Panel, {
 									text: 'Add',
 									handler: function() {
 										if (win.getComponent('form').getForm().isValid()) {
+											// TODO: don't forget this too
 											this.fireEvent('addrole', {
 												role_id: t.getAttribute('itemid'),
 												platform: win.getComponent('form').getForm().findField('platform').getValue(),
 												cloud_location: win.getComponent('form').getForm().findField('cloud_location').getValue(),
+												generation: role.get('generation'),
 												arch: role.get('arch'),
 												name: role.get('name'),
 												behaviors: role.get('behaviors'),
-												group: role.get('group')
+												group: role.get('group'),
+												tags: role.get('tags')
 											});
 											win.close();
 										}

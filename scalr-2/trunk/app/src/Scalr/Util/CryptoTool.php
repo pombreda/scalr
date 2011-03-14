@@ -30,13 +30,18 @@ class Scalr_Util_CryptoTool
 	public function encrypt ($string, $cryptoKey) {
 		list($key, $iv) = $this->splitKeyIv($cryptoKey);
 		$string = $this->pkcs5Padding($string, $this->blockSize);
-		return base64_encode(mcrypt_encrypt($this->cryptoAlgo, $key, $string, $this->cipherMode, $iv));    		
+		return base64_encode(mcrypt_encrypt($this->cryptoAlgo, $key, $string, $this->cipherMode, $iv));
 	}
 
 	public function decrypt ($string, $cryptoKey) {
-		list($key, $iv) = $this->splitKeyIv($cryptoKey);		
+		list($key, $iv) = $this->splitKeyIv($cryptoKey);
 		$ret = mcrypt_decrypt($this->cryptoAlgo, $key, base64_decode($string), $this->cipherMode, $iv);
 		// Remove padding
 		return trim($ret, "\x00..\x1F");
+	}
+
+	public static function sault($length = 10)
+	{
+		return substr(md5(uniqid(rand(), true)), 0, $length);
 	}
 }

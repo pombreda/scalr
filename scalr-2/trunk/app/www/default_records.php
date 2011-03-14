@@ -5,6 +5,8 @@
 	
 	if ($_POST) 
 	{
+		//var_dump($_POST);
+		
 		$db->Execute("DELETE FROM default_records WHERE clientid=?", array(Scalr_Session::getInstance()->getClientId()));
 		
 		$records = array();
@@ -13,6 +15,7 @@
 			{
 				$r['value'] = str_replace('%hostname%', 'fakedomainname.qq', $r['value']);
 				$r['name'] = str_replace('%hostname%', 'fakedomainname.qq', $r['name']);
+				$r['id'] = rand(10000,99999);
 				array_push($records, $r);
 			}
 				

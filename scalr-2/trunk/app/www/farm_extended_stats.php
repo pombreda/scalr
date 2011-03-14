@@ -9,12 +9,12 @@
         );
 
     if (!$farminfo)
-        UI::Redirect("farms_view.php");
+        UI::Redirect("/#/farms/view");
         
     if ($farminfo["status"] != 1)
     {
     	$errmsg = _("You cannot view statistics for terminated farm");
-    	UI::Redirect("farms_view.php");
+    	UI::Redirect("/#/farms/view");
     }
         
 	$display["title"] = _("Farm&nbsp;&raquo;&nbsp;Extended statistics");

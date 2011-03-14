@@ -1,117 +1,135 @@
 <?
-	$ADM = true;
-	session_start();
+	@session_start();
 	require_once (dirname(__FILE__)."/../../src/prepend.inc.php");
 
-	// Define current context
+	Scalr_Session::restore();
 
-	if (!$context)
-	{
-		CONTEXTS::$APPCONTEXT = !stristr($_SERVER['PHP_SELF'], "event_handler.php") ? APPCONTEXT::CONTROL_PANEL : APPCONTEXT::EVENT_HANDLER;
+	if (/*isset($_SERVER['HTTP_X_AJAX_SCALR']) && 0 || 0 ||*/ !Scalr_Session::getInstance()->isAuthenticated()) {
+		// @TODO: must be "!Scalr_Session::getInstance()->isAuthenticated()", this is for testing purpose
+		Scalr_Session::destroy();
 
-		if ($_SERVER["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest")
-		{
-			CONTEXTS::$APPCONTEXT = APPCONTEXT::AJAX_REQUEST;
+		if (isset($_SERVER['HTTP_X_AJAX_SCALR']))
+			header("HTTP/1.0 403 Forbidden");
+		else
+			header('Location: /login.html');
+
+		exit();
+	}
+
+	if ( !defined("NO_TEMPLATES")) { // @TODO: remove after clearing old ajax handlers
+		if (Scalr_Session::getInstance()->getEnvironment()) {
+			$env = array('list' => array(), 'current' => Scalr_Session::getInstance()->getEnvironment()->name);
+			$current = Scalr_Session::getInstance()->getEnvironment()->id;
+			foreach (Scalr_Session::getInstance()->getEnvironment()->loadByFilter(array('clientId' => Scalr_Session::getInstance()->getClientId())) as $value) {
+				$env['list'][] = array('text' => $value['name'], 'envId' => $value['id'], 'checked' => ($value['id'] == $current) ? true : false, 'group' => 'env', 'style' => 'width: 124px');
+			}
+
+			$Smarty->assign('session_environments', json_encode($env));
 		}
 	}
-	else
-		CONTEXTS::$APPCONTEXT = $context;
-		
-	if (!defined("NO_AUTH"))
+
+	// All uncaught exceptions will raise ApplicationException
+	function exception_handler($exception)
 	{
-    	Core::load("Data/JSON/JSON.php");
-    	Core::load("XMLNavigation", dirname(__FILE__));
-    	
-    	define("NOW", str_replace("..","", substr(basename($_SERVER['PHP_SELF']),0, -4)));
-	
-    	if ($_COOKIE['scalr_uid'])
-    	{
-    		$Client = Client::Load($_COOKIE['scalr_uid']);
-    		
-    		$cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../../etc/.passwd"));
-    		
-    		$signature = $Crypto->Hash("{$_COOKIE["scalr_sault"]}:{$_COOKIE["scalr_hash"]}:{$_COOKIE["scalr_uid"]}:{$_SERVER['REMOTE_ADDR']}:{$cpwd}"); 
-    		if ($signature == $_COOKIE['scalr_signature'])
-    		{
-    			$_SESSION["sault"] = $_COOKIE['scalr_sault'];
-        		$_SESSION["hash"] = $_COOKIE['scalr_hash'];
-        		//$_COOKIE['scalr_uid'];
-        		$_SESSION["cpwd"] = $cpwd;
-        		
-        		Scalr_Session::create($_COOKIE["scalr_uid"], $_COOKIE["scalr_uid"], Scalr_AuthToken::ACCOUNT_ADMIN);
-    		}
-    	}
-    	
-    	// Auth
-    	if (Scalr_Session::getInstance()->getClientId() == 0)
-        	$newhash = $Crypto->Hash(CONFIG::$ADMIN_LOGIN.":".CONFIG::$ADMIN_PASSWORD.":".$_SESSION["sault"]);
-    	else 
-    	{
-    	    $user = $db->GetRow("SELECT * FROM clients WHERE id=?", Scalr_Session::getInstance()->getClientId());
-    	    $newhash = $Crypto->Hash("{$user['email']}:{$user['password']}:".$_SESSION["sault"]);
-    	}
-    	
-    	$valid = ($newhash == $_SESSION["hash"] && !empty($_SESSION["hash"]));
-    	
-    	if (!$valid && !stristr($_SERVER['PHP_SELF'], "login.php") && !stristr($_SERVER['PHP_SELF'], "index.php"))
-    	{
-    		if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST)
-    		{
-	    		$_SESSION["REQUEST_URI"] = $_SERVER['REQUEST_URI'];
-	    		$err[] = "Please login";
-	    		UI::Redirect("/login.php");
-    		}
-    		else
-    		{
-    			throw new ApplicationException(_("Session expired. Please <a href='/login.php'>login</a> again."), 
-    					ApplicationException::NOT_AUTHORIZED);
+		UI::DisplayException($exception);
+	}
+	set_exception_handler("exception_handler");
 
-    			exit();
-    		}
-    	}
 
-    	if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST && ($user || $valid))
-    	{
-	    	//
-	    	// Load menu
-	    	//
-	    	require_once (dirname(__FILE__)."/navigation.inc.php");
-    	}
-    	
-    	
-    	if ($get_search)
-    	{
-    		$display["grid_query_string"] = "&query=".addslashes($get_search);
-    		$display["search"] = htmlspecialchars($get_search);
-    	}
- 		
-    	
-    	// title 
-    	$display["title"] = "Scalr CP";
-    	
-    	if (Scalr_Session::getInstance()->getClientId() != 0)
-    	{
-    		define("SCALR_SERVER_TZ", date_default_timezone_get());
-    		
-    		$tz = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
-    		if ($tz)
-	    		date_default_timezone_set($tz);
-	    		
-	    	$display['logged_as'] = Client::Load(Scalr_Session::getInstance()->getClientId())->Email; 
-    	}
-    	
-    	if (Scalr_Session::getInstance()->getEnvironment())
-    	{
-	    	$locations = Scalr_Session::getInstance()->getEnvironment()->getLocations();
-	    	$display['locations'] = $locations;
-    	}
-    }
+	Core::load("XMLNavigation", dirname(__FILE__)); // @TODO: delete xml menu, replace with new one
+	define("NOW", str_replace("..","", substr(basename($_SERVER['PHP_SELF']),0, -4))); // @TODO: remove with old templates
+
+	// Auth
+	if (Scalr_Session::getInstance()->isAuthenticated())
+	{
+		if (Scalr_Session::getInstance()->getClientId() != 0) {
+			$user = $db->GetRow("SELECT * FROM clients WHERE id=?", Scalr_Session::getInstance()->getClientId());
+		}
+
+		if (Scalr_Session::getInstance()->getClientId() != 0 && $user["isactive"] == 0 && !stristr($_SERVER['PHP_SELF'], "billing.php") && !stristr($_SERVER['REQUEST_URI'], 'logout'))
+			UI::Redirect("/billing.php");
+
+		//if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST)
+		//{
+			//
+			// Load menu
+			//
+			require_once (dirname(__FILE__)."/navigation.inc.php");
+		//}
+	}
+
+	if ($get_search)
+	{
+		$display["grid_query_string"] = "&query=".addslashes($get_search);
+		$display["search"] = htmlspecialchars($get_search);
+	}
+
+
+	// title
+	$display["title"] = "Scalr CP";
+
+	if (Scalr_Session::getInstance()->getClientId() != 0)
+	{
+		define("SCALR_SERVER_TZ", date_default_timezone_get());
+
+		$tz = Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(ENVIRONMENT_SETTINGS::TIMEZONE);
+		if ($tz)
+			date_default_timezone_set($tz);
+
+		$display['logged_as'] = Client::Load(Scalr_Session::getInstance()->getClientId())->Email;
+	}
+
+	if (Scalr_Session::getInstance()->getEnvironment())
+	{
+		$locations = Scalr_Session::getInstance()->getEnvironment()->getLocations();
+		$display['locations'] = $locations;
+	}
+
+
+
+    if ($req_redirect_to == 'support')
+	{	
+		$farms_rs = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array(Scalr_Session::getInstance()->getClientId()));
+		$farms = array();
+		foreach ($farms_rs as $frm)
+			$farms[] = $frm['id'];
+			
+		$farms = implode(', ', array_values($farms));
+		
+		$Client = Client::Load(Scalr_Session::getInstance()->getClientId());
+		
+		$args = array(
+        	"name"		=> $Client->Fullname,
+			"Farms"		=> $farms,
+			"ClientID"	=> $Client->ID,
+			"email"		=> $Client->Email,
+        	"expires" => date("D M d H:i:s O Y", time()+120)
+        );
+        		        			
+		$token = GenerateTenderMultipassToken(json_encode($args));
+        //////////////////////////////
+        	        			
+        UI::Redirect("http://support.scalr.net/?sso={$token}");
+	}
+    
+    define("CHARGIFY_SITE_SHARED_KEY", "jHw77cfhB3ZJiVpTdJex");
     
     //TODO: MOVE TO SESSION
-    
+
+	//
+	// Select AWS regions (Temp, for old ugly code)
+	//
+	$regions = array();
+	foreach (AWSRegions::GetList() as $region)
+	{
+		$regions[$region] = AWSRegions::GetName($region);
+	}
+	$display['regions'] = $regions;
+
+
     if ($req_region)
-    	$_SESSION['aws_region'] = $req_region; 
-    
+    	$_SESSION['aws_region'] = $req_region;
+
     if (!$_SESSION['aws_region'])
     	$_SESSION['aws_region'] = 'us-east-1';
 ?>

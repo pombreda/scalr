@@ -129,7 +129,7 @@
 			}
 		}
 		
-		public function getParametersExtJson()
+		public function getJsParameters()
 		{
 			$items = array();
 			foreach ($this->parameters as $param)
@@ -137,29 +137,26 @@
 				if ($param->getName() == '__defaults__')
 					continue;
 				
+				$itemField = new stdClass();
+				$itemField->name = "config[{$param->getName()}]";
+				$itemField->flex = 1;	
+				
 				switch($param->getType())
 				{
 					case 'text':
-						$itemField = new stdClass();
 						$itemField->xtype = 'textfield';
-						$itemField->name = $param->getName();
 						$itemField->allowBlank = true;
-						$itemField->width = 200;
 						$itemField->value = $param->getValue();
 					break;
 					
 					case 'boolean':
-						$itemField = new stdClass();
 						$itemField->xtype = 'checkbox';
-						$itemField->name = $param->getName();
 						$itemField->inputValue = 1;
 						$itemField->checked = ($param->getValue() == 1);
 						break;
 						
 					case 'select':
-						$itemField = new stdClass();
 						$itemField->xtype = 'combo';
-						$itemField->name = $param->getName();
 						$itemField->allowBlank = true;
 						$itemField->editable = true;
 						$itemField->typeAhead = false;
@@ -169,12 +166,16 @@
 						$itemField->value = $param->getValue();
 						$itemField->store = $param->getAllowedValues();
 						break;
+					default:
+						continue;
+						break;
 				}
 				
 				
 				$itemDescription = new stdClass();
-				$itemDescription->html = $param->getDescription();
-				$itemDescription->style = 'font-style:italic;padding-top:3px;';
+				$itemDescription->html = '<img class="tipHelp" src="/images/ui-ng/icons/info_icon_16x16.png" style="padding: 2px; cursor: help;">';
+				$itemDescription->hText = $param->getDescription();
+				
 				
 				$item = new stdClass();
 				$item->xtype = 'compositefield';
@@ -187,6 +188,6 @@
 				$items[] = $item;
 			}
 			
-			return json_encode($items);
+			return $items;
 		}
 	}

@@ -11,13 +11,20 @@
 <script type="text/javascript">
 	var FARM_ID = '{$id}';
 	var ROLE_ID = '{$role_id}';
-	var currentTimeZone = 'Current time zone is: <span style="font-weight: bold;">{$current_time_zone}</span> ({$current_time}). <a href="/environment_edit.php?env_id={$current_env_id}">Click here</a> if you want to change it.</div>'
+	var currentTimeZone = 'Current time zone is: <span style="font-weight: bold;">{$current_time_zone}</span> ({$current_time}). <a href="#/environments/{$current_env_id}/edit">Click here</a> if you want to change it.</div>'
 
 	{literal}
 	Ext.onReady(function() {
 		hljs.initHighlightingOnLoad();
 
 		var farm = new Scalr.FarmRole.Farm(FARM_ID, ROLE_ID);
+
+		{/literal}
+		farm.platforms = {$platforms};
+		farm.locations = {$locations};
+		farm.groups = {$groups};
+		{literal}
+		
 		farm.createPanel = function() {
 			var panel = new Ext.TabPanel({
 				renderTo: 'tabpanel-farms-add',
@@ -125,6 +132,7 @@
 									{include file="tab_fb_mysql.tpl"},
 									{include file="tab_fb_balancing.tpl"},
 									{include file="tab_fb_placement.tpl"},
+									{include file="tab_fb_rs_placement.tpl"},
 									{include file="tab_fb_params.tpl"},
 									{include file="tab_fb_rds.tpl"},
 									{include file="tab_fb_eips.tpl"},
@@ -135,6 +143,7 @@
 									{include file="tab_fb_cloudwatch.tpl"},
 									{include file="tab_fb_vpc.tpl"},
 									{include file="tab_fb_euca.tpl"},
+									{include file="tab_fb_nimbula.tpl"},
 									{include file="tab_fb_servicesconfig.tpl"}
 									{literal}
 								]

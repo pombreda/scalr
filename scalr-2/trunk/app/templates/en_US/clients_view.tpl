@@ -27,7 +27,7 @@ Ext.onReady(function () {
     });
 	
 	function farmRenderer(value, p, record) {
-		return record.data.farms;
+		return record.data.farms+' [<a href="#/farms/view?clientId='+record.data.id+'">View</a>]';
 	}
 
 	function commentRenderer(value, p, record)
@@ -103,6 +103,8 @@ Ext.onReady(function () {
 			menu: [
 				{text: "Activate", value: "activate"},
 				{text: "Deactivate", value: "deactivate"},
+				'-',
+				{text: "Cleanup", value: "cleanup"},
 				'-',
 				{text: "Delete", value: "delete"}
 			],

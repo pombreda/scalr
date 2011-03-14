@@ -36,7 +36,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 		items: [{
 			xtype: 'checkbox',
 			hideLabel: true,
-			boxLabel: 'Enable <a href="http://aws.amazon.com/cloudwatch/">CloudWatch</a> monitoring for instances of this role',
+			boxLabel: 'Enable Detailed <a href="http://aws.amazon.com/cloudwatch/">CloudWatch</a> monitoring for instances of this role (1 min interval)',
 			name: 'aws.enable_cw_monitoring'
 		}]
 	}]

@@ -11,7 +11,7 @@
     }
 	catch(Exception $e)
 	{
-		UI::Redirect("farms_view.php");	
+		UI::Redirect("/#/farms/view");	
 	}
 
 	$mysql_farm_role_id = $db->GetOne("SELECT id FROM farm_roles WHERE role_id IN (SELECT role_id FROM role_behaviors WHERE behavior=?) AND farmid=?", 
@@ -21,12 +21,23 @@
 	$DBFarmRole = DBFarmRole::LoadByID($mysql_farm_role_id);
 	
 	if ($DBFarmRole->Platform == SERVER_PLATFORMS::RDS)
-		UI::Redirect("farms_view.php");
+		UI::Redirect("/#/farms/view");
 	
-	$display["title"] = "Farm '<a href='farms_view.php?id={$DBFarm->ID}'>{$DBFarm->Name}</a>'&nbsp;&raquo;&nbsp;Mysql information";		
+	$display["title"] = "Farm '<a href='#/farms/{$DBFarm->ID}/view'>{$DBFarm->Name}</a>'&nbsp;&raquo;&nbsp;Mysql information";		
 	
-	$display['mysql_data_storage_engine'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE);
-	$display['mysql_master_ebs_volume_id'] = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
+	// Storage info
+	
+	$storage = array(
+		'type' => $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+		'version' => $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_VOLUME_ID) ? 2 : 1 
+	);
+	
+	$storage['id'] = ($storage['version'] == 2) ? $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_VOLUME_ID) : $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
+	
+	$display['storage'] = $storage;
+	
+	
+	
 	
 	if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BCP_TS))
 		$display["mysql_last_backup"] = date("d M Y \a\\t H:i:s", $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BCP_TS));
@@ -144,6 +155,21 @@
 			}
 		}
 		
+		if ($post_pma_reset)
+		{
+			$mysql_servers = $DBFarm->GetMySQLInstances(true);
+			
+			if ($mysql_servers[0])
+			{
+				$DBServer = $mysql_servers[0];	
+				$DBFarmRole = $DBServer->GetFarmRoleObject();
+				
+				$DBFarmRole->ClearSettings("mysql.pma");
+				
+				$post_pma_request_credentials = true;
+			}
+		}
+		
 		if ($post_pma_request_credentials)
 		{
 			$mysql_servers = $DBFarm->GetMySQLInstances(true);
@@ -193,6 +219,9 @@
 		if ($post_run_bcp)
 		{
 			$mysql_servers = $DBFarm->GetMySQLInstances(false, true);
+			if (!$mysql_servers) {
+				$mysql_servers = $DBFarm->GetMySQLInstances(true); 
+			}
 			
 			if (!$mysql_servers)
 				$errmsg = _("There is no running mysql slave instance.");

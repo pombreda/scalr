@@ -1,3 +1,16 @@
+2.2.0 Stable Release [March 14 2010]
+* Rackspace support
+* Nimbula support
+* Multi cloud locations for Eucalyptus
+* Chef based Role builder
+* New UI controller: faster, more pleasant Scalr UI
+* HTTPS support for Amazon ELB
+* Initial version of new Scalr Dashboard
+* Thousands of bugfixes and small improvements
+
+2.1.1 Stable Release [November 12 2010]
+* Various bugfixes and improvements
+
 2.1.0 Stable Release [November 1 2010]
 * Eucalyptus support
 * Multi Cloud Farms 

@@ -21,7 +21,7 @@
 			ENVIRONMENT_SETTINGS::SYNC_TIMEOUT,
 			ENVIRONMENT_SETTINGS::TIMEZONE
 		);
-		
+
 		public
 			$id,
 			$name,
@@ -66,13 +66,13 @@
 			$id = $this->db->GetOne("SELECT env_id FROM client_environment_properties WHERE name = ? AND value = ?", array(
 				ENVIRONMENT_SETTINGS::API_KEYID, $keyId
 			));
-			
+
 			if ($id)
 				return $this->loadById($id);
 			else
 				throw new Exception(sprintf(_("API KeyID '%s' not found in database"), $keyId));
 		}
-		
+
 		public function loadDefault($clientId)
 		{
 			$info = $this->db->GetRow("SELECT * FROM client_environments WHERE client_id = ? AND is_system = 1", array($clientId));
@@ -82,19 +82,19 @@
 			return $this->loadBy($info);
 		}
 
-		public function getPlatformConfigValue($key, $encrypted = true)
+		public function getPlatformConfigValue($key, $encrypted = true, $group = '')
 		{
 			if (in_array($key, $this->plainTextSettings))
 				$encrypted = false;
-			
-			if (! isset($this->cache[$key])) {
-				$value = $this->db->GetOne("SELECT value FROM client_environment_properties WHERE env_id = ? AND name = ?", array($this->id, $key));
+
+			if (! isset($this->cache[$group][$key])) {
+				$value = $this->db->GetOne("SELECT value FROM client_environment_properties WHERE env_id = ? AND name = ? AND `group` = ?", array($this->id, $key, $group));
 				if ($encrypted)
 					$value = $this->decryptValue($value);
-				$this->cache[$key] = $value ? $value : null;
+				$this->cache[$group][$key] = $value ? $value : null;
 			}
 
-			return $this->cache[$key];
+			return $this->cache[$group][$key];
 		}
 
 		public function setSystem()
@@ -123,13 +123,14 @@
 			if (!$this->cache['locations']) {
 				$this->cache['locations'] = array();
 				foreach ($this->getEnabledPlatforms() as $platform) {
-		    		$this->cache['locations'] = array_merge(
-		    			call_user_func(array("Modules_Platforms_".ucfirst($platform), "getLocations")),
-		    			$this->cache['locations']
-		    		);
+					$locs = call_user_func(array("Modules_Platforms_".ucfirst($platform), "getLocations"));
+					foreach ($locs as $k => $v)
+						$this->cache['locations'][$k] = $v;
 		    	}
 			}
 
+			krsort($this->cache['locations']);
+			
 			return $this->cache['locations'];
 		}
 
@@ -146,7 +147,7 @@
 			$this->cache['locations'] = null;
 		}
 
-		public function setPlatformConfig($props, $encrypt = true)
+		public function setPlatformConfig($props, $encrypt = true, $group = '')
 		{
 			$updates = array();
 
@@ -161,20 +162,20 @@
 			}
 
 			foreach ($updates as $key => $value) {
-				
+
 				if (in_array($key, $this->plainTextSettings))
 					$e = false;
 				else
 					$e = $encrypt;
-				
+
 				if ($e && $value)
-					$value = $this->encryptValue($value);			
-					
+					$value = $this->encryptValue($value);
+
 				try {
 					if (! $value)
-						$this->db->Execute("DELETE FROM client_environment_properties WHERE env_id = ? AND name = ?", array($this->id, $key));
+						$this->db->Execute("DELETE FROM client_environment_properties WHERE env_id = ? AND name = ? AND `group` = ?", array($this->id, $key, $group));
 					else
-						$this->db->Execute("INSERT INTO client_environment_properties SET env_id = ?, name = ?, value = ? ON DUPLICATE KEY UPDATE value = ?", array($this->id, $key, $value, $value));
+						$this->db->Execute("INSERT INTO client_environment_properties SET env_id = ?, name = ?, value = ?, `group` = ? ON DUPLICATE KEY UPDATE value = ?", array($this->id, $key, $value, $group, $value));
 				} catch (Exception $e) {
 					throw new Exception (sprintf(_("Cannot update record. Error: %s"), $e->getMessage()), $e->getCode());
 				}

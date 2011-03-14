@@ -71,13 +71,40 @@ new Scalr.Viewers.FarmRolesEditTab({
 	showTab: function (record) {
 		var settings = record.get('settings');
 
+		var tagsString = record.get('tags').join(" ");
+		var typeArray = new Array();
+		var typeValue = '';
+
 		if (record.get('arch') == 'i386') {
-			this.findOne('name', 'aws.instance_type').store.loadData(['t1.micro', 'm1.small', 'c1.medium']);
-			this.findOne('name', 'aws.instance_type').setValue(settings['aws.instance_type'] || 'm1.small');
+			
+			if (tagsString.indexOf('ec2.ebs') != -1 || settings['aws.instance_type'] == 't1.micro')			
+				typeArray = ['t1.micro', 'm1.small', 'c1.medium'];
+			else
+				typeArray = ['m1.small', 'c1.medium'];
+			
+			typeValue = (settings['aws.instance_type'] || 'm1.small');
 		} else {
-			this.findOne('name', 'aws.instance_type').store.loadData(['t1.micro', 'm1.large', 'm1.xlarge', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge']);
-			this.findOne('name', 'aws.instance_type').setValue(settings['aws.instance_type'] || 'm1.large');
+			
+			if (tagsString.indexOf('ec2.ebs') != -1 || settings['aws.instance_type'] == 't1.micro')
+			{
+				if (tagsString.indexOf('ec2.hvm') != -1)
+				{
+					typeArray = ['t1.micro', 'm1.large', 'm1.xlarge', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge', 'cc1.4xlarge', 'cg1.4xlarge'];
+				}
+				else
+				{
+					typeArray = ['t1.micro', 'm1.large', 'm1.xlarge', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge'];
+				}
+			}
+			else
+				typeArray = ['m1.large', 'm1.xlarge', 'c1.xlarge', 'm2.xlarge', 'm2.2xlarge', 'm2.4xlarge'];
+			
+			typeValue = (settings['aws.instance_type'] || 'm1.large');
 		}
+		
+		this.findOne('name', 'aws.instance_type').store.loadData(typeArray);
+		this.findOne('name', 'aws.instance_type').setValue(typeValue);
+		
 
 		this.findOne('name', 'aws.availability_zone').setValue(settings['aws.availability_zone'] || '');
 		this.findOne('name', 'aws.availability_zone').region = record.get('cloud_location');

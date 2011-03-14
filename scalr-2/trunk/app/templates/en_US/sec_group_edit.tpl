@@ -99,7 +99,7 @@
         rule_input.id = container.id+"_input";
         rule_input.value = rule;
         
-        document.forms[1].appendChild(rule_input);
+        document.forms[2].appendChild(rule_input);
         
         Ext.get('add_portfrom').dom.value = "";
         Ext.get('add_portto').dom.value = "";
@@ -134,7 +134,7 @@
 		Ext.get('btn_hidden_field').dom.name = this.name;
 		Ext.get('btn_hidden_field').dom.value = this.value;
 		
-		document.forms[1].submit();
+		document.forms[2].submit();
     }
     
     function SetType(type)

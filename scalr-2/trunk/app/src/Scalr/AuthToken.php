@@ -23,6 +23,12 @@
 			return ($this->session->getEnvironmentId() == $envId || $this->hasAccess(self::SCALR_ADMIN));
 		}
 
+		public function hasAccessEnvironmentEx($envId)
+		{
+			if (! $this->hasAccessEnvironment($envId))
+				throw new Exception('You have no permissions for viewing requested page');
+		}
+
 		public function hasAccess($group, $module = null, $action = null)
 		{
 			//TODO:

@@ -84,6 +84,13 @@
 		public $stdErr;
 		
 		/**
+		 * 
+		 * Login
+		 * @var string
+		 */
+		private $login = 'root';
+		
+		/**
 		 * SSH2 constructor
 		 *
 		 * @param integer $term_height
@@ -121,6 +128,7 @@
 		public function addPassword($login, $password)
 		{
 			$this->passwords[] = array($login, $password);
+			$this->login = $login;
 		}
 		
 		/**
@@ -134,6 +142,7 @@
 		public function addPubkey($login, $pubkeyfile, $privkeyfile, $passphrase=null)
 		{
 			$this->pubkeys[] = array($login, $pubkeyfile, $privkeyfile, $passphrase);
+			$this->login = $login;
 		}
 		
 		/**
@@ -187,7 +196,7 @@
 			
 		    $this->connection = @ssh2_connect($host, $port, $hostkeys);
 		    				
-			if (!$this->connection)
+			if (!$this->isConnected())
 				throw new Scalr_Net_Ssh2_Exception("Unable to connect to SSH server on {$host}:{$port}");
 			else
 			{
@@ -224,7 +233,7 @@
 		{
 			try 
 			{
-			    if ($this->connection)
+			    if ($this->isConnected())
 				{
 				    $stream = @ssh2_shell($this->connection, 
 					                    null, 
@@ -258,7 +267,7 @@
 		{
 		    try 
 			{
-			    if ($this->connection)
+			    if ($this->isConnected())
 				{
 				    $stream = @ssh2_exec($this->connection, 
 					                    "{$command}", 
@@ -320,7 +329,7 @@
 		*/
 		public function sendFile($remote_path, $source, $write_type = "w+", $read_content_from_file = true)
 		{
-			if ($this->connection)
+			if ($this->isConnected())
 			{
 				if (!$this->sftp || !is_resource($this->sftp))
 					$this->sftp = @ssh2_sftp($this->connection);
@@ -346,10 +355,10 @@
 
 				}
 				else
-					return false;
+					throw new Scalr_Net_Ssh2_Exception(sprintf(_("sftp: Unable to init sftp")));
 			}
 			else
-				return false;
+				throw new Scalr_Net_Ssh2_Exception(sprintf(_("SSH connection not initialized")));
 
 		}
 		
@@ -363,7 +372,7 @@
 		{
 			$retval = false;
 
-			if ($this->connection)
+			if ($this->isConnected())
 			{
 				if (!$this->sftp || !is_resource($this->sftp))
 					$this->sftp = @ssh2_sftp($this->connection);

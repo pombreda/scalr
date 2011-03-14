@@ -4,18 +4,18 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
         
 	$display['load_extjs'] = true;
 	
 	if (!in_array($req_platform, array(SERVER_PLATFORMS::EC2, SERVER_PLATFORMS::EUCALYPTUS)))
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 		
 	if (!Scalr_Session::getInstance()->getEnvironment()->isPlatformEnabled($req_platform))
 	{
 		$errmsg = sprintf(_("%s platform is not enabled for current environment"), ucfirst($req_platform));
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 	
 	$locations = PlatformFactory::NewPlatform($req_platform)->getLocations();
@@ -44,9 +44,9 @@
 		case SERVER_PLATFORMS::EUCALYPTUS:
 			
 			$platformClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY, true, $display['location']),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY, true, $display['location']),
+				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL, true, $display['location'])
 			);
 			
 			break;

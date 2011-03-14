@@ -182,7 +182,8 @@ class Scalr_System_Cronjob_MultiProcess extends Scalr_System_Cronjob
 				}
 				
 				// Enqueue tasks
-				$this->worker->enqueueWork($queue);				
+				$this->worker->enqueueWork($queue);
+				posix_kill($poolPid, SIGUSR1);
 			}
 			return;
 		}

@@ -33,21 +33,70 @@
 			{
 				$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LAST_BUNDLE_TS, time());
 				$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING, 0);
-								
-				if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
-				{	
-					$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0', is_autoebs_master_snap='1', farm_roleid=?",
-					array(
-						$event->SnapshotInfo, _('MySQL Master volume snapshot'), 
-						$event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
-						$DBFarmRole->ID
+
+				if (!is_array($event->SnapshotInfo))
+					$event->SnapshotInfo = array('snapshotId' => $event->SnapshotInfo);
+				
+				if ($event->SnapshotInfo['snapshotId'])
+				{
+					if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
+					{	
+						$this->DB->Execute("INSERT INTO ebs_snaps_info SET snapid=?, comment=?, dtcreated=NOW(), region=?, ebs_array_snapid='0', is_autoebs_master_snap='1', farm_roleid=?",
+						array(
+							$event->SnapshotInfo['snapshotId'], 
+							_('MySQL Master volume snapshot'), 
+							$event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+							$DBFarmRole->ID
+						));
+						
+						// Scalarizr stuff
+						$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $event->SnapshotInfo['snapshotId']);
+						
+						$snapshotConfig = new stdClass();
+						$snapshotConfig->type = 'ebs';
+						$snapshotConfig->id = $event->SnapshotInfo['snapshotId'];
+
+						$event->SnapshotInfo['snapshotConfig'] = $snapshotConfig;
+					}
+				}
+				
+				if ($event->SnapshotInfo['logFile'])
+					$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_FILE, $event->SnapshotInfo['logFile']);
+					
+				if ($event->SnapshotInfo['logPos'])
+					$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_POS, $event->SnapshotInfo['logPos']);
+				
+				
+				try {
+					$storageSnapshot = Scalr_Model::init(Scalr_Model::STORAGE_SNAPSHOT);
+					$storageSnapshot->loadBy(array(
+						'id'			=> $event->SnapshotInfo['snapshotConfig']->id,
+						'client_id'		=> $event->DBServer->clientId,
+						'farm_id'		=> $event->DBServer->farmId,
+						'farm_roleid'	=> $event->DBServer->farmRoleId,
+						'env_id'		=> $event->DBServer->envId,
+						'name'			=> sprintf(_("MySQL data bundle #%s"), $event->SnapshotInfo['snapshotConfig']->id),
+						'type'			=> $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+						'platform'		=> $event->DBServer->platform,
+						'description'	=> sprintf(_("MySQL data bundle created on Farm '%s' -> Role '%s'"), 
+							$DBFarmRole->GetFarmObject()->Name, 
+							$DBFarmRole->GetRoleObject()->name
+						),
+						'ismysql'		=> true
 					));
 					
-					// Scalarizr stuff
-					$DBFarmRole->SetSetting(DbFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $event->snapshotId);
-					$DBFarmRole->SetSetting(DbFarmRole::SETTING_MYSQL_LOG_FILE, $event->logFile);
-					$DBFarmRole->SetSetting(DbFarmRole::SETTING_MYSQL_LOG_POS, $event->logPos);
+					$storageSnapshot->setConfig($event->SnapshotInfo['snapshotConfig']);
+					
+					$storageSnapshot->save(true);
+					
+					$DBFarmRole->SetSetting(
+						DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID, 
+						$storageSnapshot->id
+					);
 				}
+				catch(Exception $e) {
+					$this->Logger->fatal("Cannot save storage snapshot: {$e->getMessage()}");
+				} 
 			}
 		}
 		
@@ -158,6 +207,12 @@
 			
 			if ($BundleTask->status == SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS)
 				$BundleTask->SnapshotCreationComplete($event->SnapshotID, $event->MetaData);
+				
+			if ($event->DBServer && $event->DBServer->status == SERVER_STATUS::TEMPORARY) {
+				PlatformFactory::NewPlatform($event->DBServer->platform)->TerminateServer($event->DBServer);
+				//$event->DBServer->status = SERVER_STATUS::TERMINATED;
+				//$event->DBServer->save();
+			}
 		}
 		
 		/**
@@ -177,6 +232,12 @@
 			}
 			
 			$BundleTask->SnapshotCreationFailed(_("Received RebundleFailed event from server"));
+			
+			if ($event->DBServer && $event->DBServer->status == SERVER_STATUS::TEMPORARY) {
+				PlatformFactory::NewPlatform($event->DBServer->platform)->TerminateServer($event->DBServer);
+				$event->DBServer->status = SERVER_STATUS::TERMINATED;
+				$event->DBServer->save();
+			}
 		}
 
 		/**
@@ -205,13 +266,51 @@
 				array($this->FarmID)
 			);
 			
-			$farminfo = $this->DB->GetRow("SELECT status FROM farms WHERE id=?", array($this->FarmID));
-			
-			$farm_status = ($syncs > 0 && $farminfo['status'] == FARM_STATUS::RUNNING) ? FARM_STATUS::SYNCHRONIZING : FARM_STATUS::TERMINATED; 
-			
-			$this->DB->Execute("UPDATE farms SET status=?, term_on_sync_fail=? WHERE id=?",
-				array($farm_status, $event->TermOnSyncFail, $this->FarmID)
-			);
+			$dbFarm = DBFarm::LoadByID($this->FarmID);	
+			$dbFarm->Status = ($syncs > 0 && $dbFarm->Status == FARM_STATUS::RUNNING) ? FARM_STATUS::SYNCHRONIZING : FARM_STATUS::TERMINATED;
+			$dbFarm->TermOnSyncFail = $event->TermOnSyncFail;
+			$dbFarm->save();			
+									
+			if ($dbFarm->Status == FARM_STATUS::SYNCHRONIZING)
+				$servers = $dbFarm->GetServersByFilter(array(), array('status' => array(SERVER_STATUS::PENDING_TERMINATE, SERVER_STATUS::TERMINATED)));
+			else
+				$servers = $dbFarm->GetServersByFilter(array(), array());
+			                    
+		    if (count($servers) == 0)
+		    	return;
+		    
+		    // TERMINATE RUNNING INSTANCES
+            foreach ($servers as $dbServer)
+            {                
+                if ($this->DB->GetOne("SELECT id FROM bundle_tasks WHERE server_id=? AND status NOT IN ('success','failed')", array($dbServer->serverId)))
+                	continue;
+                
+            	if ($dbServer->status != SERVER_STATUS::PENDING_LAUNCH)
+                {
+	            	try {
+	            		Scalr::FireEvent($dbFarm->ID, new BeforeHostTerminateEvent($dbServer));
+	    					
+	    				if ($dbServer->status != SERVER_STATUS::TERMINATED)
+	    				{
+		    				$this->DB->Execute("UPDATE servers_history SET
+								dtterminated	= NOW(),
+								terminate_reason	= ?
+								WHERE server_id = ?
+							", array(
+								sprintf("Farm was terminated"),
+								$dbServer->serverId
+							));
+	    				}
+	    			}
+	    			catch (Exception $e) {
+	    				$this->Logger->error($e->getMessage()); 
+	    			}
+                }
+    			else {
+    				$dbServer->status = SERVER_STATUS::TERMINATED;
+    				$dbServer->Save();
+    			}
+            }
 		}
 		
 		/**
@@ -226,6 +325,17 @@
 			if ($event->ReplUserPass)
 				$event->DBServer->GetFarmRoleObject()->SetSetting(DBFarmRole::SETTING_MYSQL_STAT_PASSWORD, $event->ReplUserPass);
 			
+			if (defined("SCALR_SERVER_TZ"))
+			{
+				$tz = date_default_timezone_get();
+				date_default_timezone_set(SCALR_SERVER_TZ);
+			}
+				
+			$event->DBServer->SetProperty(SERVER_PROPERTIES::INITIALIZED_TIME, time());
+			
+			if ($tz)
+				date_default_timezone_set($tz);
+				
 			$event->DBServer->Save();
 		}
 		
@@ -349,6 +459,12 @@
 					date_default_timezone_set($tz);
 				
 				$event->DBServer->Save();
+			}
+			
+			if ($event->ForceTerminate)
+			{ 				
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$instance_id}' (O)."));
+                PlatformFactory::NewPlatform($event->DBServer->platform)->TerminateServer($event->DBServer);
 			}
 		}
 	}

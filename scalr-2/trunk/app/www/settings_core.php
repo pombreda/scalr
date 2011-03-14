@@ -4,7 +4,7 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 	
 	$display["title"] = "Settings&nbsp;&raquo;&nbsp;General";
@@ -18,29 +18,9 @@
 		//Pass
 		if ($post_pass != "******")
 		{
-			
 			$db->BeginTrans();
-			
-			$current_pass = $_SESSION["cpwd"];
-			
-			if (!is_writable(dirname(__FILE__)."/../etc/.passwd"))
-			{
-			    $errmsg = dirname(__FILE__)."/../etc/.passwd - not writable. Please check file permissions.";
-			    UI::Redirect("settings_core.php");
-			}
-			
 			try 
-			{	
-				$rows = $db->GetAll("select * from nameservers");
-				foreach ($rows as $row)
-				{
-					$pass = $Crypto->Decrypt($row["password"], $current_pass);
-					$encrypted = $Crypto->Encrypt($pass, $post_pass);
-					$db->Execute("update nameservers set `password` =? where id=?",
-						array($encrypted, $row["id"])
-					);
-				}
-				
+			{				
 			    // Save new password into DB
 				$result = $db->Execute("REPLACE INTO config SET `value`=?, `key`=?", array($Crypto->Hash($post_pass), "admin_password"));
 				
@@ -53,22 +33,8 @@
 					UI::Redirect("settings_core.php");
 				}
 				
-				$enc = $Crypto->Encrypt($post_pass, CONFIG::$CRYPTOKEY);
-				$pwd = @fopen(dirname(__FILE__)."/../etc/.passwd", "w+");
-				$res = @fwrite($pwd, $enc);
-				@fclose($pwd);
-				
-				if (!$res)
-				{
-				    $db->RollbackTrans();
-					$errmsg = "Failed to write etc/.passwd file";
-					UI::Redirect("settings_core.php");
-				}
-				else 
-				{
-    				// Commit all changes
-    				$db->CommitTrans();			
-				}	
+    			// Commit all changes
+    			$db->CommitTrans();				
 			} 
 			catch (Exception $e)
 			{
@@ -78,8 +44,6 @@
 				UI::Redirect("settings_core.php");
 			}
 		}
-		
-		$_POST["paypal_isdemo"] = (isset($_POST["paypal_isdemo"])) ? 1 : 0;
 		
 		// Regular keys
 		foreach($_POST as $k => $v)

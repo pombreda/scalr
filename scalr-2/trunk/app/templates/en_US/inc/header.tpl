@@ -6,37 +6,67 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta name="robots" content="none" />
 
+	<link href="{get_static_url path='/css/ui-ng/main.css'}" rel="stylesheet" type="text/css" />
+
+	{if $newUING == ''}
+	<!-- candidate to delete -->
 	<link href="{get_static_url path='/css/main.css'}" rel="stylesheet" type="text/css" />
 	<link href="{get_static_url path='/css/style.css'}" rel="stylesheet" type="text/css" />
 	<link href="{get_static_url path='/css/topbar.css'}" rel="stylesheet" type="text/css" />
 	<link href="{get_static_url path='/css/ext-scalr-ui.css'}" type="text/css" rel="stylesheet" />
 	<link href="{get_static_url path='/css/cp.css'}" type="text/css" rel="stylesheet" />
+	{/if}
+
+	<link href="/js/extjs-3.3.0/resources/css/ext-all.css" type="text/css" rel="stylesheet" />
+	<link href="{get_static_url path='/css/ui-ng/viewers.css'}" type="text/css" rel="stylesheet" />
 
 	<script type="text/javascript">
 		var get_url = '{$get_url}';
+		var newUING = '{$newUING}';
+
+		{literal}
+		// typical logic
+		if (newUING == '' && document.location.hash && document.location.hash != '#') {
+			// history back after redirect to /#/
+			document.location.href = document.location.pathname;
+		}
+		{/literal}
+
 	</script>
 
 	{if $smarty.get.js_debug}
-		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.2.1/ext-base-debug.js'}"></script>
-		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.2.1/ext-all-debug.js'}"></script>
+		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-core-debug.js'}"></script>
 	{else}
-		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.2.1/ext-base.js'}"></script>
-		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.2.1/ext-all.js'}"></script>
+		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-core.js'}"></script>
 	{/if}
 
-	<link href="/js/extjs-3.2.1/resources/css/ext-all.css" type="text/css" rel="stylesheet" />
-	<link href="{get_static_url path='/css/ui-ng/viewers.css'}" type="text/css" rel="stylesheet" />
+	<script type="text/javascript" src="{get_static_url path='/js/ui-ng/viewers.js'}"></script>
 
+	{if $newUING == ''}
+	<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-grids.js'}"></script>
+	{/if}
+
+	<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/Loader.js'}"></script>
+
+	<script type="text/javascript" src="/js/ui-ng/data.js"></script>
+	{if newUING != ''}
+		<script type="text/javascript" src="/js/ui-ng/viewers/ListView.v2.js"></script>
+	{else}
+		<script type="text/javascript" src="/js/ui-ng/viewers/ListView.js"></script>
+	{/if}
+
+	{if $newUING == ''}
+	<!-- candidate to delete -->
 	<script type="text/javascript" src="{get_static_url path='/js/ext-ux.js'}"></script>
 	<script type="text/javascript" src="{get_static_url path='/js/scalr-ui.js'}"></script>
-	<script type="text/javascript" src="{get_static_url path='/js/ui-ng/viewers.js'}"></script>
+	{/if}
 
 	{$add_to_head}
 </head>
 <body>
 <div id="topbar-wrap">
 	<div id="topbar">
-		<h1 id="logo"><a title="{t}Home{/t}" href="/login.php">Scalr</a></h1>
+		<h1 id="logo"><a title="{t}Home{/t}" href="/#/dashboard">Scalr</a></h1>
 		<div id="searchbox">
 
 			<form action="search.php" id="search_form" method="GET">
@@ -51,16 +81,20 @@
 		<div id="toplinks">
 			{if $smarty.session.Scalr_Session.clientId != 0}
 				<a href="http://wiki.scalr.net" target="_blank">{t}Wiki{/t}</a>
-				<a href="http://blog.scalr.net" target="_blank">{t}Blog{/t}</a>
-				<a href="http://groups.google.com/group/scalr-discuss" target="_blank">{t}Support{/t}</a>
-				<a href="http://twitter.com/scalr" target="_blank">{t}Follow us on Twitter{/t}</a>
-
+				<a href="/?redirect_to=support" target="_blank">{t}Support{/t}</a>
 			{/if}
 		</div>
 		<div id="logout_button"></div>
 
 		<script type="text/javascript">
 		var session_environments = eval({$session_environments});
+		var newUING = '{$newUING}';
+		var JSdebug = '{$smarty.get.js_debug}';
+
+		Ext.ns('Scalr.data');
+		Scalr.data.InputParams = eval({$scalrJsonParams});
+		Scalr.data.UrlCache = {ldelim}{rdelim};
+		Scalr.data.UrlCurrent = '';
 
 		// {literal}
 
@@ -70,9 +104,14 @@
                             'data:image/gif;base64,R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
 
                         Ext.QuickTips.init();
+                        Ext.form.Field.prototype.msgTarget = 'side';
 
 			function calculateNavMenuWidth () {
 				return Ext.get("toplinks").getX() - Ext.get("navmenu").getX() - 30;
+			}
+
+			var _ = function(value) {
+				return value;
 			}
 
 			new Ext.Button({
@@ -86,20 +125,562 @@
 				text: "Logout",
 				handler: function () {
 					// clear state
-					Ext.state.Manager.getProvider().clearAll();
-					location.href='/login.php?logout=1';
+					//Ext.state.Manager.getProvider().clearAll();
+					location.href='/#/core/logout';
 				}
 			});
 		    var navmenuTb = new Ext.Toolbar({
 			    renderTo: "navmenu",
+			    enableOverflow: true,
 			    width: calculateNavMenuWidth(),
 			    items: /*{/literal}*/{$menuitems}/*{literal}*/
 		    });
 
-			Ext.state.Manager.setProvider(new Scalr.state.StorageProvider());
+		    if (newUING == '1') {
+				Scalr.data.WindowContainer = new Ext.Container({
+					renderTo: 'body-container',
+					style: 'position: relative',
+					autoRender: true,
+					monitorResize: true,
+					layout: new Ext.layout.ContainerLayout({
+						zIndex: 101,
+						setActiveItem: function (item, param) {
+							var ai = this.activeItem, ct = this.container;
+							item = ct.getComponent(item);
+
+							if (item) {
+								if (ai != item) {
+									if (ai) {
+										if (! item.scalrOptions.modal) {
+											if (ai.scalrOptions.reload) {
+												ai.destroy();
+											} else if (! item.scalrOptions.modal)
+												ai.hide();
+										}  else
+											ai.el.mask();
+
+										// hide component under modal component
+										if (ai.scalrOptions.modal) {
+										// TODO: переписать, учитывая несколько модальных окон над основным и прочее =)
+											ct.items.each(function () {
+												if (this.rendered && !this.hidden) {
+													this.el.unmask();
+
+													if (this != item) {
+														if (this.scalrOptions.reload)
+															this.destroy();
+														else
+															this.hide();
+													}
+
+													var pr = Ext.get('top-title').child('.b[sLink=' + this.scalrUrl + ']');
+													if (pr)
+														pr.hide();
+												}
+											});
+										}
+									}
+
+									this.activeItem = item;
+									this.setSize(item);
+
+									if (! item.scalrOptions.modal) {
+										Ext.get('top-title').show();
+										if (ai) {
+											var pr = Ext.get('top-title').child('.b[sLink=' + ai.scalrUrl + ']');
+											if (pr)
+												pr.hide();
+										}
+
+										var r = Ext.get('top-title').child('.b[sLink=' + item.scalrUrl + ']');
+										if (r)
+											r.show();
+										else
+											Ext.get('top-title').createChild({
+												tag: 'div',
+												'class': 'b',
+												display: 'block',
+												sLink: item.scalrUrl,
+												html: item.title
+											}).setVisibilityMode(Ext.Element.DISPLAY);
+									}
+
+									if (item.el) {
+										item.el.unmask();
+									}
+
+									if (item.rendered && item.scalrReconfigure)
+										item.scalrReconfigure(param);
+
+									item.show();
+									ct.doLayout();
+
+									this.setSizeAfter(item);
+
+									if (item.el) {
+										if (item.scalrOptions.modal)
+											item.el.setStyle({ 'z-index': this.zIndex, position: 'relative' });
+									}
+
+								} else {
+									if (item.scalrReconfigure)
+										item.scalrReconfigure(param);
+								}
+							}
+						},
+						setSize: function (comp) {
+							var r = this.container.container.getStyleSize();
+							var top = comp.scalrOptions.modal ? 5 : 0;
+							if (comp.scalrOptions.maximize == 'all') {
+								comp.setPosition(0, 0);
+								comp.setSize(r);
+
+							} else if (comp.scalrOptions.maximize == 'height') {
+								comp.setPosition((r.width - comp.width) / 2, top);
+								comp.setSize(comp.width, r.height - top * 2);
+
+							} else if (comp.scalrOptions.maximize == 'maxHeight') {
+								comp.setPosition((r.width - comp.width) / 2, top);
+
+							} else {
+								comp.setPosition((r.width - comp.width) / 2, top);
+							}
+						},
+
+						setSizeAfter: function (comp) {
+							var r = this.container.container.getStyleSize();
+							var top = comp.scalrOptions.modal ? 5 : 0;
+
+							if (comp.scalrOptions.maximize == 'maxHeight') {
+								comp.body.setStyle({
+									'max-height': Math.max(0, r.height - top * 2 - comp.getFrameHeight() - comp.body.getPadding('tb') - comp.body.getBorderWidth('tb')) + 'px'
+								});
+							}
+						},
+
+						onOwnResize: function () {
+							if (this.activeItem) {
+								this.setSize(this.activeItem);
+								this.setSizeAfter(this.activeItem);
+							}
+						}
+					})
+				});
+
+				Ext.EventManager.onWindowResize(Scalr.data.WindowContainer.layout.onOwnResize, Scalr.data.WindowContainer.layout);
+		    }
+
+			Scalr.Viewers.EventMessager = new Ext.util.Observable();
+			Scalr.Viewers.EventMessager.addEvents('update', 'close');
+
+			Scalr.Viewers.EventMessager.on('close', function() {
+				if (history.length > 2)
+					history.back(-1);
+				else
+					document.location.href = "#/dashboard";
+			});
+
+			Ext.Ajax.handleResponse = function (response) {
+				try {
+					response.responseJson = Ext.decode(response.responseText);
+				} catch (e) {};
+
+				Ext.data.Connection.prototype.handleResponse.call(this, response);
+			};
+
+			//Ext.state.Manager.setProvider(new Scalr.state.StorageProvider()); @DELETE
 
 		    Ext.EventManager.onWindowResize(function () {
 		    	navmenuTb.setWidth(calculateNavMenuWidth());
+			});
+
+			if (window.console) {
+				Ext.Ajax.on('requestcomplete', function (conn, response, options) {
+					try {
+						var s = response.getResponseHeader('X-Scalr-Debug');
+						if (Ext.isDefined(s)) {
+							s = s.split('\n');
+							for (var i = 0; i < s.length; i++) {
+								try {
+									console.debug(Ext.decode(s[i]));
+								} catch (e) {
+									console.debug(s[i]);
+								}
+							}
+						}
+					} catch (e) {
+						console.error(e);
+					}
+				});
+
+				Ext.Ajax.on('requestexception', function (conn, response, options) {
+					try {
+						var s = response.getResponseHeader('X-Scalr-Debug');
+						if (Ext.isDefined(s)) {
+							s = s.split('\n');
+							for (var i = 0; i < s.length; i++) {
+								try {
+									console.debug(Ext.decode(s[i]));
+								} catch (e) {
+									console.debug(s[i]);
+								}
+							}
+						}
+					} catch (e) {
+						console.error(e);
+					}
+				});
+			}
+
+			Ext.Ajax.defaultHeaders = { 'X-Ajax-Scalr': 1 };
+			Ext.data.Connection.defaultHeaders = { 'X-Ajax-Scalr': 1 };
+
+			/*Ext.apply(Ext.form.FormPanel, { initComponent: function () {
+				console.log(this);
+				alert('1');
+				this.baseParams = this.baseParams || {};
+				this.baseParams['X_Ajax_Scalr'] = 1;
+
+				Ext.form.FormPanel.prototype.initComponent.call(this);
+			}});*/
+			
+			//Ext.apply(Ext.form.FormPanel, { baseParams: { 'X_Ajax_Scalr': 1 }});
+
+
+
+			if (Scalr.data.InputParams && Scalr.data.InputParams.scalrMessages) {
+				for (var i = 0; i < Scalr.data.InputParams.scalrMessages.length; i++) {
+					var m = Scalr.data.InputParams.scalrMessages[i];
+					Scalr.Viewers.Message.Add(m.message, '', 0, m.type);
+				}
+			}
+
+				var win = undefined;
+				if (newUING != '') {
+					Ext.Ajax.on('requestexception', function(conn, response, options) {
+						if (Ext.MessageBox.isVisible())
+							Ext.MessageBox.hide();
+
+						if (response.status == 403) {
+							//Scalr.Viewers.ErrorMessage('Session expired. <a href="/login.html">Please login again.</a>');
+							//return;
+
+							if (win == undefined) {
+								win = new Ext.Window({
+									title: '<span style="color: #D50000">Session expired. Please login again</span>',
+									modal: true,
+									closable: false,
+									resizable: false,
+									draggable: false,
+									bodyStyle: 'padding: 5px',
+									buttonAlign: 'center',
+									width: 400,
+									height: 150,
+									layout: 'hbox',
+									layoutConfig: {
+										align: 'stretch',
+										pack: 'start'
+									},
+									items: [{
+										width: 20,
+										bodyStyle: 'background-color: inherit',
+										border: false
+									}, {
+										flex: 1,
+										layout: 'form',
+										border: false,
+										itemId: 'form',
+										bodyStyle: 'background-color: inherit',
+										labelWidth: 70,
+										items: [{
+											xtype: 'textfield',
+											fieldLabel: 'E-mail',
+											itemId: 'login',
+											name: 'login',
+											anchor: '-20',
+											allowBlank: false,
+											applyTo: Ext.get('body-login').child('[type="text"]')
+										}, {
+											xtype: 'textfield',
+											fieldLabel: 'Password',
+											inputType: 'password',
+											itemId: 'pass',
+											name: 'pass',
+											anchor: '-20',
+											allowBlank: false,
+											applyTo: Ext.get('body-login').child('[type="password"]')
+										}, {
+											xtype: 'checkbox',
+											name: 'keep_session',
+											inputValue: 1,
+											boxLabel: 'Keep me logged in until I log off',
+											hideLabel: true
+										}]
+									}],
+									buttons: [{
+										text: 'Login',
+										handler: function (comp) {
+											var cont = comp.ownerCt.ownerCt.getComponent('form'), login = cont.getComponent('login'), pass = cont.getComponent('pass');
+
+											login.isValid();
+											pass.isValid();
+
+											//Ext.get('body-login').child('form', true).submit(); // to save credentials need submit form, may be in future
+											// TODO: check under who we logged in, may be it's another user'
+
+											if (login.isValid() && pass.isValid()) {
+												Ext.Ajax.request({
+													url: '/login.php',
+													params: {
+														login: login.getValue(),
+														pass: pass.getValue()
+													},
+													success: function (response) {
+														var result = Ext.decode(response.responseText);
+														if (result.result == 'ok') {
+															win.hide();
+															Scalr.Viewers.InfoMessage('You successfully logged in. Your last request has not been performed due to lost session error. Please perform it again.');
+														} else {
+															login.markInvalid(result.message);
+															pass.markInvalid(result.message);
+
+														}
+													}
+												});
+											}
+										}
+									}, {
+										text: 'Cancel',
+										handler: function () {
+											document.location.href = '/login.html';
+										}
+									}]
+								});
+							}
+
+						win.show();
+
+					} else {
+						Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
+					}
+				});
+			} else {
+				Ext.Ajax.on('requestexception', function() {
+					if (Ext.MessageBox.isVisible())
+						Ext.MessageBox.hide();
+
+					Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
+				});
+			}
+
+			if (! ("onhashchange" in window)) {
+				// poller :(
+				var orig = window.location.hash, poll = function() {
+					if (document.location.hash != orig) {
+						orig = document.location.hash;
+						window.onhashchange();
+					}
+
+					poll.defer(400);
+				};
+
+				poll.defer(400);
+			}
+
+			window.onhashchange = function (e) {
+				// prepare
+				if (newUING == '') {
+					// typical logic
+					if (document.location.hash && document.location.hash != '#') {
+						// redirect to default new index page
+						document.location.href = '/' + document.location.hash;
+						return;
+					}
+				} else {
+					// new ui logic
+
+					//Ext.select("html").setStyle("overflow", "hidden");
+					Ext.select("body").setStyle("overflow", "hidden");
+
+					// remove old title
+					var el = Ext.get('top-title').child('.a');
+					if (el) {
+						el.remove();
+						Ext.get('top-title').hide(); // run only once on load
+					}
+
+				}
+
+				var h = window.location.hash.substring(1).split('?'), link = '', param = {}, loaded = false;
+				if (window.location.hash && window.location.hash != '#' /* for IE */) {
+					// only if hash not null
+					if (h[0])
+						link = h[0]; //.replace(/\//g, ' ').trim();
+
+					if (h[1])
+						param = Ext.urlDecode(h[1]);
+
+					/*var lk = link.split(' ');
+					if (lk.length > 2) {
+						link = '/' + [lk[0], lk[2]].join('/');
+						param['id'] = lk[1];
+					} else
+						link = '/' + link.replace(/ /g, '/');*/
+				} else if (newUING != '') {
+					document.location.href = "#/dashboard";
+				}
+
+				var cacheLink = function (link, cache) {
+					var re = cache.replace(/\/\{[^\}]+\}/g, '/([^\\}]+)').replace(/\//g, '\\/'), fieldsRe = /\/\{([^\}]+)\}/g, fields = [];
+
+					while ((elem = fieldsRe.exec(cache)) != null) {
+						fields[fields.length] = elem[1];
+					}
+
+					return {
+						scalrRegExp: new RegExp('^' + re + '$', 'g'),
+						scalrParamFields: fields,
+						scalrParamGets: function (link) {
+							var pars = {}, reg = new RegExp(this.scalrRegExp), params = reg.exec(link);
+							if (Ext.isArray(params))
+								params.shift(); // delete first element
+
+							for (var i = 0; i < this.scalrParamFields.length; i++)
+								pars[this.scalrParamFields[i]] = Ext.isArray(params) ? params.shift() : '';
+
+							return pars;
+						}
+					};
+				};
+
+				if (link) {
+					// check in cache
+					Scalr.data.WindowContainer.items.each(function () {
+						if (this.scalrRegExp.test(link)) {
+							loaded = true;
+							Ext.apply(param, this.scalrParamGets(link));
+							Scalr.data.WindowContainer.layout.setActiveItem(this, param);
+
+							return false;
+						}
+					});
+
+					if (! loaded) {
+						Ext.Msg.wait("Please wait ...", "Loading");
+						Ext.Ajax.request({
+							url: link,
+							params: param,
+							disableCaching: false,
+							success: function (response) {
+								var r = function (response, debug) {
+									var result = Ext.decode(response.responseText), obj, cacheId = response.getResponseHeader('X-Scalr-Cache-Id');
+
+									if (result.success == true) {
+										result.module = "(function() { return " + result.module + "; })();";
+										obj = eval(result.module);
+
+										var cache = cacheLink(link, cacheId);
+										Ext.apply(param, cache.scalrParamGets(link));
+
+										var container = obj.create(param, result.moduleParams);
+										if (Ext.isObject(container)) {
+											container.style = container.style || {};
+											Ext.apply(container.style, { position: 'absolute' });
+											Ext.apply(container, cache);
+											container.scalrOptions = container.scalrOptions || {};
+											Ext.applyIf(container.scalrOptions, {
+												'reload': true, // close window before show other one
+												'modal': false, // mask prev window and show new one
+												'maximize': '' // maximize which sides (all, width, height, none (default))
+											});
+
+											Scalr.data.WindowContainer.add(container);
+											Scalr.data.WindowContainer.layout.setActiveItem(container);
+										}
+
+									} else if (result.error) {
+										Scalr.Viewers.ErrorMessage(result.error);
+										Scalr.Viewers.EventMessager.fireEvent('close');
+									}
+								};
+
+								if (JSdebug != '') {
+									r(response, true);
+								} else {
+									try {
+										r(response, false);
+									} catch (e) {
+										Scalr.Viewers.ErrorMessage(e);
+										Scalr.Viewers.EventMessager.fireEvent('close');
+									}
+								}
+
+								Ext.Msg.hide();
+							},
+							failure: function() {
+								Ext.Msg.hide();
+							}
+						});
+					}
+
+					if (e)
+						e.preventDefault();
+				}
+
+				return;
+
+
+
+
+
+
+
+
+
+
+
+				// close old
+				if (Scalr.data.UrlCurrent && Scalr.data.UrlCache[Scalr.data.UrlCurrent]) {
+					var r = Scalr.data.UrlCache[Scalr.data.UrlCurrent];
+					if (r.objectParams.modal)
+						;
+					else if (r.objectParams.reload)
+						r.object.close();
+					else if (Ext.isObject(r.window))
+						r.window.hide();
+					else
+						r.object.close();
+
+					var el = Ext.get('top-title').child('.b[sLink=' + Scalr.data.UrlCurrent + ']');
+					if (el) {
+						el.setVisibilityMode(Ext.Element.DISPLAY);
+						el.hide();
+					}
+					Scalr.data.UrlCurrent = '';
+				}
+
+				if (link) {
+
+					//Ext.get('body-container').hide();
+					//Ext.get('top-title').child('.a').setVisibilityMode(Ext.Element.DISPLAY);
+					//Ext.get('top-title').child('.a').hide();
+
+				} else {
+					if (newUING != '')
+						document.location.href = "#/dashboard";
+				}
+			};
+
+			window.onhashchange();
+
+			Ext.EventManager.onWindowResize(function (w, h) {
+				var win = Scalr.data.UrlCurrent ? Scalr.data.UrlCache[Scalr.data.UrlCurrent].object.win : '';
+				if (win) {
+					if (win.maximizeHeight) {
+						win.setSize(win.maximizeWidth ? (Ext.lib.Dom.getViewWidth() - 10) : win.width, Math.max(300, Ext.lib.Dom.getViewHeight() - 100));
+						//win.setPosition(5, 95);
+					}
+				}
 			});
 
 		    if (session_environments)
@@ -116,9 +697,17 @@
 						listeners: {
 							'itemclick': function (item, e) {
 								if (item.checked == false) {
-									document.location.href = '/client_dashboard.php?' + Ext.urlEncode({
-										'change_environment_id': item.envId,
-										'change_environment_redirect': document.location.href
+									Ext.MessageBox.wait('Switching environment, please wait ...', 'Proccessing');
+									Ext.Ajax.request({
+										url: '/core/changeEnvironment/',
+										params: { environmentId: item.envId },
+										success: function (response) {
+											if (response.responseJson.success == true) {
+												document.location.reload();
+											} else {
+												Scalr.Viewers.ErrorMessage(response.responseJson.error);
+											}
+										}
 									});
 								}
 							}
@@ -166,13 +755,24 @@
 		</script>
 	</div>
 	<div id="topfoot">
-		<div id="top-title">{$title} <img src="/images/ui-ng/icons/info_icon_14x14.png" id="top-title-info"></div>
+		<div id="top-title"><div class="a" style="display: block">{$title} <img src="/images/ui-ng/icons/info_icon_14x14.png" id="top-title-info"></div></div>
 		<div id="top-environment"></div>
 		<div id="top-messages"></div>
 		<div id="top-messages-icons"><img src="/images/ui-ng/icons/message/close.png" class="close" alt="Close all messages"><img src="/images/ui-ng/icons/message/eye.png" class="eye"></div>
 	</div>
 </div>
 
+<div id="body-login" class="x-hide-display">
+	<form method="POST" action="/login.php">
+		<input type="text" name="login">
+		<input type="password" name="pass">
+		<button type="submit"></button>
+	</form>
+</div>
+
+{if $newUING == '1'}
+<div id="body-container" style="position: absolute; left: 0px; right: 0px; top: 100px; bottom: 5px;">
+{else}
 <div id="body-container">
 	<div id="header_messages_container" style="margin-bottom:5px;">
 		<a name="top"></a>
@@ -194,3 +794,4 @@
 	{if !$noheader}
 		<form style="margin:0px;padding:0px;" name="frm" id="frm" action="{$form_action}" method="post" {if $upload_files}enctype="multipart/form-data"{/if} {if $onsubmit}onsubmit="{$onsubmit}"{/if}>
 	{/if}
+{/if}

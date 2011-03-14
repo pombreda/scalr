@@ -82,7 +82,17 @@
 			
 			if ($sensor)
 			{
-				$sensorValue = $sensor->getValue($dbFarmRole, $this);
+				try {
+					$sensorValue = $sensor->getValue($dbFarmRole, $this);
+				}
+				catch(Exception $e)
+				{
+					$this->logger->error(new FarmLogMessage($dbFarmRole->FarmID, 
+						sprintf("Unable to read Scalimg Metric value: %s", $e->getMessage())
+					));
+					
+					return Scalr_Scaling_Decision::NOOP;
+				}
 				
 				$this->logger->info(sprintf(_("Raw sensor value (id: %s, metric_id: %s, metric name: %s): %s"),
 					$this->id,
@@ -97,10 +107,10 @@
 						$value = $sensorValue[0];	
 						break;
 					case "avg":
-						$value = array_sum($sensorValue) / count($sensorValue);
+						$value = @array_sum($sensorValue) / count($sensorValue);
 						break;
 					case "sum":
-						$value = array_sum($sensorValue);
+						$value = @array_sum($sensorValue);
 						break;
 				}
 				

@@ -6,6 +6,9 @@
 		{
 			foreach ($roles as $DBFarmRole)
 			{
+				if ($DBFarmRole->Platform != SERVER_PLATFORMS::EUCALYPTUS)
+					continue;
+				
 				$location = $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION);
 				
 				$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY);
@@ -14,9 +17,9 @@
 					$key_name = "FARM-{$DBFarm->ID}";
 						
 					$eucaClient = Scalr_Service_Cloud_Eucalyptus::newCloud(
-						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY),
-						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY),
-						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL)
+						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::SECRET_KEY, true, $location),
+						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::ACCESS_KEY, true, $location),
+						$DBFarm->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Eucalyptus::EC2_URL, true, $location)
 					);
 					
 					$result = $eucaClient->CreateKeyPair($key_name);
@@ -28,6 +31,7 @@
 						$sshKey->type = Scalr_SshKey::TYPE_GLOBAL;
 						$sshKey->cloudLocation = $location;
 						$sshKey->cloudKeyName = $key_name;
+						$sshKey->platform = SERVER_PLATFORMS::EUCALYPTUS;
 						
 						$sshKey->setPrivate($result->keyMaterial);
 						

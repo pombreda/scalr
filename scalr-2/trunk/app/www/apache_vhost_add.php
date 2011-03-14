@@ -4,7 +4,7 @@
 	if (!Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER, Scalr_AuthToken::MODULE_VHOSTS))
 	{
 		$errmsg = _("You have no permissions for viewing requested page");
-		UI::Redirect("index.php");
+		UI::Redirect("/#/dashboard");
 	}
 	
 	$display["title"] = _("Add virtual host");
@@ -28,7 +28,7 @@
 	   		$display['loadedFarmId'] 		= $vhost->farmId;
 	   		$display['loadedFarmRoleId'] 	= $vhost->farmRoleId;
 	   		$display['user_template']		= $vhost->httpdConf;
-	   		$display['user_template_ssl']	= $vhost->httpdConfSsl;
+	   		$display['user_template_ssl']	= ($vhost->httpdConfSsl) ? $vhost->httpdConfSsl : @file_get_contents("../templates/services/apache/ssl.vhost.tpl");
 	   		$display['userMode']			= $vhost->advancedMode;
 	   		
 	   		// displays SSL && CA cert names

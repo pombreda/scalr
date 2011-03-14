@@ -47,6 +47,9 @@
 		
 		public function OnHostDown(HostDownEvent $event)
 		{
+			if ($event->DBServer->IsRebooting()) 
+				return;			
+			
 			$this->DeregisterInstanceFromLB($event->DBServer);
 		}
 		

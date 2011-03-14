@@ -18,7 +18,8 @@
 			'public_key'	=> array('property' => 'publicKeyEnc', 'is_filter' => false),
 			'cloud_location'=> array('property' => 'cloudLocation', 'is_filter' => false),
 			'farm_id'		=> array('property' => 'farmId', 'is_filter' => false),
-			'cloud_key_name'=> array('property' => 'cloudKeyName', 'is_filter' => false)
+			'cloud_key_name'=> array('property' => 'cloudKeyName', 'is_filter' => false),
+			'platform'		=> array('property' => 'platform', 'is_filter' => true),
 		);
 		
 		public
@@ -28,7 +29,8 @@
 			$type,
 			$cloudPlatform,
 			$farmId,
-			$cloudKeyName;
+			$cloudKeyName,
+			$platform;
 			
 		protected $privateKeyEnc,
 				$publicKeyEnc;
@@ -48,6 +50,22 @@
 			return $this->crypto;
 		}
 		
+		public function getFingerprint()
+		{
+			return "ab:ab:ab:ab";
+		}
+		
+		public function loadGlobalByName($name, $cloudLocation, $envId)
+		{
+			$info = $this->db->GetRow("SELECT * FROM ssh_keys WHERE `cloud_key_name`=? AND `cloud_location`=? AND `type`=? AND `env_id` = ?", 
+				array($name, $cloudLocation, self::TYPE_GLOBAL, $envId)
+			);
+			if (!$info)
+				return false;
+			else 
+				return parent::loadBy($info);
+		}
+		
 		public function loadGlobalByFarmId($farmId, $cloudLocation)
 		{
 			$info = $this->db->GetRow("SELECT * FROM ssh_keys WHERE `farm_id`=? AND `cloud_location`=? AND `type`=?", 
@@ -57,6 +75,59 @@
 				return false;
 			else 
 				return parent::loadBy($info);
+		}
+		
+		private function getSshKeygenValue($args, $tmpFileContents, $readTmpFile = false)
+		{
+			$descriptorspec = array(
+			   0 => array("pipe", "r"),
+			   1 => array("pipe", "w"),
+			   2 => array("pipe", "w")
+			);
+			
+			$filePath = CACHEPATH."/_tmp.".md5($tmp_file_contents);
+			
+			if (!$readTmpFile)
+			{
+				@file_put_contents($filePath, $tmpFileContents);
+				@chmod($filePath, 0600);
+			}
+			
+			$process = @proc_open("/usr/bin/ssh-keygen -f {$filePath} {$args}", $descriptorspec, &$pipes);
+			if (@is_resource($process)) {
+			    
+				@fclose($pipes[0]);
+			
+			    $retval = trim(stream_get_contents($pipes[1]));
+			    
+			    fclose($pipes[1]);
+			    fclose($pipes[2]);
+			}
+			
+			if ($readTmpFile)
+				$retval = file_get_contents($filePath);
+			
+			@unlink($filePath);
+			
+			return $retval;
+		}
+		
+		public function generateKeypair()
+		{
+			$private_key = $this->getSshKeygenValue("-t dsa -q -P ''", "", true);			
+			$this->setPrivate($private_key);
+			$this->setPublic($this->generatePublicKey());
+			return array('private' => $private_key, 'public' => $this->getPublic());
+		}
+		
+		public function generatePublicKey()
+		{
+			if (!$this->getPrivate())
+				throw new Exception("Public key cannot be generated without private key");
+				
+			$pub_key = $this->getSshKeygenValue("-y", $this->getPrivate());
+
+			return $pub_key;
 		}
 		
 		public function setPrivate($key)

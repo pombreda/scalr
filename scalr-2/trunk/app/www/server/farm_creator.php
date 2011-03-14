@@ -81,7 +81,7 @@
 			foreach ($request['roles'] as $role)
 			{
 				$role = json_decode($role, true);
-				
+
 				$DBRole = DBRole::loadById($role['role_id']);
 
 				if (!$DBRole->getImageId($role['platform'], $role['cloud_location'])) {
@@ -92,17 +92,27 @@
 
 				/* Validate scaling */
 	            $minCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MIN_INSTANCES];
+	            if (!$minCount && $minCount != 0)
+	            	$minCount = 1;
+
 				if ($minCount < 0 || $minCount > 400)
 					throw new Exception(sprintf(_("Min instances for '%s' must be a number between 1 and 400"), $DBRole->name));
 
 				$maxCount = (int)$role['settings'][DBFarmRole::SETTING_SCALING_MAX_INSTANCES];
+				if (!$maxCount)
+					$maxCount = 1;
+
 				if ($maxCount < 1 || $maxCount > 400)
 					throw new Exception(sprintf(_("Max instances for '%s' must be a number between 1 and 400"), $DBRole->name));
 
 				if ($maxCount < $minCount)
 					throw new Exception(sprintf(_("Max instances should be greater or equal than Min instances for role '%s'"), $DBRole->name));
 
-				$polling_interval = (int)$role['settings'][DBFarmRole::SETTING_SCALING_POLLING_INTERVAL];
+				if (isset($role['settings'][DBFarmRole::SETTING_SCALING_POLLING_INTERVAL]))
+					$polling_interval = (int)$role['settings'][DBFarmRole::SETTING_SCALING_POLLING_INTERVAL];
+				else
+					$polling_interval = 2;
+
 				if ($polling_interval < 1 || $polling_interval > 50)
 					throw new Exception(sprintf(_("Polling interval for role '%s' must be a number between 1 and 50"), $DBRole->name));
 
@@ -113,6 +123,15 @@
 						Modules_Platforms_Ec2_Helpers_Ebs::farmValidateRoleSettings($role['settings'], $DBRole->name);
 						Modules_Platforms_Ec2_Helpers_Eip::farmValidateRoleSettings($role['settings'], $DBRole->name);
 						Modules_Platforms_Ec2_Helpers_Elb::farmValidateRoleSettings($role['settings'], $DBRole->name);
+
+						if ($DBRole->hasBehavior(ROLE_BEHAVIORS::MYSQL)) {
+							if ($role['settings'][DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE] == MYSQL_STORAGE_ENGINE::EBS)
+							{
+								if ($role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "" || $role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "x-scalr-diff")
+									throw new Exception(sprintf(_("Requirement for EBS MySQL data storage is specific 'Placement' parameter for role '%s'"), $DBRole->name));
+							}
+						}
+
 						break;
 
 					case SERVER_PLATFORMS::RDS:
@@ -125,15 +144,6 @@
 				}
 
 				Scalr_Helpers_Dns::farmValidateRoleSettings($role['settings'], $DBRole->name);
-				
-				if ($DBRole->hasBehavior(ROLE_BEHAVIORS::MYSQL))
-				{
-					if ($role['settings'][DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE] == MYSQL_STORAGE_ENGINE::EBS) 
-				 	{ 
-				 		if ($role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "" || $role['settings'][DBFarmRole::SETTING_AWS_AVAIL_ZONE] == "x-scalr-diff") 
-				 			throw new Exception(sprintf(_("Requirement for EBS MySQL data storage is specific 'Placement' parameter for role '%s'"), $DBRole->name)); 
-				 	}
-				}
 			}
 
 			$db->BeginTrans();
@@ -155,6 +165,7 @@
 					throw new Exception(_("Sorry, you have reached maximum allowed amount of farms."));
 
 				$dbFarm = new DBFarm();
+				$dbFarm->Status = FARM_STATUS::TERMINATED;
 			}
 
 			$dbFarm->Name = $request['farm']['name'];
@@ -165,13 +176,13 @@
 
 			if (!$dbFarm->GetSetting(DBFarm::SETTING_CRYPTO_KEY))
 				$dbFarm->SetSetting(DBFarm::SETTING_CRYPTO_KEY, Scalr::GenerateRandomKey(40));
-			
+
 			$roles_signatures = array();
 			foreach ($request['roles'] as $role) {
 				$role = json_decode($role, true);
 				$roles_signatures[] = "{$role['role_id']}_{$role['platform']}_{$role['cloud_location']}";
 			}
-			
+
 			foreach ($dbFarm->GetFarmRoles() as $dbFarmRole) {
 				if (!in_array("{$dbFarmRole->RoleID}_{$dbFarmRole->Platform}_".$dbFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION), $roles_signatures))
 					$dbFarmRole->Delete();
@@ -207,12 +218,12 @@
 				/****** Scaling settings ******/
 				$scalingManager = new Scalr_Scaling_Manager($dbFarmRole);
 				$scalingManager->setFarmRoleMetrics($role['scaling']);
-					
+
 				//TODO: optimize this code...
 				$db->Execute("DELETE FROM farm_role_scaling_times WHERE farm_roleid=?",
 					array($dbFarmRole->ID)
 				);
-				
+
 				// 5 = Time based scaling -> move to constants
 				if ($role['scaling'][5])
 				{
@@ -243,11 +254,11 @@
 				/* Add script options to databse */
 				$dbFarmRole->SetScripts($role['scripting']);
 				/* End of scripting section */
-				
+
 				/* Add services configuration */
 				$dbFarmRole->SetServiceConfigPresets($role['config_presets']);
 				/* End of scripting section */
-				
+
 				Scalr_Helpers_Dns::farmUpdateRoleSettings($dbFarmRole, $oldRoleSettings, $role['settings']);
 
 				/**
@@ -275,6 +286,10 @@
 
 			$db->CommitTrans();
 
+			$client = Client::Load(Scalr_Session::getInstance()->getClientId());
+			if (!$client->GetSettingValue(CLIENT_SETTINGS::DATE_FARM_CREATED))
+	        	$client->SetSettingValue(CLIENT_SETTINGS::DATE_FARM_CREATED, time());
+			
 			$result = array('success' => true, 'farm_id' => $dbFarm->ID);
 		}
 		catch(Exception $e)

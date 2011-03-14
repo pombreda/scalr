@@ -42,7 +42,7 @@
 			$rows[] = array
 			(
 				"title" => $sq["title"],
-				"href" => $sq["href"] . (strpos($sq["href"], "?") === false ? "?" : "&") . "search={$req_search}", 
+				"href" => $sq["href"] . (strpos($sq["href"], "?") === false ? "?" : "&") . "query={$req_search}", 
 				"count" => $count
 			);
 		}

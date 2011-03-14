@@ -39,7 +39,7 @@
 				'username'	=> (string)$pv->MasterUsername,
 				'type'		=> (string)$pv->DBInstanceClass,
 				'storage'	=> (string)$pv->AllocatedStorage,
-				'dtadded'	=> date("M j, Y H:i:s", strtotime((string)$pv->InstanceCreateTime)),
+				'dtadded'	=> ($pv->InstanceCreateTime) ? date("M j, Y H:i:s", strtotime((string)$pv->InstanceCreateTime)) : "",
 				'avail_zone'=> (string)$pv->AvailabilityZone
 			);			
 			

@@ -5,6 +5,7 @@ Scalr.data.ExceptionReporter = function (store, error) {
 }
 
 Scalr.data.ExceptionFormReporter = function (form, action) {
+	Ext.Msg.hide();
 	if (action.result.error) {
 		if (Ext.isArray(action.result.error)) {
 			for (var i = 0, len = action.result.error.length; i < len; i++)
@@ -26,6 +27,7 @@ Scalr.data.JsonReader = Ext.extend(Ext.data.JsonReader, {
 			errorProperty: 'error',
 			totalProperty: 'total'
 		});
+		this.autoConvertObject = meta.autoConvertObject || false;
 		Scalr.data.JsonReader.superclass.constructor.call(this, meta, recordType);
 	},
 
@@ -47,6 +49,28 @@ Scalr.data.JsonReader = Ext.extend(Ext.data.JsonReader, {
 				alert(e);
 			}
 		}
+
+		if (this.autoConvertObject) {
+			if (Ext.isObject(o)) {
+				var r = [];
+				for (i in o) {
+					if (Ext.isObject(o[i]))
+						r[r.length] = o[i];
+					else {
+						var t = {};
+						t[meta.idProperty] = i;
+						t['name'] = o[i];
+						r[r.length] = t;
+					}
+				}
+
+				o = {};
+				o[meta.root] = r;
+			} else {
+				o[meta.root] = [];
+			}
+		}
+
 		return Scalr.data.JsonReader.superclass.readRecords.call(this, o);
 	}
 });
@@ -74,3 +98,37 @@ Scalr.data.Store = Ext.extend(Ext.data.Store, {
 		Scalr.data.Store.superclass.loadRecords.call(this, dataBlock, options, success);
 	}
 });
+
+Scalr.data.createStore = function (data, config) {
+	config = config || {};
+	config['idProperty'] = config['idProperty'] || 'id';
+	config['fields'] = config['fields'] || [];
+
+	var simple = false;
+	if (Ext.isObject(data)) {
+		for (i in data) {
+			if (! Ext.isObject(data[i])) {
+				simple = true;
+			} else {
+				config.fields[config.fields.length] = config.idProperty;
+				for (j in data[i]) {
+					config.fields[config.fields.length] = j;
+				}
+			}
+			break;
+		}
+	}
+
+	config.fields[config.fields.length] = config.idProperty;
+	if (simple) {
+		config.fields[config.fields.length] = 'name';
+	}
+
+	config.fields = Ext.unique(config.fields)
+	config.autoConvertObject = true;
+
+	return new Scalr.data.Store({
+		reader: new Scalr.data.JsonReader(config),
+		data: data
+	});
+};

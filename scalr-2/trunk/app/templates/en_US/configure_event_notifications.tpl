@@ -4,7 +4,7 @@
     {include file="inc/intable_header.tpl" header="RSS feed settings" color="Gray"}
     <tr>
     	<td colspan="2"><div style="display:inline;margin-right:25px;">RSS feed URL:</div>
-    	<img src="/images/feed-icon-14x14.png"> <a href="http://{$smarty.server.HTTP_HOST}/storage/events/{$farminfo.id}/rss.xml">http://{$smarty.server.HTTP_HOST}/storage/events/{$farminfo.id}/rss.xml</a></td>
+    	<img src="/images/feed-icon-14x14.png"> <a href="https://{$smarty.server.HTTP_HOST}/storage/events/{$farminfo.id}/rss.xml">http://{$smarty.server.HTTP_HOST}/storage/events/{$farminfo.id}/rss.xml</a></td>
     </tr>
     <tr>
     	<td colspan="2" style="font-style:italic;font-size:12px;">

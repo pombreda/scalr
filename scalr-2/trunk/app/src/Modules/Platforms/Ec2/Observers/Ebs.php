@@ -40,42 +40,44 @@
 			);
 
 			// Create EBS volume for MySQLEBS
-			if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) 
-				&& $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
+			if ($event->DBServer->IsSupported("0.7"))
 			{
-				$server = $event->DBServer;
-				$masterServer = $DBFarm->GetMySQLInstances(true);
-				$isMaster = !$masterServer || $masterServer[0]->serverId == $server->serverId;
-				$farmMasterVolId = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
-								
-				$createEbs = ($isMaster && !$farmMasterVolId); 
-							 //|| (!$isMaster && !$server->GetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID) && $event->DBServer->IsSupported('0.5'));
 				
-				if ($createEbs) {
-					Logger::getLogger(LOG_CATEGORY::FARM)->info(
-						new FarmLogMessage($event->DBServer->farmId, sprintf(_(
-							"Need EBS volume for MySQL %s instance..."
-						), $isMaster ? "Master" : "Slave"))
-					);
+			}
+			else
+			{
+				if ($DBFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL) 
+					&& $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS)
+				{
+					$server = $event->DBServer;
+					$masterServer = $DBFarm->GetMySQLInstances(true);
+					$isMaster = !$masterServer || $masterServer[0]->serverId == $server->serverId;
+					$farmMasterVolId = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
+									
+					$createEbs = ($isMaster && !$farmMasterVolId); 
 					
-					$CreateVolumeType = new CreateVolumeType();
-    				$CreateVolumeType->availabilityZone = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE);
-    				$CreateVolumeType->size = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_VOLUME_SIZE);
-					
-					$res = $AmazonEC2Client->CreateVolume($CreateVolumeType);
-				    if ($res->volumeId) {
-				    	if ($isMaster) {
-				    		$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $res->volumeId);
-				    	} else {
-				    		$server->SetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID, $res->volumeId);	
-				    	}
-				    	
-				    	Logger::getLogger(LOG_CATEGORY::FARM)->info(
+					if ($createEbs) {
+						Logger::getLogger(LOG_CATEGORY::FARM)->info(
 							new FarmLogMessage($event->DBServer->farmId, sprintf(_(
-								"MySQL %S volume created. Volume ID: %s..."
-							), $isMaster ? "Master" : "Slave", $res->volumeId))
+								"Need EBS volume for MySQL %s instance..."
+							), $isMaster ? "Master" : "Slave"))
 						);
-				    }
+						
+						$CreateVolumeType = new CreateVolumeType();
+	    				$CreateVolumeType->availabilityZone = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE);
+	    				$CreateVolumeType->size = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_VOLUME_SIZE);
+						
+						$res = $AmazonEC2Client->CreateVolume($CreateVolumeType);
+					    if ($res->volumeId) {
+					    	$DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $res->volumeId);
+					    	
+					    	Logger::getLogger(LOG_CATEGORY::FARM)->info(
+								new FarmLogMessage($event->DBServer->farmId, sprintf(_(
+									"MySQL %S volume created. Volume ID: %s..."
+								), $isMaster ? "Master" : "Slave", $res->volumeId))
+							);
+					    }
+					}
 				}
 			}
 		}
@@ -194,6 +196,7 @@
 					$DBEBSVolume->serverIndex = $event->DBServer->index;
 					$DBEBSVolume->size = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SIZE);
 					$DBEBSVolume->snapId = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID);
+					$DBEBSVolume->isFsExists = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_SNAPID)) ? 1 : 0; 
 					$DBEBSVolume->mount = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT);
 					$DBEBSVolume->mountPoint = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT);
 					$DBEBSVolume->mountStatus = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT)) ? EC2_EBS_MOUNT_STATUS::AWAITING_ATTACHMENT : EC2_EBS_MOUNT_STATUS::NOT_MOUNTED;
@@ -214,19 +217,14 @@
 		{
 			if ($event->DBServer->platform != SERVER_PLATFORMS::EC2)
 				return;
+			if ($event->DBServer->IsRebooting()) 
+				return;			
 			
 			$this->DB->Execute("UPDATE ec2_ebs SET attachment_status=?, mount_status=?, device='', server_id='' WHERE server_id=?", array(
 				EC2_EBS_ATTACH_STATUS::AVAILABLE,
 				EC2_EBS_MOUNT_STATUS::NOT_MOUNTED,
 				$event->DBServer->serverId
 			));
-			
-			$slave_volume = $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID);
-			if ($slave_volume)
-			{
-				$AmazonEC2Client = $this->GetAmazonEC2ClientObject($event->DBServer->GetEnvironmentObject(), $event->DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION));
-				$AmazonEC2Client->DeleteVolume($slave_volume);
-			}
 		}
 	}
 ?>

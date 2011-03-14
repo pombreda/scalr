@@ -323,13 +323,17 @@
 			else
 			{
 				$this->DB->Execute("UPDATE farms SET 
-					name		= ?, 
+					name		= ?,
+					status		= ?,
 					farm_roles_launch_order = ?,
+					term_on_sync_fail = ?,
 					comments = ?
 				WHERE id = ?
 				", array(
-                	$this->Name, 
+                	$this->Name,
+                	$this->Status, 
 					$this->RolesLaunchOrder,
+					$this->TermOnSyncFail,
 					$this->Comments,
 					$this->ID
                 ));

@@ -1,5 +1,5 @@
 <?php
-  class Scalr_Cloud_Service_GoGridCH extends Scalr_Service_Cloud_GoGrid_Connection
+  class Scalr_Service_Cloud_GoGrid_CH extends Scalr_Service_Cloud_GoGrid_Connection
   {
  
    	 /**

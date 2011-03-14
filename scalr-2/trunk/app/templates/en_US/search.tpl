@@ -18,11 +18,13 @@ Ext.onReady(function () {
 				fields: ['title', 'href', 'count']
 			}),
 			remoteSort: false,
-			data: gridData,
-			url: '/server/grids/aws_rds_snapshots_list.php?a=1{/literal}{$grid_query_string}{literal}'
+			data: gridData
+			//url: '/server/grids/farms_list.php?a=1{/literal}{$grid_query_string}{literal}'
 		}),
 		savePagingSize: true,
 		enableFilter: false,
+		enableAutoLoad: false,
+		enablePaging: false,
 		stateId: 'listview-search-view',
 		stateful: true,
 		title: 'Search results',

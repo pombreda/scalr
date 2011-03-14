@@ -72,8 +72,8 @@
 					
 					throw new Exception(sprintf('Request to Rackspace failed (Error code: %s. ): %s',
 						$errMsg->code,
-						$errMsg->message)
-					);
+						$errMsg->message
+					));
 				} 
             }
             catch (Exception $e)
@@ -143,9 +143,12 @@
 
 			$this->httpRequest->setUrl($url); 
 			
-			$this->httpRequest->setOptions(array("redirect" => 10, 
-				"useragent" => "LibWebta RackspaceCS Client (http://webta.net)")
-			);
+			$this->httpRequest->setOptions(array(
+				"redirect" 		=> 10, 
+				"useragent" 	=> "Scalr",
+				'timeout'		=> 30,
+				'connecttimeout'=> 10
+			));
   
 		    $this->httpRequest->setMethod(constant("HTTP_METH_{$method}"));
 		    $this->httpRequest->setHeaders(array("X-Auth-User" => $this->xAuthUser,

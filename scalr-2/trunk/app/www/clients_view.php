@@ -30,6 +30,49 @@
 				
 				break;
 			
+			case "cleanup":
+				
+				$i = 0;			
+				foreach ((array)$post_id as $clientid)
+				{
+					$i++;
+					
+					$Client = Client::Load($clientid);
+					
+					$db->Execute("DELETE FROM servers WHERE client_id=?", array($clientid));
+					$db->Execute("DELETE FROM ec2_ebs WHERE client_id=?", array($clientid));
+					$db->Execute("DELETE FROM apache_vhosts WHERE client_id=?", array($clientid));
+					
+					$farms = $db->GetAll("SELECT id FROM farms WHERE clientid='{$clientid}'");
+				    foreach ($farms as $farm)
+				    {
+					    $db->Execute("DELETE FROM farms WHERE id=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_roles WHERE farmid=?", array($farm["id"]));
+					    $db->Execute("DELETE FROM farm_role_options WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM farm_role_scripts WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM farm_event_observers WHERE farmid=?", array($farm["id"]));
+                        $db->Execute("DELETE FROM elastic_ips WHERE farmid=?", array($farm["id"]));
+				    }
+				    
+				    $roles = $db->GetAll("SELECT id FROM roles WHERE client_id='{$clientid}'");
+				    foreach ($roles as $role)
+				    {
+				    	$db->Execute("DELETE FROM roles WHERE id = ?", array($role['id']));
+			
+						$db->Execute("DELETE FROM role_behaviors WHERE role_id = ?", array($role['id']));
+						$db->Execute("DELETE FROM role_images WHERE role_id = ?", array($role['id']));
+						$db->Execute("DELETE FROM role_parameters WHERE role_id = ?", array($role['id']));
+						$db->Execute("DELETE FROM role_properties WHERE role_id = ?", array($role['id']));
+						$db->Execute("DELETE FROM role_security_rules WHERE role_id = ?", array($role['id']));
+						$db->Execute("DELETE FROM role_software WHERE role_id = ?", array($role['id']));
+				    }
+				}
+				
+				$okmsg = sprintf(_("%s clients cleanuped"), $i);
+				UI::Redirect("clients_view.php");
+				
+				break;
+				
 			case "delete":
 				
 				$i = 0;			

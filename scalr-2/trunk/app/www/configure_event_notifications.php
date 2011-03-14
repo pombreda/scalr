@@ -9,7 +9,7 @@
         );
 
     if (!$farminfo)
-        UI::Redirect("farms_view.php");
+        UI::Redirect("/#/farms/view");
 
     if ($_POST)
     {

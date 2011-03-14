@@ -117,7 +117,7 @@
             		throw $e;
             	}
                 
-                if ($DBServer->GetRealStatus()->isTerminated() && $DBServer->status != SERVER_STATUS::TERMINATED)
+                if ($DBServer->status != SERVER_STATUS::TERMINATED && $DBServer->GetRealStatus()->isTerminated())
                 {
                     Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($DBFarm->ID, 
                     	sprintf("Server '%s' (Platform: %s) not running (Real state: %s).", $DBServer->serverId, $DBServer->platform, $DBServer->GetRealStatus()->getName())
@@ -159,6 +159,41 @@
 	                		}
 	                	}
 	                	else {
+	                		
+	                		if ($DBServer->platform == SERVER_PLATFORMS::NIMBULA)
+	                		{
+	                			if (!$DBServer->GetProperty(NIMBULA_SERVER_PROPERTIES::USER_DATA_INJECTED))
+	                			{
+	                				$dbRole = $DBServer->GetFarmRoleObject()->GetRoleObject();
+	                				
+	                				$ssh2Client = new Scalr_Net_Ssh2_Client();
+	                				$ssh2Client->addPassword(
+										$dbRole->getProperty(DBRole::PROPERTY_NIMBULA_INIT_ROOT_USER), 
+										$dbRole->getProperty(DBRole::PROPERTY_NIMBULA_INIT_ROOT_PASS)
+									);
+									
+									$info = PlatformFactory::NewPlatform($DBServer->platform)->GetServerIPAddresses($DBServer);
+									
+									$port = $dbRole->getProperty(DBRole::PROPERTY_SSH_PORT);
+									if (!$port) $port = 22;
+									
+									try {
+										$ssh2Client->connect($info['remoteIp'], $port);
+										
+										foreach ($DBServer->GetCloudUserData() as $k=>$v)
+							        		$u_data .= "{$k}={$v};";
+							        	
+							        	$u_data = trim($u_data, ";");
+										$ssh2Client->sendFile('/etc/scalr/private.d/.user-data', $u_data, "w+", false);
+										
+										$DBServer->SetProperty(NIMBULA_SERVER_PROPERTIES::USER_DATA_INJECTED, 1);
+									}
+									catch(Exception $e) {
+										Logger::getLogger(LOG_CATEGORY::FARM)->error(new FarmLogMessage($DBFarm->ID, $e->getMessage()));
+									}
+	                			}
+	                		}
+	                		
 		                	$dtadded = strtotime($DBServer->dateAdded);
 		                	$DBFarmRole = $DBServer->GetFarmRoleObject();
 							$launch_timeout = $DBFarmRole->GetSetting(DBFarmRole::SETTING_SYSTEM_LAUNCH_TIMEOUT) > 0 ? $DBFarmRole->GetSetting(DBFarmRole::SETTING_SYSTEM_LAUNCH_TIMEOUT) : CONFIG::$LAUNCH_TIMEOUT;
@@ -271,8 +306,8 @@
 		            foreach ($terminated_servers as $ts)
 		            	DBServer::LoadByID($ts['server_id'])->Remove();
 		            	
-		            $importing_servers = $this->db->GetAll("SELECT server_id FROM servers WHERE status=? AND UNIX_TIMESTAMP(dtadded)+86400 < UNIX_TIMESTAMP(NOW())", 
-		            	array(SERVER_STATUS::IMPORTING)
+		            $importing_servers = $this->db->GetAll("SELECT server_id FROM servers WHERE status IN(?,?) AND UNIX_TIMESTAMP(dtadded)+86400 < UNIX_TIMESTAMP(NOW())", 
+		            	array(SERVER_STATUS::IMPORTING, SERVER_STATUS::TEMPORARY)
 		            );	
 		            foreach ($importing_servers as $ts)
 		            	DBServer::LoadByID($ts['server_id'])->Remove();

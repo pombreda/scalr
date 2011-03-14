@@ -12,6 +12,9 @@
 			
 			foreach ($roles as $DBFarmRole)
 			{
+				if ($DBFarmRole->Platform != SERVER_PLATFORMS::EC2)
+					continue;
+				
 				$location = $DBFarmRole->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION);
 				
 				$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY);
@@ -34,6 +37,7 @@
 						$sshKey->type = Scalr_SshKey::TYPE_GLOBAL;
 						$sshKey->cloudLocation = $location;
 						$sshKey->cloudKeyName = $key_name;
+						$sshKey->platform = SERVER_PLATFORMS::EC2;
 						
 						$sshKey->setPrivate($result->keyMaterial);
 						

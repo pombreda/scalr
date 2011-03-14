@@ -99,12 +99,12 @@ Ext.onReady(function () {
 				{ header: "Task name", width: 40, dataIndex: 'task_name', sortable: true, hidden: 'no' },
 				{ header: "Task type", width: 40, dataIndex: 'task_type', sortable: false, hidden: 'no' },
 				{ header: "Target name", width: 80, dataIndex: 'target_name', sortable: true, hidden: 'no', tpl:
-					'<tpl if="target_type == &quot;farm&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {target_name}">{target_name}</a></tpl>' +
-					'<tpl if="target_type == &quot;role&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {farm_name}">{farm_name}</a>' +
-						'&nbsp;&rarr;&nbsp;Role: <a href="farm_roles_view.php?farmid={farmid}" title="Role {target_name}">{target_name}</a>' +
+					'<tpl if="target_type == &quot;farm&quot;">Farm: <a href="#/farms/{farmid}/view" title="Farm {target_name}">{target_name}</a></tpl>' +
+					'<tpl if="target_type == &quot;role&quot;">Farm: <a href="#/farms/{farmid}/view" title="Farm {farm_name}">{farm_name}</a>' +
+						'&nbsp;&rarr;&nbsp;Role: <a href="#/farms/{farmid}/roles" title="Role {target_name}">{target_name}</a>' +
 					'</tpl>' +
-					'<tpl if="target_type == &quot;instance&quot;">Farm: <a href="farms_view.php?id={farmid}" title="Farm {farm_name}">{farm_name}</a>' +
-						'&nbsp;&rarr;&nbsp;Server: <a href="servers_view.php?farmid={farmid}" title="Server {target_name}">{target_name}</a>' +
+					'<tpl if="target_type == &quot;instance&quot;">Farm: <a href="#/farms/{farmid}/view" title="Farm {farm_name}">{farm_name}</a>' +
+						'&nbsp;&rarr;&nbsp;Server: <a href="#/servers/view?farmId={farmid}" title="Server {target_name}">{target_name}</a>' +
 					'</tpl>'
 				},
 				{ header: "Start date", width: 50, dataIndex: 'start_time_date', sortable: true, hidden: 'no' },

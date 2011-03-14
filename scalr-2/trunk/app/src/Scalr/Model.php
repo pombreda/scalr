@@ -10,6 +10,9 @@
 		const SCALING_METRIC			= 'Scalr_Scaling_Metric';
 		const SCALING_FARM_ROLE_METRIC	= 'Scalr_Scaling_FarmRoleMetric';
 		const SSH_KEY					= 'Scalr_SshKey';
+		
+		const STORAGE_SNAPSHOT			= 'Scalr_Storage_Snapshot';
+		const STORAGE_VOLUME			= 'Scalr_Storage_Volume';
 
 		/**
 		 * 'dbkey' => 'classkey'
@@ -21,7 +24,7 @@
 		protected $dbPropertyMap = array();
 		protected $dbMessageKeyNotFound = "Key#%s not found in database";
 
-		public function __construct($id)
+		public function __construct($id = null)
 		{
 			$this->id = $id;
 			$this->db = Core::GetDBInstance();
@@ -40,7 +43,7 @@
 					if ($loadFlag) {
 						$info = $this->db->getRow("SELECT * FROM {$this->dbTableName} WHERE {$property} = ?", array($value));
 						if (! $info)
-							throw new Exception(sprintf(_($this->dbKeyNotFoundMessage), $value));
+							throw new Exception(sprintf(_($this->dbMessageKeyNotFound), $value));
 
 						return $this->loadBy($info);
 					} else {
@@ -52,6 +55,12 @@
 			throw new Exception(_("Method not found"));
 		}
 
+		/**
+		 * 
+		 * @param string $className
+		 * @return Scalr_Model
+		 * 
+		 */
 		public static function init($className)
 		{
 			//TODO: Validate class
@@ -103,7 +112,7 @@
 		{
 			$info = $this->db->GetRow("SELECT * FROM {$this->dbTableName} WHERE {$this->dbPrimaryKey}=?", array($id));
 			if (! $info)
-				throw new Exception(sprintf(_($this->dbKeyNotFoundMessage), $id));
+				throw new Exception(sprintf(_($this->dbMessageKeyNotFound), $id));
 
 			return $this->loadBy($info);
 		}
@@ -153,7 +162,7 @@
 			return $this->db->GetAll($sqlString, $args);
 		}
 
-		public function save()
+		public function save($forceInsert = false)
 		{
 			$set = array();
 			$bind = array();
@@ -161,15 +170,15 @@
 			foreach ($this->dbPropertyMap as $field => $value) {
 				$isArrayValue = is_array($value);
 
-				if ($field == $this->dbPrimaryKey)
+				if ($field == $this->dbPrimaryKey && !$forceInsert)
 					continue;
 
-				if ($isArrayValue && isset($value['createSql']) && !$this->id) {
+				if ($isArrayValue && isset($value['createSql']) && (!$this->id || $forceInsert)) {
 					$set[] = "`{$field}` = {$value['createSql']}";
 					continue;
 				}
 
-				if ($isArrayValue && isset($value['updateSql']) && $this->id) {
+				if ($isArrayValue && isset($value['updateSql']) && $this->id && !$forceInsert) {
 					$set[] = "`{$field}` = {$value['updateSql']}";
 					continue;
 				}
@@ -197,14 +206,16 @@
 			$set = implode(', ', $set);
 
 			try {
-				if ($this->id) {
+				if ($this->id && !$forceInsert) {
 					// Perform Update
 					$bind[] = $this->id;
 					$this->db->Execute("UPDATE {$this->dbTableName} SET {$set} WHERE id = ?", $bind);
 				} else {
 					// Perform Insert
 					$this->db->Execute("INSERT INTO {$this->dbTableName} SET {$set}", $bind);
-					$this->id = $this->db->Insert_ID();
+					
+					if (!$this->id)
+						$this->id = $this->db->Insert_ID();
 				}
 			} catch (Exception $e) {
 				throw new Exception (sprintf(_("Cannot save record. Error: %s"), $e->getMessage()), $e->getCode());

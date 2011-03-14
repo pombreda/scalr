@@ -1,40 +1,45 @@
 <?php
 
 	define('PMA_KEY', '!80uy98hH&)#0gsg695^39gsvt7s853r%#dfscvJKGSG67gVB@');
-	define('KEY_SAULT', crc32($_REQUEST['s']));
+	define('KEY_SAULT', md5($_REQUEST['s']));
 	
-	if (pma_sha256($_REQUEST['r'].$_REQUEST['s'].PMA_KEY) != $_REQUEST['h'])
+	session_set_cookie_params(0, '/', '', 0);
+	session_name('SignonSession');
+	session_start();
+	
+	if (!$_REQUEST['r'] && $_REQUEST['phpMyAdmin'])
+    {
+		header("Location: https://scalr.net/externals/pma_redirect.php?c=1&f={$_SESSION['f']}");
+		exit();
+    }
+	
+	if (md5($_REQUEST['r'].$_REQUEST['s'].PMA_KEY) != $_REQUEST['h'])
 	{
-		die("Invalid authentification token");
+		header("Location: https://scalr.net/externals/pma_redirect.php?c=2&f={$_SESSION['f']}");
+		exit();
 	}
 	else
 	{
 		$data = pma_decrypt($_REQUEST['r']);
 		if (!$data)
-			die("Invalid authentification token");
+		{
+			header("Location: https://scalr.net/externals/pma_redirect.php?c=2&f={$_SESSION['f']}");
+			exit();
+		}
 		else
 			$pma_auth = unserialize($data);
 	}
 	
 	if($pma_auth) 
 	{
-		session_set_cookie_params(0, '/', '', 0);
-		
-		session_name('SignonSession');
-		session_start();
 		$_SESSION['PMA_single_signon_user'] = $pma_auth['user'];
 		$_SESSION['PMA_single_signon_password'] = $pma_auth['password'];
 		$_SESSION['PMA_single_signon_host'] = $pma_auth['host'];
+		$_SESSION['f'] = $_REQUEST['f'];
 		
 		session_write_close();
 		
 		header('Location: ../index.php?server=1');
-	}
-	
-	function pma_sha256($input)
-	{
-		$hash = mhash(MHASH_SHA256, $input);
-		return bin2hex($hash);
 	}
 	
 	function pma_decrypt($input)

@@ -21,6 +21,59 @@
 			$this->db = Core::GetDBInstance();
 		}
 		
+		public function getRoleBuilderBaseImages()
+		{
+			return array(
+				// Ubuntu 10.04 LTS
+				'ami-22423c70'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'ap-southeast-1', 'architecture' => 'x86_64'),
+				'ami-3c423c6e'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'ap-southeast-1', 'architecture' => 'i386'),
+				
+				'ami-5e0fa45f'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'ap-northeast-1', 'architecture' => 'x86_64'),
+				'ami-5c0fa45d'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'ap-northeast-1', 'architecture' => 'i386'),
+			
+				'ami-d19ca9a5'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'eu-west-1', 'architecture' => 'x86_64'),
+				'ami-d79ca9a3'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'eu-west-1', 'architecture' => 'i386'),
+				
+				'ami-b8f405d1'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'us-east-1', 'architecture' => 'x86_64'),
+				'ami-a2f405cb'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'us-east-1', 'architecture' => 'i386'),
+				
+				'ami-b37e2ef6'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'us-west-1', 'architecture' => 'x86_64'),
+				'ami-b17e2ef4'	=> array('name' => 'Ubuntu 10.04', 'os_dist' => 'ubuntu', 'location' => 'us-west-1', 'architecture' => 'i386'),
+				
+				// Ubuntu 10.10
+				'ami-32423c60'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'ap-southeast-1', 'architecture' => 'x86_64'),
+				'ami-0c423c5e'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'ap-southeast-1', 'architecture' => 'i386'),
+				
+				'ami-460fa447'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'ap-northeast-1', 'architecture' => 'x86_64'),
+				'ami-440fa445'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'ap-northeast-1', 'architecture' => 'i386'),
+			
+				'ami-e59ca991'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'eu-west-1', 'architecture' => 'x86_64'),
+				'ami-fb9ca98f'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'eu-west-1', 'architecture' => 'i386'),
+				
+				'ami-cef405a7'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'us-east-1', 'architecture' => 'x86_64'),
+				'ami-ccf405a5'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'us-east-1', 'architecture' => 'i386'),
+				
+				'ami-af7e2eea'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'us-west-1', 'architecture' => 'x86_64'),
+				'ami-ad7e2ee8'	=> array('name' => 'Ubuntu 10.10', 'os_dist' => 'ubuntu', 'location' => 'us-west-1', 'architecture' => 'i386'),
+			
+				// CentOS 5.5
+				'ami-ee01aaef'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'ap-southeast-1', 'architecture' => 'x86_64'),
+				'ami-e001aae1'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'ap-southeast-1', 'architecture' => 'i386'),	
+			
+				'ami-0292ec50'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'ap-southeast-1', 'architecture' => 'x86_64'),
+				'ami-1c92ec4e'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'ap-southeast-1', 'architecture' => 'i386'),
+				
+				'ami-9f4377eb'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'eu-west-1', 'architecture' => 'x86_64'),
+				'ami-1b1e2a6f'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'eu-west-1', 'architecture' => 'i386'),
+				
+				'ami-34a6565d'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'us-east-1', 'architecture' => 'x86_64'),
+				'ami-38a65651'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'us-east-1', 'architecture' => 'i386'),
+				
+				'ami-bbbeeefe'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'us-west-1', 'architecture' => 'x86_64'),
+				'ami-bfbeeefa'	=> array('name' => 'CentOS 5.5', 'os_dist' => 'centos', 'location' => 'us-west-1', 'architecture' => 'i386'),
+			);
+		}
+		
 		public function getPropsList()
 		{
 			return array(
@@ -72,6 +125,9 @@
 		
 		public function GetServersList(Scalr_Environment $environment, $region, $skipCache = false)
 		{
+			if (!$region)
+				return array();
+			
 			if (!$this->instancesListCache[$environment->id][$region] || $skipCache)
 			{
 				$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
@@ -111,7 +167,7 @@
 			$region = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION);
 			
 			$iid = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID);
-			if (!$iid)
+			if (!$iid || !$region)
 			{
 				$status = 'not-found';
 			}
@@ -176,77 +232,76 @@
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
 		{
-			/*
-			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
-				"CLOUD_LOCATION", 
-				$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
-				$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
-			);
-			*/
-        
-	        //TODO:
-			
-			/*
-	        $DescribeImagesType = new DescribeImagesType();
-			$DescribeImagesType->imagesSet->item[] = array("imageId" => $DBRole->getImageId(SERVER_PLATFORMS::EC2));
-	        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
-	        
-	        $platfrom = (string)$ami_info->imagesSet->item->platform;
-	        $rootDeviceType = (string)$ami_info->imagesSet->item->rootDeviceType;
-	        
-	        if ($rootDeviceType == 'ebs')
-	        {
-	        	//TODO:	
-	        }
-	        else
-	        {
-		        if ($platfrom == 'windows')
-		        {
-					//TODO:		        	
-		        }
-		        else
-		        {    		    	
-    		    	$image_path = (string)$ami_info->imagesSet->item->imageLocation;
-    		    	
-    		    	$chunks = explode("/", $image_path);
-    		    	
-    		    	$bucket_name = $chunks[0];
-    		    	if (count($chunks) == 3)
-    		    		$prefix = $chunks[1];
-    		    	else
-    		    		$prefix = str_replace(".manifest.xml", "", $chunks[1]);
-    		    	
-    		    	try
-    		    	{
-    		    		$bucket_not_exists = false;
-    		    		$S3Client = new AmazonS3(
-    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::ACCESS_KEY), 
-    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::SECRET_KEY)
-    		    		);
-    		    		$objects = $S3Client->ListBucket($bucket_name, $prefix);
-    		    	}
-    		    	catch(Exception $e)
-    		    	{
-    		    		if (stristr($e->getMessage(), "The specified bucket does not exist"))
-    		    			$bucket_not_exists = true;
-    		    	}	
-    		    			    			    	
-    		    	if ($ami_info)
-    		    	{
-    		    		if (!$bucket_not_exists)
-    			    	{
-    			    		foreach ($objects as $object)
-    			    			$S3Client->DeleteObject($object->Key, $bucket_name);
-    			    			
-    			    		$bucket_not_exists = true;
-    			    	}
-    		    		
-    		    		if ($bucket_not_exists)
-    			    		$EC2Client->DeregisterImage($DBRole->getImageId(SERVER_PLATFORMS::EC2));
-    		    	}
-		        }
-	        }
-	        */
+			foreach ($DBRole->getImageId(SERVER_PLATFORMS::EC2) as $location => $imageId) {
+				try {
+					$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+						$location, 
+						$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+						$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+					);	
+					
+					try {
+						$DescribeImagesType = new DescribeImagesType();
+						$DescribeImagesType->imagesSet->item[] = array("imageId" => $imageId);
+			        	$ami_info = $EC2Client->DescribeImages($DescribeImagesType);
+					}
+					catch(Exception $e)
+					{
+						if (stristr($e->getMessage(), "is no longer available") || stristr($e->getMessage(), "does not exist"))
+							return true;
+						else
+							throw $e;
+					}
+			        
+			        $platfrom = (string)$ami_info->imagesSet->item->platform;
+			        $rootDeviceType = (string)$ami_info->imagesSet->item->rootDeviceType;
+			        
+			        if ($rootDeviceType == 'ebs') {
+			        	$EC2Client->DeregisterImage($imageId);
+			        }
+			        else {
+			       		$image_path = (string)$ami_info->imagesSet->item->imageLocation;
+	    		    	
+	    		    	$chunks = explode("/", $image_path);
+	    		    	
+	    		    	$bucket_name = $chunks[0];
+	    		    	if (count($chunks) == 3)
+	    		    		$prefix = $chunks[1];
+	    		    	else
+	    		    		$prefix = str_replace(".manifest.xml", "", $chunks[1]);
+	    		    	
+	    		    	try {
+	    		    		$bucket_not_exists = false;
+	    		    		$S3Client = new AmazonS3(
+	    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::ACCESS_KEY), 
+	    		    			$DBRole->getEnvironmentObject()->getPlatformConfigValue(self::SECRET_KEY)
+	    		    		);
+	    		    		$objects = $S3Client->ListBucket($bucket_name, $prefix);
+	    		    	}
+	    		    	catch(Exception $e) {
+	    		    		if (stristr($e->getMessage(), "The specified bucket does not exist"))
+	    		    			$bucket_not_exists = true;
+	    		    	}	
+	    		    			    			    	
+	    		    	if ($ami_info) {
+	    		    		if (!$bucket_not_exists) {
+	    			    		foreach ($objects as $object)
+	    			    			$S3Client->DeleteObject($object->Key, $bucket_name);
+	    			    			
+	    			    		$bucket_not_exists = true;
+	    			    	}
+	    		    		
+	    		    		if ($bucket_not_exists)
+	    			    		$EC2Client->DeregisterImage($imageId);
+	    		    	}
+			        }
+				} catch(Exception $e) {
+					if (stristr($e->getMessage(), "is no longer available"))
+						continue;
+					else
+						throw $e;
+				}
+			}
 		}
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
@@ -311,6 +366,9 @@
 					array()
 	        	);
 
+	        	$metaData = $BundleTask->getSnapshotDetails();
+	        	if ($metaData['rootVolumeSize'])
+	        		$msg->volumeSize = $metaData['rootVolumeSize']; 
 
         		if (!$DBServer->SendMessage($msg))
         		{
@@ -319,7 +377,7 @@
         		}
 	        	else
 	        	{
-		        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (MessageID: %s). Bundle task status changed to: %s"), 
+		        	$BundleTask->Log(sprintf(_("Snapshot creation started (MessageID: %s). Bundle task status changed to: %s"), 
 		        		$msg->messageId, $BundleTask->status
 		        	));
 	        	}
@@ -367,7 +425,7 @@
 				}
 				catch(Exception $e) {}
 		        
-		        if ($iinfo)
+		        if ($iinfo && $iinfo->instancesSet->item)
 		        {
 			        $groups = array();
 			        if ($iinfo->groupSet->item->groupId)
@@ -377,20 +435,6 @@
 			        	foreach ($iinfo->groupSet->item as $item)
 			        		$groups[] = $item->groupId;
 			        }
-			        
-			        /*
-			         <tr>
-						<td width="20%">CloudWatch monitoring:</td>
-						<td>{if $info->instancesSet->item->monitoring->state == 'enabled'}
-								<a href="/aws_cw_monitor.php?ObjectId={$info->instancesSet->item->instanceId}&Object=InstanceId&NameSpace=AWS/EC2">{$info->instancesSet->item->monitoring->state}</a>
-								&nbsp;(<a href="aws_ec2_cw_manage.php?action=Disable&iid={$info->instancesSet->item->instanceId}&region={$smarty.request.region}">Disable</a>)
-							{else}
-								{$info->instancesSet->item->monitoring->state}
-								&nbsp;(<a href="aws_ec2_cw_manage.php?action=Enable&iid={$info->instancesSet->item->instanceId}&region={$smarty.request.region}">Enable</a>)
-							{/if}
-						</td>
-					</tr>
-			         */
 			        
 			        $monitoring = $iinfo->instancesSet->item->monitoring->state;
 			        if ($monitoring == 'disabled')
@@ -409,10 +453,10 @@
 			        	'Instance ID'			=> $DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
 			        	'Owner ID'				=> $iinfo->ownerId,
 			        	'Image ID (AMI)'		=> $iinfo->instancesSet->item->imageId,
+			        	'Public DNS name'		=> $iinfo->instancesSet->item->dnsName,			        
 			        	'Private DNS name'		=> $iinfo->instancesSet->item->privateDnsName,
-			        	'Public DNS name'		=> $iinfo->instancesSet->item->dnsName,
-			        	'Private IP address'	=> $iinfo->instancesSet->item->privateIpAddress,
-			        	'Public IP address'		=> $iinfo->instancesSet->item->ipAddress,
+			        	'Public IP'				=> $iinfo->instancesSet->item->ipAddress,
+			        	'Private IP'			=> $iinfo->instancesSet->item->privateIpAddress,			        
 			        	'Key name'				=> $iinfo->instancesSet->item->keyName,
 			        	'AMI launch index'		=> $iinfo->instancesSet->item->amiLaunchIndex,
 			        	'Instance type'			=> $iinfo->instancesSet->item->instanceType,
@@ -434,119 +478,179 @@
 			return false;
 		}
 		
-		public function LaunchServer(DBServer $DBServer)
-		{
+		public function LaunchServer(DBServer $DBServer, Scalr_Server_LaunchOptions $launchOptions = null)
+		{	        
+			$RunInstancesType = new RunInstancesType();
+	        
+	        $RunInstancesType->ConfigureRootPartition();
+			
+			if (!$launchOptions)
+			{
+				$launchOptions = new Scalr_Server_LaunchOptions();
+				$DBRole = DBRole::loadById($DBServer->roleId);
+				
+				// Set Cloudwatch monitoring
+		        $RunInstancesType->SetCloudWatchMonitoring(
+		        	$DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_ENABLE_CW_MONITORING)
+		        );
+
+		        $launchOptions->architecture = $DBRole->architecture;
+		        
+		        $launchOptions->imageId = $DBRole->getImageId(
+		        	SERVER_PLATFORMS::EC2, 
+		        	$DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+		        );
+		        
+		        $launchOptions->cloudLocation = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION);
+		        
+		        $akiId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AKIID);
+		        if (!$akiId)
+		        	$akiId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_AKI_ID);
+		        		
+		        if ($akiId)
+		        	$RunInstancesType->kernelId = $akiId;
+		        	        
+		        $ariId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::ARIID);
+		        if (!$ariId)
+		        	$ariId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_ARI_ID);
+		        		
+		        if ($ariId)
+		        	$RunInstancesType->ramdiskId = $ariId;
+		        	
+				$i_type = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE);
+		        if (!$i_type)
+		        {
+		        	$DBRole = DBRole::loadById($DBServer->roleId);
+		        	$i_type = $DBRole->getProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE);
+		        }
+		        
+		        $launchOptions->serverType = $i_type;
+		        
+		        foreach ($DBServer->GetCloudUserData() as $k=>$v)
+	        		$u_data .= "{$k}={$v};";
+	        	
+	        	$RunInstancesType->SetUserData(trim($u_data, ";"));
+	        	
+				$vpcPrivateIp = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_PRIVATE_IP);
+		        $vpcSubnetId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_SUBNET_ID);
+		        if ($vpcPrivateIp && $vpcSubnetId)
+		        {
+		        	$RunInstancesType->subnetId = $vpcSubnetId;
+		        	$RunInstancesType->privateIpAddress = $vpcPrivateIp;
+		        }
+			}
+			else 
+				$RunInstancesType->SetUserData(trim($launchOptions->userData));
+
+			$DBServer->SetProperty(SERVER_PROPERTIES::ARCHITECTURE, $launchOptions->architecture);
+				
 			$EC2Client = Scalr_Service_Cloud_Aws::newEc2(
-				$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+				$launchOptions->cloudLocation, 
 				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
 				$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
 			);
-	        
-	        $RunInstancesType = new RunInstancesType();
-	        
-	        //TODO:
-	        $RunInstancesType->ConfigureRootPartition();
-	        
-	        // Set Cloudwatch monitoring
-	        $RunInstancesType->SetCloudWatchMonitoring(
-	        	$DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_ENABLE_CW_MONITORING)
-	        );
-
-	        $DBRole = DBRole::loadById($DBServer->roleId);
-	        $DBServer->SetProperty(SERVER_PROPERTIES::ARCHITECTURE, $DBRole->architecture);
-	        
-	        
+			
 	        // Set AMI, AKI and ARI ids
-	        $RunInstancesType->imageId = $DBRole->getImageId(
-	        	SERVER_PLATFORMS::EC2, 
-	        	$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
-	        );
+	        $RunInstancesType->imageId = $launchOptions->imageId;
 	        
-	        $akiId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AKIID);
-	        if (!$akiId)
-	        	$akiId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_AKI_ID);
-	        		
-	        if ($akiId)
-	        	$RunInstancesType->kernelId = $akiId;
-	        
-	        $vpcPrivateIp = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_PRIVATE_IP);
-	        $vpcSubnetId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_SUBNET_ID);
-	        if ($vpcPrivateIp && $vpcSubnetId)
-	        {
-	        	$RunInstancesType->subnetId = $vpcSubnetId;
-	        	$RunInstancesType->privateIpAddress = $vpcPrivateIp;
-	        }
-	        else
-	        {
+	        if (!$RunInstancesType->subnetId) {
 	        	// Set Security groups
 				foreach ($this->GetServerSecurityGroupsList($DBServer, $EC2Client) as $sgroup)
 	        		$RunInstancesType->AddSecurityGroup($sgroup);
 	        }
-	        	        
-	        $ariId = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::ARIID);
-	        if (!$ariId)
-	        	$ariId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_ARI_ID);
-	        		
-	        if ($ariId)
-	        	$RunInstancesType->ramdiskId = $ariId;
 	        	
 	        $RunInstancesType->minCount = 1;
 	        $RunInstancesType->maxCount = 1;
 	        	
 	        // Set availability zone
-	        $avail_zone = $this->GetServerAvailZone($DBServer, $EC2Client);
+	        $avail_zone = $this->GetServerAvailZone($DBServer, $EC2Client, $launchOptions);
 	        if ($avail_zone)
 	        	$RunInstancesType->SetAvailabilityZone($avail_zone);
 	        
-	        $i_type = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_INSTANCE_TYPE);
-	        if (!$i_type)
-	        {
-	        	$DBRole = DBRole::loadById($DBServer->roleId);
-	        	$i_type = $DBRole->getProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE);
-	        }
-	        
 	        // Set instance type
-	        $RunInstancesType->instanceType = $i_type;
+	        $RunInstancesType->instanceType = $launchOptions->serverType;
+	        
+	        if (in_array($RunInstancesType->instanceType, array('cc1.4xlarge', 'cg1.4xlarge')))
+	        {
+	        	$placementGroup = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_CLUSTER_PG);
+	        	if (!$placementGroup)
+	        	{
+	        		$placementGroup = "scalr-role-{$DBServer->farmRoleId}";
+	        		if (!$EC2Client->CreatePlacementGroup($placementGroup))
+	        			throw new Exception(sprintf(_("Cannot launch new instance. Unable to create placement group: %s"), $result->faultstring));
+	        			
+	        		$DBServer->GetFarmRoleObject()->SetSetting(DBFarmRole::SETTING_AWS_CLUSTER_PG, $placementGroup);
+	        	}
+	        	
+	        	$RunInstancesType->SetPlacementGroup($placementGroup);
+	        }
 	        
 	        // Set additional info
 	       	$RunInstancesType->additionalInfo = "";
 	       	
 	       	
-	        $RunInstancesType->keyName = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
-	        	$DBServer->farmId, 
-	        	$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
-	        )->cloudKeyName;
-	        
-	        foreach ($DBServer->GetCloudUserData() as $k=>$v)
-	        	$u_data .= "{$k}={$v};";
-	        	
-	        $RunInstancesType->SetUserData(trim($u_data, ";"));
+	       	/////
+	       	if ($DBServer->status == SERVER_STATUS::TEMPORARY) {
+				$keyName = "SCALR-ROLESBUILDER";
+				
+				$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY);
+				if (!$sshKey->loadGlobalByName($keyName, $launchOptions->cloudLocation, $DBServer->envId)) {
+					$result = $EC2Client->CreateKeyPair($keyName);
+					if ($result->keyMaterial) {	
+						$sshKey->farmId = 0;
+						$sshKey->clientId = $DBServer->clientId;
+						$sshKey->envId = $DBServer->envId;
+						$sshKey->type = Scalr_SshKey::TYPE_GLOBAL;
+						$sshKey->cloudLocation = $launchOptions->cloudLocation;
+						$sshKey->cloudKeyName = $keyName;
+						$sshKey->platform = SERVER_PLATFORMS::EC2;
+						
+						$sshKey->setPrivate($result->keyMaterial);
+						
+						$sshKey->setPublic($sshKey->generatePublicKey());
+						
+						$sshKey->save();
+		            }
+				}
+	       	}
+	       	else {
+	       		$keyName = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+		        	$DBServer->farmId, 
+		        	$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION)
+		        )->cloudKeyName;
+	       	}
+	       	/////
+	       	
+	        $RunInstancesType->keyName = $keyName;
 	        
 			$result = $EC2Client->RunInstances($RunInstancesType);
 	        
-	        if ($result->instancesSet)
-	        {
+	        if ($result->instancesSet) {
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE, (string)$result->instancesSet->item->placement->availabilityZone);
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID, (string)$result->instancesSet->item->instanceId);
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::INSTANCE_TYPE, $RunInstancesType->instanceType);
 	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::AMIID, $RunInstancesType->imageId);
+	        	$DBServer->SetProperty(EC2_SERVER_PROPERTIES::REGION, $launchOptions->cloudLocation);
 	        	
-	        	try
-	        	{
-	        		$CreateTagsType = new CreateTagsType(
-	        			array((string)$result->instancesSet->item->instanceId),
-	        			array(
-	        				"scalr-farm-id"			=> $DBServer->farmId,
-	        				"scalr-farm-name"		=> $DBServer->GetFarmObject()->Name,
-	        				"scalr-farm-role-id"	=> $DBServer->farmRoleId,
-	        				"scalr-role-name"		=> $DBServer->GetFarmRoleObject()->GetRoleObject()->name,
-	        				"scalr-server-id"		=> $DBServer->serverId
-	        			)
-	        		);
-	        		
-	        		$EC2Client->CreateTags($CreateTagsType);
+	        	try {
+	        		if ($DBServer->farmId != 0) {
+		        		$CreateTagsType = new CreateTagsType(
+		        			array((string)$result->instancesSet->item->instanceId),
+		        			array(
+		        				"scalr-farm-id"			=> $DBServer->farmId,
+		        				"scalr-farm-name"		=> $DBServer->GetFarmObject()->Name,
+		        				"scalr-farm-role-id"	=> $DBServer->farmRoleId,
+		        				"scalr-role-name"		=> $DBServer->GetFarmRoleObject()->GetRoleObject()->name,
+		        				"scalr-server-id"		=> $DBServer->serverId
+		        			)
+		        		);
+		        		
+		        		$EC2Client->CreateTags($CreateTagsType);
+	        		}
 	        	}
-	        	catch(Exception $e){ }
+	        	catch(Exception $e){
+	        		Logger::getLogger('EC2')->fatal("Cannot add tags to server: {$e->getMessage()}");
+	        	}
 	        	
 		        return $DBServer;
 	        }
@@ -581,51 +685,119 @@
 				throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
 			}
 			
+			if ($DBServer->status == SERVER_STATUS::TEMPORARY) {
+				if (!$aws_sgroups['scalr-rb-system']) {
+					try {
+						$EC2Client->CreateSecurityGroup('scalr-rb-system', _("Security group for Roles Builder"));
+					}
+					catch(Exception $e) {
+						throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
+					}					
+				
+			    	$IpPermissionSet = new IpPermissionSetType();
+					
+			    	$group_rules = array(
+						array('rule' => 'tcp:22:22:0.0.0.0/0'),
+						array('rule' => 'tcp:8013:8013:0.0.0.0/0'), // For Scalarizr
+						array('rule' => 'udp:8014:8014:0.0.0.0/0'), // For Scalarizr
+						array('rule' => 'udp:161:162:0.0.0.0/0'),
+						array('rule' => 'icmp:-1:-1:0.0.0.0/0')
+					); 
+					
+					foreach ($group_rules as $rule) {
+		            	$group_rule = explode(":", $rule["rule"]);
+		                $IpPermissionSet->AddItem($group_rule[0], $group_rule[1], $group_rule[2], null, array($group_rule[3]));
+		            }
+		
+		            // Create security group
+		            $EC2Client->AuthorizeSecurityGroupIngress(
+		            	$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::ACCOUNT_ID), 
+		            	'scalr-rb-system', 
+		            	$IpPermissionSet
+		            );
+				}
+
+				array_push($retval, 'scalr-rb-system');
+				
+				return $retval;
+			}
+			
 			// Add Role security group
 			$role_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRoleObject()->name;
 			$partent_sec_group = CONFIG::$SECGROUP_PREFIX.$DBServer->GetFarmRoleObject()->GetRoleObject()->getRoleHistory();
-			array_push($retval, $role_sec_group);
 			
-			if (!$aws_sgroups[strtolower($role_sec_group)])
+			$new_role_sec_group = "scalr-role.".$DBServer->GetFarmRoleObject()->ID;
+			
+			if ($aws_sgroups[strtolower($role_sec_group)]) {
+				// OLD System. scalr.%ROLENAME% . Nothing to do
+				array_push($retval, $role_sec_group);
+			}
+			else 
 			{
-				try {
-					$EC2Client->CreateSecurityGroup($role_sec_group, $DBServer->GetFarmRoleObject()->GetRoleObject()->name);
+				if ($aws_sgroups[strtolower($new_role_sec_group)]) {
+					// NEW System. scalr-role.%FARM_ROLE_ID% . Nothing to do
+					array_push($retval, $new_role_sec_group);
 				}
-				catch(Exception $e) {
-					throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
-				}
-					                        
-		    	$IpPermissionSet = new IpPermissionSetType();
-				
-		    	$group_rules = $DBServer->GetFarmRoleObject()->GetRoleObject()->getSecurityRules();
-		    	
-		    	//
-				// Check parent security group
-				//
-				if ($partent_sec_group && $aws_sgroups[$partent_sec_group] && count($group_rules) == 0)
-					$IpPermissionSet->item = $aws_sgroups[$partent_sec_group]->ipPermissions->item; 
-				else
+				else 
 				{
-					if (count($group_rules) == 0)
-					{
+					try {
+						$EC2Client->CreateSecurityGroup($new_role_sec_group, sprintf("Security group for FarmRoleID #%s on FarmID #%s", 
+							$DBServer->GetFarmRoleObject()->ID, $DBServer->farmId
+						));
+					}
+					catch(Exception $e) {
+						throw new Exception("GetServerSecurityGroupsList failed: {$e->getMessage()}");
+					}					
+				
+			    	$IpPermissionSet = new IpPermissionSetType();
+					
+			    	$group_rules = $DBServer->GetFarmRoleObject()->GetRoleObject()->getSecurityRules();
+			    	
+			    	//
+					// Check parent security group
+					//
+					if (count($group_rules) == 0) {
 						$group_rules = array(
 							array('rule' => 'tcp:22:22:0.0.0.0/0'),
 							array('rule' => 'tcp:8013:8013:0.0.0.0/0'), // For Scalarizr
 							array('rule' => 'udp:8014:8014:0.0.0.0/0'), // For Scalarizr
 							array('rule' => 'udp:161:162:0.0.0.0/0'),
 							array('rule' => 'icmp:-1:-1:0.0.0.0/0')
-						);                        
+						); 
+	
+						if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::APACHE) ||
+							$DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::NGINX)
+						) {
+							$group_rules[] = array('rule' => 'tcp:80:80:0.0.0.0/0');
+							$group_rules[] = array('rule' => 'tcp:443:443:0.0.0.0/0');
+						}
+						
+						if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL)) {
+							$group_rules[] = array('rule' => 'tcp:3306:3306:0.0.0.0/0');
+						}
+						
+						if ($DBServer->GetFarmRoleObject()->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::CASSANDRA)) {
+							$group_rules[] = array('rule' => 'tcp:7000:7000:0.0.0.0/0');
+							$group_rules[] = array('rule' => 'tcp:9160:9160:0.0.0.0/0');
+						} 
 					}
 					
-		            foreach ($group_rules as $rule)
-		            {
+		            foreach ($group_rules as $rule) {
 		            	$group_rule = explode(":", $rule["rule"]);
 		                $IpPermissionSet->AddItem($group_rule[0], $group_rule[1], $group_rule[2], null, array($group_rule[3]));
 		            }
+		
+		            // Create security group
+		            $EC2Client->AuthorizeSecurityGroupIngress(
+		            	$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::ACCOUNT_ID), 
+		            	$new_role_sec_group, 
+		            	$IpPermissionSet
+		            );	
+		            
+		            $DBServer->GetFarmRoleObject()->SetSetting(DBFarmRole::SETTING_AWS_SECURITY_GROUP, $new_role_sec_group);
+		            
+		            array_push($retval, $new_role_sec_group);
 				}
-	
-	            // Create security group
-	            $EC2Client->AuthorizeSecurityGroupIngress($DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::ACCOUNT_ID), $role_sec_group, $IpPermissionSet);	
 			}
 			
 			
@@ -661,8 +833,11 @@
 			return $retval;
 		}
 		
-		private function GetServerAvailZone(DBServer $DBServer, $EC2Client)
+		private function GetServerAvailZone(DBServer $DBServer, $EC2Client, Scalr_Server_LaunchOptions $launchOptions)
 		{
+			if ($DBServer->status == SERVER_STATUS::TEMPORARY)
+				return "{$launchOptions->cloudLocation}a";
+			
 			$server_avail_zone = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE);
 			
 			if ($server_avail_zone && $server_avail_zone != 'x-scalr-diff')

@@ -123,9 +123,12 @@ class Scalr_Integration_ZohoCrm_DeferredMediator
 	 * @param string $paypalSubscrId
 	 */
 	function onSubscrCancel ($client, $paypalSubscrId) {
-		$client->SetSettingValue(
-			CLIENT_SETTINGS::ZOHOCRM_UNSUBSCR_DATE, date("m/d/Y"));
-		$this->updateClient($client, array('contact'));
+		if ($client)
+		{
+			$client->SetSettingValue(
+				CLIENT_SETTINGS::ZOHOCRM_UNSUBSCR_DATE, date("m/d/Y"));
+			$this->updateClient($client, array('contact'));
+		}
 	}
 	
 	/**

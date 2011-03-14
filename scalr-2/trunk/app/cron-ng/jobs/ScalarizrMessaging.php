@@ -67,7 +67,7 @@
         function handleWork ($serverId)
         {
             try {
-            	$dbserver = DBServer::LoadByID($serverId);	
+            	$dbserver = DBServer::LoadByID($serverId);
             } catch (ServerNotFoundException $e) {
             	$this->db->Execute("DELETE FROM messages WHERE server_id=?", array($serverId));
             	return;
@@ -137,22 +137,12 @@
 							);
 		
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_BlockDeviceMounted) {
-	       					if ($message->isArray) {
-								// EBS array
-								$this->db->Execute(
-									"UPDATE ebs_arrays SET status=?, isfscreated='1' WHERE name=? AND serevr_id=?",
-									array(EBS_ARRAY_STATUS::IN_USE, $message->name, $dbserver->serverId)
-								);
-	       					} else {
-								// Single volume
-								$ebsinfo = $this->db->GetRow("SELECT * FROM farm_ebs WHERE volumeid=?", array($message->volumeId));
-								if ($ebsinfo) {
-									$db->Execute(
-										"UPDATE farm_ebs SET state=?, isfsexists='1' WHERE id=?", 
-										array(AWS_SCALR_EBS_STATE::MOUNTED, $ebsinfo['id'])
-									);
-								}
-	       					}
+
+							// Single volume
+							$ebsinfo = $this->db->GetRow("SELECT * FROM ec2_ebs WHERE volume_id=?", array($message->volumeId));
+							if ($ebsinfo)
+								$this->db->Execute("UPDATE ec2_ebs SET mount_status=?, isfsexist='1' WHERE id=?", array(EC2_EBS_MOUNT_STATUS::MOUNTED, $ebsinfo['id']));
+
 	       					$event = new EBSVolumeMountedEvent(
 	       						$dbserver, 
 	       						$message->mountpoint, 
@@ -163,11 +153,51 @@
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_RebundleResult) {
 	       					if ($message->status == Scalr_Messaging_Msg_RebundleResult::STATUS_OK) {
 	       						
+	       						$metaData = array(
+       								'szr_version' => $message->meta[Scalr_Messaging_MsgMeta::SZR_VERSION], 
+       								'os' => $message->os, 
+       								'software' => $message->software, 
+       							);
+	       						
+	       						if ($dbserver->platform == SERVER_PLATFORMS::EC2) {
+		       						if ($message->aws) {
+		       							if ($message->aws->root-device-type == 'ebs')
+		       								$tags[] = ROLE_TAGS::EC2_EBS;
+		       								
+		       							if ($message->aws->virtualization-type == 'hvm')
+		       								$tags[] = ROLE_TAGS::EC2_HVM;
+		       						}
+		       						else {
+		       							$ec2Client = Scalr_Service_Cloud_Aws::newEc2(
+											$dbserver->GetProperty(EC2_SERVER_PROPERTIES::REGION),
+											$dbserver->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
+											$dbserver->GetEnvironmentObject()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
+										);
+		       							
+		       							$DescribeImagesType = new DescribeImagesType(null, $images, null);
+										$DescribeImagesType->imagesSet->item = array();
+										$DescribeImagesType->imagesSet->item[] = array('imageId' => $dbserver->GetProperty(EC2_SERVER_PROPERTIES::AMIID));
+										
+										$info = $ec2Client->DescribeImages($DescribeImagesType);
+										
+										if ($info->imagesSet->item->rootDeviceType == 'ebs')
+											$tags[] = ROLE_TAGS::EC2_EBS;
+										
+										if ($info->imagesSet->item->virtualizationType == 'hvm')
+											$tags[] = ROLE_TAGS::EC2_HVM;
+		       						}
+	       						} elseif ($dbserver->platform == SERVER_PLATFORMS::NIMBULA) {
+	       							$metaData['init_root_user'] = $message->sshUser;
+	       							$metaData['init_root_pass'] = $message->sshPassword;
+	       						}
+	       						
+	       						$metaData['tags'] = $tags;
+	       						
 	       						$event = new RebundleCompleteEvent(
 	       							$dbserver, 
 	       							$message->snapshotId, 
 	       							$message->bundleTaskId,
-	       							array('os' => $message->os, 'software' => $message->software)
+									$metaData
 	       						);
 	       					} else if ($message->status == Scalr_Messaging_Msg_RebundleResult::STATUS_FAILED) {
 	       						$event = new RebundleFailedEvent($dbserver, $message->bundleTaskId);
@@ -184,12 +214,23 @@
        							$farmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_REQUEST_TIME, "");
        							$farmRole->SetSetting(DBFarmRole::SETTING_MYSQL_PMA_REQUEST_ERROR, $message->lastError);
        						}
+	       				} elseif ($message instanceof Scalr_Messaging_Msg_AmiScriptsMigrationResult) {
+	       					
+	       					if ($message->mysql) {
+	       						$event = $this->onHostUp($message, $dbserver, true);
+	       					}
+	       					
 	       				} elseif ($message instanceof Scalr_Messaging_Msg_Mysql_CreateDataBundleResult) {
 	       					if ($message->status == "ok") {
-	       						$event = new MysqlBackupCompleteEvent($dbserver, MYSQL_BACKUP_TYPE::BUNDLE, $message->snapshotId);
-	       						$event->snapshotId = $message->snapshotId;
-	       						$event->logFile = $message->logFile;
-	       						$event->logPos = $message->logPos;
+	       						$event = new MysqlBackupCompleteEvent($dbserver, MYSQL_BACKUP_TYPE::BUNDLE, array(
+	       							'snapshotConfig'	=> $message->snapshotConfig,
+	       							'logFile'			=> $message->logFile,
+	       							'logPos'			=> $message->logPos,
+	       							'dataBundleSize'	=> $message->dataBundleSize,
+	       						
+	       							/* @deprecated */
+	       							'snapshotId'		=> $message->snapshotId
+	       						));
 	       					} else {
 	       						$event = new MysqlBackupFailEvent($dbserver, MYSQL_BACKUP_TYPE::BUNDLE);
 	       						$event->lastError = $message->lastError;
@@ -206,11 +247,12 @@
 	       				$handle_status = MESSAGE_STATUS::HANDLED;
        				} catch (Exception $e) {
        					$handle_status = MESSAGE_STATUS::FAILED;
+       					
        					$this->logger->error(sprintf("Cannot handle message '%s' (message_id: %s) "
        							. "from server '%s' (server_id: %s). %s", 
        							$message->getName(), $message->messageId, 
        							$dbserver->remoteIp, $dbserver->serverId, $e->getMessage()));
-       				} 
+       				}
        				
        				$this->db->Execute("UPDATE messages SET status = ? WHERE messageid = ?",
        						array($handle_status, $message->messageId));
@@ -225,11 +267,20 @@
        		}
         }
         
-        private function onHello($message, $dbserver) {
+        private function onHello($message, DBServer $dbserver) {
+        	if ($dbserver->status == SERVER_STATUS::TEMPORARY) {
+        	
+        		$bundleTask = BundleTask::LoadById($dbserver->GetProperty(SERVER_PROPERTIES::SZR_IMPORTING_BUNDLE_TASK_ID));
+        		$bundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::PENDING;
+        		
+        		$bundleTask->Log("Received Hello message from scalarizr on server. Creating image");
+        		
+        		$bundleTask->save();
+        		
+        	}
        		if ($dbserver->status == SERVER_STATUS::IMPORTING) {
        			
-       			if ($dbserver->platform == SERVER_PLATFORMS::EC2)
-       			{
+       			if ($dbserver->platform == SERVER_PLATFORMS::EC2) {
 	       			$dbserver->SetProperties(array(
 	       				EC2_SERVER_PROPERTIES::AMIID => $message->awsAmiId,
 	       				EC2_SERVER_PROPERTIES::INSTANCE_ID => $message->awsInstanceId,
@@ -239,16 +290,54 @@
 	       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
 	       			));
        			}
-       			elseif ($dbserver->platform == SERVER_PLATFORMS::EUCALYPTUS)
-       			{
+       			elseif ($dbserver->platform == SERVER_PLATFORMS::EUCALYPTUS) {
        				$dbserver->SetProperties(array(
        					EUCA_SERVER_PROPERTIES::EMIID => $message->awsAmiId,
 	       				EUCA_SERVER_PROPERTIES::INSTANCE_ID => $message->awsInstanceId,
 	       				EUCA_SERVER_PROPERTIES::INSTANCE_TYPE => $message->awsInstanceType,
 	       				EUCA_SERVER_PROPERTIES::AVAIL_ZONE => $message->awsAvailZone,
-	       				EUCA_SERVER_PROPERTIES::REGION => 'Eucalyptus',
 	       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
-       					
+       				));
+       			}
+       			elseif ($dbserver->platform == SERVER_PLATFORMS::NIMBULA) {
+       				$dbserver->SetProperties(array(
+       					NIMBULA_SERVER_PROPERTIES::NAME => $message->serverName,
+	       				SERVER_PROPERTIES::ARCHITECTURE => $message->architecture
+       				));
+       			}
+       			elseif ($dbserver->platform == SERVER_PLATFORMS::RACKSPACE) {
+			       	$env = $dbserver->GetEnvironmentObject();
+			       	$cs = Scalr_Service_Cloud_Rackspace::newRackspaceCS(
+			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME),
+			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY)
+			       	);
+			       	
+			       	$csServer = null;
+			       	$list = $cs->listServers(true);
+			       	if ($list) {
+				       	foreach ($list->servers as $_tmp) {
+				       		if ($_tmp->addresses->public && 
+				       				in_array($message->remoteIp, $_tmp->addresses->public)) {
+				       			$csServer = $_tmp;
+				       		}
+				       	}
+			       		
+			       	}
+			       	if (!$csServer) {
+			       		$this->logger->error(sprintf("Server not found on CloudServers (server_id: %s, remote_ip: %s, local_ip: %s)",
+			       				$dbserver->serverId, $message->remoteIp, $message->localIp));
+			       		return;
+			       	}
+       				
+       				
+       				$dbserver->SetProperties(array(
+       					RACKSPACE_SERVER_PROPERTIES::SERVER_ID => $csServer->id,
+       					RACKSPACE_SERVER_PROPERTIES::NAME => $csServer->name,
+       					RACKSPACE_SERVER_PROPERTIES::IMAGE_ID => $csServer->imageId,
+       					RACKSPACE_SERVER_PROPERTIES::FLAVOR_ID => $csServer->flavorId,
+       					RACKSPACE_SERVER_PROPERTIES::HOST_ID => $csServer->hostId,
+       					RACKSPACE_SERVER_PROPERTIES::DATACENTER => 'rs-ORD1',
+       					SERVER_PROPERTIES::ARCHITECTURE => $message->architecture,
        				));
        			}
     			
@@ -311,8 +400,8 @@
          * @param Scalr_Messaging_Msg $message
          * @param DBServer $dbserver
          */
-	    private function onHostUp ($message, $dbserver) {
-       		if ($dbserver->status == SERVER_STATUS::INIT) {
+	    private function onHostUp ($message, $dbserver, $skipStatusCheck = false) {
+       		if ($dbserver->status == SERVER_STATUS::INIT || $skipStatusCheck) {
        			$event = new HostUpEvent($dbserver, "");
        			
        			$dbFarmRole = $dbserver->GetFarmRoleObject();
@@ -332,12 +421,103 @@
 		       				$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_STAT_PASSWORD, $mysqlData->statPassword);
                    		}
 
-	       				$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $mysqlData->snapshotId);                   		
                    		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_FILE, $mysqlData->logFile);
                    		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_POS, $mysqlData->logPos);
                    		
-                    } else {
-                    	$dbserver->SetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID, $mysqlData->volumeId);
+                   		if ($dbserver->IsSupported("0.7"))
+                   		{
+                   			//$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $mysqlData->snapshotConfig);
+                   			//$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $mysqlData->volumeConfig);
+                   			
+                   			if ($mysqlData->volumeConfig)
+                   			{
+                   				try {
+									$storageVolume = Scalr_Model::init(Scalr_Model::STORAGE_VOLUME);
+									try {
+										$storageVolume->loadById($mysqlData->volumeConfig->id);
+										$storageVolume->setConfig($mysqlData->volumeConfig);
+										$storageVolume->save();
+									} catch (Exception $e) {
+										if (strpos($e->getMessage(), 'not found')) {
+											$storageVolume->loadBy(array(
+												'id'			=> $mysqlData->volumeConfig->id,
+												'client_id'		=> $dbserver->clientId,
+												'env_id'		=> $dbserver->envId,
+												'name'			=> "MySQL data volume",
+												'type'			=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+												'platform'		=> $dbserver->platform,
+												'size'			=> $mysqlData->volumeConfig->size,
+												'fstype'		=> $mysqlData->volumeConfig->fstype
+											));
+											$storageVolume->setConfig($mysqlData->volumeConfig);
+											$storageVolume->save(true);
+										} 
+										else
+											throw $e;
+									}
+									
+									$dbFarmRole->SetSetting(
+										DBFarmRole::SETTING_MYSQL_SCALR_VOLUME_ID, 
+										$storageVolume->id
+									);
+								}
+								catch(Exception $e) {
+									$this->logger->error(new FarmLogMessage($event->DBServer->farmId, "Cannot save storage volume: {$e->getMessage()}"));
+								}
+                   			}
+                   			
+                   			if ($mysqlData->snapshotConfig)
+                   			{
+                   				try {
+                   					$storageSnapshot = Scalr_Model::init(Scalr_Model::STORAGE_SNAPSHOT);
+                   					try {
+										$storageSnapshot->loadById($mysqlData->snapshotConfig->id);
+										$storageSnapshot->setConfig($mysqlData->snapshotConfig);
+										$storageSnapshot->save();
+                   					} catch (Exception $e) {
+                   						if (strpos($e->getMessage(), 'not found')) {
+	                   						$storageSnapshot->loadBy(array(
+												'id'			=> $mysqlData->snapshotConfig->id,
+												'client_id'		=> $dbserver->clientId,
+	                   							'farm_id'		=> $dbserver->farmId,
+												'farm_roleid'	=> $dbserver->farmRoleId,
+												'env_id'		=> $dbserver->envId,
+												'name'			=> sprintf(_("MySQL data bundle #%s"), $mysqlData->snapshotConfig->id),
+												'type'			=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+												'platform'		=> $dbserver->platform,
+												'description'	=> sprintf(_("MySQL data bundle created on Farm '%s' -> Role '%s'"), 
+													$dbFarmRole->GetFarmObject()->Name, 
+													$dbFarmRole->GetRoleObject()->name
+												),
+												'ismysql'		=> true
+											));
+											
+											$storageSnapshot->setConfig($mysqlData->snapshotConfig);
+											
+											$storageSnapshot->save(true);
+                   						} 
+                   						else
+											throw $e;	
+									}
+									
+									$dbFarmRole->SetSetting(
+										DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID, 
+										$storageSnapshot->id
+									);
+								}
+								catch(Exception $e) {
+									$this->logger->error(new FarmLogMessage($event->DBServer->farmId, "Cannot save storage snapshot: {$e->getMessage()}"));
+								} 
+                   			}
+                   		}
+                   		else
+                   		{
+                   			/**
+                   		 	* @deprecated
+                   		 	*/
+	       					$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID, $mysqlData->snapshotId);	
+                   		}
+                   		
                     }
        			}
        			return $event;
@@ -352,17 +532,82 @@
          * @param Scalr_Messaging_Msg_Mysql_PromoteToMasterResult $message
          * @param DBServer $dbserver
          */	    
-	    private function onMysql_PromoteToMasterResult ($message, $dbserver) {
+	    private function onMysql_PromoteToMasterResult ($message, DBServer $dbserver) {
+    		$dbserver->GetFarmRoleObject()->SetSetting(DBFarmRole::SETTING_MYSQL_SLAVE_TO_MASTER, 0);
+    		$dbserver->SetProperty(SERVER_PROPERTIES::DB_MYSQL_SLAVE_TO_MASTER, 0);
 	    	if ($message->status == Scalr_Messaging_Msg_Mysql_PromoteToMasterResult::STATUS_OK) {
 		    	$dbFarm = $dbserver->GetFarmObject();
 		    	$dbFarmRole = $dbserver->GetFarmRoleObject();
 				$oldMaster = $dbFarm->GetMySQLInstances(true);
-	    		
-				// TODO: delete old slave volume if new one was created
-	    		$dbserver->SetProperty(EC2_SERVER_PROPERTIES::MYSQL_SLAVE_EBS_VOLUME_ID, $message->volumeId);
-	    		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $message->volumeId);
-	    		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SLAVE_TO_MASTER, 0);
-	    					
+
+				if ($dbserver->IsSupported("0.7")) {
+
+					if ($message->volumeConfig) {
+						try {					
+	
+							$storageVolume = Scalr_Model::init(Scalr_Model::STORAGE_VOLUME);
+							try {
+								$storageVolume->loadById($message->volumeConfig->id);
+								$storageVolume->setConfig($message->volumeConfig);
+								$storageVolume->save();
+							} catch (Exception $e) {
+								if (strpos($e->getMessage(), 'not found')) {
+									$storageVolume->loadBy(array(
+										'id'			=> $message->volumeConfig->id,
+										'client_id'		=> $dbserver->clientId,
+										'env_id'		=> $dbserver->envId,
+										'name'			=> "MySQL data volume",
+										'type'			=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+										'platform'		=> $dbserver->platform,
+										'size'			=> $message->volumeConfig->size,
+										'fstype'		=> $message->volumeConfig->fstype
+									));
+									$storageVolume->setConfig($message->volumeConfig);
+									$storageVolume->save(true);
+								} else {
+									throw $e;
+								}
+							}
+						}
+						catch(Exception $e) {
+							$this->logger->error(new FarmLogMessage($dbserver->farmId, "Cannot save storage volume: {$e->getMessage()}"));
+						} 
+					}
+	
+	
+					if ($message->snapshotConfig) {
+						try {					
+							$snapshot = Scalr_Model::init(Scalr_Model::STORAGE_SNAPSHOT);
+							$snapshot->loadBy(array(
+								'id'			=> $message->snapshotConfig->id,
+								'client_id'		=> $dbserver->clientId,
+								'env_id'		=> $dbserver->envId,
+								'name'			=> "Automatical MySQL data bundle",
+								'type'			=> $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE),
+								'platform'		=> $dbserver->platform,
+								'description'	=> "MySQL data bundle created automatically by Scalr",
+								'ismysql'		=> true
+							));
+							$snapshot->setConfig($message->snapshotConfig);
+							$snapshot->save(true);
+														
+							
+							$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID, $snapshot->id);
+	                   		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_FILE, $message->logFile);
+	                   		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_LOG_POS, $message->logPos);
+	                   		
+	                   		
+						}
+						catch(Exception $e) {
+							$this->logger->error(new FarmLogMessage($dbserver->farmId, "Cannot save storage snapshot: {$e->getMessage()}"));
+						} 
+					}
+					
+				} else {
+					// TODO: delete old slave volume if new one was created
+		    		$dbFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID, $message->volumeId);
+				}
+				
 				return new NewMysqlMasterUpEvent($dbserver, "", $oldMaster[0]);	    	
 	    		
 	    	} elseif ($message->status == Scalr_Messaging_Msg_Mysql_PromoteToMasterResult::STATUS_FAILED) {
@@ -370,7 +615,7 @@
 	    		$this->logger->error(sprintf("Promote to Master failed for server %s. Last error: %s", 
 	    				$dbserver->serverId, $message->lastError));
 	    	}
-	    	
+ 	
 	    }
     }
     

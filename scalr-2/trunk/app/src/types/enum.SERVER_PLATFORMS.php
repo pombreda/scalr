@@ -5,6 +5,7 @@
 		const RDS		= 'rds';
 		const RACKSPACE = 'rackspace';
 		const EUCALYPTUS= 'eucalyptus';
+		const NIMBULA	= 'nimbula';
 		
 		//FOR FUTURE USE
 		const VPS		= 'vps';
@@ -19,7 +20,8 @@
 				self::EC2 			=> 'Amazon EC2',
 				self::RDS 			=> 'Amazon RDS',
 				self::EUCALYPTUS 	=> 'Eucalyptus',
-				//self::RACKSPACE		=> 'Rackspace'
+				self::RACKSPACE		=> 'Rackspace',
+				self::NIMBULA		=> 'Nimbula'
 			);
 		}
 		

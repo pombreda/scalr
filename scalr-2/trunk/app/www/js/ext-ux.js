@@ -232,9 +232,9 @@ Ext.ux.scalr.GridViewer = Ext.extend(Ext.grid.GridPanel, {
 		}
 		
 		// Set cookie state provider if state manager configured with abstract provider
-		if (Ext.state.Manager.getProvider().constructor == Ext.state.Provider.prototype.constructor) {
-			Ext.state.Manager.setProvider(new Ext.state.CookieProvider());
-		}
+		//if (Ext.state.Manager.getProvider().constructor == Ext.state.Provider.prototype.constructor) {
+		//	Ext.state.Manager.setProvider(new Ext.state.CookieProvider());
+		//}
 		
 		if (this.enableFilter) {
 			var tbitems = [

@@ -160,9 +160,9 @@ Ext.onReady(function () {
 			columns: [
 				{ header: "Used by", width: 70, dataIndex: 'id', sortable: false, hidden: 'no', tpl:
 					'<tpl if="farm_id">' +
-						'Farm: <a href="farms_view.php?id={farm_id}" title="Farm {farm_name}">{farm_name}</a>' +
+						'Farm: <a href="#/farms/{farm_id}/view" title="Farm {farm_name}">{farm_name}</a>' +
 						'<tpl if="role_name">' +
-							'&nbsp;&rarr;&nbsp;<a href="farm_roles_view.php?farmid={farm_id}&farm_roleid={farm_roleid}" title="Role {role_name}">' +
+							'&nbsp;&rarr;&nbsp;<a href="#/farms/{farm_id}/roles/{farm_roleid}/view" title="Role {role_name}">' +
 							'{role_name}</a> #{server_index}' +
 						'</tpl>' +
 						'<tpl if="!role_name && mysql_master_volume">&nbsp;&rarr;&nbsp;MySQL master volume</tpl>' +

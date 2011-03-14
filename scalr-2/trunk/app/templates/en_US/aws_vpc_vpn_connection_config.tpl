@@ -35,21 +35,6 @@
     
     {/literal}
     </script>
-    <script language="javascript" type="text/javascript" src="/js/highlight/highlight.pack.js"></script>
-	<script language="javascript">
-	{literal}
-
-         Ext.onReady(function(){
-                hljs.highlightBlock(Ext.get('script_source_container').child('code').dom);
-         });
-
-	 function SetVersion(version)
-	 {  	            	
-		var url = 'script_info.php?id={/literal}{$id}{literal}&revision='+version;
-		document.location = url;
-	 }
-	{/literal}
-	</script>
 {include file="inc/table_header.tpl"}
 		{include file="inc/intable_header.tpl" header="VPN connection configuration" color="Gray"}
 		

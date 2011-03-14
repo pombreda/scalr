@@ -1,8 +1,6 @@
 <?
-	define("NO_AUTH", true);
-    include("../src/prepend.inc.php");  
-    session_destroy();
-    
+	require(dirname(__FILE__)."/../../src/prepend.inc.php"); 
+    @session_destroy();
     
     class API_PROVIDER
     {
@@ -15,7 +13,7 @@
     try
     {
     
-	    if ($req_Version != '2.0.0')
+	    if ($req_Version != '2.0.0' && $req_Version != '2.1.0' && $req_Version != '2.2.0')
 	    	throw new Exception("All versions prior to 2.0.0 are no longer supported");
     	
     	$API = ScalrAPICoreFactory::GetCore($req_Version); //TODO:    

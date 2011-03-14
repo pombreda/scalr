@@ -1,8 +1,7 @@
 <?
-	define("NO_AUTH", true);
 	try
 	{
-		include("src/prepend.inc.php");
+		require(dirname(__FILE__)."/../src/prepend.inc.php");
 		
 		if ($req_FarmID && $req_Hash)
 		{

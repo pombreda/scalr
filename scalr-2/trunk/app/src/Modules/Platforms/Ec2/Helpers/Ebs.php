@@ -58,6 +58,7 @@
 						$DBEBSVolume->mountPoint = $DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNTPOINT);
 						$DBEBSVolume->mountStatus = ($DBFarmRole->GetSetting(DBFarmRole::SETTING_AWS_EBS_MOUNT)) ? EC2_EBS_MOUNT_STATUS::AWAITING_ATTACHMENT : EC2_EBS_MOUNT_STATUS::NOT_MOUNTED;
 						$DBEBSVolume->clientId = $DBFarm->ClientID;
+						$DBEBSVolume->envId = $DBFarm->EnvID;
 						
 						
 						$DBEBSVolume->Save();

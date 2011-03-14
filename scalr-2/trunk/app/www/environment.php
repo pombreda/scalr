@@ -1,6 +1,5 @@
 <?
-    define("NO_AUTH", true);
-    include("src/prepend.inc.php");  
+    require(dirname(__FILE__)."/../src/prepend.inc.php");  
     
     /*
      * Date: 2008-11-25

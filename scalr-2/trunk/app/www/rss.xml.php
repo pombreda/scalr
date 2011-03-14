@@ -1,13 +1,7 @@
 <?
-    define("NO_AUTH", true);
-	require("src/prepend.inc.php"); 
+	require(dirname(__FILE__)."/../src/prepend.inc.php"); 
     
-    if (Scalr_Session::getInstance()->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN))
-        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=?", array($req_farmid));
-    else 
-        $farminfo = $db->GetRow("SELECT * FROM farms WHERE id=? AND env_id=?", 
-        	array($req_farmid, Scalr_Session::getInstance()->getEnvironmentId())
-        );
+    $farminfo = $db->GetRow("SELECT `clientid`, `name`, `id` FROM farms WHERE id=?", array($req_farmid));
 
     try
     {

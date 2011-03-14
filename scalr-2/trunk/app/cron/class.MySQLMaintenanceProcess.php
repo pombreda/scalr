@@ -170,8 +170,7 @@
                         {
                         	if ($DBServer->status == SERVER_STATUS::RUNNING)
                         	{
-	                        	$msg = new Scalr_Messaging_Msg_Mysql_CreateBackup();
-	                        	$msg->rootPassword = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_ROOT_PASSWORD);
+	                        	$msg = new Scalr_Messaging_Msg_Mysql_CreateBackup($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_ROOT_PASSWORD));
 	                            $DBServer->SendMessage($msg);
 	                        	
 	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BCP_RUNNING, 1);
@@ -202,8 +201,43 @@
                 }
                 else
                 {
-					$timeout = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_EVERY)*3600;
-					if ($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BUNDLE_TS)+$timeout < time())
+					/*
+					 * Check bundle window
+					 */                	                    	
+                    $bundleEvery = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_EVERY);
+                	$timeout = $bundleEvery*3600;
+                	$lastBundleTime = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BUNDLE_TS);
+                	
+                	$performBundle = false;
+                	if ($bundleEvery % 24 == 0)
+                	{
+                		if ($lastBundleTime)
+                		{
+                			$days = $bundleEvery / 24;
+                			$bundleDay = (int)date("md", strtotime("+{$days} day", $lastBundleTime));
+                			
+                			if ($bundleDay > (int)date("md"))
+                				return;
+                		}
+                		
+                		$pbwFrom = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_MM));
+	                    $pbwTo = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_MM));
+	                    if ($pbwFrom && $pbwTo) {
+	                        $current_time = (int)date("Hi");
+	                        if ($pbwFrom <= $current_time && $pbwTo >= $current_time)
+								$performBundle = true;
+	                    }
+	                    else
+	                    	$performBundle = true;
+                	}
+                	else
+                	{
+                		//Check timeout
+                		if ($lastBundleTime+$timeout < time())
+                			$performBundle = true;
+                	}
+                	
+					if ($performBundle)
 					{
 						$this->Logger->info("[FarmID: {$DBFarm->ID}] Need mySQL bundle procedure");
 	                    
@@ -215,26 +249,10 @@
 	                    {                            
 	                    	if ($DBServer->status == SERVER_STATUS::RUNNING)
                         	{
-		                    	$DBFarmRole = $DBServer->GetFarmRoleObject();
+		                        $DBServer->SendMessage(new Scalr_Messaging_Msg_Mysql_CreateDataBundle());
 		                        
-		                        $pbw_from = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_START_MM));
-		                        $pbw_to = (int)($DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_HH).$DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_WINDOW_END_MM));
-		                        if ($pbw_from && $pbw_to)
-		                        {
-		                        	$current_time = (int)date("Hi");
-		                        	if ($pbw_from <= $current_time && $pbw_to >= $current_time)
-										$allow_bundle = true;
-		                        }
-		                        else
-		                        	$allow_bundle = true;
-		                        
-		                        if ($allow_bundle)
-		                        {
-			                        $DBServer->SendMessage(new Scalr_Messaging_Msg_Mysql_CreateDataBundle());
-			                        
-		                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING, 1);
-		                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_SERVER_ID, $DBServer->serverId);
-		                        }
+	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING, 1);
+	                            $DBFarmRole->SetSetting(DBFarmRole::SETTING_MYSQL_BUNDLE_SERVER_ID, $DBServer->serverId);
                         	}
 	                    }
 	                    else 

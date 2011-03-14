@@ -7,13 +7,13 @@
 		//HARD_REBOOT, SHARE_IP, SHARE_IP_NO_CONFIG, DELETE_IP, UNKNOWN
 		
 		private $runningStatuses = array(
-			'REBUILD','SUSPENDED','QUEUE_RESIZE', 'PREP_RESIZE', 'RESIZE', 'VERIFY_RESIZE', 'PASSWORD', 'RESCUE', 'REBOOT', 
+			'ACTIVE', 'REBUILD','SUSPENDED','QUEUE_RESIZE', 'PREP_RESIZE', 'RESIZE', 'VERIFY_RESIZE', 'PASSWORD', 'RESCUE', 'REBOOT', 
 			'HARD_REBOOT', 'SHARE_IP', 'SHARE_IP_NO_CONFIG', 'DELETE_IP'
 		);
 		
 		public static function load($status)
 		{
-			return new Modules_Platforms_Eucalyptus_Adapters_Status($status);
+			return new Modules_Platforms_Rackspace_Adapters_Status($status);
 		}
 		
 		public function __construct($status)
@@ -28,7 +28,7 @@
 		
 		public function isRunning()
 		{
-			return in_array($this->platformStatus, array($this->runningStatuses));
+			return (in_array($this->platformStatus, $this->runningStatuses) !== false);
 		}
 		
 		public function isPending()
@@ -38,7 +38,7 @@
 		
 		public function isTerminated()
 		{
-			return in_array($this->platformStatus, array('DELETED', 'not-found', 'UNKNOWN'));
+			return (in_array($this->platformStatus, array('DELETED', 'not-found', 'UNKNOWN')) !== false);
 		}
 		
 		public function isSuspended()

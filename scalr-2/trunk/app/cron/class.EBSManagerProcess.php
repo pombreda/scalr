@@ -42,7 +42,7 @@
 				
 				if ($DBFarm->Status == FARM_STATUS::RUNNING)
 				{					
-					$old_snapshots = $db->GetAll("SELECT * FROM ebs_snaps_info WHERE is_autoebs_master_snap='1' AND farm_roleid=?  ORDER BY id ASC", array($DBFarmRole->ID));
+					$old_snapshots = $db->GetAll("SELECT * FROM storage_snapshots WHERE ismysql='1' AND farm_roleid=? AND `type`='ebs' ORDER BY id ASC", array($DBFarmRole->ID));
 					if (count($old_snapshots) > $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATE))
 					{
 						try
@@ -58,13 +58,16 @@
 								$snapinfo = array_shift($old_snapshots);
 								try
 								{
-									$AmazonEC2Client->DeleteSnapshot($snapinfo['snapid']);
-									$db->Execute("DELETE FROM ebs_snaps_info WHERE id=?", array($snapinfo['id']));
+									$AmazonEC2Client->DeleteSnapshot($snapinfo['id']);
+									$db->Execute("DELETE FROM ebs_snaps_info WHERE snapid=?", array($snapinfo['id']));
+									$db->Execute("DELETE FROM storage_snapshots WHERE id=?", array($snapinfo['id']));
 								}
 								catch(Exception $e)
 								{
-									if (stristr($e->getMessage(), "does not exist"))
-										$db->Execute("DELETE FROM ebs_snaps_info WHERE id=?", array($snapinfo['id']));
+									if (stristr($e->getMessage(), "does not exist")) {
+										$db->Execute("DELETE FROM ebs_snaps_info WHERE snapid=?", array($snapinfo['id']));
+										$db->Execute("DELETE FROM storage_snapshots WHERE id=?", array($snapinfo['id']));
+									}
 															
 									throw $e;
 								}
@@ -250,20 +253,24 @@
         					{
         						$this->logger->warn(sprintf(
         							_("Volume #%s should be attached to server %s (%s), but it already attached to instance %s. Re-attaching..."),
+        							$DBEBSVolume->volumeId,
         							$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
         							$DBServer->serverId,
         							$volumeInstanceId
         						));
         						
-        						//TODO:
-        						$DetachVolumeType = new DetachVolumeType(
-        							$DBEBSVolume->volumeId,
-        							$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
-        							$DBEBSVolume->deviceName,
-        							true
-        						);
-        						
-        						$EC2Client->DetachVolume($DetachVolumeType);
+        						try {
+        							$DetachVolumeType = new DetachVolumeType(
+	        							$DBEBSVolume->volumeId,
+	        							$volumeInstanceId,
+	        							$DBEBSVolume->deviceName,
+	        							true
+	        						);
+	        						
+	        						$EC2Client->DetachVolume($DetachVolumeType);
+        						} catch (Exception  $e) {
+        							
+        						}
         					}
         					
         					$DBEBSVolume->save();
@@ -327,6 +334,15 @@
         				}
         				catch(Exception $e)
         				{
+        					if (stristr($e->getMessage(), "must be at least snapshot size"))
+        					{
+        						@preg_match_all("/(([0-9]+)GiB)/sim", $e->getMessage(), $matches);
+        						if ($matches[2][1] > 1) {
+        							$DBEBSVolume->size = $matches[2][1];
+        							$DBEBSVolume->save();
+        						}
+        					}
+        					
         					$this->logger->error("Cannot create volume: {$e->getMessage()}. Database ID: {$DBEBSVolume->id}");
         					exit();
         				}

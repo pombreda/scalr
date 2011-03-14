@@ -73,8 +73,8 @@ Ext.onReady(function() {
 				{ header: "Name", width: 10, dataIndex: 'name', sortable: false, hidden: 'no' },
 				{ header: "Used on", width: 7, dataIndex: 'name', sortable: false, hidden: 'no', tpl:
 					'<tpl if="role_name && farmid">' +
-						'Farm: <a href="farms_view.php?id={values.farmid}" title="Farm {values.farm_name}">{values.farm_name}</a>' +
-						'&nbsp;&rarr;&nbsp;<a href="farm_roles_view.php?farmid={values.farmid}" title="Role {values.role_name}">{values.role_name}</a>' +
+						'Farm: <a href="#/farms/{values.farmid}/view" title="Farm {values.farm_name}">{values.farm_name}</a>' +
+						'&nbsp;&rarr;&nbsp;<a href="#/farms/{values.farmid}/roles" title="Role {values.role_name}">{values.role_name}</a>' +
 					'</tpl>' + 
 					'<tpl if="! role_name && farmid">Not used by Scalr</tpl>'
 				},

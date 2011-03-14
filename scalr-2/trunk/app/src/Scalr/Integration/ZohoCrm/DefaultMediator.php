@@ -261,6 +261,7 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 		}
 		
 		$adPagesVisited = $client->GetSettingValue(CLIENT_SETTINGS::AD_PAGES_VISITED);
+		$adCompaign = $client->GetSettingValue(CLIENT_SETTINGS::AD_COMPAIGN);
 		if ($adPagesVisited) {
 			$contact->leadSource = 'Adwords';
 			$contact->setProperty(
@@ -273,6 +274,8 @@ class Scalr_Integration_ZohoCrm_DefaultMediator extends
 			);
 			$client->ClearSettings('adwords%');
 			
+		} elseif ($adCompaign) {
+			$contact->leadSource = $adCompaign;
 		} else {
 			$packageId = $client->GetSettingValue(CLIENT_SETTINGS::BILLING_PACKAGE);
 			if (!$packageId || $packageId == 4) {

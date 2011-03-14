@@ -28,7 +28,7 @@
 				}
 				
 				if ($retval == Scalr_Scaling_Decision::UPSCALE) {
-					if($dbFarmRole->GetRunningInstancesCount() >= $dbFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
+					if(($dbFarmRole->GetRunningInstancesCount()+$dbFarmRole->GetPendingInstancesCount()) >= $dbFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MAX_INSTANCES))
 						$retval = Scalr_Scaling_Decision::NOOP;
 				}
 				
@@ -36,10 +36,8 @@
 					if ($dbFarmRole->GetRunningInstancesCount() <= $dbFarmRole->GetSetting(DBFarmRole::SETTING_SCALING_MIN_INSTANCES))
 						$retval = Scalr_Scaling_Decision::NOOP;
 				}
-				
-				
-							
-				if ($retval == Scalr_Scaling_Decision::UPSCALE && $dbFarmRole->GetPendingInstancesCount() != 0)
+		
+				if ($retval == Scalr_Scaling_Decision::UPSCALE && $dbFarmRole->GetPendingInstancesCount() > 5)
 					return Scalr_Scaling_Decision::NOOP;
 				else
 					return $retval;

@@ -3,7 +3,7 @@
 class Scalr_Messaging_Msg_Rebundle extends Scalr_Messaging_Msg {
 	public $roleName;
 	public $bundleTaskId;
-	public $excludes;		
+	public $excludes;
 	
 	function __construct ($bundleTaskId=null, $roleName=null, $excludes=array()) {
 		parent::__construct();

@@ -8,7 +8,5 @@
 		const AVAIL_ZONE	= 'euca.avail-zone';
 		const REGION		= 'euca.region';
 		const INSTANCE_TYPE	= 'euca.instance_type';
-		
-		const MYSQL_SLAVE_EBS_VOLUME_ID = 'mysql.slave_ebs_volume_id';
 	}
 ?>

@@ -1,31 +1,82 @@
 Ext.ns("Scalr.Viewers");
 Ext.ns("Scalr.Viewers.list");
 
-Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
-	columnOrderPlugin: false,
-	overClass: 'viewers-listview-row-over',
-	selectedClass: 'viewers-listview-row-selected',
+Scalr.Viewers.list.ListView = Ext.extend(Ext.DataView, {
+	/**
+	 * @cfg {Boolean} hideHeaders
+	 * <tt>true</tt> to hide the {@link #internalTpl header row} (defaults to <tt>false</tt> so
+	 * the {@link #internalTpl header row} will be shown).
+	 */
+	hideHeaders: false,
+	/**
+	 * @cfg {String} itemSelector
+	 * Defaults to <tt>'dl'</tt> to work with the preconfigured <b><tt>{@link Ext.DataView#tpl tpl}</tt></b>.
+	 * This setting specifies the CSS selector (e.g. <tt>div.some-class</tt> or <tt>span:first-child</tt>)
+	 * that will be used to determine what nodes the ListView will be working with.
+	*/
 	itemSelector: 'dl.viewers-listview-row',
 	elementSelector: 'dt',
 
+	/**
+	 * @cfg {String} selectedClass The CSS class applied to a selected row (defaults to
+	 * <tt>'x-list-selected'</tt>). An example overriding the default styling:
+	 * @type String
+	 */
+	selectedClass: 'viewers-listview-row-selected',
+	/**
+	 * @cfg {String} overClass The CSS class applied when over a row (defaults to
+	 * <tt>'x-list-over'</tt>). An example overriding the default styling:
+	 * @type String
+	*/
+	overClass: 'viewers-listview-row-over',
+	/**
+	* @cfg {Boolean} reserveScrollOffset
+	* By default will defer accounting for the configured <b><tt>{@link #scrollOffset}</tt></b>
+	* for 10 milliseconds.  Specify <tt>true</tt> to account for the configured
+	* <b><tt>{@link #scrollOffset}</tt></b> immediately.
+	*/
+	/**
+	 * @cfg {Number} scrollOffset The amount of space to reserve for the scrollbar (defaults to
+	 * <tt>undefined</tt>). If an explicit value isn't specified, this will be automatically
+	 * calculated.
+	 */
+	scrollOffset : undefined,
+	/**
+	 * @cfg {Boolean/Object} columnResize
+	 * Specify <tt>true</tt> or specify a configuration object for {@link Ext.list.ListView.ColumnResizer}
+	 * to enable the columns to be resizable (defaults to <tt>true</tt>).
+	 */
+	columnResize: true,
+	columnSort: true,
+	columnHide: true,
+
+	columnOrderPlugin: false,
+	columnActionPlugin: true,
+
 	initComponent: function() {
-		this.colResizer = new Scalr.Viewers.list.ColumnResizer();
-		this.colResizer.init(this);
+		if (this.columnResize) {
+			this.columnResize = new Scalr.Viewers.list.ColumnResize();
+			this.columnResize.init(this);
+		}
 
-		this.colSorter = new Scalr.Viewers.list.ListViewSorter();
-		this.colSorter.init(this);
+		if (this.columnSort) {
+			this.columnSort = new Scalr.Viewers.list.ColumnSort();
+			this.columnSort.init(this);
+		}
 
-		this.hideColumn = new Scalr.Viewers.list.HideColumn();
-		this.hideColumn.init(this);
+		if (this.columnHide) {
+			this.columnHide = new Scalr.Viewers.list.ColumnHide();
+			this.columnHide.init(this);
+		}
 
 		if (this.columnOrderPlugin) {
-			this.columnOrderPlugin = new Scalr.Viewers.list.OrderColumnPlugin();
+			this.columnOrderPlugin = new Scalr.Viewers.list.ColumnOrderPlugin();
 			this.columnOrderPlugin.init(this);
 		}
 
-		if (this.actionColumnPlugin) {
-			this.actionColumnPlugin = new Scalr.Viewers.list.ActionColumnPlugin();
-			this.actionColumnPlugin.init(this);
+		if (this.columnActionPlugin) {
+			this.columnActionPlugin = new Scalr.Viewers.list.ColumnActionPlugin();
+			this.columnActionPlugin.init(this);
 		}
 
 		this.internalTpl = new Ext.XTemplate(
@@ -73,15 +124,13 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		);
 
 		var cs = this.columns,
-			allocatedWidth = 0,
-			colsWithWidth = 0,
 			len = cs.length,
 			columns = [];
 
 		for (var i = 0; i < len; i++) {
 			var c = cs[i];
-			if (!c.isColumn) {
-				c.xtype = c.xtype ? (/^lv/.test(c.xtype) ? c.xtype : 'lv' + c.xtype) : 'lvscalrcolumn';
+			if (! c.isColumn) {
+				c.xtype = c.xtype ? (/^lv/.test(c.xtype) ? c.xtype : 'lv' + c.xtype) : 'lvcolumn';
 				c = Ext.create(c);
 			}
 			columns.push(c);
@@ -93,7 +142,7 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		if (! this.singleSelect)
 			this.onClick = Ext.emptyFn;
 
-		Ext.list.ListView.superclass.initComponent.call(this);
+		Scalr.Viewers.list.ListView.superclass.initComponent.call(this);
 
 		this.addEvents('refresh');
 		Ext.apply(this, {
@@ -111,9 +160,9 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		this.autoEl = {
 			cls: 'x-list-wrap'
 		};
-		Ext.list.ListView.superclass.onRender.apply(this, arguments);
+		Scalr.Viewers.list.ListView.superclass.onRender.apply(this, arguments);
 
-		this.internalTpl.overwrite(this.el, {columns: this.columns});
+		this.internalTpl.overwrite(this.el, { columns: this.columns });
 
 		this.innerBody = Ext.get(this.el.dom.childNodes[1].firstChild);
 		this.innerHd = Ext.get(this.el.dom.firstChild.firstChild);
@@ -121,13 +170,28 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		this.updateColumnWidth();
 		this.setHdWidths();
 
-		if(this.hideHeaders){
+		if (this.hideHeaders) {
 			this.el.dom.firstChild.style.display = 'none';
 		}
+
+		if (! this.columnHide)
+			this.getEl().child('div.viewers-listview-columns-icon').hide();
+	},
+
+	collectData : function(){
+		var rs = Scalr.Viewers.list.ListView.superclass.collectData.apply(this, arguments);
+		return {
+			columns: this.columns,
+			rows: rs
+		};
+	},
+
+	getTemplateTarget: function(){
+		return this.innerBody;
 	},
 
 	// private
-	onResize : function(w, h) {
+	onResize: function(w, h) {
 		var bd = this.innerBody.dom;
 		var hd = this.innerHd.dom;
 		if (!bd) {
@@ -135,7 +199,7 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 		}
 		var bdp = bd.parentNode;
 
-		if (Ext.isNumber(w)){
+		if (Ext.isNumber(w)) {
 			var sw = w - 19; // width of columns-icon
 			bd.style.width = sw + 'px';
 			hd.style.width = sw + 'px';
@@ -143,16 +207,13 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 
 		if (Ext.isNumber(h) && h > 0){
 			bdp.style.height = (h - hd.parentNode.offsetHeight) + 'px';
+		} else {
+			bdp.style.height = 'auto';
 		}
 
 		this.updateColumnWidth();
 		this.setHdWidths();
 		this.setBodyWidths();
-		this.saveState();
-	},
-
-	updateIndexes : function() {
-		Ext.list.ListView.superclass.updateIndexes.apply(this, arguments);
 	},
 
 	updateColumnWidth: function() {
@@ -218,87 +279,172 @@ Scalr.Viewers.list.ListView = Ext.extend(Ext.list.ListView, {
 				dt[j].style.display = (cs[j].hidden != 'yes') ? 'block' : 'none';
 			}
 		}
-	}
-});
-
-Scalr.Viewers.list.Column = Ext.extend(Ext.list.Column, {
-	style: ''
-});
-Ext.reg('lvscalrcolumn', Scalr.Viewers.list.Column);
-
-Scalr.Viewers.list.OrderColumnPlugin = Ext.extend(Ext.util.Observable, {
-	constructor: function (config) {
-		Ext.apply(this, config);
-		Scalr.Viewers.list.OrderColumnPlugin.superclass.constructor.call(this);
 	},
 
-	init: function(listView) {
-		this.view = listView;
-
-		this.view.columns.push({
-			header: '&nbsp;',
-			width: '50px',
-			cls: 'viewers-listview-row-order-plugin',
-			sortable: false,
-			tpl: '<img src="/images/up_icon.png" class="up" style="cursor: pointer"> <img src="/images/down_icon.png" class="down" style="cursor: pointer">'
-		});
-
-		this.view.on('refresh', this.onRefresh, this);
-	},
-
-	onRefresh: function() {
-		this.view.getTemplateTarget().select("img.up").each(function(el) {
-			el.on('click', this.onClick, this.view);
-		}, this);
-
-		this.view.getTemplateTarget().select("img.down").each(function(el) {
-			el.on('click', this.onClick, this.view);
-		}, this);
-	},
-
-	onClick: function(e) {
-		var item = e.getTarget(this.itemSelector, this.getTemplateTarget()), index = this.indexOf(item), el = e.getTarget(null, null, true);
-
-		if (el.is('img.up') && index > 0) {
-			var record = this.store.getAt(index);
-			this.store.removeAt(index);
-			this.store.insert(index - 1, record);
-		} else if (el.is('img.down') && (index < this.store.getCount() - 1)) {
-			var record = this.store.getAt(index);
-			this.store.removeAt(index);
-			this.store.insert(index + 1, record);
-		}
-
-		this.refresh();
-	}
-});
-
-Scalr.Viewers.list.ActionColumnPlugin = Ext.extend(Ext.util.Observable, {
-	constructor: function (config) {
-		Ext.apply(this, config);
-		Scalr.Viewers.list.ActionColumnPlugin.superclass.constructor.call(this);
-	},
-
-	init: function(listView) {
-		listView.on('afterrender', function () {
-			var cache = {};
-			for (var i = 0; i < this.columns.length; i++) {
-				if (this.columns[i].clickHandler)
-					cache[this.columns[i].dataIndex] = this.columns[i].clickHandler;
+	findHeaderIndex: function (header) {
+		header = header.dom || header;
+		var parentNode = header.parentNode,
+			children = parentNode.parentNode.childNodes,
+			i = 0,
+			c;
+		for (; c = children[i]; i++) {
+			if (c == parentNode) {
+				return i;
 			}
-
-			this.getTemplateTarget().on('click', function (e) {
-				var column = e.getTarget(this.elementSelector, this.getTemplateTarget(), true).getAttribute('dataindex');
-				if (column && cache[column]) {
-					var item = e.getTarget(this.itemSelector, this.getTemplateTarget()), index = this.indexOf(item), record = this.store.getAt(index);
-					cache[column].call(this, this, this.store, record);
-				}
-			}, this);
-		}, listView);
+		}
+		return -1;
 	}
 });
 
-Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
+Scalr.Viewers.list.Column = Ext.extend(Object, {
+    /**
+     * @private
+     * @cfg {Boolean} isColumn
+     * Used by ListView constructor method to avoid reprocessing a Column
+     * if <code>isColumn</code> is not set ListView will recreate a new Ext.list.Column
+     * Defaults to true.
+     */
+    isColumn: true,
+
+    /**
+     * @cfg {String} align
+     * Set the CSS text-align property of the column. Defaults to <tt>'left'</tt>.
+     */
+    align: 'left',
+    /**
+     * @cfg {String} header Optional. The header text to be used as innerHTML
+     * (html tags are accepted) to display in the ListView.  <b>Note</b>: to
+     * have a clickable header with no text displayed use <tt>'&#160;'</tt>.
+     */
+    header: '',
+
+    /**
+     * @cfg {Number} width Optional. Percentage of the container width
+     * this column should be allocated.  Columns that have no width specified will be
+     * allocated with an equal percentage to fill 100% of the container width.  To easily take
+     * advantage of the full container width, leave the width of at least one column undefined.
+     * Note that if you do not want to take up the full width of the container, the width of
+     * every column needs to be explicitly defined.
+     */
+    width: null,
+
+    /**
+     * @cfg {String} cls Optional. This option can be used to add a CSS class to the cell of each
+     * row for this column.
+     */
+    cls: '',
+
+	style: '',
+
+    /**
+     * @cfg {String} tpl Optional. Specify a string to pass as the
+     * configuration string for {@link Ext.XTemplate}.  By default an {@link Ext.XTemplate}
+     * will be implicitly created using the <tt>dataIndex</tt>.
+     */
+
+    /**
+     * @cfg {String} dataIndex <p><b>Required</b>. The name of the field in the
+     * ListViews's {@link Ext.data.Store}'s {@link Ext.data.Record} definition from
+     * which to draw the column's value.</p>
+     */
+
+    constructor: function(c) {
+        if (!c.tpl) {
+            c.tpl = new Ext.XTemplate('{' + c.dataIndex + '}');
+        }
+        else if (Ext.isString(c.tpl)) {
+            c.tpl = new Ext.XTemplate(c.tpl);
+        }
+
+        Ext.apply(this, c);
+    }
+});
+Ext.reg('lvcolumn', Scalr.Viewers.list.Column);
+
+Scalr.Viewers.list.ColumnResize = Ext.extend(Ext.util.Observable, {
+	/**
+	* @cfg {Number} minPct The minimum percentage to allot for any column (defaults to <tt>.05</tt>)
+	*/
+	minPct: .05,
+
+	constructor: function(config) {
+		Ext.apply(this, config);
+		Scalr.Viewers.list.ColumnResize.superclass.constructor.call(this);
+	},
+
+	init : function(listView){
+		this.view = listView;
+		this.view.addEvents('columnresize');
+		this.view.on('render', this.initEvents, this);
+	},
+
+	initEvents: function(view) {
+		view.mon(view.innerHd, 'mousemove', this.handleHdMove, this);
+		this.tracker = new Ext.dd.DragTracker({
+			onBeforeStart: this.onBeforeStart.createDelegate(this),
+			onStart: this.onStart.createDelegate(this),
+			onDrag: this.onDrag.createDelegate(this),
+			onEnd: this.onEnd.createDelegate(this),
+			tolerance: 3,
+			autoStart: 300
+		});
+		this.tracker.initEl(view.innerHd);
+		view.on('beforedestroy', this.tracker.destroy, this.tracker);
+	},
+
+	handleHdMove : function(e, t){
+		var handleWidth = 5,
+			x = e.getPageX(),
+			header = e.getTarget('em', 3, true);
+		if(header){
+			var region = header.getRegion(),
+				style = header.dom.style,
+				parentNode = header.dom.parentNode;
+
+			if(x - region.left <= handleWidth && parentNode != parentNode.parentNode.firstChild){
+				this.activeHd = Ext.get(parentNode.previousSibling.firstChild);
+				style.cursor = Ext.isWebKit ? 'e-resize' : 'col-resize';
+			} else if(region.right - x <= handleWidth && parentNode != parentNode.parentNode.lastChild.previousSibling){
+				this.activeHd = header;
+				style.cursor = Ext.isWebKit ? 'w-resize' : 'col-resize';
+			} else{
+				delete this.activeHd;
+				style.cursor = '';
+			}
+		}
+	},
+
+	// Sets up the boundaries for the drag/drop operation
+	setBoundaries: function(relativeX){
+		var view = this.view,
+			headerIndex = this.hdRealIndex,
+			width = view.innerHd.getWidth(),
+			relativeX = view.innerHd.getX(),
+			minWidth = Math.ceil(width * this.minPct),
+			maxWidth = width - minWidth,
+			numColumns = view.columns.length,
+			headers = view.innerHd.select('em', true),
+			minX = minWidth + relativeX,
+			maxX = maxWidth + relativeX,
+			header;
+		if (numColumns == 2) {
+			this.minX = minX;
+			this.maxX = maxX;
+		}else{
+			header = headers.item(this.hdRealNextIndex);
+			this.minX = headers.item(headerIndex).getX() + minWidth;
+			this.maxX = (header ? header.getX() - minWidth : maxX) + 2000; // HACK
+
+			if (headerIndex == 0) {
+				// First
+				this.minX = minX;
+			} else if (headerIndex == numColumns - 2) {
+				// Last
+				this.maxX = maxX;
+			}
+		}
+	},
+
 	onBeforeStart: function(e) {
 		this.dragHd = this.activeHd;
 		if (this.dragHd) {
@@ -356,6 +502,33 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 		return false;
 	},
 
+	onStart: function(e){
+		var me = this,
+			view = me.view,
+			dragHeader = me.dragHd,
+			x = me.tracker.getXY()[0];
+
+		me.proxy = view.el.createChild({cls:'x-list-resizer'});
+		me.dragX = dragHeader.getX();
+		me.headerIndex = view.findHeaderIndex(dragHeader);
+
+		me.headersDisabled = view.disableHeaders;
+		view.disableHeaders = true;
+
+		me.proxy.setHeight(view.el.getHeight());
+		me.proxy.setX(me.dragX);
+		me.proxy.setWidth(x - me.dragX);
+
+		this.setBoundaries();
+	},
+
+	onDrag: function(e){
+		var me = this,
+			cursorX = me.tracker.getXY()[0].constrain(me.minX, me.maxX);
+
+		me.proxy.setWidth(cursorX - this.dragX);
+	},
+
 	onEnd: function(e) {
 		/* calculate desired width by measuring proxy and then remove it */
 		var nw = this.proxy.getWidth();
@@ -396,7 +569,7 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 		delete this.dragHd;
 		vw.setHdWidths();
 		vw.setBodyWidths();
-		vw.saveState();
+		vw.fireEvent('columnresize');
 
 		setTimeout(function(){
 			vw.disableHeaders = false;
@@ -404,10 +577,145 @@ Scalr.Viewers.list.ColumnResizer = Ext.extend(Ext.list.ColumnResizer, {
 	}
 });
 
-Scalr.Viewers.list.HideColumn = Ext.extend(Ext.util.Observable, {
+Scalr.Viewers.list.ColumnSort = Ext.extend(Ext.util.Observable, {
+	/**
+	* @cfg {Array} sortClasses
+	* The CSS classes applied to a header when it is sorted. (defaults to <tt>["sort-asc", "sort-desc"]</tt>)
+	*/
+	sortClasses : ["sort-asc", "sort-desc"],
+
 	constructor: function(config){
 		Ext.apply(this, config);
-		Scalr.Viewers.list.HideColumn.superclass.constructor.call(this);
+		Scalr.Viewers.list.ColumnSort.superclass.constructor.call(this);
+	},
+
+	init : function(listView){
+		this.view = listView;
+		this.view.addEvents('columnsort');
+		this.view.on('render', this.initEvents, this);
+	},
+
+	initEvents : function(view){
+		view.mon(view.innerHd, 'click', this.onHdClick, this);
+		view.innerHd.setStyle('cursor', 'pointer');
+		view.mon(view.store, 'datachanged', this.updateSortState, this);
+		this.updateSortState.defer(10, this, [view.store]);
+	},
+
+	updateSortState : function(store){
+		var state = store.getSortState();
+		if(!state){
+			return;
+		}
+		this.sortState = state;
+		var cs = this.view.columns, sortColumn = -1;
+		for(var i = 0, len = cs.length; i < len; i++){
+			if(cs[i].dataIndex == state.field){
+				sortColumn = i;
+				break;
+			}
+		}
+		if(sortColumn != -1){
+			var sortDir = state.direction;
+			this.updateSortIcon(sortColumn, sortDir);
+		}
+	},
+
+	updateSortIcon : function(col, dir){
+		var sc = this.sortClasses;
+		var hds = this.view.innerHd.select('em').removeClass(sc);
+		hds.item(col).addClass(sc[dir == "DESC" ? 1 : 0]);
+	},
+
+
+	onHdClick: function(e) {
+		var hd = e.getTarget('em', 3);
+		if (hd && !this.view.disableHeaders) {
+			var index = this.view.findHeaderIndex(hd);
+			if (this.view.columns[index].sortable && this.view.columns[index].sortable == true) {
+				this.view.store.sort(this.view.columns[index].dataIndex);
+				this.view.fireEvent('columnsort');
+			}
+		}
+	}
+});
+
+Scalr.Viewers.list.ColumnOrderPlugin = Ext.extend(Ext.util.Observable, {
+	constructor: function (config) {
+		Ext.apply(this, config);
+		Scalr.Viewers.list.ColumnOrderPlugin.superclass.constructor.call(this);
+	},
+
+	init: function(listView) {
+		this.view = listView;
+
+		this.view.columns.push({
+			header: '&nbsp;',
+			width: '50px',
+			cls: 'viewers-listview-row-order-plugin',
+			sortable: false,
+			tpl: '<img src="/images/up_icon.png" class="up" style="cursor: pointer"> <img src="/images/down_icon.png" class="down" style="cursor: pointer">'
+		});
+
+		this.view.on('refresh', this.onRefresh, this);
+	},
+
+	onRefresh: function() {
+		this.view.getTemplateTarget().select("img.up").each(function(el) {
+			el.on('click', this.onClick, this.view);
+		}, this);
+
+		this.view.getTemplateTarget().select("img.down").each(function(el) {
+			el.on('click', this.onClick, this.view);
+		}, this);
+	},
+
+	onClick: function(e) {
+		var item = e.getTarget(this.itemSelector, this.getTemplateTarget()), index = this.indexOf(item), el = e.getTarget(null, null, true);
+
+		if (el.is('img.up') && index > 0) {
+			var record = this.store.getAt(index);
+			this.store.removeAt(index);
+			this.store.insert(index - 1, record);
+		} else if (el.is('img.down') && (index < this.store.getCount() - 1)) {
+			var record = this.store.getAt(index);
+			this.store.removeAt(index);
+			this.store.insert(index + 1, record);
+		}
+
+		this.refresh();
+	}
+});
+
+Scalr.Viewers.list.ColumnActionPlugin = Ext.extend(Ext.util.Observable, {
+	constructor: function (config) {
+		Ext.apply(this, config);
+		Scalr.Viewers.list.ColumnActionPlugin.superclass.constructor.call(this);
+	},
+
+	init: function(listView) {
+		listView.on('afterrender', function () {
+			var cache = {};
+			for (var i = 0; i < this.columns.length; i++) {
+				if (this.columns[i].clickHandler)
+					cache[this.columns[i].dataIndex] = this.columns[i].clickHandler;
+			}
+
+			this.getTemplateTarget().on('click', function (e) {
+				var elem = e.getTarget(this.elementSelector, this.getTemplateTarget(), true), column = elem ? elem.getAttribute('dataindex') : '';
+				if (column && cache[column]) {
+					var item = e.getTarget(this.itemSelector, this.getTemplateTarget()), index = this.indexOf(item), record = this.store.getAt(index);
+					cache[column].call(this, this, this.store, record);
+				}
+			}, this);
+		}, listView);
+	}
+});
+
+Scalr.Viewers.list.ColumnHide = Ext.extend(Ext.util.Observable, {
+	constructor: function(config){
+		Ext.apply(this, config);
+		Scalr.Viewers.list.ColumnHide.superclass.constructor.call(this);
 	},
 
 	init: function(listView) {
@@ -441,7 +749,6 @@ Scalr.Viewers.list.HideColumn = Ext.extend(Ext.util.Observable, {
 								this.updateColumnWidth();
 								this.setHdWidths();
 								this.setBodyWidths();
-								this.saveState();
 
 								if (column)
 									this.fireEvent(column.hidden == 'no' ? 'columnshow' : 'columnhide', column);
@@ -471,20 +778,6 @@ Scalr.Viewers.list.HideColumn = Ext.extend(Ext.util.Observable, {
 		this.updateColumnWidth();
 		this.setHdWidths();
 		this.setBodyWidths();
-		this.saveState();
-	}
-});
-
-Scalr.Viewers.list.ListViewSorter = Ext.extend(Ext.list.Sorter, {
-	onHdClick: function(e) {
-		var hd = e.getTarget('em', 3);
-		if (hd && !this.view.disableHeaders) {
-			var index = this.view.findHeaderIndex(hd);
-			if (this.view.columns[index].sortable && this.view.columns[index].sortable == true) {
-				this.view.store.sort(this.view.columns[index].dataIndex);
-				this.view.saveState();
-			}
-		}
 	}
 });
 
@@ -507,11 +800,6 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		autoScroll: true
 	},
 
-	stateful: false,
-	savePagingSize: false, // save only paging size
-	savePagingNumber: false, // save paging number, column's sort, column's visibility (save paging size too)
-	saveFilter: false, // save filter settings
-
 	enableFilter: true,
 	enablePaging: true,
 	enableAutoLoad: true,
@@ -525,6 +813,14 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		Ext.apply(this.listViewOptions, {
 			store: this.store
 		});
+
+		// hack
+		if (! Ext.isBoolean(this.maximize)) {
+			if (this.stateId != '' && this.stateful == true)
+				this.maximize = true;
+			else
+				this.maximize = false;
+		}
 
 		// create paging toolbar
 		if (this.enablePaging) {
@@ -649,6 +945,12 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			}
 		}
 
+		if (Ext.isArray(this.plugins)) {
+			this.plugins[this.plugins.length] = new Scalr.Viewers.Plugins.sessionStorage();
+		} else {
+			this.plugins = [ new Scalr.Viewers.Plugins.sessionStorage() ];
+		}
+
 		Scalr.Viewers.ListView.superclass.initComponent.call(this);
 
 		if (this.maximize) {
@@ -662,6 +964,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			var store = this.store, records = this.listView.getSelectedRecords();
 			var idProperty = store.idProperty || store.reader.meta.id || "id";
 			var method = item.method || "post";
+			var methodOptions = item.methodOptions || {};
 			var url = item.url || "";
 
 			var proccessMenuHandler = function() {
@@ -700,14 +1003,28 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 					Ext.Ajax.request({
 						url: url,
+						options: methodOptions,
 						success: function(response, options) {
 							Ext.MessageBox.hide();
 
 							var result = Ext.decode(response.responseText);
-							if (result.result == 'ok') {
-								store.load();
+
+							// old code
+							if (result.result || result.msg) {
+								if (result.result == 'ok') {
+									store.load();
+								} else {
+									Scalr.Viewers.ErrorMessage(result.msg);
+								}
 							} else {
-								Scalr.Viewers.ErrorMessage(result.msg);
+								// new one
+								if (result.success == true) {
+									store.load();
+									if (Ext.isDefined(item.successMessage))
+										Scalr.Viewers.SuccessMessage(item.successMessage);
+								} else {
+									Scalr.Viewers.ErrorMessage(result.error);
+								}
 							}
 						},
 						params: Ext.urlEncode(item.params)
@@ -746,7 +1063,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 	getState: function() {
 		var result = this.getLocalState();
 
-		result['pageSize'] = this.pagingToolbar ? this.pagingToolbar.pageSize : this.defaultPageSize;
+		/*result['pageSize'] = this.pagingToolbar ? this.pagingToolbar.pageSize : this.defaultPageSize;
 		result['pageStart'] = this.pagingToolbar ? this.pagingToolbar.cursor : 0;
 		result['pageSortState'] = this.store.getSortState();
 		result['pageFilter'] = this.filterField ? this.filterField.getValue() : '';
@@ -759,19 +1076,19 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 			if (this.listView.columns[i].hidden)
 				result['pageColumns'][i].hidden = this.listView.columns[i].hidden;
-		}
+		}*/
 
 		return result;
 	},
 
 	onRender: function(container, position) {
-		if (this.enablePaging && this.savePagingSize && this.state && this.state.pageSize) {
+		/*if (this.enablePaging && this.savePagingSize && this.state && this.state.pageSize) {
 			this.defaultPageSize = this.state.pageSize;
 		}
 
 		if (this.savePagingSize && this.state && this.state.pageSortState) {
 			this.store.setDefaultSort(this.state.pageSortState.field, this.state.pageSortState.direction);
-		}
+		}*/
 
 		// restore column's width
 		if (this.savePagingNumber && this.state && this.state.pageColumns) {
@@ -790,9 +1107,9 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			}
 		}
 
-		if (this.saveFilter && this.state && this.state.pageFilter) {
+		/*if (this.saveFilter && this.state && this.state.pageFilter) {
 			this.filterField.setValue(this.state.pageFilter);
-		}
+		}*/
 
 		// create listview
 		this.listView = new Scalr.Viewers.list.ListView(this.listViewOptions);
@@ -863,22 +1180,25 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		if (this.pagingToolbar) {
 			this.loadMask.show();
 
-			if (! (this.savePagingSize && typeof(this.state) != "undefined" && typeof(this.state.pageSize) != "undefined")) {
-				// try to discover optimal PageSize
-				var height = this.body.getHeight() - 26; // header's height
-				var num = Math.floor(height / 26); // row's height
+			// try to discover optimal PageSize
+			var height = this.body.getHeight() - 26; // header's height
+			var num = Math.floor(height / 25); // row's height
 
-				for (var i = 0, len = this.pageSizes.length; i < len; i++) {
-					if (num > this.pageSizes[i]) {
-						this.defaultPageSize = this.pageSizes[i];
-					} else {
-						break;
-					}
-				}
+			if (num > this.defaultPageSize) {
+				this.pageSizes.push(num);
+				this.pageSizes.sort(function (a, b) {
+					if (a < b)
+						return -1;
+					else if (a > b)
+						return 1;
+					else
+						return 0;
+				});
+
+				this.defaultPageSize = num;
+				this.pagingToolbar.pageSize = num;
+				this.store.setBaseParam("limit", num);
 			}
-
-			this.pagingToolbar.pageSize = this.defaultPageSize;
-			this.store.setBaseParam("limit", this.pagingToolbar.pageSize);
 
 			var menu = [];
 			for (var i = 0; i < this.pageSizes.length; i++) {
@@ -898,13 +1218,11 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			});
 
 			// check for saved page
-			if (this.savePagingNumber && this.state && this.state.pageStart) {
-				this.pagingToolbar.doLoad(this.state.pageStart);
-			} else {
+			if (this.enableAutoLoad)
 				this.pagingToolbar.doLoad(0);
-			}
+			else
+				this.loadMask.hide();
 
-			this.pagingToolbar.on('change', this.saveState, this);
 		} else {
 			if (this.enableAutoLoad)
 				this.store.load();

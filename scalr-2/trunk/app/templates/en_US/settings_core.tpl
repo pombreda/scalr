@@ -71,10 +71,6 @@
 			<td width="18%">Default SOA Minimum TTL:</td>
 			<td width="82%"><input name="def_soa_minttl" type="text" class="text" id="def_soa_minttl" value="{$def_soa_minttl}" size="30"></td>
 		</tr>
-		<tr valign="top">
-			<td width="18%">Named.conf Zone template:</td>
-			<td width="82%"><textarea name="namedconftpl" class="text" id="namedconftpl" cols="60" rows="5">{$namedconftpl}</textarea></td>
-		</tr>
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
 		{include file="inc/intable_header.tpl" header="AWS settings" color="Gray"}
@@ -129,10 +125,6 @@
 		{include file="inc/intable_footer.tpl" color="Gray"}
 		
 		{include file="inc/intable_header.tpl" header="Application settings" color="Gray"}
-		<tr>
-			<td width="18%">Path to snmpinform:</td>
-			<td width="82%"><input name="snmptrap_path" type="text" class="text" id="snmptrap_path" value="{$snmptrap_path}" size="30"></td>
-		</tr>
 		<tr>
 			<td width="18%">Event handler URL:</td>
 			<td width="82%"><select name="http_proto" class="text" style="vertical-align:middle;">

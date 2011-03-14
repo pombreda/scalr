@@ -8,7 +8,7 @@ class LoggerFilterCategoryMatch extends LoggerFilter {
     /**
      * @var boolean
      */
-    var $acceptOnMatch = true;
+    var $acceptOnMatch = false;
 
     /**
      * @var string
@@ -48,17 +48,19 @@ class LoggerFilterCategoryMatch extends LoggerFilter {
     /**
      * @return integer a {@link LOGGER_FILTER_NEUTRAL} is there is no string match.
      */
-    function decide($event) {
+    function decide(LoggerLoggingEvent $event) {
         $category = $event->getLoggerName();
         
         if ($category === null or  $this->stringToMatch === null) {
-            return LOG4PHP_LOGGER_FILTER_NEUTRAL;
+            return LoggerFilter::NEUTRAL;
         }
        
         if (preg_match($this->stringToMatch, $category)) {
-            return $this->acceptOnMatch ? LOG4PHP_LOGGER_FILTER_ACCEPT : LOG4PHP_LOGGER_FILTER_NEUTRAL; 
+            return $this->acceptOnMatch ? LoggerFilter::ACCEPT : LoggerFilter::NEUTRAL; 
         } else {
-        	return LOG4PHP_LOGGER_FILTER_DENY;
+        	return LoggerFilter::DENY;
         }
+        
+        return $retval;
     }	
 } 

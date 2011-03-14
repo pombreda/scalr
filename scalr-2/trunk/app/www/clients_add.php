@@ -2,7 +2,7 @@
 	require("src/prepend.inc.php"); 
 	
 	if ($_SESSION["uid"] != 0)
-	   UI::Redirect("index.php");
+	   UI::Redirect("/#/dashboard");
 	
 	$display["title"] = _("Clients&nbsp;&raquo;&nbsp;Add / Edit");
 	
@@ -99,7 +99,34 @@
                     throw new ApplicationException($e->getMessage(), E_ERROR);
                 }
                 
-	            if (count($err) == 0)
+    			/*
+	            Create environment
+	            */
+				$db->Execute("INSERT INTO client_environments SET
+					name		= ?,
+					client_id	= ?,
+					dt_added	= NOW(),
+					is_system	= '1'
+				", array("default", $clientid));
+				$env_id = $db->Insert_Id();
+
+				$config = array();
+
+				$keys = Scalr::GenerateAPIKeys();
+				
+				$config_n[ENVIRONMENT_SETTINGS::MAX_INSTANCES_LIMIT] = 20;
+				$config_n[ENVIRONMENT_SETTINGS::MAX_EIPS_LIMIT] = 5;
+				$config_n[ENVIRONMENT_SETTINGS::SYNC_TIMEOUT] = 86400;
+				$config_n[ENVIRONMENT_SETTINGS::TIMEZONE] = "America/Adak";
+				$config_n[ENVIRONMENT_SETTINGS::API_KEYID] = $keys['id'];
+				$config_n[ENVIRONMENT_SETTINGS::API_ACCESS_KEY] = $keys['key'];
+				
+				foreach ($config_n as $key => $value) {
+					$db->Execute("INSERT INTO client_environment_properties SET env_id = ?, name = ?, value = ? ON DUPLICATE KEY UPDATE value = ?", 
+						array($env_id, $key, $value, $value));
+				}
+	            
+                if (count($err) == 0)
                 {
                     $okmsg = _("Client successfully added!");
                     UI::Redirect("clients_view.php");

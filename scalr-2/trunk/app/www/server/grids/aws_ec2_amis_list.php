@@ -18,10 +18,10 @@
 				$_SESSION['sg_show_all'] = false;
 		}
 		
-		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(AWSRegions::GetAPIURL($_SESSION['aws_region']));		 
-		$AmazonEC2Client->SetAuthKeys(
+		$AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2(
+			$_SESSION['aws_region'],		 
 		    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
-		    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY)
+		    Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
 		);
 	
 		switch($req_ownerFilter)

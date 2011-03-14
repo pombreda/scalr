@@ -73,11 +73,7 @@
 			if (!self::$ClientsCache[$id])
 			{
 				$db = Core::GetDBInstance();
-				$Crypto = Core::GetInstance("Crypto", CONFIG::$CRYPTOKEY);
-				
-				$cpwd = $Crypto->Decrypt(@file_get_contents(dirname(__FILE__)."/../etc/.passwd"));
-				
-				
+								
 				$clientinfo = $db->GetRow("SELECT * FROM clients WHERE id=?", array($id));
 				if (!$clientinfo)
 					throw new Exception(sprintf(_("Client ID#%s not found in database"), $id));

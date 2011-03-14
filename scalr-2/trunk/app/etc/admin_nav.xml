@@ -7,7 +7,7 @@
 	</node>
 	
 	<node title="Farms">
-		<item href="farms_view.php" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s'">View all</item>
+		<item href="/#/farms/view" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s'">View all</item>
 	</node>	
 
 	<node title="Logs">
@@ -16,26 +16,23 @@
 		<item href="scripting_logs_view.php">Scripting log</item>
 	</node>
 
+	<node title="Roles">
+		<item href="#/roles/view" search="SELECT COUNT(*) FROM roles WHERE name LIKE '%s'">View all</item>		
+	</node>
+
 	<node title="Scripts">
-		<item href="script_templates.php">View all</item>		
+		<item href="#/scripts/view">View all</item>		
 	</node>
 
 	<node title="Settings">
 		<item href="default_records.php">Default DNS records</item>
 		<separator />
 		<node title="Roles">
-			<item href="roles_view.php?origin=Shared">View all</item>
-			<item href="role_edit.php">Add new</item>
+			<item href="#/roles/view?origin=Shared">View all</item>
+			<item href="#/roles/edit">Add new</item>
 		</node>
 		<separator />
 		<item href="settings_core.php">Core settings</item>
-		<separator />
-		<node title="Security">
-			<node title="IP whitelist">
-				<item href="ipaccess_add.php">Add new IP</item>
-				<item href="ipaccess_view.php">View all IPs</item>			
-			</node>		
-		</node>
 	</node>
 	
 </menu>

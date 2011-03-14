@@ -84,13 +84,6 @@
 		public static $PAYMENT_TERM;
 		public static $PAYMENT_DESCRIPTION;
 		
-		public static $IPNURL;
-		public static $PDTURL;
-		
-		
-		public static $ZONE_LOCK_WAIT_TIMEOUT;
-		public static $ZONE_LOCK_WAIT_RETRIES;
-		
 		/**
 		 * Cache lifetimes
 		 */
@@ -130,7 +123,8 @@
 		public static $SYNCHRONOUS_SCRIPT_TIMEOUT = 180; // seconds
 		public static $ASYNCHRONOUS_SCRIPT_TIMEOUT = 1200; // seconds
 		
-		public static $SCRIPT_BUILTIN_VARIABLES = array( 
+		private static $SCRIPT_BUILTIN_VARIABLES_LOADED = false;
+		private static $SCRIPT_BUILTIN_VARIABLES = array( 
 			"image_id" 		=> 1,
 			"role_name" 	=> 1, 
 			"isdbmaster" 	=> 1, 
@@ -144,6 +138,54 @@
 			"internal_ip" 	=> 1, 
 			"instance_id" 	=> 1
 		);
+		
+		public static function getScriptingBuiltinVariables()
+		{
+			if (!self::$SCRIPT_BUILTIN_VARIABLES_LOADED)
+			{
+				$ReflectEVENT_TYPE = new ReflectionClass("EVENT_TYPE");
+			    $event_types = $ReflectEVENT_TYPE->getConstants();
+			    foreach ($event_types as $event_type)
+			    {
+			    	if (class_exists("{$event_type}Event"))
+			    	{
+			    		$ReflectClass = new ReflectionClass("{$event_type}Event");
+			    		$retval = $ReflectClass->getMethod("GetScriptingVars")->invoke(null);
+			    		if (!empty($retval))
+			    		{
+			    			foreach ($retval as $k=>$v)
+			    			{
+			    				if (!CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k])
+			    				{
+				    				CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
+				    					"PropName"	=> $v,
+				    					"EventName" => "{$event_type}"
+				    				);
+			    				}
+			    				else
+			    				{
+			    					if (!is_array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']))
+			    						$events = array(CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName']);
+			    					else
+			    						$events = CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k]['EventName'];
+			
+			    					$events[] = $event_type;
+			
+			    					CONFIG::$SCRIPT_BUILTIN_VARIABLES[$k] = array(
+				    					"PropName"	=> $v,
+				    					"EventName" => $events
+				    				);
+			    				}
+			    			}
+			    		}
+			    	}
+			    }
+			    
+			    CONFIG::$SCRIPT_BUILTIN_VARIABLES_LOADED = true;
+			}
+			
+			return CONFIG::$SCRIPT_BUILTIN_VARIABLES;
+		}
 		
 		public static $PMA_INSTANCE_IP_ADDRESS = '184.73.181.141';
 		

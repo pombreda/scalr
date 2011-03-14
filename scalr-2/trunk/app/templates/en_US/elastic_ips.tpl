@@ -69,8 +69,8 @@ Ext.onReady(function() {
 			emptyText: "No elastic IPs found",
 			columns: [
 				{ header: "Used By", width: 10, dataIndex: 'farm_name', sortable: true, hidden: 'no', tpl:
-					'<tpl if="farm_id">Farm: <a href="farms_view.php?id={values.farm_id}" title="Farm {values.farm_name}">{values.farm_name}</a>' +
-						'<tpl if="role_name">&nbsp;&rarr;&nbsp;<a href="farm_roles_view.php?farmid={values.farm_id}&farm_roleid={values.farm_roleid}"' + 
+					'<tpl if="farm_id">Farm: <a href="#/farms/{values.farm_id}/view" title="Farm {values.farm_name}">{values.farm_name}</a>' +
+						'<tpl if="role_name">&nbsp;&rarr;&nbsp;<a href="#/farms/{values.farm_id}/roles/{values.farm_roleid}/view"' + 
 							'title="Role {values.role_name}">{values.role_name}</a> #{values.server_index}' + 
 						'</tpl>' +
 					'</tpl>' + 
@@ -82,7 +82,7 @@ Ext.onReady(function() {
 					'<tpl if="!indb"><img src="images/false.gif"></tpl>'
 				},
 				{ header: "Server", width: 5, dataIndex: 'instance_id', sortable: true, hidden: 'no', tpl:
-					'<tpl if="server_id"><a href="servers_view.php?server_id={values.server_id}&farmid={values.farm_id}">{values.server_id}</a></tpl>' +
+					'<tpl if="server_id"><a href="#/servers/{values.server_id}/view">{values.server_id}</a></tpl>' +
 					'<tpl if="!server_id">{values.instance_id}</tpl>'
 				}
 			]

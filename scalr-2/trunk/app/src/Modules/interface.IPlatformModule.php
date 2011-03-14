@@ -2,9 +2,11 @@
 
 	interface IPlatformModule
 	{
+		public function getRoleBuilderBaseImages();
+		
 		public function getLocations();
 		
-		public function LaunchServer(DBServer $DBServer);
+		public function LaunchServer(DBServer $DBServer, Scalr_Server_LaunchOptions $launchOptions = null);
 				
 		public function TerminateServer(DBServer $DBServer);
 		
@@ -20,6 +22,12 @@
 		
 		public function GetServerConsoleOutput(DBServer $DBServer);
 		
+		/**
+		 * 
+		 * Enter description here ...
+		 * @param DBServer $DBServer
+		 * @return IModules_Platforms_Adapters_Status $status
+		 */
 		public function GetServerRealStatus(DBServer $DBServer);
 		
 		public function GetServerIPAddresses(DBServer $DBServer);

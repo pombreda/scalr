@@ -139,6 +139,8 @@
 		
 		public function DNSZoneCreate($DomainName, $FarmID = null, $FarmRoleID = null)
 		{
+			$DomainName = trim($DomainName);
+			
 			$Validator = new Validator();
 			if (!$Validator->IsDomain($DomainName))
 				throw new Exception(_("Invalid domain name"));
@@ -461,7 +463,7 @@
 				throw new Exception(sprintf("Farm #%s not found", $FarmID));
 				
 			$sql = "SELECT * FROM logentries WHERE farmid='{$FarmID}'";
-			if ($InstanceID)
+			if ($ServerID)
 				$sql .= " AND serverid=".$this->DB->qstr($ServerID);
 				
 			$total = $this->DB->GetOne(preg_replace('/\*/', 'COUNT(*)', $sql, 1));
@@ -528,7 +530,7 @@
 				$data = array();
 			    foreach ($vars as $var)
 			    {
-			    	if (!in_array($var, array_keys(CONFIG::$SCRIPT_BUILTIN_VARIABLES)))
+			    	if (!in_array($var, array_keys(CONFIG::getScriptingBuiltinVariables())))
 			    	{
 			    		$ditm = new stdClass;
 			    		$ditm->Name = $var;
@@ -565,7 +567,7 @@
 			
 			$config = $ConfigVariables;
 			$scriptid = (int)$ScriptID;
-			if ($InstanceID)
+			if ($ServerID)
 				$target = SCRIPTING_TARGET::INSTANCE;
 			else if ($FarmRoleID)
 				$target = SCRIPTING_TARGET::ROLE;
@@ -941,8 +943,8 @@
 
 			//TODO: Remove this limitation
 			$n = $DBFarmRole->GetPendingInstancesCount(); 
-			if ($n > 0)
-				throw new Exception("There are {$n} pending instances. You cannot launch new instances while you have pending ones.");
+			if ($n >= 5)
+				throw new Exception("There are {$n} pending instances. You cannot launch new instances while you have 5 pending ones.");
 			
 			$response = $this->CreateInitialResponse();
 				

@@ -65,6 +65,7 @@
 				$sshKey->type = Scalr_SshKey::TYPE_GLOBAL;
 				$sshKey->cloudLocation = $farminfo['region'];
 				$sshKey->cloudKeyName = $key_name;
+				$sshKey->platfrom = 'ec2';
 				
 				$sshKey->setPrivate($ssh_priv);
 				$sshKey->setPublic($ssh_pub);

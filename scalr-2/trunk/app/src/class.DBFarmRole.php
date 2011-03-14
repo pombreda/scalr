@@ -16,6 +16,7 @@
 		const SETTING_SCALING_POLLING_INTERVAL			= 	'scaling.polling_interval';
 		const SETTING_SCALING_LAST_POLLING_TIME			= 	'scaling.last_polling_time';
 		const SETTING_SCALING_KEEP_OLDEST				= 	'scaling.keep_oldest';
+		const SETTING_SCALING_SAFE_SHUTDOWN				=	'scaling.safe_shutdown';
 		
 			 //advanced timeout limits for scaling
 		const SETTING_SCALING_UPSCALE_TIMEOUT			=	'scaling.upscale.timeout';
@@ -24,6 +25,7 @@
 		const SETTING_SCALING_DOWNSCALE_TIMEOUT_ENABLED =	'scaling.downscale.timeout_enabled';
 		const SETTING_SCALING_UPSCALE_DATETIME			=	'scaling.upscale.datetime';
 		const SETTING_SCALING_DOWNSCALE_DATETIME		=	'scaling.downscale.datetime';
+		
 		
 		const SETTING_BALANCING_USE_ELB 		= 		'lb.use_elb';
 		const SETTING_BALANCING_HOSTNAME 		= 		'lb.hostname';
@@ -47,7 +49,10 @@
 		const SETTING_RDS_PORT					= 		'rds.port';
 		
 		/** RACKSPACE Settings **/
-		const SETTING_RS_FLAVOR_ID				= 		'rs.flavor_id';
+		const SETTING_RS_FLAVOR_ID				= 		'rs.flavor-id';
+		
+		/** NIMBULA Settings **/
+		const SETTING_NIMBULA_SHAPE				=		'nimbula.shape';
 		
 		/** EUCA Settings **/
 		const SETTING_EUCA_INSTANCE_TYPE 		= 		'euca.instance_type';
@@ -66,7 +71,9 @@
 		const SETTING_AWS_ARI_ID				= 		'aws.ari_id';
 		const SETTING_AWS_ENABLE_CW_MONITORING	= 		'aws.enable_cw_monitoring';
 		const SETTING_AWS_SECURITY_GROUPS_LIST  = 		'aws.security_groups.list';
-		const SETTING_AWS_S3_BUCKET				= 		'aws.s3_bucket';		
+		const SETTING_AWS_S3_BUCKET				= 		'aws.s3_bucket';	
+		const SETTING_AWS_SECURITY_GROUP		= 		'aws.security_group';
+		const SETTING_AWS_CLUSTER_PG			= 		'aws.cluster_pg';
 		
 		const SETTING_AWS_VPC_PRIVATE_IP		=		'aws.vpc.privateIpAddress';
 		const SETTING_AWS_VPC_SUBNET_ID			=		'aws.vpc.subnetId';
@@ -86,36 +93,41 @@
 		const SETTING_MYSQL_BUNDLE_WINDOW_END_HH = 'mysql.pbw2_hh';
 		const SETTING_MYSQL_BUNDLE_WINDOW_END_MM = 'mysql.pbw2_mm';
 		
-		const SETTING_MYSQL_EBS_SNAPS_ROTATE	= 		'mysql.ebs.rotate';
+		const SETTING_MYSQL_EBS_SNAPS_ROTATE			= 'mysql.ebs.rotate';
 		const SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED	= 'mysql.ebs.snaps_rotation_enabled';
 		
-		const SETTING_MYSQL_BCP_ENABLED 		= 'mysql.enable_bcp';
-		const SETTING_MYSQL_BCP_EVERY 			= 'mysql.bcp_every';
-		const SETTING_MYSQL_BUNDLE_ENABLED 		= 'mysql.enable_bundle';
-		const SETTING_MYSQL_BUNDLE_EVERY 		= 'mysql.bundle_every';
-		const SETTING_MYSQL_LAST_BCP_TS 		= 'mysql.dt_last_bcp';
-		const SETTING_MYSQL_LAST_BUNDLE_TS 		= 'mysql.dt_last_bundle';
-		const SETTING_MYSQL_IS_BCP_RUNNING 		= 'mysql.isbcprunning';
-		const SETTING_MYSQL_IS_BUNDLE_RUNNING 	= 'mysql.isbundlerunning';
-				
-		const SETTING_MYSQL_BCP_SERVER_ID 		= 'mysql.bcp_server_id';
-		const SETTING_MYSQL_BUNDLE_SERVER_ID 	= 'mysql.bundle_server_id';
-		
-		const SETTING_MYSQL_DATA_STORAGE_ENGINE = 'mysql.data_storage_engine';
-		const SETTING_MYSQL_MASTER_EBS_VOLUME_ID= 'mysql.master_ebs_volume_id';
-		const SETTING_MYSQL_EBS_VOLUME_SIZE 	= 'mysql.ebs_volume_size';
-		const SETTING_MYSQL_SLAVE_TO_MASTER 	= 'mysql.slave_to_master';
-		
-		const SETTING_MYSQL_BCP_MASTER_IF_NO_SLAVES = 'mysql.bcp_master_if_no_slaves';
-		/////////////////////////////////////////////////
-		
+		const SETTING_MYSQL_BCP_ENABLED 				= 'mysql.enable_bcp';
+		const SETTING_MYSQL_BCP_EVERY 					= 'mysql.bcp_every';
+		const SETTING_MYSQL_BUNDLE_ENABLED 				= 'mysql.enable_bundle';
+		const SETTING_MYSQL_BUNDLE_EVERY 				= 'mysql.bundle_every';
+		const SETTING_MYSQL_LAST_BCP_TS 				= 'mysql.dt_last_bcp';
+		const SETTING_MYSQL_LAST_BUNDLE_TS 				= 'mysql.dt_last_bundle';
+		const SETTING_MYSQL_IS_BCP_RUNNING 				= 'mysql.isbcprunning';
+		const SETTING_MYSQL_IS_BUNDLE_RUNNING 			= 'mysql.isbundlerunning';
+		const SETTING_MYSQL_BCP_SERVER_ID 				= 'mysql.bcp_server_id';
+		const SETTING_MYSQL_BUNDLE_SERVER_ID 			= 'mysql.bundle_server_id';
+		const SETTING_MYSQL_DATA_STORAGE_ENGINE 		= 'mysql.data_storage_engine';
+		const SETTING_MYSQL_SLAVE_TO_MASTER 			= 'mysql.slave_to_master';
+		const SETTING_MYSQL_BCP_MASTER_IF_NO_SLAVES 	= 'mysql.bcp_master_if_no_slaves';
 		/* MySQL users credentials */
 		const SETTING_MYSQL_ROOT_PASSWORD				= 'mysql.root_password';
 		const SETTING_MYSQL_REPL_PASSWORD				= 'mysql.repl_password';		
 		const SETTING_MYSQL_STAT_PASSWORD				= 'mysql.stat_password';
-		const SETTING_MYSQL_SNAPSHOT_ID					= 'mysql.snapshot_id';
+		
 		const SETTING_MYSQL_LOG_FILE					= 'mysql.log_file';		
 		const SETTING_MYSQL_LOG_POS						= 'mysql.log_pos';
+		
+		const SETTING_MYSQL_SCALR_SNAPSHOT_ID			= 'mysql.scalr.snapshot_id';
+		const SETTING_MYSQL_SCALR_VOLUME_ID				= 'mysql.scalr.volume_id';
+		
+		/*
+		 * @deprecated
+		 */
+		const SETTING_MYSQL_SNAPSHOT_ID			= 'mysql.snapshot_id';
+		const SETTING_MYSQL_MASTER_EBS_VOLUME_ID= 'mysql.master_ebs_volume_id';
+		const SETTING_MYSQL_EBS_VOLUME_SIZE 	= 'mysql.ebs_volume_size';
+		
+		/////////////////////////////////////////////////
 		
 		const SETTING_MTA_PROXY_GMAIL			=		'mta.proxy.gmail'; // settings for mail transfer on Google mail
 		const SETTING_MTA_GMAIL_LOGIN			=		'mta.gmail.login';
@@ -283,6 +295,9 @@
 					if ($tz)
 						date_default_timezone_set($tz);
 			
+					$event = new HostDownEvent($DBServer);
+					Scalr::FireEvent($DBServer->farmId, $event);
+						
 					$DBServer->Save();
                 }
 			}

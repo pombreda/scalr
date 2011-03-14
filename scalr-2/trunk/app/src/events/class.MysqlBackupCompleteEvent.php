@@ -9,11 +9,8 @@
 		public $DBServer;
 		
 		public $Operation;
-		public $SnapshotInfo;
 		
-		public $snapshotId;
-		public $logFile;
-		public $logPos;
+		public $SnapshotInfo;
 		
 		public function __construct(DBServer $DBServer, $Operation, $SnapInfo)
 		{
