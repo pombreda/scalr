@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS `bundle_tasks` (
   `env_id` int(11) NOT NULL,
   `server_id` varchar(36) DEFAULT NULL,
   `replace_type` varchar(20) DEFAULT NULL,
-  `status` varchar(20) DEFAULT NULL,
+  `status` varchar(30) DEFAULT NULL,
   `platform` varchar(20) DEFAULT NULL,
   `rolename` varchar(50) DEFAULT NULL,
   `failure_reason` text,
@@ -162,8 +162,6 @@ CREATE TABLE IF NOT EXISTS `clients` (
   `aws_accountid` varchar(50) DEFAULT NULL,
   `aws_accesskey` varchar(255) DEFAULT NULL,
   `farms_limit` int(2) DEFAULT '2',
-  `isbilled` tinyint(1) DEFAULT '0',
-  `dtdue` datetime DEFAULT NULL,
   `isactive` tinyint(1) DEFAULT '0',
   `fullname` varchar(60) DEFAULT NULL,
   `org` varchar(60) DEFAULT NULL,
@@ -215,8 +213,9 @@ CREATE TABLE IF NOT EXISTS `client_environment_properties` (
   `env_id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
   `value` text NOT NULL,
+  `group` varchar(20) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `env_id_2` (`env_id`,`name`),
+  UNIQUE KEY `env_id_2` (`env_id`,`name`,`group`),
   KEY `env_id` (`env_id`),
   KEY `name_value` (`name`(100),`value`(100)),
   KEY `name` (`name`(100))
@@ -234,7 +233,8 @@ CREATE TABLE IF NOT EXISTS `client_settings` (
   `key` varchar(255) DEFAULT NULL,
   `value` text,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `NewIndex1` (`clientid`,`key`)
+  UNIQUE KEY `NewIndex1` (`clientid`,`key`),
+  KEY `settingskey` (`key`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
@@ -344,6 +344,7 @@ CREATE TABLE IF NOT EXISTS `dns_zones` (
   `allow_manage_system_records` tinyint(1) DEFAULT '0',
   `isonnsserver` tinyint(1) DEFAULT '0',
   `iszoneconfigmodified` tinyint(1) DEFAULT '0',
+  `allowed_accounts` text,
   PRIMARY KEY (`id`),
   UNIQUE KEY `zones_index3945` (`zone_name`),
   KEY `farmid` (`farm_id`),
@@ -876,6 +877,7 @@ CREATE TABLE IF NOT EXISTS `nameservers` (
 
 -- --------------------------------------------------------
 
+
 --
 -- Table structure for table `rds_snaps_info`
 --
@@ -960,11 +962,26 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `approval_state` varchar(20) DEFAULT NULL,
   `generation` tinyint(4) DEFAULT '1',
   `os` varchar(60) DEFAULT NULL,
+  `szr_version` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `NewIndex1` (`origin`),
   KEY `NewIndex2` (`client_id`),
   KEY `NewIndex3` (`env_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `roles_queue`
+--
+
+CREATE TABLE IF NOT EXISTS `roles_queue` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) DEFAULT NULL,
+  `dtadded` datetime DEFAULT NULL,
+  `action` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -991,7 +1008,7 @@ CREATE TABLE IF NOT EXISTS `role_images` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role_id` int(11) NOT NULL,
   `cloud_location` varchar(25) DEFAULT NULL,
-  `image_id` varchar(25) DEFAULT NULL,
+  `image_id` varchar(255) DEFAULT NULL,
   `platform` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `role_id` (`role_id`),
@@ -1069,6 +1086,21 @@ CREATE TABLE IF NOT EXISTS `role_software` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `role_tags`
+--
+
+CREATE TABLE IF NOT EXISTS `role_tags` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `role_id` int(11) DEFAULT NULL,
+  `tag` varchar(25) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `NewIndex1` (`role_id`,`tag`),
+  KEY `NewIndex2` (`role_id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `scaling_metrics`
 --
 
@@ -1126,7 +1158,8 @@ CREATE TABLE IF NOT EXISTS `scripting_log` (
   `server_id` varchar(36) DEFAULT NULL,
   `dtadded` datetime DEFAULT NULL,
   `message` text,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `farmid` (`farmid`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
@@ -1229,6 +1262,7 @@ CREATE TABLE IF NOT EXISTS `servers_history` (
   `dtterminated_scalr` datetime DEFAULT NULL,
   `terminate_reason` varchar(255) DEFAULT NULL,
   `platform` varchar(20) DEFAULT NULL,
+  `type` varchar(25) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `client_id` (`client_id`),
   KEY `server_id` (`server_id`)
@@ -1301,6 +1335,66 @@ CREATE TABLE IF NOT EXISTS `ssh_keys` (
   `cloud_location` varchar(255) DEFAULT NULL,
   `farm_id` int(11) DEFAULT NULL,
   `cloud_key_name` varchar(255) DEFAULT NULL,
+  `platform` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `storage_snapshots`
+--
+
+CREATE TABLE IF NOT EXISTS `storage_snapshots` (
+  `id` varchar(20) NOT NULL,
+  `client_id` int(11) DEFAULT NULL,
+  `env_id` int(11) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `platform` varchar(50) DEFAULT NULL,
+  `type` varchar(20) DEFAULT NULL,
+  `config` text,
+  `description` text,
+  `ismysql` tinyint(1) DEFAULT '0',
+  `dtcreated` datetime DEFAULT NULL,
+  `farm_id` int(11) DEFAULT NULL,
+  `farm_roleid` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `storage_volumes`
+--
+
+CREATE TABLE IF NOT EXISTS `storage_volumes` (
+  `id` varchar(50) NOT NULL,
+  `client_id` int(11) DEFAULT NULL,
+  `env_id` int(11) DEFAULT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `attachment_status` varchar(255) DEFAULT NULL,
+  `mount_status` varchar(255) DEFAULT NULL,
+  `config` text,
+  `type` varchar(20) DEFAULT NULL,
+  `dtcreated` datetime DEFAULT NULL,
+  `platform` varchar(20) DEFAULT NULL,
+  `size` varchar(20) DEFAULT NULL,
+  `fstype` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subscriptions`
+--
+
+CREATE TABLE IF NOT EXISTS `subscriptions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `clientid` int(11) DEFAULT NULL,
+  `subscriptionid` varchar(255) DEFAULT NULL,
+  `dtstart` datetime DEFAULT NULL,
+  `status` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
@@ -1357,3 +1451,5 @@ CREATE TABLE IF NOT EXISTS `task_queue` (
   `failed_attempts` int(3) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
