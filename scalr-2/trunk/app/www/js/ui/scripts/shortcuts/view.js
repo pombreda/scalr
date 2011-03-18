@@ -33,13 +33,18 @@
      		],
 
      		withSelected: {
-     			menu: [
-     				{
-     					text: "Delete",
-						method: 'ajax',
-						confirmationMessage: 'Delete selected shortcuts(s)?',
-						progressMessage: 'Removing selected shortcut(s). Please wait...',
-						progressIcon: 'scalr-mb-object-removing',
+     			menu: [{
+					text: 'Delete',
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Delete selected shortcuts(s)?'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing selected shortcut(s). Please wait...'
+						},
 						url: '/scripts/shortcuts/xRemove/',
 						dataHandler: function(records) {
 							var shortcuts = [];
@@ -49,8 +54,8 @@
 
 							return { shortcuts: Ext.encode(shortcuts) };
 						}
-     				}
-     			],
+					}
+				}],
      		},
 
      		listViewOptions: {

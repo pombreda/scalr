@@ -44,16 +44,32 @@
 			},
 			
 			withSelected: {
-				menu: [
-					{
-						text: 'Delete',
-						params: {
-							action: 'delete',
-							with_selected: 1
+				menu: [{
+					text: 'Delete',
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							msg: 'Remove selected metric(s)?',
+							type: 'delete'
 						},
-						confirmationMessage: 'Remove selected metric(s)?'
+						processBox: {
+							msg: 'Removing selected metric(s), Please wait...',
+							type: 'delete'
+						},
+						url: '/scaling/metrics/xDeleteMetric/',
+						dataHandler: function (records) {
+							var metrics = [];
+							for (var i = 0, len = records.length; i < len; i++) {
+								metrics[metrics.length] = records[i].get('id');
+							}
+
+							return { metrics: Ext.encode(metrics) };
+						},
+						success: function (data) {
+							Scalr.Message.Success('Selected metric(s) successfully removed');
+						}
 					}
-				],
+				}],
 				renderer: function(data) {
 					return (data.env_id != 0);
 				}

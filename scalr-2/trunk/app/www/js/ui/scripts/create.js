@@ -9,6 +9,7 @@
 			autoScroll: true,
 			title: (moduleParams['scriptId']) ? 'Scripts &raquo; Edit' : 'Scripts &raquo; Create',
 			buttonAlign:'center',
+			plugins: [ new Scalr.Viewers.Plugins.findOne(), new Scalr.Viewers.Plugins.prepareForm() ],
 			padding: '0px 20px 0px 5px',
 			items: [{
 				xtype: 'fieldset',
@@ -45,18 +46,15 @@
 							var rev = form.getForm().findField('scriptVersion').getValue();
 
 							if (moduleParams['scriptId']) {
-								form.el.mask('Loading script contents ...');
-								Ext.Ajax.request({
+								Scalr.Request({
 									url: '/scripts/' + moduleParams['scriptId'] + '/xGetScriptContent',
 									params: { version: rev },
-									success: function (response) {
-										var result = Ext.decode(response.responseText);
-										if (result.success) {
-											form.getForm().findField('scriptContents').setValue(result.scriptContents);
-										} else {
-											Scalr.Viewers.ErrorMessage(result.error);
-										}
-										form.el.unmask();
+									processBox: {
+										type: 'load',
+										msg: 'Loading script contents. Please wait ...'
+									},
+									success: function (data) {
+										form.getForm().findField('scriptContents').setValue(data.scriptContents);
 									}
 								});
 							}

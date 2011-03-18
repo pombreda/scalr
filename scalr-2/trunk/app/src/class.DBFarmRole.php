@@ -302,9 +302,6 @@
                 }
 			}
 			
-			// Delete settings
-			$this->DB->Execute("DELETE FROM farm_role_settings WHERE farm_roleid=?", array($this->ID));
-			
 			//
 			$this->DB->Execute("DELETE FROM farm_roles WHERE id=?", array($this->ID));
                            
@@ -313,6 +310,12 @@
 			$this->DB->Execute("DELETE FROM farm_role_scripts WHERE farm_roleid=?", array($this->ID));
 			$this->DB->Execute("DELETE FROM farm_role_service_config_presets WHERE farm_roleid=?", array($this->ID));
 			$this->DB->Execute("DELETE FROM farm_role_scaling_metrics WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM farm_role_scaling_times WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM farm_role_service_config_presets WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM farm_role_settings WHERE farm_roleid=?", array($this->ID));
+			
+			$this->DB->Execute("DELETE FROM ec2_ebs WHERE farm_roleid=?", array($this->ID));
+			$this->DB->Execute("DELETE FROM elastic_ips WHERE farm_roleid=?", array($this->ID));
 			
 			// Clear apache vhosts and update DNS zones
 			$this->DB->Execute("DELETE FROM apache_vhosts WHERE farm_roleid=?", array($this->ID));

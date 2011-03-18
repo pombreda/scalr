@@ -65,18 +65,24 @@
 			withSelected: {
 				menu: [{
 					text: 'Delete',
-					method: 'ajax',
-					confirmationMessage: 'Remove selected subnet(s)?',
-					progressMessage: 'Removing subnet(s). Please wait...',
-					progressIcon: 'scalr-mb-object-removing',
-					url: '/tools/aws/vpc/dhcps/xRemove',
-					params: {cloudLocation: store.baseParams.cloudLocation},
-					dataHandler: function(records) {
-						var dhcps = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							dhcps[dhcps.length] = records[i].id;
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Remove selected subnet(s)?'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing subnet(s). Please wait...'
+						},
+						url: '/tools/aws/vpc/dhcps/xRemove',
+						dataHandler: function(records) {
+							var dhcps = [];
+							for (var i = 0, len = records.length; i < len; i++)
+								dhcps[dhcps.length] = records[i].id;
+
+							return { dhcps: Ext.encode(dhcps), cloudLocation: store.baseParams.cloudLocation };
 						}
-						return { dhcps: Ext.encode(dhcps) };
 					}
 				}]
 			},

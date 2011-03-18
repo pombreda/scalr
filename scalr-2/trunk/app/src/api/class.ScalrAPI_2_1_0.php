@@ -85,7 +85,7 @@
 			while ($row = $rows->FetchRow())
 			{
 				$itm = new stdClass();
-				$itm->{"Name"} = $row['zone_name'];
+				$itm->{"Name"} = $row['name'];
 				$itm->{"FarmID"} = $row['farm_id'];
 				$itm->{"FarmRoleID"} = $row['farm_roleid'];
 				$itm->{"IsSSLEnabled"} = $row['is_ssl_enabled'];

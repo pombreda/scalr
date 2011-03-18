@@ -122,24 +122,29 @@
 
 			withSelected: {
 				menu: [{
-					text: "Delete",
-					method: 'ajax',
-					methodOptions: { timeout: 36000000 },
-					params: {
-						action: 'delete'
-					},
-					confirmationMessage: 'Remove selected role(s)?',
-					progressMessage: 'Removing selected role(s)... Please wait, it can take a few minutes.',
-					successMessage: 'Selected roles successfully removed',
-					progressIcon: 'ext-mb-object-removing',
-					url: '/roles/xRemove',
-					dataHandler: function(records) {
-						var roles = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							roles[roles.length] = records[i].get('id');
-						}
+					text: 'Delete',
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							msg: 'Remove selected role(s)?',
+							type: 'delete'
+						},
+						processBox: {
+							msg: 'Removing selected role(s)... Please wait, it can take a few minutes.',
+							type: 'delete'
+						},
+						url: '/roles/xRemove',
+						dataHandler: function (records) {
+							var roles = [];
+							for (var i = 0, len = records.length; i < len; i++) {
+								roles[roles.length] = records[i].get('id');
+							}
 
-						return { roles: Ext.encode(roles) };
+							return { roles: Ext.encode(roles) };
+						},
+						success: function (data) {
+							Scalr.Message.Success('Selected roles successfully removed');
+						}
 					}
 				}]
 			}

@@ -815,6 +815,23 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			store: this.store
 		});
 
+		this.store.on({
+			scope: this,
+			beforeload: function () {
+				Scalr.Utils.CreateProcessBox({
+					type: 'action',
+					msg: 'Loading data. Please wait...'
+				});
+			},
+			load: function () {
+				Ext.MessageBox.hide();
+			},
+			exception: function () {
+				Ext.MessageBox.hide();
+				this.listView.getTemplateTarget().update('<div class="viewers-listview-empty" style="color: red">Unable to load data</div>');
+			}
+		});
+
 		// create paging toolbar
 		if (this.enablePaging) {
 			this.pagingToolbar = new Ext.PagingToolbar({
@@ -831,27 +848,26 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 				items: this.rowOptionsMenu,
 				listeners: {
 					itemclick: function(item, e) {
-						if (typeof(item.confirmationMessage) != "undefined") {
-							Ext.MessageBox.show({
-								title: item.confirmationTitle || 'Confirm',
-								msg: item.confirmationMessage,
-								buttons: Ext.Msg.YESNO,
-								fn: function(btn) {
-									if (btn == 'yes') {
-										if (typeof(item.menuHandler) == "function") {
-											item.menuHandler(item);
-										} else {
-											document.location.href = item.el.dom.href;
-										}
-									}
-								}
-							});
+						if (Ext.isFunction(item.menuHandler)) {
+							item.menuHandler(item);
 							e.preventDefault();
-						} else {
-							if (typeof(item.menuHandler) == "function") {
-								item.menuHandler(item);
-								e.preventDefault();
+
+						} else if (Ext.isObject(item.request)) {
+							var r = Ext.apply({}, item.request);
+							r.params = r.params || {};
+
+							if (Ext.isObject(r.confirmBox)) {
+								var tpl = new Ext.Template(r.confirmBox.msg).compile();
+								r.confirmBox.msg = tpl.apply(item.currentRecordData);
 							}
+
+							if (Ext.isFunction(r.dataHandler)) {
+								r.params = Ext.apply(r.params, r.dataHandler(item.currentRecord));
+								delete r.dataHandler;
+							}
+
+							Scalr.Request(r);
+							e.preventDefault();
 						}
 					}
 				}
@@ -923,91 +939,23 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
 	withSelectedMenuHandler: function(menu, item, e) {
 		if (this.listView.getSelectionCount()) {
-			var store = this.store, records = this.listView.getSelectedRecords();
-			var idProperty = store.idProperty || store.reader.meta.id || "id";
-			var method = item.method || "post";
-			var methodOptions = item.methodOptions || {};
-			var url = item.url || "";
+			var store = this.store, records = this.listView.getSelectedRecords(), r = Ext.apply({}, item.request);
+			r.params = r.params || {};
+			r.params = Ext.apply(r.params, r.dataHandler(records));
 
-			var proccessMenuHandler = function() {
-				item.params = item.params || {};
-				if (typeof(item.dataHandler) == "function") {
-					Ext.apply(item.params, item.dataHandler(records));
-				}
-
-				if (method == "get" || method == "post") {
-					var form = Ext.getBody().createChild({ tag: 'form', method: method, action: url, style: 'display: none' });
-
-					if (typeof(item.dataHandler) != "function") {
-						for (var i = 0, len = records.length; i < len; i++) {
-							form.createChild({ tag: 'input', type: 'hidden', value: records[i].id, name: idProperty + '[]' });
-						}
-					}
-
-					if (item.params) {
-						for (key in item.params) {
-							form.createChild({ tag: 'input', type: 'hidden', value: item.params[key], name: key });
-						}
-					}
-
-					form.dom.submit();
-				} else if (method == "ajax") {
-
-					if (typeof (item.progressMessage) != "undefined") {
-						Ext.MessageBox.show({
-							progress: true,
-							msg: item.progressMessage,
-							wait: true,
-							width: 450,
-							icon: item.progressIcon || ''
-						});
-					}
-
-					Ext.Ajax.request({
-						url: url,
-						options: methodOptions,
-						success: function(response, options) {
-							Ext.MessageBox.hide();
-
-							var result = Ext.decode(response.responseText);
-
-							// old code
-							if (result.result || result.msg) {
-								if (result.result == 'ok') {
-									store.load();
-								} else {
-									Scalr.Viewers.ErrorMessage(result.msg);
-								}
-							} else {
-								// new one
-								if (result.success == true) {
-									store.load();
-									if (Ext.isDefined(item.successMessage))
-										Scalr.Viewers.SuccessMessage(item.successMessage);
-								} else {
-									Scalr.Viewers.ErrorMessage(result.error);
-								}
-							}
-						},
-						params: Ext.urlEncode(item.params)
-					});
-				}
-			}
-
-			if (typeof(item.confirmationMessage) != "undefined") {
-
-				Ext.MessageBox.show({
-					title: item.confirmationTitle || 'Confirm',
-					msg: item.confirmationMessage,
-					buttons: Ext.Msg.YESNO,
-					fn: function(btn) {
-						if (btn == 'yes')
-							proccessMenuHandler();
-					}
+			if (Ext.isFunction(r.success)) {
+				r.success = r.success.createSequence(function() {
+					store.reload();
 				});
 			} else {
-				proccessMenuHandler();
+				r.success = function () {
+					store.reload();
+				};
 			}
+			delete r.dataHandler;
+
+			Scalr.Request(r);
+
 		} else {
 			Ext.Msg.alert('Notice', this.messages.blankSelection);
 		}
@@ -1121,11 +1069,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 	afterRender: function() {
 		Scalr.Viewers.ListView.superclass.afterRender.call(this);
 
-		this.loadMask = new Ext.LoadMask(this.getEl(), { store: this.store });
-
 		if (this.pagingToolbar) {
-			this.loadMask.show();
-
 			// try to discover optimal PageSize
 			var height = this.body.getHeight() - 26; // header's height
 			var num = Math.floor(height / 25); // row's height
@@ -1176,8 +1120,9 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 			this.pagingToolbar.doLoad(0);
 
 		} else {
-			if (this.enableAutoLoad)
+			if (this.enableAutoLoad) {
 				this.store.load();
+			}
 		}
 	},
 
@@ -1188,6 +1133,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 
     	this.rowOptionsMenu.items.each(function (item) {
     		var display = this.getRowOptionVisibility(item, record);
+			item.currentRecord = record; // save for future use
 			item.currentRecordData = record.data; // save for future use
 			item[display ? "show" : "hide"]();
     		if (display && item.href) { // Update item link

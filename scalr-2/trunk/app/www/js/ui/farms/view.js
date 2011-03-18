@@ -60,44 +60,29 @@
 						}), sortable: true, hidden: 'no'
 					}
 			]},
-			rowOptionsMenu: [
-				{itemId: "option.launchFarm", iconCls: 'scalr-menu-icon-launch', text: 'Launch',
-					menuHandler: function(item) {
-						
-						Ext.MessageBox.show({
-							title: 'Farm launch',
-							msg: "Are you sure want to launch farm '"+item.currentRecordData.name+"'?",
-							buttons: Ext.Msg.YESNO,
-							fn: function(btn) {
-								if (btn == 'yes') {
-									Ext.MessageBox.show({
-										progress: true,
-										msg: 'Launching farm "'+item.currentRecordData.name+'". Please wait...',
-										wait: true,
-										width: 450,
-										icon: 'scalr-mb-farm-launching'
-									});
-									
-									Ext.Ajax.request({
-										url: '/farms/xLaunch/',
-										params:{farmId: item.currentRecordData.id},
-										success: function(response, options) {
-											Ext.MessageBox.hide();
-			
-											var result = Ext.decode(response.responseText);
-											if (result.success == true) {
-												Scalr.Viewers.SuccessMessage('Farm successfully launched');
-												store.reload();
-											} else {
-												Scalr.Viewers.ErrorMessage(result.error);
-											}
-										}
-									});
-								}
-							}
-						});
+			rowOptionsMenu: [{
+				itemId: "option.launchFarm",
+				text: 'Launch',
+				iconCls: 'scalr-menu-icon-launch',
+				request: {
+					confirmBox: {
+						type: 'launch',
+						msg: 'Are you sure want to launch farm "{name}" ?'
+					},
+					processBox: {
+						type: 'launch',
+						msg: 'Launching farm. Please wait...'
+					},
+					url: '/farms/xLaunch/',
+					dataHandler: function (record) {
+						return { farmId: record.get('id') };
+					},
+					success: function () {
+						store.reload();
+						Scalr.Message.Success('Farm successfully launched');
 					}
-				},
+				}
+			},
 				{itemId: "option.terminateFarm", iconCls: 'scalr-menu-icon-terminate', text: 'Terminate', href: "/farms_control.php?farmid={id}"},
 				new Ext.menu.Separator({itemId: "option.controlSep"}),
 				{itemId: "option.usageStats", text: 'Usage statistics', href: "/farm_usage_stats.php?farmid={id}"},
@@ -116,46 +101,33 @@
 				{itemId: "option.logs", iconCls: 'scalr-menu-icon-logs', text: 'View log', href: "#/logs/system?farmId={id}"},
 				new Ext.menu.Separator({itemId: "option.editSep"}),
 				{itemId: "option.edit", iconCls: 'scalr-menu-icon-configure', text: 'Configure', href: "/farms_builder.php?id={id}"},
-				{itemId: "option.delete", iconCls: 'scalr-menu-icon-delete', text: 'Delete',
-					menuHandler: function(item) {
-						
-						Ext.MessageBox.show({
-							title: 'Farm removal confirmation',
-							msg: "Are you sure want to remove farm '"+item.currentRecordData.name+"'?",
-							buttons: Ext.Msg.YESNO,
-							fn: function(btn) {
-								if (btn == 'yes') {
-									Ext.MessageBox.show({
-										progress: true,
-										msg: 'Removing farm "'+item.currentRecordData.name+'". Please wait...',
-										wait: true,
-										width: 450,
-										icon: 'scalr-mb-object-removing'
-									});
-									
-									Ext.Ajax.request({
-										url: '/farms/xRemove/',
-										params:{farmId: item.currentRecordData.id},
-										success: function(response, options) {
-											Ext.MessageBox.hide();
-			
-											var result = Ext.decode(response.responseText);
-											if (result.success == true) {
-												Scalr.Viewers.SuccessMessage('Farm successfully removed');
-												store.reload();
-											} else {
-												Scalr.Viewers.ErrorMessage(result.error);
-											}
-										}
-									});
-								}
-							}
-						});
+			{
+				itemId: 'option.delete',
+				iconCls: 'scalr-menu-icon-delete',
+				text: 'Delete',
+				request: {
+					confirmBox: {
+						type: 'delete',
+						msg: 'Are you sure want to remove farm "{name}" ?'
+					},
+					processBox: {
+						type: 'delete',
+						msg: 'Removing farm. Please wait...'
+					},
+					url: '/farms/xRemove/',
+					dataHandler: function (record) {
+						return { farmId: record.get('id') };
+					},
+					success: function () {
+						store.reload();
+						Scalr.Message.Success('Farm successfully removed');
 					}
-				},
-	
-				new Ext.menu.Separator({itemId: "option.scSep"})
-			],
+				}
+			}, {
+				xtype: 'menuseparator',
+				itemId: 'option.scSep'
+			}],
+
 			getRowOptionVisibility: function (item, record) {
 				var data = record.data;
 	

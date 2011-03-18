@@ -56,78 +56,97 @@
 				}
 			],
 
-			rowOptionsMenu: [
-				{id: "option.details",			text: 'Details',
-					menuHandler: function (item) {
-						document.location.href = '#/tools/aws/rds/instances/' + item.currentRecordData.name + '/details?cloudLocation' + store.baseParams.cloudLocation;
+			rowOptionsMenu: [{
+				text: 'Details',
+				iconCls: 'scalr-menu-icon-info',
+				menuHandler: function (item) {
+					document.location.href = '#/tools/aws/rds/instances/' + item.currentRecordData.name + '/details?cloudLocation' + store.baseParams.cloudLocation;
+				}
+			}, {
+				iconCls: 'scalr-menu-icon-edit',
+				text: 'Modify',
+				href: "/aws_rds_instance_modify.php?name={name}"
+			}, {
+				xtype: 'menuseparator'
+			}, {
+				text: 'Create snapshot',
+				request: {
+					processBox: {
+						type: 'action'
+					},
+					url: '/tools/aws/rds/snapshots/xCreateSnapshot/',
+					dataHandler: function (record) {
+						return {
+							dbinstance: record.get('name'),
+							cloudLocation: store.baseParams.cloudLocation
+						}
+					},
+					success: function () {
+						document.location.href = '#/tools/aws/rds/snapshots?dbinstance=' + this.params.dbinstance;
 					}
-				},
-				{id: "option.update",			text: 'Modify', 				href: "/aws_rds_instance_modify.php?name={name}"},
-				new Ext.menu.Separator({id: "option.detailsSep"}),
-				{id: "option.createSnap",		text: 'Create snapshot', 		href: "/aws_rds_snapshots.php?name={name}&action=create"},
+				}
+			}, 
+
+				
 				{id: "option.autoSnap",			text: 'Auto snapshot settings', href: "/autosnapshots.php?name={name}"},
-				{id: "option.snaps",			text: 'Manage snapshots', 		href: "/aws_rds_snapshots.php?name={name}"},
+			{
+				text: 'Manage snapshots',
+				href: '#/tools/aws/rds/snapshots?dbinstance={name}'
+			},
 				new Ext.menu.Separator({id: "option.cwSep"}),
 				{id: "option.cw",				text: 'CloudWatch monitoring',	href: "/aws_cw_monitor.php?ObjectId={name}&Object=DBInstanceIdentifier&NameSpace=AWS/RDS"},
 				new Ext.menu.Separator({id: "option.snapsSep"}),
-				{id: "option.events",			text: 'Events log', 			href: "/aws_rds_events_log.php?type=db-instance&name={name}"},
+			{
+				text: 'Events log',
+				iconCls: 'scalr-menu-icon-logs',
+				href: '/aws_rds_events_log.php?type=db-instance&name={name}'
+			},
 				new Ext.menu.Separator({id: "option.eventsSep"}),
-				{ itemId: "option.reboot",		text: 'Reboot', confirmationMessage: 'Reboot selected server?',
-					menuHandler: function(item) {
-						Ext.MessageBox.show({
-							progress: true,
-							msg: 'Sending reboot command to the server. Please wait...',
-							wait: true,
-							width: 450,
-							icon: 'scalr-mb-instance-rebooting'
-						});
-
-						Ext.Ajax.request({
-							url: '/tools/aws/rds/instances/xReboot/',
-							success: function(response, options) {
-								Ext.MessageBox.hide();
-
-								var result = Ext.decode(response.responseText);
-								if (result.success == true) {
-									store.reload();
-								} else {
-									Scalr.Viewers.ErrorMessage(result.error);
-								}
-							},
-							params: {
-								instanceId: item.currentRecordData.name,
+				{
+					text: 'Reboot',
+					iconCls: 'scalr-menu-icon-reboot',
+					request: {
+						confirmBox: {
+							msg: 'Reboot server "{name}"?',
+							type: 'reboot'
+						},
+						processBox: {
+							type: 'reboot',
+							msg: 'Sending reboot command to the server. Please wait...'
+						},
+						url: '/tools/aws/rds/instances/xReboot/',
+						dataHandler: function (record) {
+							return {
+								instanceId: record.get('name'),
 								cloudLocation: store.baseParams.cloudLocation
-							}
-						});
+							};
+						},
+						success: function(data) {
+							store.reload();
+						}
 					}
-				},
-				{ itemId: "option.terminate",		text: 'Terminate', confirmationMessage: 'Terminate selected server?',
-					menuHandler: function(item) {
-						Ext.MessageBox.show({
-							progress: true,
-							msg: 'Sending terminate command to the server. Please wait...',
-							wait: true,
-							width: 450,
-							icon: 'scalr-mb-instance-terminating'
-						});
-
-						Ext.Ajax.request({
-							url: '/tools/aws/rds/instances/xTerminate/',
-							success: function(response, options) {
-								Ext.MessageBox.hide();
-
-								var result = Ext.decode(response.responseText);
-								if (result.success == true) {
-									store.reload();
-								} else {
-									Scalr.Viewers.ErrorMessage(result.error);
-								}
-							},
-							params: {
-								instanceId: item.currentRecordData.name,
+				}, {
+					text: 'Terminate',
+					iconCls: 'scalr-menu-icon-terminate',
+					request: {
+						confirmBox: {
+							msg: 'Terminate server "{name}"?',
+							type: 'terminate'
+						},
+						processBox: {
+							type: 'terminate',
+							msg: 'Sending terminate command to the server. Please wait...'
+						},
+						url: '/tools/aws/rds/instances/xTerminate/',
+						dataHandler: function (record) {
+							return {
+								instanceId: record.get('name'),
 								cloudLocation: store.baseParams.cloudLocation
-							}
-						});
+							};
+						},
+						success: function(data) {
+							store.reload();
+						}
 					}
 				}
 			],

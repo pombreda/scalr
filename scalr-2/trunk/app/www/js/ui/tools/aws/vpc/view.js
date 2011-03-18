@@ -53,30 +53,44 @@
 
 			// Row menu
 			rowOptionsMenu: [
-				{ itemId: "option.CreateSubnet",       text: 'Create a Subnet', 		href: "#/tools/aws/vpc/{id}/subnets/create?cloudLocation="+store.baseParams.cloudLocation},
+				{ itemId: "option.CreateSubnet",       text: 'Create a Subnet', 
+					menuHandler: function (item) {
+						document.location.href = "#/tools/aws/vpc/{id}/subnets/create?cloudLocation="+store.baseParams.cloudLocation;
+					}
+				},
 				{ itemId: "option.attachVpnGateway",   text: 'Attach a VPN Gateway', href: "/aws_vpc_attach_vpn_gateway.php?id={id}"},
-				{ itemId: "option.setDhcpOptions",     text: 'Set DHCP Options', 	href: "#/tools/aws/vpc/{id}/dhcps/attach?cloudLocation="+store.baseParams.cloudLocation}
+				{ itemId: "option.setDhcpOptions",     text: 'Set DHCP Options', 	
+					menuHandler: function (item) {
+						document.location.href = "#/tools/aws/vpc/{id}/dhcps/attach?cloudLocation="+store.baseParams.cloudLocation;
+					}
+				}
 			],
 
 			getRowMenuVisibility: function (data) {
 				return true;
 			},
-			
+
 			withSelected: {
 				menu: [{
 					text: 'Delete',
-					method: 'ajax',
-					confirmationMessage: 'Remove selected VPC(s)?',
-					progressMessage: 'Removing VPC(s). Please wait...',
-					progressIcon: 'scalr-mb-object-removing',
-					url: '/tools/aws/vpc/xRemove',
-					params: {cloudLocation: store.baseParams.cloudLocation},
-					dataHandler: function(records) {
-						var vpcs = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							vpcs[vpcs.length] = records[i].id;
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Remove selected VPC(s)?'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing VPC(s). Please wait...'
+						},
+						url: '/tools/aws/vpc/xRemove',
+						dataHandler: function(records) {
+							var vpcs = [];
+							for (var i = 0, len = records.length; i < len; i++) {
+								vpcs[vpcs.length] = records[i].id;
+							}
+							return { vpcs: Ext.encode(vpcs), cloudLocation: store.baseParams.cloudLocation };
 						}
-						return { vpcs: Ext.encode(vpcs) };
 					}
 				}]
 			},

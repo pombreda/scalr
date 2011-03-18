@@ -18,14 +18,14 @@ class Scalr_UI_Controller_Platforms extends Scalr_UI_Controller
 		else
 			$ePlatforms = array_keys(SERVER_PLATFORMS::GetList());
 
-		if ($platforms != '' && $platforms != 'all')
+		if (implode('', $platforms) != 'all')
 			$ePlatforms = array_intersect($ePlatforms, $platforms);
 
 		foreach ($ePlatforms as $platform) {
 			foreach (PlatformFactory::NewPlatform($platform)->getLocations() as $key => $loc)
 				$locations[$key] = $loc;
 		}
-
+		
 		return $locations;
 	}
 }

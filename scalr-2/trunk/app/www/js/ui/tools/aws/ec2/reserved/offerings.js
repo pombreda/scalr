@@ -49,31 +49,28 @@
 				})
 			],
 
-			rowOptionsMenu: [
-				{ id: "option.purchase", text:'Purchase', handler: function(item) {
-					Ext.MessageBox.confirm('Confirm', 'Are you sure want to purchase selected offering?', function(res) {
-						if (res == 'yes') {
-							Ext.Msg.wait('Please wait ...');
-							
-							Ext.Ajax.request({
-								url: '/tools/aws/ec2/reserved/xPurchaseReservedOffering',
-								params: {
-									offeringId: item.currentRecordData.reservedInstancesOfferingId,
-									cloudLocation: store.baseParams.cloudLocation
-								},
-								success: function(response) {
-									if (response.responseJson.success) {
-										Scalr.Viewers.SuccessMessage(_('Reserved instances offering successfully purchased.'));
-									} else {
-										Scalr.Viewers.ErrorMessage(response.responseJson.error);
-									}
-									Ext.MessageBox.hide();
-								}
-							});
-						}
-					});
-				}}
-			],
+			rowOptionsMenu: [{
+				text:'Purchase',
+				request: {
+					confirmBox: {
+						type: 'action',
+						msg: 'Are you sure want to purchase offering "{reservedInstancesOfferingId}" ?'
+					},
+					processBox: {
+						type: 'action'
+					},
+					url: '/tools/aws/ec2/reserved/xPurchaseReservedOffering',
+					dataHandler: function (record) {
+						return {
+							offeringId: record.get('reservedInstancesOfferingId'),
+							cloudLocation: store.baseParams.cloudLocation
+						};
+					},
+					success: function () {
+						Scalr.Message.Success(_('Reserved instances offering successfully purchased.'));
+					}
+				}
+			}],
 
 			listViewOptions: {
 				emptyText: 'No reserved instances offerings found',

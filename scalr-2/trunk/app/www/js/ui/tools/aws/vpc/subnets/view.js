@@ -44,22 +44,28 @@
 	        	}}
 		    	})
 			],
-			
+
 			withSelected: {
 				menu: [{
 					text: 'Delete',
-					method: 'ajax',
-					confirmationMessage: 'Remove selected subnet(s)?',
-					progressMessage: 'Removing subnet(s). Please wait...',
-					progressIcon: 'scalr-mb-object-removing',
-					url: '/tools/aws/vpc/subnets/xRemove',
-					params: {cloudLocation: store.baseParams.cloudLocation},
-					dataHandler: function(records) {
-						var subnets = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							subnets[subnets.length] = records[i].id;
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Remove selected subnet(s)?
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing subnet(s). Please wait...'
+						},
+						url: '/tools/aws/vpc/subnets/xRemove',
+						dataHandler: function(records) {
+							var subnets = [];
+							for (var i = 0, len = records.length; i < len; i++)
+								subnets[subnets.length] = records[i].id;
+
+							return { subnets: Ext.encode(subnets), cloudLocation: store.baseParams.cloudLocation };
 						}
-						return { subnets: Ext.encode(subnets) };
 					}
 				}]
 			},

@@ -192,16 +192,21 @@
 			foreach ($request['roles'] as $role) {
 				$role = json_decode($role, true);
 				$dbRole = DBRole::loadById($role['role_id']);
-
+				$update = false;
+				
 				try {
 					$dbFarmRole = DBFarmRole::Load($dbFarm->ID, $dbRole->id);
+					$update = true;
 				}
 				catch(Exception $e)
 				{
-					$dbFarmRole = $dbFarm->AddRole($dbRole, $role['platform'], $role['cloud_location']);
+					$dbFarmRole = $dbFarm->AddRole($dbRole, $role['platform'], $role['cloud_location'], (int)$role['launch_index']);
 				}
-
-				$dbFarmRole->LaunchIndex = (int)$role['launch_index'];
+				
+				if ($update) {
+					$dbFarmRole->LaunchIndex = (int)$role['launch_index'];
+					$dbFarmRole->Save();
+				}
 
 				$usedPlatforms[$role['platform']] = 1;
 
@@ -270,8 +275,6 @@
 					Modules_Platforms_Ec2_Helpers_Eip::farmUpdateRoleSettings($dbFarmRole, $oldRoleSettings, $role['settings']);
 					Modules_Platforms_Ec2_Helpers_Elb::farmUpdateRoleSettings($dbFarmRole, $oldRoleSettings, $role['settings']);
 				}
-
-				$dbFarmRole->Save();
 
 				$dbFarmRolesList[] = $dbFarmRole;
 			}

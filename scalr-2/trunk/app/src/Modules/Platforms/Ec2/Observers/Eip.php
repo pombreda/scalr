@@ -181,8 +181,8 @@
 					}
 					
 					// Add allocated IP address to database
-					$this->DB->Execute("INSERT INTO elastic_ips SET farmid=?, farm_roleid=?, ipaddress=?, state='0', server_id='', clientid=?, instance_index=?",
-						array($this->FarmID, $DBFarmRole->ID, $address->publicIp, $DBFarm->ClientID, $event->DBServer->index)
+					$this->DB->Execute("INSERT INTO elastic_ips SET env_id=?, farmid=?, farm_roleid=?, ipaddress=?, state='0', server_id='', clientid=?, instance_index=?",
+						array($event->DBServer->envId, $this->FarmID, $DBFarmRole->ID, $address->publicIp, $DBFarm->ClientID, $event->DBServer->index)
 					);
 					
 					$ip['ipaddress'] = $address->publicIp;

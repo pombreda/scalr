@@ -1,9 +1,7 @@
 {
 	create: function (loadParams, moduleParams) {
-		
-		var scriptId = moduleParams['scriptId'] | loadParams['scriptId'];
-		
-		
+		var scriptId = moduleParams['scriptId'] || loadParams['scriptId'];
+
 		var form = new Ext.form.FormPanel({
 			scalrOptions: {
 				'maximize': 'maxHeight'
@@ -14,7 +12,7 @@
 			labelWidth: 200,
 			autoScroll: true,
 			padding: '0px 20px 0px 5px',
-			plugins: [ new Scalr.Viewers.Plugins.findOne() ],
+			plugins: [ new Scalr.Viewers.Plugins.findOne(), new Scalr.Viewers.Plugins.prepareForm() ],
 			buttonAlign: 'center',
 			items: [{
 				xtype: 'fieldset',
@@ -39,31 +37,29 @@
 					selectOnFocus: false,
 					listeners: {
 						select: function (combo, record) {
-							form.el.mask('Loading farm roles ...');
-
-							Ext.Ajax.request({
+							Scalr.Request({
 								url: '/scripts/getFarmRoles/',
 								params: { farmId: record.get('id') },
-								success: function (response) {
-									var result = Ext.decode(response.responseText), field = form.findOne('name', 'farmRoleId');
-									if (result.success) {
-										field.show();
-										if (Ext.isObject(result.farmRoles)) {
-											field.emptyText = 'Select a role';
-											field.reset();
-											field.store.loadData(result.farmRoles);
-											field.setValue(0);
-											field.enable();
-										} else {
-											field.store.removeAll();
-											field.emptyText = 'No roles';
-											field.reset();
-											field.disable();
-										}
-										form.findOne('name', 'serverId').hide();
+								processBox: {
+									type: 'load',
+									msg: 'Loading farm roles. Please wait ...'
+								},
+								success: function (data) {
+									var field = form.findOne('name', 'farmRoleId');
+									field.show();
+									if (Ext.isObject(data.farmRoles)) {
+										field.emptyText = 'Select a role';
+										field.reset();
+										field.store.loadData(data.farmRoles);
+										field.setValue(0);
+										field.enable();
 									} else {
-										Scalr.Viewers.ErrorMessage(result.error);
+										field.store.removeAll();
+										field.emptyText = 'No roles';
+										field.reset();
+										field.disable();
 									}
+									form.findOne('name', 'serverId').hide();
 									form.el.unmask();
 									form.findOne('itemId', 'executionTarget').doLayout();
 								}
@@ -96,28 +92,26 @@
 								return;
 							}
 
-							form.el.mask('Loading servers ...');
-
-							Ext.Ajax.request({
+							Scalr.Request({
 								url: '/scripts/getServers/',
 								params: { farmRoleId: record.get('id') },
-								success: function (response) {
-									var result = Ext.decode(response.responseText), field = form.findOne('name', 'serverId');
-									if (result.success) {
-										field.show();
-										if (Ext.isObject(result.servers)) {
-											field.emptyText = 'Select a server';
-											field.reset();
-											field.store.loadData(result.servers);
-											field.setValue(0);
-											field.enable();
-										} else {
-											field.emptyText = 'No running servers';
-											field.reset();
-											field.disable();
-										}
+								processBox: {
+									type: 'load',
+									msg: 'Loading servers. Please wait ...'
+								},
+								success: function (data) {
+									var field = form.findOne('name', 'serverId');
+									field.show();
+									if (Ext.isObject(data.servers)) {
+										field.emptyText = 'Select a server';
+										field.reset();
+										field.store.loadData(data.servers);
+										field.setValue(0);
+										field.enable();
 									} else {
-										Scalr.Viewers.ErrorMessage(result.error);
+										field.emptyText = 'No running servers';
+										field.reset();
+										field.disable();
 									}
 									form.el.unmask();
 									form.doLayout();
@@ -265,28 +259,15 @@
 			type: 'submit',
 			text: (loadParams['isShortcut']) ? 'Save' : 'Execute',
 			handler: function() {
-				//if (form.getForm().isValid()) {
-				// validation
-
-				if (1) {
-					Ext.Msg.wait('Please wait ...', 'Executing ...');
-
-					form.getForm().submit({
-						url: '/scripts/xExecute/',
-						params: {isShortcut:loadParams['isShortcut']},
-						success: function(form, action) {
-							Ext.Msg.hide();
-							Scalr.Viewers.SuccessMessage('Script executed');
-							//document.location.href = '#/environments/view';
-						},
-						failure: Scalr.data.ExceptionFormReporter
-					});
-				} else {
-					
-				}
-				//} else {
-					//Scalr.Viewers.ErrorMessage('The following fields are incorrect. Please check them and try again');
-				//}
+				form.getForm().submit({
+					url: '/scripts/xExecute/',
+					params: { isShortcut:loadParams['isShortcut'] },
+					processBox: {
+						type: 'execute',
+						msg: 'Executing script. Please wait ...'
+					},
+					successMessage: 'Script executed'
+				});
 			}
 		});
 

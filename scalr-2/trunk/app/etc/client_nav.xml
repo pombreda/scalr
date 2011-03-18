@@ -137,7 +137,7 @@
                 </node>
             </node>            
             <node title="Amazon RDS">
-				<item href="/aws_rds_instances_view.php">View DB instances</item>
+				<item href="#/tools/aws/rds/instances">View DB instances</item>
 				<separator />
 				<node title="DB security groups">
 					<item href="/aws_rds_security_groups.php">Manage</item>
@@ -148,7 +148,7 @@
                     <item href="/aws_rds_param_group_add.php">Add new</item>
                 </node>
                 <separator />
-                <item href="/aws_rds_snapshots.php">Manage DB snapshots</item>
+                <item href="#/tools/aws/rds/snapshots">Manage DB snapshots</item>
 				<separator />
 				<item href="/aws_rds_create_instance.php">Launch new DB instance</item>
 			</node>

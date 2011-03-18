@@ -45,25 +45,32 @@
 				}
 			}],
 
-			// Row menu
-			rowOptionsMenu: [
-				{ itemId: "option.edit", 	text: 'Edit', 		href: "#/services/configurations/presets/{id}/edit" } 
-			],
+			rowOptionsMenu: [{
+				text: 'Edit',
+				href: "#/services/configurations/presets/{id}/edit"
+			}],
 
 			withSelected: {
 				menu: [{
 					text: 'Delete',
-					method: 'ajax',
-					confirmationMessage: 'Remove selected configuration preset(s) ?',
-					progressMessage: 'Removing configuration preset(s). Please wait...',
-					progressIcon: 'scalr-mb-object-removing',
-					url: '/services/configurations/presets/xRemove/',
-					dataHandler: function(records) {
-						var presets = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							presets[presets.length] = records[i].id;
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Remove selected configuration preset(s) ?'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing configuration preset(s). Please wait...'
+						},
+						url: '/services/configurations/presets/xRemove/',
+						dataHandler: function(records) {
+							var presets = [];
+							for (var i = 0, len = records.length; i < len; i++) {
+								presets[presets.length] = records[i].id;
+							}
+							return { presets: Ext.encode(presets) };
 						}
-						return { presets: Ext.encode(presets) };
 					}
 				}]
 			}

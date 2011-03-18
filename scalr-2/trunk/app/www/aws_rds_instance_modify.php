@@ -17,7 +17,7 @@
 	
 	if (!$req_name)
 	{
-		UI::Redirect("aws_rds_instances_view.php");
+		UI::Redirect("/#/tools/aws/rds/instances");
 	}
 	
 	try
@@ -28,7 +28,7 @@
 	catch(Exception $e)
 	{
 		$errmsg = "AWS error: {$e->getMessage()}";
-		UI::Redirect("aws_rds_instances_view.php");
+		UI::Redirect("/#/tools/aws/rds/instances");
 	}
 	
 	
@@ -104,7 +104,7 @@
 		if (count($err) == 0)
 		{
 			$okmsg = _("DB instance successfully updated");
-			UI::Redirect("aws_rds_instances_view.php");
+			UI::Redirect("/#/tools/aws/rds/instances");
 		}
 	}
 	

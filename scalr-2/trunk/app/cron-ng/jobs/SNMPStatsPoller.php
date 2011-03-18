@@ -123,7 +123,7 @@
             	
             	$servers = $DBFarmRole->GetServersByFilter(array(), array('status' => array(SERVER_STATUS::PENDING_TERMINATE, SERVER_STATUS::TERMINATED)));
             	
-            	$this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Found".count($servers)." servers...");
+            	$this->logger->info("[{$GLOBALS["SUB_TRANSACTIONID"]}] Found ".count($servers)." servers...");
             	
             	// Watch SNMP values fro each instance
             	foreach ($servers as $DBServer)

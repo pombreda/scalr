@@ -187,7 +187,7 @@
 		 * @return DBFarmRole
 		 * @param DBRole $DBRole
 		 */
-		public function AddRole(DBRole $DBRole, $platform, $cloud_location)
+		public function AddRole(DBRole $DBRole, $platform, $cloudLocation, $launchIndex)
 		{
 			$this->DB->Execute("INSERT INTO farm_roles SET 
 				farmid=?, role_id=?, reboot_timeout=?, launch_timeout=?, status_timeout = ?, launch_index = ?, platform = ?", array( 
@@ -196,7 +196,7 @@
 				300,
 				300,
                 600,
-                0,
+                $launchIndex,
             	$platform
 			));
 			
@@ -215,7 +215,7 @@
 				DBFarmRole::SETTING_BALANCING_USE_ELB => false,
 				DBFarmRole::SETTING_AWS_AVAIL_ZONE => 'x-scalr-diff',
 				DBFarmRole::SETTING_AWS_INSTANCE_TYPE => $DBRole->instanceType,
-				DBFarmRole::SETTING_CLOUD_LOCATION => $cloud_location
+				DBFarmRole::SETTING_CLOUD_LOCATION => $cloudLocation
 			);
 			
 			foreach ($default_settings as $k => $v)

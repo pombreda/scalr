@@ -90,6 +90,7 @@
 		var session_environments = eval({$session_environments});
 		var newUING = '{$newUING}';
 		var JSdebug = '{$smarty.get.js_debug}';
+		var reloadPage = false;
 
 		Ext.ns('Scalr.data');
 		Scalr.data.InputParams = eval({$scalrJsonParams});
@@ -297,14 +298,16 @@
 			if (window.console) {
 				Ext.Ajax.on('requestcomplete', function (conn, response, options) {
 					try {
-						var s = response.getResponseHeader('X-Scalr-Debug');
-						if (Ext.isDefined(s)) {
-							s = s.split('\n');
-							for (var i = 0; i < s.length; i++) {
-								try {
-									console.debug(Ext.decode(s[i]));
-								} catch (e) {
-									console.debug(s[i]);
+						if (response.getResponseHeader) {
+							var s = response.getResponseHeader('X-Scalr-Debug');
+							if (Ext.isDefined(s)) {
+								s = s.split('\n');
+								for (var i = 0; i < s.length; i++) {
+									try {
+										console.debug(Ext.decode(s[i]));
+									} catch (e) {
+										console.debug(s[i]);
+									}
 								}
 							}
 						}
@@ -315,14 +318,16 @@
 
 				Ext.Ajax.on('requestexception', function (conn, response, options) {
 					try {
-						var s = response.getResponseHeader('X-Scalr-Debug');
-						if (Ext.isDefined(s)) {
-							s = s.split('\n');
-							for (var i = 0; i < s.length; i++) {
-								try {
-									console.debug(Ext.decode(s[i]));
-								} catch (e) {
-									console.debug(s[i]);
+						if (response.getResponseHeader) {
+							var s = response.getResponseHeader('X-Scalr-Debug');
+							if (Ext.isDefined(s)) {
+								s = s.split('\n');
+								for (var i = 0; i < s.length; i++) {
+									try {
+										console.debug(Ext.decode(s[i]));
+									} catch (e) {
+										console.debug(s[i]);
+									}
 								}
 							}
 						}
@@ -333,6 +338,7 @@
 			}
 
 			Ext.Ajax.defaultHeaders = { 'X-Ajax-Scalr': 1 };
+			Ext.Ajax.timeout = 60000;
 			Ext.data.Connection.defaultHeaders = { 'X-Ajax-Scalr': 1 };
 
 			/*Ext.apply(Ext.form.FormPanel, { initComponent: function () {
@@ -439,7 +445,10 @@
 														var result = Ext.decode(response.responseText);
 														if (result.result == 'ok') {
 															win.hide();
-															Scalr.Viewers.InfoMessage('You successfully logged in. Your last request has not been performed due to lost session error. Please perform it again.');
+															if (reloadPage)
+																window.onhashchange();
+															else
+																Scalr.Viewers.InfoMessage('You have been logged in, but your previous request has not been performed due to lost session error. Please perform it again.');
 														} else {
 															login.markInvalid(result.message);
 															pass.markInvalid(result.message);
@@ -460,6 +469,8 @@
 
 						win.show();
 
+					} else if (response.isTimeout) {
+						Scalr.Viewers.ErrorMessage('Server didn\'t respond in time. Please try again in a few minutes.');
 					} else {
 						Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
 					}
@@ -566,7 +577,11 @@
 					});
 
 					if (! loaded) {
-						Ext.Msg.wait("Please wait ...", "Loading");
+						Scalr.Utils.CreateProcessBox({
+							type: 'action',
+							msg: 'Loading page. Please wait ...'
+						});
+
 						Ext.Ajax.request({
 							url: link,
 							params: param,
@@ -604,6 +619,8 @@
 									}
 								};
 
+								Ext.Msg.hide();
+
 								if (JSdebug != '') {
 									r(response, true);
 								} else {
@@ -614,11 +631,11 @@
 										Scalr.Viewers.EventMessager.fireEvent('close');
 									}
 								}
-
-								Ext.Msg.hide();
 							},
-							failure: function() {
+							failure: function(response) {
 								Ext.Msg.hide();
+								if (response.status == 403)
+									reloadPage = true;
 							}
 						});
 					}

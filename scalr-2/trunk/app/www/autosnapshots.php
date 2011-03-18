@@ -31,7 +31,7 @@
 		{
 			case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("ebs_manage.php"); 			break;
 			case AUTOSNAPSHOT_TYPE::EBSArraySnap:	UI::Redirect("ebs_arrays.php");				break;
-			case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("aws_rds_instances_view.php");	break;
+			case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("/#/tools/aws/rds/instances");	break;
 			default: break;				
 		}
 	}
@@ -79,7 +79,7 @@
 				catch(Exception $e)
 				{
 					$errmsg = $e->getMessage();
-					UI::Redirect("aws_rds_instances_view.php");
+					UI::Redirect("/#/tools/aws/rds/instances");
 				}
 				
 				$display["title"] = _("Auto-snapshots settings for RDS instance '{$objectId}'");
@@ -175,7 +175,7 @@
 				{
 					case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("ebs_manage.php"); 			break;
 					case AUTOSNAPSHOT_TYPE::EBSArraySnap:	UI::Redirect("ebs_arrays.php");				break;
-					case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("aws_rds_instances_view.php");	break;	
+					case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("/#/tools/aws/rds/instances");	break;	
 					default: break;				
 				}
 	}

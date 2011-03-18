@@ -1,8 +1,19 @@
 {
 	create: function (loadParams, moduleParams) {
+		var form =  new Ext.form.FormPanel({
+			scalrOptions: {
+				'maximize': 'maxHeight'
+			},
+			width: 900,
+			//title: 'Environments &raquo; Edit &raquo; ' + moduleParams.env.name,
+			title: 'Amazon Web Services &raquo; Amazon IAM &raquo; Server Certificates &raquo; Add',
 			frame: true,
-			fileUpload: true,
+			fileUpload:true,
+			labelWidth: 200,
 			autoScroll: true,
+			padding: '0px 20px 0px 5px',
+			plugins: [ new Scalr.Viewers.Plugins.findOne() ],
+			buttonAlign: 'center',
 			items: [{
 				xtype: 'fieldset',
 				title: 'General information',
@@ -34,60 +45,42 @@
 					value: ''
 				}]
 			}],
-			buttonAlign: 'center',
-			buttons: [{
-				type: 'submit',
-				text: 'Upload',
-				handler: function() {
-					if (form.getForm().isValid()) {
-						Ext.Msg.wait('Please wait');
-						form.getForm().submit({
-							url: '/awsIam/serverCertificatesSave',
-							success: function(form, action) {
-								Ext.Msg.hide();
-								if (action.result.success == true) {
-									Scalr.data.SuccessMessage('Certificate successfully uploaded');
-									this.close();
-								}
-								else
-									Scalr.Viewers.ErrorMessage(action.result.error);
-							},
-							scope: this,
-							failure: Scalr.data.ExceptionFormReporter
-						});
-					}
-				},
-				scope: this
-			}, {
-				type: 'reset',
-				text: 'Cancel',
-				handler: function() {
-					this.close();
-				},
-				scope: this
-			}]
+			buttonAlign: 'center'
 		});
-
-		this.win = new Ext.Window(Ext.apply({
-			title: 'Amazon Web Services &raquo; Amazon IAM &raquo; Server Certificates &raquo; Add',
-			layout: 'fit',
-			width: 700,
-			height: 300,
-			border: false,
-			items: {
-				xtype: 'panel',
-				layout: 'fit',
-				border: false,
-				autoScroll: true,
-				items: form
+		
+		form.addButton({
+			type: 'submit',
+			text: 'Upload',
+			handler: function() {
+				if (form.getForm().isValid()) {
+					Ext.Msg.wait('Please wait');
+					form.getForm().submit({
+						url: '/awsIam/serverCertificatesSave',
+						success: function(form, action) {
+							Ext.Msg.hide();
+							if (action.result.success == true) {
+								Scalr.Viewers.SuccessMessage('Certificate successfully uploaded');
+								Scalr.Viewers.EventMessager.fireEvent('close');
+							}
+							else
+								Scalr.Viewers.ErrorMessage(action.result.error);
+						},
+						scope: this,
+						failure: Scalr.data.ExceptionFormReporter
+					});
+				}
+			},
+			scope: this
+		});
+		
+		form.addButton({
+			type: 'submit',
+			text: 'Cancel',
+			handler: function() {
+				document.location.href = '#/dnszones/view';
 			}
-		}, windowParams));
-
-		this.win.on('close', function() {
-			this.win = null;
-			document.location.href = '#/awsIam/serverCertificatesList';
-		}, this);
-
-		return this.win;
+		});
+		
+		return form;
 	}
 }

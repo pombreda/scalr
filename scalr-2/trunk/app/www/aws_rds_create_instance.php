@@ -89,7 +89,7 @@
 		if (count($err) == 0)
 		{			
 			$okmsg = _("DB instance successfully launched");
-			UI::Redirect("aws_rds_instances_view.php");
+			UI::Redirect("/#/tools/aws/rds/instances");
 		}
 	}	
 	

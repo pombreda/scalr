@@ -163,50 +163,37 @@
 				new Ext.menu.Separator({itemId: "option.syncSep"}),
 				{itemId: "option.editRole", iconCls: 'scalr-menu-icon-configure', text: 'Configure role in farm', href: "/farms_builder.php?id={farm_id}&role_id={role_id}"},
 				new Ext.menu.Separator({itemId: "option.procSep"}), //TODO:
-				{ itemId: "option.dnsEx",		text: 'Exclude from DNS zone',
-					menuHandler: function (item) {
-						Ext.Msg.wait("Please wait ...");
-
-						Ext.Ajax.request({
-							url: '/servers/xServerExcludeFromDns/',
-							params: { serverId: item.currentRecordData.server_id },
-							success: function (response) {
-								var result = Ext.decode(response.responseText);
-								if (result.success == true) {
-									Scalr.Viewers.SuccessMessage(result.message);
-									store.reload();
-								} else if (result.error)
-									Scalr.Viewers.ErrorMessage(result.error);
-
-								Ext.Msg.hide();
-							},
-							failure: function() {
-								Ext.Msg.hide();
-							}
-						});
+				{
+					itemId: 'option.dnsEx',
+					text: 'Exclude from DNS zone',
+					request: {
+						processBox: {
+							type: 'action'
+						},
+						url: '/servers/xServerExcludeFromDns/',
+						dataHandler: function (record) {
+							return { serverId: record.get('server_id') };
+						},
+						success: function (data) {
+							Scalr.Message.Success(data.message);
+							store.reload();
+						}
 					}
-				},
-				{ itemId: "option.dnsIn",		text: 'Include in DNS zone',
-					menuHandler: function (item) {
-						Ext.Msg.wait("Please wait ...");
-
-						Ext.Ajax.request({
-							url: '/servers/xServerIncludeInDns/',
-							params: { serverId: item.currentRecordData.server_id },
-							success: function (response) {
-								var result = Ext.decode(response.responseText);
-								if (result.success == true) {
-									Scalr.Viewers.SuccessMessage(result.message);
-									store.reload();
-								} else if (result.error)
-									Scalr.Viewers.ErrorMessage(result.error);
-
-								Ext.Msg.hide();
-							},
-							failure: function() {
-								Ext.Msg.hide();
-							}
-						});
+				}, {
+					itemId: 'option.dnsIn',
+					text: 'Include in DNS zone',
+					request: {
+						processBox: {
+							type: 'action'
+						},
+						url: '/servers/xServerIncludeInDns/',
+						dataHandler: function (record) {
+							return { serverId: record.get('server_id') };
+						},
+						success: function (data) {
+							Scalr.Message.Success(data.message);
+							store.reload();
+						}
 					}
 				},
 				new Ext.menu.Separator({itemId: "option.editRoleSep"}),
@@ -220,32 +207,26 @@
 				new Ext.menu.Separator({itemId: "option.execSep"}),
 				{itemId: "option.exec", iconCls: 'scalr-menu-icon-execute', text: 'Execute script', href: "#/scripts/execute?serverId={server_id}"},
 				new Ext.menu.Separator({itemId: "option.menuSep"}),
-				{ itemId: "option.reboot", iconCls: 'scalr-menu-icon-reboot', text: 'Reboot', confirmationMessage: 'Reboot selected server(s)?',
-					menuHandler: function(item) {
-						Ext.MessageBox.show({
-							progress: true,
-							msg: 'Sending reboot command to the server(s). Please wait...',
-							wait: true,
-							width: 450,
-							icon: 'scalr-mb-instance-rebooting'
-						});
-
-						Ext.Ajax.request({
-							url: '/servers/xServerRebootServers/',
-							success: function(response, options) {
-								Ext.MessageBox.hide();
-
-								var result = Ext.decode(response.responseText);
-								if (result.success == true) {
-									store.reload();
-								} else {
-									Scalr.Viewers.ErrorMessage(result.error);
-								}
-							},
-							params: {
-								servers: Ext.encode([item.currentRecordData.server_id])
-							}
-						});
+				{
+					itemId: 'option.reboot',
+					text: 'Reboot',
+					iconCls: 'scalr-menu-icon-reboot',
+					request: {
+						confirmBox: {
+							type: 'reboot',
+							msg: 'Reboot server "{server_id}"?'
+						},
+						processBox: {
+							type: 'reboot',
+							msg: 'Sending reboot command to the server. Please wait...'
+						},
+						url: '/servers/xServerRebootServers/',
+						dataHandler: function (record) {
+							return { servers: Ext.encode([ record.get('server_id') ]) };
+						},
+						success: function () {
+							store.reload();
+						}
 					}
 				},
 
@@ -405,15 +386,20 @@
 			},
 
 			withSelected: {
-				menu: [
-					{
-						text: "Reboot",
-						method: 'ajax',
-						confirmationMessage: 'Reboot selected instance(s)?',
-						progressMessage: 'Sending reboot command to servers(s). Please wait...',
-						progressIcon: 'scalr-mb-instance-rebooting',
+				menu: [{
+					text: 'Reboot',
+					iconCls: 'scalr-menu-icon-reboot',
+					request: {
+						confirmBox: {
+							type: 'reboot',
+							msg: 'Reboot selected server(s)?'
+						},
+						processBox: {
+							type: 'reboot',
+							msg: 'Sending reboot command to the server(s). Please wait...'
+						},
 						url: '/servers/xServerRebootServers/',
-						dataHandler: function(records) {
+						dataHandler: function (records) {
 							var servers = [];
 							for (var i = 0, len = records.length; i < len; i++) {
 								servers[servers.length] = records[i].get('server_id');
@@ -421,22 +407,30 @@
 
 							return { servers: Ext.encode(servers) };
 						}
-					}, {
-						text: "Terminate",
-						method: 'ajax',
-						confirmationMessage: 'Terminate selected instance(s)?',
-						progressMessage: 'Terminating servers(s). Please wait...',
-						progressIcon: 'scalr-mb-instance-terminating',
+					}
+				}, {
+					text: 'Terminate',
+					iconCls: 'scalr-menu-icon-terminate',
+					request: {
+						confirmBox: {
+							type: 'terminate',
+							msg: 'Terminate selected server(s)?'
+						},
+						processBox: {
+							type: 'terminate',
+							msg: 'Terminating servers(s). Please wait...'
+						},
 						url: '/servers/xServerTerminateServers/',
-						dataHandler: function(records) {
+						dataHandler: function (records) {
 							var servers = [];
 							for (var i = 0, len = records.length; i < len; i++) {
 								servers[servers.length] = records[i].get('server_id');
 							}
+
 							return { servers: Ext.encode(servers) };
 						}
 					}
-				],
+				}],
 				renderer: function(data) {
 					return (data.status == 'Running' || data.status == 'Initializing');
 				}

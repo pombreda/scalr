@@ -152,19 +152,15 @@ class Scalr_UI_Controller_Roles extends Scalr_UI_Controller
 	* View roles listView with filters
 	*/
 	public function viewAction()
-	{
-		try {
-			$this->response->setJsonResponse(array(
-				'success' => true,
-				'module' => $this->response->template->fetchJs('roles/view.js'),
-				'moduleParams' => array(
-					'locations' => Scalr_UI_Controller_Platforms::getCloudLocations('all'),
-					'isScalrAdmin' => $this->session->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN)
-				)
-			));
-		} catch (Exception $e) {
-			$this->response->setJsonResponse(array('success' => false, 'error' => $e->getMessage()));
-		}
+	{		
+		$this->response->setJsonResponse(array(
+			'success' => true,
+			'module' => $this->response->template->fetchJs('roles/view.js'),
+			'moduleParams' => array(
+				'locations' => Scalr_UI_Controller_Platforms::getCloudLocations('all'),
+				'isScalrAdmin' => $this->session->getAuthToken()->hasAccess(Scalr_AuthToken::SCALR_ADMIN)
+			)
+		));
 	}
 
 	/**

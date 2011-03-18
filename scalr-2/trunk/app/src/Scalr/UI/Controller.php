@@ -39,6 +39,14 @@
 			return true;
 		}
 
+		protected function sort($item1, $item2)
+		{
+			$f1 = $item1[$this->getParam('sort')];
+			$f2 = $item2[$this->getParam('sort')];
+			
+			return strnatcmp($f1,$f2);
+		}
+		
 		protected function buildResponseFromData(array $data)
 		{
 			$this->request->defineParams(array(
@@ -47,31 +55,19 @@
 			));
 			
 			$response['total'] = count($data);
-			$data = (count($data) > $this->getParam('limit')) ? array_slice($data, $this->getParam('start'), $this->getParam('limit')) : $data;
-			
-			$response["data"] = array();
 
 			if ($this->getParam('sort')) {
-				$nrowz = array();
-				
-				if ($data[0][$this->getParam('sort')]) {
-					foreach ($data as $row)				
-						$nrowz[(string)$row[$this->getParam('sort')]] = $row;
-				}
-				else
-					$nrowz = $data;			
-						
-				ksort($nrowz);
-				
+				uasort($data, array($this, 'sort'));
+
 				if ($this->getParam('dir') == 'DESC')
-					$data = array_reverse($nrowz);
-				else
-					$data = $nrowz;	
+					$data = array_reverse($data);
 			}
-			
+
+			$data = (count($data) > $this->getParam('limit')) ? array_slice($data, $this->getParam('start'), $this->getParam('limit')) : $data;
+
 			$response["success"] = true;
 			$response['data'] = $data;
-			
+
 			return $response;
 		}
 		
@@ -148,7 +144,7 @@
 
 				$this->call($pathChunks);
 
-			} else if (method_exists($this, 'defaultAction')) {
+			} else if (method_exists($this, 'defaultAction') && $arg == '') {
 				if ($this->response->template->name == '')
 					$this->response->template->name = './../ui/' . strtolower((array_pop(explode('_', get_class($this)))) . '_' . 'default' . '.tpl');
 
@@ -156,6 +152,7 @@
 				$this->defaultAction();
 
 			} else {
+				// JS page not found
 				Scalr_UI_Response::getInstance()->pageNotFound();
 			}
 		}

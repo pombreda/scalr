@@ -463,7 +463,7 @@
 			
 			if ($event->ForceTerminate)
 			{ 				
-				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$instance_id}' (O)."));
+				Logger::getLogger(LOG_CATEGORY::FARM)->warn(new FarmLogMessage($this->FarmID, "Terminating instance '{$event->DBServer->serverId}' (O)."));
                 PlatformFactory::NewPlatform($event->DBServer->platform)->TerminateServer($event->DBServer);
 			}
 		}

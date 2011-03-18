@@ -34,8 +34,8 @@ class Scalr_UI_Controller_Tools_Aws_Rds_Instances extends Scalr_UI_Controller
 	public function detailsAction()
 	{
 		$amazonRDSClient = Scalr_Service_Cloud_Aws::newRds(
-			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
-			Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
+			$this->session->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::ACCESS_KEY),
+			$this->session->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Rds::SECRET_KEY),
 			$this->getParam('cloudLocation')
 		);
 

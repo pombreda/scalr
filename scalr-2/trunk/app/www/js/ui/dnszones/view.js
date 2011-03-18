@@ -56,15 +56,9 @@
 				}
 			]},
 			rowOptionsMenu: [
-				{itemId: "option.edit", 		text:'Edit DNS Zone', 		href: "#/dnszones/{id}/edit"},
-				{itemId: "option.ZoneSettings", text:'Settings', 			href: "#/dnszones/{id}/settings"}
+				{ text:'Edit DNS Zone', href: "#/dnszones/{id}/edit" },
+				{ text:'Settings', href: "#/dnszones/{id}/settings" }
 			],
-			getRowOptionVisibility: function (item, record) {
-				if (item.itemId == 'option.switch' && record.data.status == 'Inactive')
-					return false;
-				else
-					return true;
-			},
 
 			getRowMenuVisibility: function (data) {
 				return (data.status != 'Pending delete' && data.status != 'Pending create');
@@ -73,17 +67,24 @@
 			withSelected: {
 				menu: [{
 					text: 'Delete',
-					method: 'ajax',
-					confirmationMessage: 'Remove selected dns zone(s)?',
-					progressMessage: 'Removing dns zone(s). Please wait...',
-					progressIcon: 'scalr-mb-object-removing',
-					url: '/dnszones/xRemoveZones',
-					dataHandler: function(records) {
-						var zones = [];
-						for (var i = 0, len = records.length; i < len; i++) {
-							zones[zones.length] = records[i].id;
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							type: 'delete',
+							msg: 'Remove selected dns zone(s)?'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing dns zone(s). Please wait...'
+						},
+						url: '/dnszones/xRemoveZones',
+						dataHandler: function(records) {
+							var zones = [];
+							for (var i = 0, len = records.length; i < len; i++) {
+								zones[zones.length] = records[i].id;
+							}
+							return { zones: Ext.encode(zones) };
 						}
-						return { zones: Ext.encode(zones) };
 					}
 				}]
 			}

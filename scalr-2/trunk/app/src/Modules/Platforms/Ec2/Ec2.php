@@ -306,7 +306,41 @@
 		
 		public function CheckServerSnapshotStatus(BundleTask $BundleTask)
 		{
-			
+			if ($BundleTask->bundleType == SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS_HVM)
+			{
+				try
+				{
+					$DBServer = DBServer::LoadByID($BundleTask->serverId);
+					
+			        $EC2Client = Scalr_Service_Cloud_Aws::newEc2(
+						$DBServer->GetProperty(EC2_SERVER_PROPERTIES::REGION), 
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::PRIVATE_KEY),
+						$DBServer->GetEnvironmentObject()->getPlatformConfigValue(self::CERTIFICATE)
+					);
+			        
+			        $DescribeImagesType = new DescribeImagesType();
+					$DescribeImagesType->imagesSet->item[] = array("imageId" => $BundleTask->snapshotId);
+			        $ami_info = $EC2Client->DescribeImages($DescribeImagesType);
+			        $ami_info = $ami_info->imagesSet->item;
+			        
+			        $BundleTask->Log(sprintf("Checking snapshot creation status: %s", $ami_info->imageState));
+			        
+			        if ($ami_info->imageState == 'available') {
+			        	$metaData = array(
+			        		'tags' 			=> array(ROLE_TAGS::EC2_EBS, ROLE_TAGS::EC2_HVM),
+			        		'szr_version'	=> $DBServer->GetProperty(SERVER_PROPERTIES::SZR_VESION)
+			        	);
+			        	
+			        	$BundleTask->SnapshotCreationComplete($BundleTask->snapshotId, $metaData);
+			        }
+			        else {
+			        	$BundleTask->Log("CheckServerSnapshotStatus: AMI status = {$ami_info->imageState}. Waiting...");
+			        }
+				}
+				catch(Exception $e) {
+					Logger::getLogger(__CLASS__)->fatal("CheckServerSnapshotStatus ({$BundleTask->id}): {$e->getMessage()}");
+				}
+			}
 		}
 		
 		public function CreateServerSnapshot(BundleTask $BundleTask)
@@ -352,34 +386,68 @@
 	        else
 	        {
 	        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
-	        	$BundleTask->bundleType = (string)$ami_info->imagesSet->item->rootDeviceType == 'ebs' ?
-	        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS :
-	        			SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
+	        	
+	        	if ((string)$ami_info->imagesSet->item->rootDeviceType == 'ebs') {
+	        		if ((string)$ami_info->imagesSet->item->virtualizationType == 'hvm')
+	        			$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS_HVM;
+	        		else
+	        			$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS;
+	        	} else {
+	        		$BundleTask->bundleType = SERVER_SNAPSHOT_CREATION_TYPE::EC2_S3I;
+	        	}
 	        	
 	        	$BundleTask->Save();
 	        	
 	        	$BundleTask->Log(sprintf(_("Selected platfrom snapshoting type: %s"), $BundleTask->bundleType));
 	        	
-	        	$msg = new Scalr_Messaging_Msg_Rebundle(
-	        		$BundleTask->id,
-					$BundleTask->roleName,
-					array()
-	        	);
-
-	        	$metaData = $BundleTask->getSnapshotDetails();
-	        	if ($metaData['rootVolumeSize'])
-	        		$msg->volumeSize = $metaData['rootVolumeSize']; 
-
-        		if (!$DBServer->SendMessage($msg))
-        		{
-        			$BundleTask->SnapshotCreationFailed("Cannot send rebundle message to server. Please check event log for more details.");
-        			return;
-        		}
-	        	else
+	        	if ($BundleTask->bundleType == SERVER_SNAPSHOT_CREATION_TYPE::EC2_EBS_HVM)
 	        	{
-		        	$BundleTask->Log(sprintf(_("Snapshot creation started (MessageID: %s). Bundle task status changed to: %s"), 
-		        		$msg->messageId, $BundleTask->status
-		        	));
+		        	try
+		        	{
+			        	$CreateImageType = new CreateImageType(
+			        		$DBServer->GetProperty(EC2_SERVER_PROPERTIES::INSTANCE_ID),
+			        		$BundleTask->roleName,
+			        		$BundleTask->roleName,
+			        		false
+			        	);
+			        	
+			        	$result = $EC2Client->CreateImage($CreateImageType);
+			        			        	
+			        	$BundleTask->status = SERVER_SNAPSHOT_CREATION_STATUS::IN_PROGRESS;
+			        	$BundleTask->snapshotId = $result->imageId;
+			        	
+			        	$BundleTask->Log(sprintf(_("Snapshot creating initialized (AMIID: %s). Bundle task status changed to: %s"), 
+			        		$BundleTask->snapshotId, $BundleTask->status
+			        	));
+		        	}
+		        	catch(Exception $e)
+		        	{
+		        		$BundleTask->SnapshotCreationFailed($e->getMessage());
+		        		return;
+		        	}
+	        	}
+	        	else {
+		        	$msg = new Scalr_Messaging_Msg_Rebundle(
+		        		$BundleTask->id,
+						$BundleTask->roleName,
+						array()
+		        	);
+	
+		        	$metaData = $BundleTask->getSnapshotDetails();
+		        	if ($metaData['rootVolumeSize'])
+		        		$msg->volumeSize = $metaData['rootVolumeSize']; 
+	
+	        		if (!$DBServer->SendMessage($msg))
+	        		{
+	        			$BundleTask->SnapshotCreationFailed("Cannot send rebundle message to server. Please check event log for more details.");
+	        			return;
+	        		}
+		        	else
+		        	{
+			        	$BundleTask->Log(sprintf(_("Snapshot creation started (MessageID: %s). Bundle task status changed to: %s"), 
+			        		$msg->messageId, $BundleTask->status
+			        	));
+		        	}
 	        	}
 	        }
 	        

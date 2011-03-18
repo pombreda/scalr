@@ -30,9 +30,9 @@
 					}
 				]
 			},
-			rowOptionsMenu: [
-				{ itemId: "option.details", text:'Edit', href: "#/environments/{id}/edit/" }
-			]
+			rowOptionsMenu: [{
+				text:'Edit', href: "#/environments/{id}/edit/"
+			}]
 		});
 	}
 }

@@ -50,41 +50,39 @@
 						'<tpl if="dtfinished">{dtfinished}</tpl>'
 					}
 			]},
-			rowOptionsMenu: [
-     			{itemId: "option.logs", 		text:'View log', 			  	href: "#/bundletasks/{id}/logs"},
-     			{itemId: "option.cancel", 		text:'Cancel', menuHandler: function (item) {
-					Ext.Msg.wait("Please wait ...");
 
-					Ext.Ajax.request({
-						url: '/bundletasks/xCancel/',
-						params: { bundleTaskId: item.currentRecordData.id },
-						success: function (response) {
-							var result = Ext.decode(response.responseText);
-							if (result.success == true) {
-								Scalr.Viewers.SuccessMessage(result.message);
-								store.reload();
-							} else if (result.error)
-								Scalr.Viewers.ErrorMessage(result.error);
+			rowOptionsMenu: [{
+				text:'View log',
+				href: '#/bundletasks/{id}/logs'
+			}, {
+				itemId: 'option.cancel',
+				text: 'Cancel',
+				request: {
+					processBox: {
+						type: 'action',
+						title: 'Canceling',
+						msg: 'Please wait...'
+					},
+					url: '/bundletasks/xCancel/',
+					dataHandler: function (record) {
+						return { bundleTaskId: record.get('id') };
+					},
+					success: function(data) {
+						store.reload();
+						Scalr.Message.Success(data.message);
+					}
+				}
+			}],
+			getRowOptionVisibility: function (item, record) {
+				if (item.itemId == 'option.cancel') {
+					if (record.get('status') != 'success' && record.get('status') != 'failed')
+						return true;
+					else
+						return false;
+				}
 
-							Ext.Msg.hide();
-						},
-						failure: function() {
-							Ext.Msg.hide();
-						}
-					});
-				}}
-          	],
-          	getRowOptionVisibility: function (item, record) {
-     			if (item.itemId == 'option.cancel')
-     			{
-     				if (record.data.status != 'success' && record.data.status != 'failed')
-     					return true;
-     				else
-     					return false;
-     			}
-
-     			return true;
-     		}
+				return true;
+			}
 		});
 	}
 }

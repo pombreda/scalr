@@ -33,6 +33,10 @@
 			$this->Version = $version;
 		}
 		
+		protected function insensitiveUksort($a,$b) { 
+		    return strtolower($a)>strtolower($b); 
+		}
+		
 		private function AuthenticateREST($request)
 		{
 			if (!$request['Signature'])
@@ -45,8 +49,11 @@
 				throw new Exception("Timestamp is missing");
 			
 			//TODO: Validate TimeStamp
+			if ($request['AuthVersion'] == 2)	
+				uksort($request, array($this, 'insensitiveUksort'));
+			else
+				ksort($request);
 				
-			ksort($request);
 			$string_to_sign = "";
 			foreach ($request as $k=>$v)
     		{
@@ -165,7 +172,7 @@
 		
 		protected function LogRequest($trans_id, $action, $ipaddr, $request, $response)
 		{
-			if ($request['debug'] == 1)
+			if ($request['debug'] == 1 || $request['Debug'] == 1)
 			{
 				try
 				{

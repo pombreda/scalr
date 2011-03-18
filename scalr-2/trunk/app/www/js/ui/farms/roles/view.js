@@ -29,41 +29,41 @@
 			stateId: 'listview-farmroles-view',
 
 			rowOptionsMenu: [
-     			{itemId: "option.ssh_key", 		text: 'Download SSH private key', 		menuHandler: function (item){
+     			{itemId: "option.ssh_key", 		text: 'Download SSH private key', menuHandler: function (item){
      				Scalr.Viewers.userLoadFile('/farms/' + loadParams['farmId'] + '/roles/' + item.currentRecordData.id + '/xGetRoleSshPrivateKey');
      			}},
-     			{itemId: "option.cfg", 			text:'Configure', 			  			href: "/farms_builder.php?id={farmid}&role_id={role_id}"},
-     			{itemId: "option.stat", 		text:'View statistics', 			  	href: "/monitoring.php?role={id}&farmid={farmid}"},
-     			{itemId: "option.info", 		text:'Extended role information', 		href: "#/farms/" + loadParams['farmId'] + "/roles/{id}/extendedInfo"},
+     			{itemId: "option.cfg", iconCls: 'scalr-menu-icon-configure', text:'Configure', href: "/farms_builder.php?id={farmid}&role_id={role_id}"},
+     			{itemId: "option.stat", iconCls: 'scalr-menu-icon-stats', text:'View statistics', href: "/monitoring.php?role={id}&farmid={farmid}"},
+     			{itemId: "option.info", iconCls: 'scalr-menu-icon-info', text:'Extended role information', href: "#/farms/" + loadParams['farmId'] + "/roles/{id}/extendedInfo"},
      			new Ext.menu.Separator({itemId: "option.mainSep"}),
-     			{itemId: "option.exec", 		text: 'Execute script', 				href: "#/scripts/execute?farmRoleId={id}"},
+     			{itemId: "option.exec", iconCls: 'scalr-menu-icon-execute', text: 'Execute script', href: "#/scripts/execute?farmRoleId={id}"},
      			new Ext.menu.Separator({itemId: "option.eSep"}),
-     			{itemId: "option.sgEdit", 		text: 'Edit security group', 			href: "/sec_group_edit.php?farm_roleid={id}&location={location}&platform={platform}"},
+     			{itemId: "option.sgEdit", 		text: 'Edit security group', href: "/sec_group_edit.php?farm_roleid={id}&location={location}&platform={platform}"},
      			new Ext.menu.Separator({itemId: "option.sgSep"}),
-     			{itemId: "option.launch", 		text: 'Launch new instance', 			menuHandler: function (item) {
-					Ext.Msg.wait("Please wait ...");
+			{
+				itemId: 'option.launch',
+				iconCls: 'scalr-menu-icon-launch',
+				text: 'Launch new instance',
+				request: {
+					processBox: {
+						type: 'launch',
+						msg: 'Please wait ...'
+					},
+					dataHandler: function (record) {
+						this.url = '/farms/' + loadParams['farmId'] + '/roles/' + record.get('id') + '/xLaunchNewServer';
+					},
+					success: function (data) {
+						store.reload();
+						Scalr.Message.Success('Server successfully launched');
 
-					Ext.Ajax.request({
-						url: '/farms/' + loadParams['farmId'] + '/roles/' + item.currentRecordData.id + '/xLaunchNewServer',
-						success: function (response) {
-							var result = Ext.decode(response.responseText);
-							if (result.success == true) {
-								Scalr.Viewers.SuccessMessage('Server successfully launched');
-								if (result.warnMsg)
-									Scalr.Viewers.WarningMessage(result.warnMsg);
-								store.reload();
-							} else if (result.error)
-								Scalr.Viewers.ErrorMessage(result.error);
-
-							Ext.Msg.hide();
-						},
-						failure: function() {
-							Ext.Msg.hide();
-						}
-					});
-				}},
-     			new Ext.menu.Separator({itemId: "option.scSep"})
-          	],
+						if (data.warnMsg)
+							Scalr.Message.Warning(data.warnMsg);
+					}
+				}
+			}, {
+				xtype: 'menuseparator',
+				itemId: 'option.scSep'
+			}],
 
           	getRowOptionVisibility: function (item, record) {
      			var data = record.data;

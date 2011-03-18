@@ -585,6 +585,68 @@ div.viewers-listview-row-options-btn {
 	background-position: 0px -160px;
 }
 
+.scalr-mb-icon-info {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px 0px;
+}
+
+.scalr-mb-icon-warning {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -32px;
+}
+
+.scalr-mb-icon-error {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -64px;
+}
+
+.scalr-mb-icon-save {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -96px;
+}
+
+.scalr-mb-icon-action {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -128px;
+}
+
+.scalr-mb-icon-reboot {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -160px;
+}
+
+.scalr-mb-icon-delete {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -192px;
+}
+
+.scalr-mb-icon-launch {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -224px;
+}
+
+.scalr-mb-icon-terminate {
+	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -256px;
+}
 
 /*
  * mb-icons
@@ -617,6 +679,8 @@ div.viewers-listview-row-options-btn {
 .scalr-mb-info {
 	background: transparent url('/images/ui-ng/icons/mb/info.gif') no-repeat top left;
 }
+
+
 
 /*
  * Scalr Error message

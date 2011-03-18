@@ -92,22 +92,22 @@
 				{itemId: "option.execute", iconCls: 'scalr-menu-icon-execute', text:'Execute', href: "#/scripts/{id}/execute"},
 				new Ext.menu.Separator({itemId: "option.execSep"}),
 							
-				{itemId: "option.fork", 		text:'Fork', 		menuHandler: function(item) {
-					Ext.Ajax.request({
-						url: '/scripts/'+item.currentRecordData.id+'/xFork',
-						success: function(response, options) {
-							Ext.MessageBox.hide();
-
-							var result = Ext.decode(response.responseText);
-							if (result.success) {
-								store.load();
-								Scalr.Viewers.SuccessMessage('Script successfully forked');
-							} else {
-								Scalr.Viewers.ErrorMessage(result.error);
-							}
+				{
+					itemId: 'option.fork',
+					text:'Fork',
+					request: {
+						processBox: {
+							type: 'action'
+						},
+						dataHandler: function (record) {
+							this.url = '/scripts/' + record.get('id') + '/xFork';
+						},
+						success: function () {
+							store.reload();
+							Scalr.Message.Success('Script successfully forked');
 						}
-					});
-				}},
+					}
+				},
 				/*new Ext.menu.Separator({itemId: "option.forkSep"}),*/
 
 				
@@ -121,30 +121,26 @@
 				*/
 
 				{itemId: "option.edit", iconCls: 'scalr-menu-icon-edit', text: 'Edit', href: "#/scripts/{id}/edit"},
-				{itemId: "option.delete", iconCls: 'scalr-menu-icon-delete', text: 'Delete', confirmationMessage: 'Remove script?',
-					menuHandler: function(item) {
-						Ext.MessageBox.show({
-							progress: true,
-							msg: 'Removing script. Please wait...',
-							wait: true,
-							width: 450,
-							icon: 'scalr-mb-object-removing'
-						});
-
-						Ext.Ajax.request({
-							url: '/scripts/'+item.currentRecordData.id+'/xRemove',
-							success: function(response, options) {
-								Ext.MessageBox.hide();
-
-								var result = Ext.decode(response.responseText);
-								if (result.success) {
-									store.load();
-									Scalr.Viewers.SuccessMessage('Script successfully removed');
-								} else {
-									Scalr.Viewers.ErrorMessage(result.error);
-								}
-							}
-						});
+				{
+					itemId: 'option.delete',
+					text: 'Delete',
+					iconCls: 'scalr-menu-icon-delete',
+					request: {
+						confirmBox: {
+							msg: 'Remove script "{name}"?',
+							type: 'delete'
+						},
+						processBox: {
+							type: 'delete',
+							msg: 'Removing script. Please wait...'
+						},
+						dataHandler: function (record) {
+							this.url = '/scripts/' + record.get('id') + '/xRemove';
+						},
+						success: function () {
+							store.reload();
+							Scalr.Message.Success('Script successfully removed');
+						}
 					}
 				}
 			],
@@ -217,21 +213,7 @@
 						'<tpl if="approval_state == &quot;Pending&quot;"><img src="/images/pending.gif" title="Pending" /></tpl>' +
 						'<tpl if="approval_state == &quot;Declined&quot;"><img src="/images/false.gif" title="Declined" /></tpl>'
 					}
-			]},
-			
-			listeners: {
-				'render': function() {
-					if (this.state && this.state.filter_approval_state) {
-						this.getTopToolbar().getComponent('approvalState').setValue(this.state.filter_approval_state);
-						this.store.baseParams.approvalState = this.state.filter_approval_state;
-					}
-
-					if (this.state && this.state.filter_origin) {
-						this.getTopToolbar().getComponent('origin').setValue(this.state.filter_origin);
-						this.store.baseParams.origin = this.state.filter_origin;
-					}
-				}
-			}
+			]}
 		});
 	}
 }
