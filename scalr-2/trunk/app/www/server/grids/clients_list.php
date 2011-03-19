@@ -18,8 +18,6 @@
 			dtadded,
 			farms_limit,
 			fullname, 
-			TO_DAYS(NOW())-TO_DAYS(dtdue) as overdue_days, 
-			dtdue, 
 			comments
 			FROM clients WHERE id > 0";
 		
