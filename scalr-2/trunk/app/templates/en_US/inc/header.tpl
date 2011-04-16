@@ -86,7 +86,7 @@
 		<div id="toplinks">
 			{if $smarty.session.Scalr_Session.clientId != 0}
 				<a href="http://wiki.scalr.net" target="_blank">{t}Wiki{/t}</a>
-				<a href="/?redirect_to=support" target="_blank">{t}Support{/t}</a>
+				<a href="http://support.scalr.net" target="_blank">{t}Support{/t}</a>
 			{/if}
 		</div>
 		<div id="logout_button"></div>

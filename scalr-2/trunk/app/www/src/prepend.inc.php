@@ -11,7 +11,7 @@
 		if (isset($_SERVER['HTTP_X_AJAX_SCALR']))
 			header("HTTP/1.0 403 Forbidden");
 		else
-			header('Location: /login.html');
+			header('Location: /login.php');
 
 		exit();
 	}
@@ -45,9 +45,6 @@
 		if (Scalr_Session::getInstance()->getClientId() != 0) {
 			$user = $db->GetRow("SELECT * FROM clients WHERE id=?", Scalr_Session::getInstance()->getClientId());
 		}
-
-		if (Scalr_Session::getInstance()->getClientId() != 0 && $user["isactive"] == 0 && !stristr($_SERVER['PHP_SELF'], "billing.php") && !stristr($_SERVER['REQUEST_URI'], 'logout'))
-			UI::Redirect("/billing.php");
 
 		//if (CONTEXTS::$APPCONTEXT != APPCONTEXT::AJAX_REQUEST)
 		//{
@@ -84,35 +81,6 @@
 		$locations = Scalr_Session::getInstance()->getEnvironment()->getLocations();
 		$display['locations'] = $locations;
 	}
-
-
-
-    if ($req_redirect_to == 'support')
-	{	
-		$farms_rs = $db->GetAll("SELECT id FROM farms WHERE clientid=?", array(Scalr_Session::getInstance()->getClientId()));
-		$farms = array();
-		foreach ($farms_rs as $frm)
-			$farms[] = $frm['id'];
-			
-		$farms = implode(', ', array_values($farms));
-		
-		$Client = Client::Load(Scalr_Session::getInstance()->getClientId());
-		
-		$args = array(
-        	"name"		=> $Client->Fullname,
-			"Farms"		=> $farms,
-			"ClientID"	=> $Client->ID,
-			"email"		=> $Client->Email,
-        	"expires" => date("D M d H:i:s O Y", time()+120)
-        );
-        		        			
-		$token = GenerateTenderMultipassToken(json_encode($args));
-        //////////////////////////////
-        	        			
-        UI::Redirect("http://support.scalr.net/?sso={$token}");
-	}
-    
-    define("CHARGIFY_SITE_SHARED_KEY", "jHw77cfhB3ZJiVpTdJex");
     
     //TODO: MOVE TO SESSION
 
