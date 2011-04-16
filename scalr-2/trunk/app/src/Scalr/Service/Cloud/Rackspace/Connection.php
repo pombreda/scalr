@@ -13,12 +13,25 @@
 		const		API_VERSION				= "v1.0";
 		const		URL						= "auth.api.rackspacecloud.com";
 		
+		protected 	$apiAuthURL = '';
 		
-		protected function __construct($xAuthUser, $xAuthKey)
+		protected function __construct($xAuthUser, $xAuthKey, $cloudLocation)
 		{
 			$this->xAuthUser = $xAuthUser;
 			$this->xAuthKey  = $xAuthKey;
 			$this->httpRequest = new HttpRequest();
+			
+			switch($cloudLocation)
+			{
+				case 'rs-ORD1':
+					$this->apiAuthURL = 'auth.api.rackspacecloud.com';
+					break;
+					
+				case 'rs-LONx':
+					$this->apiAuthURL = 'lon.auth.api.rackspacecloud.com';
+					break;
+			}
+			
 		}
 		
 		/**
@@ -34,7 +47,7 @@
 		{
 			try
 			{
-				$this->setRequestOptions("https://".self::URL."/".self::API_VERSION, "GET");
+				$this->setRequestOptions("https://{$this->apiAuthURL}/".self::API_VERSION, "GET");
 				$response = $this->sendRequest();
 				$this->xAuthToken	= $response['headers']['X-Auth-Token'];
 				$this->xSessionUrl	= $response['headers']['X-Server-Management-Url'];
@@ -70,9 +83,9 @@
 					$errMsg = array_values(get_object_vars($errMsg));
 					$errMsg = $errMsg[0];
 					
-					throw new Exception(sprintf('Request to Rackspace failed (Error code: %s. ): %s',
+					throw new Exception(sprintf('Request to Rackspace failed (Code: %s): %s',
 						$errMsg->code,
-						$errMsg->message
+						$errMsg->details
 					));
 				} 
             }

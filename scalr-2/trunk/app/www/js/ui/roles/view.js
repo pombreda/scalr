@@ -86,7 +86,7 @@
 					{ header: "Available on", width: '240px', dataIndex: 'platforms', sortable: false, hidden: 'no'},
 					{ header: "Tags", width: '140px', dataIndex: 'tags', sortable: false, hidden: 'no'},
 					{ header: "Arch", width: '65px', dataIndex: 'architecture', sortable: true, hidden: 'no'},
-					{ header: "Status", width: '100px', dataIndex: 'status', sortable: true, hidden: 'no'},
+					{ header: "Status", width: '100px', dataIndex: 'status', sortable: false, hidden: 'no'},
 					{ header: "Scalr agent", width: '100px', dataIndex: 'generation', sortable: false, hidden: 'no'},
 					{ header: "Servers", width: '60px', dataIndex: 'used_servers', sortable: false, hidden: 'yes'}
 				]

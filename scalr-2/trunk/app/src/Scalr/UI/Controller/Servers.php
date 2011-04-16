@@ -96,6 +96,9 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 				
 				if ($this->getParam('platform') == SERVER_PLATFORMS::EUCALYPTUS)
 					$creInfo->SetProperties(array(EUCA_SERVER_PROPERTIES::REGION => $this->getParam('cloud_location')));
+
+				if ($this->getParam('platform') == SERVER_PLATFORMS::RACKSPACE)
+					$creInfo->SetProperties(array(RACKSPACE_SERVER_PROPERTIES::DATACENTER => $this->getParam('cloud_location')));
 					
 				if ($this->getParam('platform') == SERVER_PLATFORMS::NIMBULA)
 					$creInfo->SetProperties(array(NIMBULA_SERVER_PROPERTIES::CLOUD_LOCATION => 'nimbula-default'));
@@ -164,6 +167,7 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 		);
 		
 		$euca_locations = array();
+		$rs_locations = array();
 		
 		/*
 			SERVER_PLATFORMS::EC2 => 'Amazon EC2',
@@ -181,7 +185,11 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 				$platforms[] = array($k, $v);
 				if ($k == SERVER_PLATFORMS::EUCALYPTUS) {
 					foreach (PlatformFactory::NewPlatform($k)->getLocations() as $lk=>$lv)
-						$euca_locations[] = array($lk, $lv);	
+						$euca_locations[$lk] = $lv;	
+				}
+				elseif ($k == SERVER_PLATFORMS::RACKSPACE) {
+					foreach (PlatformFactory::NewPlatform($k)->getLocations() as $lk=>$lv)
+						$rs_locations[$lk] = $lv;	
 				}
 			}
 		}
@@ -193,7 +201,8 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 				'moduleParams' => array(
 					'platforms' 	=> $platforms,
 					'behaviors'		=> $behaviors,
-					'euca_locations'=> $euca_locations
+					'euca_locations'=> $euca_locations,
+					'rs_locations'	=> $rs_locations
 				),
 				'module' => $this->response->template->fetchJs('servers/import_step1.js')
 			));
@@ -291,46 +300,41 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 
 	public function sshConsoleAction()
 	{
-		try {
-			$DBServer = DBServer::LoadByID($this->getParam('serverId'));
+		$dBServer = DBServer::LoadByID($this->getParam('serverId'));
 
-			if ($this->session->getAuthToken()->hasAccessEnvironment($DBServer->envId)) {
-				if ($DBServer->remoteIp) {
-					
-					$DBFarm = $DBServer->GetFarmObject();
-					$dbRole = DBRole::loadById($DBServer->roleId);
+		if ($this->session->getAuthToken()->hasAccessEnvironment($dBServer->envId)) {
+			if ($dBServer->remoteIp) {
+				$dBFarm = $dBServer->GetFarmObject();
+				$dbRole = DBRole::loadById($dBServer->roleId);
 
-					$ssh_port = $dbRole->getProperty(DBRole::PROPERTY_SSH_PORT);
-					if (!$ssh_port)
-						$ssh_port = 22;
+				$sshPort = $dbRole->getProperty(DBRole::PROPERTY_SSH_PORT);
+				if (!$sshPort)
+					$sshPort = 22;
 
-					try {
-						$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
-							$DBServer->farmId,
-							$DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
-						);
-					} catch(Exception $e) {
-						$this->response->template->assignParam('error', $e->getMessage());
-					}
+				$sshKey = Scalr_Model::init(Scalr_Model::SSH_KEY)->loadGlobalByFarmId(
+					$dBServer->farmId,
+					$dBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_CLOUD_LOCATION)
+				);
 
-					$this->response->template->assignParam(
-						array(
-							"DBServer" => $DBServer,
-							"DBFarm"	=> $DBServer->GetFarmObject(),
-							"DBRole"	=> $DBServer->GetFarmRoleObject()->GetRoleObject(),
-							"host" => $DBServer->remoteIp,
-							"port" => $ssh_port,
-							"key" => base64_encode($sshKey->getPrivate())
-						)
-					);
-				}
-				else
-					$this->response->template->assignParam('error', _("Server not initialized yet"));
-			} else
-				$this->response->template->assignParam('error', _("Access denied"));
-		} catch (Exception $e) {
-			$this->response->template->assignParam('error', $e->getMessage());
-		}
+				$this->response->setJsonResponse(array(
+					'success' => true,
+					'moduleName' => $this->getModuleName('ui/servers/sshconsole.js'),
+					'moduleParams' => array(
+						'serverId' => $dBServer->serverId,
+						'remoteIp' => $dBServer->remoteIp,
+						'localIp' => $dBServer->localIp,
+						'farmName' => $dBFarm->Name,
+						'farmId' => $dBServer->farmId,
+						'roleName' => $dbRole->name,
+						"port" => $sshPort,
+						"key" => base64_encode($sshKey->getPrivate())
+					)
+				));
+			}
+			else
+				throw new Exception(_("Server not initialized yet"));
+		} else
+			throw new Exception(_("Access denied"));
 	}
 
 	public function xServerCancelOperationAction()
@@ -433,16 +437,12 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 				}
 				else
 					$row['uptime'] = '';
-				
-				$i_dns = $this->db->GetOne("SELECT value FROM server_properties WHERE server_id=? AND `name`=?", array(
-					$row['server_id'], SERVER_PROPERTIES::EXCLUDE_FROM_DNS
-				));
 
 				$r_dns = $this->db->GetOne("SELECT value FROM farm_role_settings WHERE farm_roleid=? AND `name`=?", array(
 					$row['farm_roleid'], DBFarmRole::SETTING_EXCLUDE_FROM_DNS
 				));
 
-				$row['excluded_from_dns'] = (!$i_dns && !$r_dns) ? false : true;
+				$row['excluded_from_dns'] = (!$DBServer->GetProperty(SERVER_PROPERTIES::EXCLUDE_FROM_DNS) && !$r_dns) ? false : true;
 			}
 
 			$this->response->setJsonResponse($response);
@@ -567,6 +567,34 @@ class Scalr_UI_Controller_Servers extends Scalr_UI_Controller
 					'labelWidth' => 220,
 					'items' => $it
 				);
+			}
+			
+			if (!$DBServer->IsSupported('0.5'))
+			{
+				$authKey = $DBServer->GetKey();
+				if (!$authKey) {
+					$authKey = Scalr::GenerateRandomKey(40);
+					$DBServer->SetProperty(SERVER_PROPERTIES::SZR_KEY, $authKey);
+				}	
+				
+				$DBServer->SetProperty(SERVER_PROPERTIES::SZR_KEY_TYPE, SZR_KEY_TYPE::PERMANENT);
+				
+				$form[] = array(
+					'xtype' => 'fieldset',
+					'title' => 'Upgrade from ami-scripts to scalarizr',
+					'labelWidth' => 220,
+					'items' => array(
+						'xtype' => 'textarea',
+						'hideLabel' => true,
+						'readOnly' => true,
+						'anchor' => '-20',
+						'value' => sprintf("wget ".CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/storage/scripts/amiscripts-to-scalarizr.py && python amiscripts-to-scalarizr.py -s %s -k %s -o queryenv-url=%s -o messaging_p2p.producer_url=%s",
+							$DBServer->serverId,
+							$authKey,
+							CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/query-env",
+							CONFIG::$HTTP_PROTO."://".CONFIG::$EVENTHANDLER_URL."/messaging"
+						)
+				));
 			}
 
 			$this->response->setJsonResponse(array(

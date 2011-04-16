@@ -32,7 +32,7 @@
      			{itemId: "option.ssh_key", 		text: 'Download SSH private key', menuHandler: function (item){
      				Scalr.Viewers.userLoadFile('/farms/' + loadParams['farmId'] + '/roles/' + item.currentRecordData.id + '/xGetRoleSshPrivateKey');
      			}},
-     			{itemId: "option.cfg", iconCls: 'scalr-menu-icon-configure', text:'Configure', href: "/farms_builder.php?id={farmid}&role_id={role_id}"},
+     			{itemId: "option.cfg", iconCls: 'scalr-menu-icon-configure', text:'Configure', href: "#/farms/{farmid}/edit?roleId={role_id}"},
      			{itemId: "option.stat", iconCls: 'scalr-menu-icon-stats', text:'View statistics', href: "/monitoring.php?role={id}&farmid={farmid}"},
      			{itemId: "option.info", iconCls: 'scalr-menu-icon-info', text:'Extended role information', href: "#/farms/" + loadParams['farmId'] + "/roles/{id}/extendedInfo"},
      			new Ext.menu.Separator({itemId: "option.mainSep"}),
@@ -97,7 +97,7 @@
 					{ header: "Role name", width: 40, dataIndex: 'name', sortable: false, hidden: 'no', tpl:
 						'<a href="#/roles/{role_id}/view">{name}</a>'
 					},
-					{header: "Image ID", width: 30, dataIndex: 'image_id', sortable: true, hidden: 'no', tpl:
+					{header: "Image ID", width: 30, dataIndex: 'image_id', sortable: false, hidden: 'no', tpl:
 						'<a href="#/roles/{role_id}/view">{image_id}</a>'
 					},
 					{ header: "Min servers", width: 15, dataIndex: 'min_count', sortable: false, align:'center', hidden: 'no' },

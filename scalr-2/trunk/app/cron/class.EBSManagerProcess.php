@@ -26,7 +26,7 @@
         	$db = Core::GetDBInstance(null, true);
 			
 			// Rotate MySQL master snapshots.
-			$list = $db->GetAll("SELECT farm_roleid FROM farm_role_settings WHERE name=?", array(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED));
+			$list = $db->GetAll("SELECT farm_roleid FROM farm_role_settings WHERE name=? AND value='1'", array(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED));
 			foreach ($list as $list_item)
 			{
 				try
@@ -42,7 +42,8 @@
 				
 				if ($DBFarm->Status == FARM_STATUS::RUNNING)
 				{					
-					$old_snapshots = $db->GetAll("SELECT * FROM storage_snapshots WHERE ismysql='1' AND farm_roleid=? AND `type`='ebs' ORDER BY id ASC", array($DBFarmRole->ID));
+					$old_snapshots = $db->GetAll("SELECT * FROM storage_snapshots WHERE ismysql='1' AND farm_roleid=? AND `type`='ebs' ORDER BY dtcreated ASC", array($DBFarmRole->ID));
+					
 					if (count($old_snapshots) > $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_SNAPS_ROTATE))
 					{
 						try
@@ -68,8 +69,8 @@
 										$db->Execute("DELETE FROM ebs_snaps_info WHERE snapid=?", array($snapinfo['id']));
 										$db->Execute("DELETE FROM storage_snapshots WHERE id=?", array($snapinfo['id']));
 									}
-															
-									throw $e;
+									else						
+										throw $e;
 								}
 								
 							}

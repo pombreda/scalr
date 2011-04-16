@@ -45,12 +45,24 @@
 					triggerAction: 'all',
 					selectOnFocus: false,
 					listeners:{'select':function(combo, record){
-						if (record.get('field1') == 'eucalyptus') {
-							form.findOne('itemId', 'euca_loc_combo').show();
-							form.findOne('itemId', 'euca_loc_combo').enable();
+						if (record.get('field1') == 'eucalyptus' || record.get('field1') == 'rackspace') {
+							
+							if (record.get('field1') == 'eucalyptus') {
+								var lstore = moduleParams['euca_locations'];
+							} else if (record.get('field1') == 'rackspace') {
+								var lstore = moduleParams['rs_locations'];
+							}
+							
+							form.findOne('itemId', 'loc_combo').store.loadData(lstore);
+							
+							form.findOne('itemId', 'loc_combo').setValue(form.findOne('itemId', 'loc_combo').store.getAt(0).get('id'));
+								
+							
+							form.findOne('itemId', 'loc_combo').show();
+							form.findOne('itemId', 'loc_combo').enable();
 						} else {
-							form.findOne('itemId', 'euca_loc_combo').hide();
-							form.findOne('itemId', 'euca_loc_combo').disable();
+							form.findOne('itemId', 'loc_combo').hide();
+							form.findOne('itemId', 'loc_combo').disable();
 						}
 						
 						form.doLayout();
@@ -59,13 +71,15 @@
 					anchor: '-20',
 					xtype: 'combo',
 					fieldLabel: 'Cloud location',
-					store: moduleParams['euca_locations'],
+					store: Scalr.data.createStore([], { idProperty: 'id', fields: [ 'id', 'name' ]}),
 					allowBlank: false,
-					itemId: 'euca_loc_combo',
+					valueField:'id',
+					displayField:'name',
+					itemId: 'loc_combo',
 					editable: false,
-					hiddenName: 'cloud_location',
+					hiddenName: 'cloudLocation',
 					autoSelect: true,
-					value:(moduleParams['euca_locations'][0]) ? moduleParams['euca_locations'][0][0] : '',
+					value: '',
 					forceSelection: true,
 					mode: 'local',
 					triggerAction: 'all',
@@ -100,12 +114,23 @@
 			}]
 		});
 		
-		if (form.findOne('itemId', 'platform_combo').getValue() == 'eucalyptus') {
-			form.findOne('itemId', 'euca_loc_combo').show();
-			form.findOne('itemId', 'euca_loc_combo').enable();
+		if (form.findOne('itemId', 'platform_combo').getValue() == 'eucalyptus' || form.findOne('itemId', 'platform_combo').getValue() == 'rackspace') {
+			
+			if (form.findOne('itemId', 'platform_combo').getValue() == 'eucalyptus') {
+				var lstore = moduleParams['euca_locations'];
+			} else if (form.findOne('itemId', 'platform_combo').getValue() == 'rackspace') {
+				var lstore = moduleParams['rs_locations'];
+			}
+			
+			form.findOne('itemId', 'loc_combo').store.loadData(lstore);
+			
+			form.findOne('itemId', 'loc_combo').setValue(form.findOne('itemId', 'loc_combo').store.getAt(0).get('id'));
+			
+			form.findOne('itemId', 'loc_combo').show();
+			form.findOne('itemId', 'loc_combo').enable();
 		} else {
-			form.findOne('itemId', 'euca_loc_combo').hide();
-			form.findOne('itemId', 'euca_loc_combo').disable();
+			form.findOne('itemId', 'loc_combo').hide();
+			form.findOne('itemId', 'loc_combo').disable();
 		}
 		
 		form.addButton({

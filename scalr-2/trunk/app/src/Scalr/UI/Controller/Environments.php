@@ -91,6 +91,15 @@ class Scalr_UI_Controller_Environments extends Scalr_UI_Controller
 					$params['rds.the_same_as_ec2'] = true;
 
 			} elseif ($platform == SERVER_PLATFORMS::RACKSPACE) {
+				$rows = $this->db->GetAll('SELECT * FROM client_environment_properties WHERE env_id = ? AND name LIKE "rackspace.%" AND `group` != "" GROUP BY `group', $env->id);
+				foreach ($rows as $value) {
+					$cloud = $value['group'];
+					$rsParams[$cloud] = array(
+						Modules_Platforms_Rackspace::USERNAME => $env->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME, true, $cloud),
+						Modules_Platforms_Rackspace::API_KEY => $env->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY, true, $cloud),
+						Modules_Platforms_Rackspace::IS_MANAGED => $env->getPlatformConfigValue(Modules_Platforms_Rackspace::IS_MANAGED, true, $cloud),
+					);
+				}
 				$params[Modules_Platforms_Rackspace::USERNAME] = $env->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME);
 				$params[Modules_Platforms_Rackspace::API_KEY] = $env->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY);
 
@@ -134,6 +143,7 @@ class Scalr_UI_Controller_Environments extends Scalr_UI_Controller
 				'env' => $env,
 				'params' => $params,
 				'eucaParams' => $eucaParams,
+				'rsParams'	=> (array)$rsParams,
 				'timezones' => $timezones
 			)
 		));
@@ -142,7 +152,7 @@ class Scalr_UI_Controller_Environments extends Scalr_UI_Controller
 	private function checkVar($name, $type, $env, $requiredError = '', $group = '')
 	{
 		$varName = str_replace('.', '_', ($group != '' ? $name . '.' . $group : $name));
-
+		
 		switch ($type) {
 			case 'int':
 				if ($this->getParam($varName)) {
@@ -185,7 +195,7 @@ class Scalr_UI_Controller_Environments extends Scalr_UI_Controller
 
 			case 'file':
 				if (isset($_FILES[$varName]['tmp_name']) && ($value = @file_get_contents($_FILES[$varName]['tmp_name'])) != '') {
-					return $value;
+					return trim($value);
 				} else {
 					$value = $env->getPlatformConfigValue($name, true, $group);
 					if ($value == '' && $requiredError)
@@ -332,29 +342,32 @@ class Scalr_UI_Controller_Environments extends Scalr_UI_Controller
 			$enabled[SERVER_PLATFORMS::NIMBULA] = false;
 		}
 		
-		// check for Rackspace
-		if ($this->getParam(SERVER_PLATFORMS::RACKSPACE . '_is_enabled') == 'on') {
-			$enabled[SERVER_PLATFORMS::RACKSPACE] = true;
-
-			$this->checkVarError = array();
-			$checkErr = array();
-
-			$pars[Modules_Platforms_Rackspace::USERNAME] = $this->checkVar(Modules_Platforms_Rackspace::USERNAME, 'string', $env, "Username required");
-			$pars[Modules_Platforms_Rackspace::API_KEY] = $this->checkVar(Modules_Platforms_Rackspace::API_KEY, 'string', $env, "API Key required");
-
-			if (! count($this->checkVarError)) {
-				// TODO: check Rackspace's credentials
+		$cloudsPars = array();
+		
+		/**** Rackspace ****/
+		$rsLocations = array('rs-ORD1', 'rs-LONx');
+		$enabled[SERVER_PLATFORMS::RACKSPACE] = false;
+		
+		foreach ($rsLocations as $rsLocation)
+		{
+			if ($this->getParam("rackspace_is_enabled_{$rsLocation}") == 'on') {
+				$enabled[SERVER_PLATFORMS::RACKSPACE] = true;
+				
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::USERNAME] = $this->checkVar(Modules_Platforms_Rackspace::USERNAME, 'string', $env, "Username required", $rsLocation);
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::API_KEY] = $this->checkVar(Modules_Platforms_Rackspace::API_KEY, 'string', $env, "API Key required", $rsLocation);
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::IS_MANAGED] = $this->checkVar(Modules_Platforms_Rackspace::IS_MANAGED, 'bool', $env, "", $rsLocation);			
 			}
-
-			$glErr = array_merge($glErr, $this->checkVarError);
-			$glCheckErr = array_merge($glCheckErr, $checkErr);
-		} else {
-			$enabled[SERVER_PLATFORMS::RACKSPACE] = false;
+			else {
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::USERNAME] = false;
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::API_KEY] = false;
+				$cloudsPars[$rsLocation][Modules_Platforms_Rackspace::IS_MANAGED] = false;
+			}
 		}
+		
+		/*******************/
 
 		// check for Eucalyptus
 		$clouds = $this->getParam('eucalyptusClouds');
-		$cloudsPars = array();
 		$cloudsDeleted = array();
 		if (count($clouds)) {
 			$enabled[SERVER_PLATFORMS::EUCALYPTUS] = true;

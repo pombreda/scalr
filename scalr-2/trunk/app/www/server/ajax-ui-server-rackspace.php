@@ -13,11 +13,12 @@
     		$this->environment = Scalr_Session::getInstance()->getEnvironment();
     	}
     	
-    	function GetFlavorsList($Region)
+    	function GetFlavorsList($cloudLocation)
     	{
     		$cs = Scalr_Service_Cloud_Rackspace::newRackspaceCS(
-				$this->environment->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME),
-				$this->environment->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY)
+				$this->environment->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME, true, $cloudLocation),
+				$this->environment->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY, true, $cloudLocation),
+				$cloudLocation
 			);			
 			
 			$retval = array();

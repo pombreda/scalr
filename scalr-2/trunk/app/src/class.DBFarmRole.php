@@ -94,7 +94,7 @@
 		const SETTING_MYSQL_BUNDLE_WINDOW_END_MM = 'mysql.pbw2_mm';
 		
 		const SETTING_MYSQL_EBS_SNAPS_ROTATE			= 'mysql.ebs.rotate';
-		const SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED	= 'mysql.ebs.snaps_rotation_enabled';
+		const SETTING_MYSQL_EBS_SNAPS_ROTATION_ENABLED	= 'mysql.ebs.rotate_snaps';
 		
 		const SETTING_MYSQL_BCP_ENABLED 				= 'mysql.enable_bcp';
 		const SETTING_MYSQL_BCP_EVERY 					= 'mysql.bcp_every';

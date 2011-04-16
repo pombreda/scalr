@@ -90,6 +90,7 @@ Ext.Loader = Ext.apply({}, {
         } else {
             script.onload = callback;
         }    
+        script.onerror = callback;
         
         return script;
     }

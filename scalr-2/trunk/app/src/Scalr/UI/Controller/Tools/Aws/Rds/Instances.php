@@ -13,7 +13,7 @@ class Scalr_UI_Controller_Tools_Aws_Rds_Instances extends Scalr_UI_Controller
 	{
 		$this->response->setJsonResponse(array(
 			'success' => true,
-			'module' => $this->response->template->fetchJs('tools/aws/rds/instances/view.js'),
+			'moduleName' => $this->getModuleName('ui/tools/aws/rds/instances/view.js'),
 			'moduleParams' => array(
 				'locations' => Scalr_UI_Controller_Platforms::getCloudLocations(SERVER_PLATFORMS::RDS, false)
 			)

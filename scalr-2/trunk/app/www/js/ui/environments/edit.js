@@ -313,34 +313,63 @@
 						anchor: '-20'
 					},
 					items: [{
-						xtype: 'checkbox',
-						name: 'rackspace.is_enabled',
-						checked: params['rackspace.is_enabled'],
-						hideLabel: true,
-						boxLabel: 'Enable platform',
-						listeners: {
-							'check': function (checkbox, checked) {
-								if (checked) {
-									form.getForm().findField('rackspace.username').enable();
-									form.getForm().findField('rackspace.api_key').enable();
-								} else {
-									form.getForm().findField('rackspace.username').disable();
-									form.getForm().findField('rackspace.api_key').disable();
-								}
-							}
-						}
+						xtype: 'fieldset',
+						title: 'Enable US cloud location (Datacenter: ORD)',
+						collapsed: !(moduleParams['rsParams']['rs-ORD1']),
+						deferredRender: false,
+						checkboxName: 'rackspace.is_enabled.rs-ORD1',
+						checkboxToggle:true,
+						forceLayout: true,
+						labelWidth: 100,
+						defaults: {
+							anchor: '-20'
+						},
+						items: [{
+							xtype: 'textfield',
+							fieldLabel: 'Username',
+							name: 'rackspace.username.rs-ORD1',
+							value: (moduleParams['rsParams']['rs-ORD1']) ? moduleParams['rsParams']['rs-ORD1']['rackspace.username'] : ''
+						}, {
+							xtype: 'textfield',
+							fieldLabel: 'API Key',
+							name: 'rackspace.api_key.rs-ORD1',
+							value: (moduleParams['rsParams']['rs-ORD1']) ? moduleParams['rsParams']['rs-ORD1']['rackspace.api_key'] : ''
+						}, {html:'&nbsp;'}, {
+							xtype: 'checkbox',
+							name: 'rackspace.is_managed.rs-ORD1',
+							checked: (moduleParams['rsParams']['rs-ORD1'] && moduleParams['rsParams']['rs-ORD1']['rackspace.is_managed']) ? true : false,
+							hideLabel: true,
+							boxLabel: 'Check this checkbox if your account is managed'
+						}]
 					}, {
-						xtype: 'textfield',
-						fieldLabel: 'Username',
-						name: 'rackspace.username',
-						value: params['rackspace.username'],
-						disabled: !params['rackspace.is_enabled']
-					}, {
-						xtype: 'textfield',
-						fieldLabel: 'API Key',
-						name: 'rackspace.api_key',
-						value: params['rackspace.api_key'],
-						disabled: !params['rackspace.is_enabled']
+						xtype: 'fieldset',
+						title: 'Enable UK cloud location (Datacenter: LON)',
+						collapsed: !(moduleParams['rsParams']['rs-LONx']),
+						deferredRender: false,
+						checkboxName: 'rackspace.is_enabled.rs-LONx',
+						checkboxToggle:true,
+						forceLayout: true,
+						labelWidth: 100,
+						defaults: {
+							anchor: '-20'
+						},
+						items: [{
+							xtype: 'textfield',
+							fieldLabel: 'Username',
+							name: 'rackspace.username.rs-LONx',
+							value: (moduleParams['rsParams']['rs-LONx']) ? moduleParams['rsParams']['rs-LONx']['rackspace.username'] : ''
+						}, {
+							xtype: 'textfield',
+							fieldLabel: 'API Key',
+							name: 'rackspace.api_key.rs-LONx',
+							value: (moduleParams['rsParams']['rs-LONx']) ? moduleParams['rsParams']['rs-LONx']['rackspace.api_key'] : ''
+						}, {html:'&nbsp;'}, {
+							xtype: 'checkbox',
+							name: 'rackspace.is_managed.rs-LONx',
+							checked: (moduleParams['rsParams']['rs-LONx'] && moduleParams['rsParams']['rs-LONx']['rackspace.is_managed']) ? true : false,
+							hideLabel: true,
+							boxLabel: 'Check this checkbox if your account is managed'
+						}]
 					}]
 				}, {
 					title: 'Nimbula',

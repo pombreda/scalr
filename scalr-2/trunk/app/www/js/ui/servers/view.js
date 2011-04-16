@@ -157,11 +157,11 @@
 					});
 				}},
 				{ itemId: "option.info", iconCls: 'scalr-menu-icon-info', text: 'Extended instance information', href: "#/servers/{server_id}/extendedInfo" },
-				{itemId: "option.loadStats", iconCls: 'scalr-menu-icon-stats', text: 'Load statistics', href: "/server_view_monitoring_info.php?farmid={farm_id}&role={farm_roleid}&server_index={index}"},
+				{itemId: "option.loadStats", iconCls: 'scalr-menu-icon-stats', text: 'Load statistics', href: "/monitoring.php?farmid={farm_id}&role={farm_roleid}&server_index={index}"},
 				new Ext.menu.Separator({itemId: "option.infoSep"}),
 				{ itemId: "option.sync", text: 'Create server snapshot', href: "#/servers/{server_id}/createSnapshot" },
 				new Ext.menu.Separator({itemId: "option.syncSep"}),
-				{itemId: "option.editRole", iconCls: 'scalr-menu-icon-configure', text: 'Configure role in farm', href: "/farms_builder.php?id={farm_id}&role_id={role_id}"},
+				{itemId: "option.editRole", iconCls: 'scalr-menu-icon-configure', text: 'Configure role in farm', href: "#/farms/{farm_id}/edit?roleId={role_id}"},
 				new Ext.menu.Separator({itemId: "option.procSep"}), //TODO:
 				{
 					itemId: 'option.dnsEx',
@@ -370,9 +370,11 @@
 							'<tpl if="status != &quot;Running&quot;">-</tpl>', { laGetFunction: laGetFunction }
 						)
 					},
-					{ header: "SSH", width: '38px', dataIndex: 'id', sortable: false, align:'center', hidden: 'no', tpl: new Ext.XTemplate(
+					{ header: "Actions", width: '80px', dataIndex: 'id', sortable: false, align:'center', hidden: 'no', tpl: new Ext.XTemplate(
 						'<tpl if="(status == &quot;Running&quot; || status == &quot;Initializing&quot;) && index != &quot;0&quot;">' +
-							'<a href="#" onclick="window.open(\'/servers/{server_id}/sshConsole\', \'serverssshconsole{[this.getServerId(values.server_id)]}\', \'width=1000,height=725\'); return false;" ><img style="margin-right:3px;" src="/images/terminal.png"></a>' +
+							'<a style="float:left;margin-right:2px;margin-left:4px;" href="#/servers/{server_id}/sshConsole" target="_blank"><img style="margin-right:3px;" src="/images/terminal.png"></a>' +
+							'<div style="float:left;margin-right:2px;cursor:pointer;" onClick="document.location.href =\'/monitoring.php?farmid={farm_id}&role={farm_roleid}&server_index={index}\';" class="scalr-menu-icon-stats">&nbsp;</div>' +
+							'<div style="float:left;cursor:pointer;" onClick="document.location.href =\'#/scripts/execute?serverId={server_id}\';" class="scalr-menu-icon-execute">&nbsp;</div>' +
 						'</tpl>' +
 						'<tpl if="! ((status == &quot;Running&quot; || status == &quot;Initializing&quot;) && index != &quot;0&quot;)">' +
 							'<img src="/images/false.gif">' +

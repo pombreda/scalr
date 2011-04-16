@@ -159,6 +159,7 @@
 							"%SZR_IMPORT_STRING%",
 							"%DEV%",
 							"%RECIPES%",
+							"%BUILD_ONLY%",
 							"\r\n"
 						), array(
 							$DBServer->platform,
@@ -166,6 +167,7 @@
 							$command,
 							'0',
 							$recipes,
+							'0',
 							"\n"
 						), $scriptContents);
 						

@@ -34,7 +34,7 @@
 			//TODO:
 
 			// ACCOUNT_USER ~ ACCOUNT_ADMIN
-			if ($group == self::ACCOUNT_USER)
+			if ($group & self::ACCOUNT_USER)
 				$group |= self::ACCOUNT_ADMIN;
 
 			return (($this->session->getUserGroup() & $group) ? true : false);

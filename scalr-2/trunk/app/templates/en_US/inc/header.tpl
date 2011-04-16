@@ -36,11 +36,16 @@
 
 	{if $smarty.get.js_debug}
 		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-core-debug.js'}"></script>
+		<script type="text/javascript" src="{get_static_url path='/js/debug.js'}"></script>
 	{else}
 		<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-core.js'}"></script>
 	{/if}
 
 	<script type="text/javascript" src="{get_static_url path='/js/ui-ng/viewers.js'}"></script>
+	<script type="text/javascript" src="{get_static_url path='/js/utils.js'}"></script>
+	{if newUING != ''}
+		<script type="text/javascript" src="{get_static_url path='/js/init.js'}"></script>
+	{/if}
 
 	{if $newUING == ''}
 	<script type="text/javascript" src="{get_static_url path='/js/extjs-3.3.1/ext-grids.js'}"></script>
@@ -98,6 +103,13 @@
 		Scalr.data.UrlCurrent = '';
 
 		// {literal}
+
+		Scalr.cache = {};
+		Scalr.regPage = function (type, fn) {
+			Scalr.cache[type] = fn;
+		};
+
+		Scalr.User = {};
 
 		Ext.onReady(function () {
 			Ext.BLANK_IMAGE_URL = Ext.isIE6 || Ext.isIE7 || Ext.isAir ?
@@ -281,6 +293,7 @@
 					document.location.href = "#/dashboard";
 			});
 
+			// TODO: delete
 			Ext.Ajax.handleResponse = function (response) {
 				try {
 					response.responseJson = Ext.decode(response.responseText);
@@ -295,53 +308,12 @@
 		    	navmenuTb.setWidth(calculateNavMenuWidth());
 			});
 
-			if (window.console) {
-				Ext.Ajax.on('requestcomplete', function (conn, response, options) {
-					try {
-						if (response.getResponseHeader) {
-							var s = response.getResponseHeader('X-Scalr-Debug');
-							if (Ext.isDefined(s)) {
-								s = s.split('\n');
-								for (var i = 0; i < s.length; i++) {
-									try {
-										console.debug(Ext.decode(s[i]));
-									} catch (e) {
-										console.debug(s[i]);
-									}
-								}
-							}
-						}
-					} catch (e) {
-						console.error(e);
-					}
-				});
-
-				Ext.Ajax.on('requestexception', function (conn, response, options) {
-					try {
-						if (response.getResponseHeader) {
-							var s = response.getResponseHeader('X-Scalr-Debug');
-							if (Ext.isDefined(s)) {
-								s = s.split('\n');
-								for (var i = 0; i < s.length; i++) {
-									try {
-										console.debug(Ext.decode(s[i]));
-									} catch (e) {
-										console.debug(s[i]);
-									}
-								}
-							}
-						}
-					} catch (e) {
-						console.error(e);
-					}
-				});
-			}
-
-			Ext.Ajax.defaultHeaders = { 'X-Ajax-Scalr': 1 };
+			Ext.Ajax.defaultHeaders = { 'X-Ajax-Scalr': 1 }; // TODO: delete, can use X-Requested-With: XMLHttpRequest
 			Ext.Ajax.timeout = 60000;
-			Ext.data.Connection.defaultHeaders = { 'X-Ajax-Scalr': 1 };
+			Ext.data.Connection.defaultHeaders = { 'X-Ajax-Scalr': 1 }; // TODO: delete
 
-			/*Ext.apply(Ext.form.FormPanel, { initComponent: function () {
+			/* TODO: delete
+			Ext.apply(Ext.form.FormPanel, { initComponent: function () {
 				console.log(this);
 				alert('1');
 				this.baseParams = this.baseParams || {};
@@ -353,7 +325,7 @@
 			//Ext.apply(Ext.form.FormPanel, { baseParams: { 'X_Ajax_Scalr': 1 }});
 
 
-
+			// old code
 			if (Scalr.data.InputParams && Scalr.data.InputParams.scalrMessages) {
 				for (var i = 0; i < Scalr.data.InputParams.scalrMessages.length; i++) {
 					var m = Scalr.data.InputParams.scalrMessages[i];
@@ -361,121 +333,8 @@
 				}
 			}
 
-				var win = undefined;
-				if (newUING != '') {
-					Ext.Ajax.on('requestexception', function(conn, response, options) {
-						if (Ext.MessageBox.isVisible())
-							Ext.MessageBox.hide();
-
-						if (response.status == 403) {
-							//Scalr.Viewers.ErrorMessage('Session expired. <a href="/login.html">Please login again.</a>');
-							//return;
-
-							if (win == undefined) {
-								win = new Ext.Window({
-									title: '<span style="color: #D50000">Session expired. Please login again</span>',
-									modal: true,
-									closable: false,
-									resizable: false,
-									draggable: false,
-									bodyStyle: 'padding: 5px',
-									buttonAlign: 'center',
-									width: 400,
-									height: 150,
-									layout: 'hbox',
-									layoutConfig: {
-										align: 'stretch',
-										pack: 'start'
-									},
-									items: [{
-										width: 20,
-										bodyStyle: 'background-color: inherit',
-										border: false
-									}, {
-										flex: 1,
-										layout: 'form',
-										border: false,
-										itemId: 'form',
-										bodyStyle: 'background-color: inherit',
-										labelWidth: 70,
-										items: [{
-											xtype: 'textfield',
-											fieldLabel: 'E-mail',
-											itemId: 'login',
-											name: 'login',
-											anchor: '-20',
-											allowBlank: false,
-											applyTo: Ext.get('body-login').child('[type="text"]')
-										}, {
-											xtype: 'textfield',
-											fieldLabel: 'Password',
-											inputType: 'password',
-											itemId: 'pass',
-											name: 'pass',
-											anchor: '-20',
-											allowBlank: false,
-											applyTo: Ext.get('body-login').child('[type="password"]')
-										}, {
-											xtype: 'checkbox',
-											name: 'keep_session',
-											inputValue: 1,
-											boxLabel: 'Keep me logged in until I log off',
-											hideLabel: true
-										}]
-									}],
-									buttons: [{
-										text: 'Login',
-										handler: function (comp) {
-											var cont = comp.ownerCt.ownerCt.getComponent('form'), login = cont.getComponent('login'), pass = cont.getComponent('pass');
-
-											login.isValid();
-											pass.isValid();
-
-											//Ext.get('body-login').child('form', true).submit(); // to save credentials need submit form, may be in future
-											// TODO: check under who we logged in, may be it's another user'
-
-											if (login.isValid() && pass.isValid()) {
-												Ext.Ajax.request({
-													url: '/login.php',
-													params: {
-														login: login.getValue(),
-														pass: pass.getValue()
-													},
-													success: function (response) {
-														var result = Ext.decode(response.responseText);
-														if (result.result == 'ok') {
-															win.hide();
-															if (reloadPage)
-																window.onhashchange();
-															else
-																Scalr.Viewers.InfoMessage('You have been logged in, but your previous request has not been performed due to lost session error. Please perform it again.');
-														} else {
-															login.markInvalid(result.message);
-															pass.markInvalid(result.message);
-
-														}
-													}
-												});
-											}
-										}
-									}, {
-										text: 'Cancel',
-										handler: function () {
-											document.location.href = '/login.html';
-										}
-									}]
-								});
-							}
-
-						win.show();
-
-					} else if (response.isTimeout) {
-						Scalr.Viewers.ErrorMessage('Server didn\'t respond in time. Please try again in a few minutes.');
-					} else {
-						Scalr.Viewers.ErrorMessage('Cannot proceed your request at the moment. Please try again later.');
-					}
-				});
-			} else {
+			// TODO: delete
+			if (newUING == '') {
 				Ext.Ajax.on('requestexception', function() {
 					if (Ext.MessageBox.isVisible())
 						Ext.MessageBox.hide();
@@ -591,26 +450,63 @@
 									var result = Ext.decode(response.responseText), obj, cacheId = response.getResponseHeader('X-Scalr-Cache-Id');
 
 									if (result.success == true) {
-										result.module = "(function() { return " + result.module + "; })();";
-										obj = eval(result.module);
+										if (Ext.isDefined(result.module)) {
+											result.module = "(function() { return " + result.module + "; })();";
+											obj = eval(result.module);
 
-										var cache = cacheLink(link, cacheId);
-										Ext.apply(param, cache.scalrParamGets(link));
+											var cache = cacheLink(link, cacheId);
+											Ext.apply(param, cache.scalrParamGets(link));
 
-										var container = obj.create(param, result.moduleParams);
-										if (Ext.isObject(container)) {
-											container.style = container.style || {};
-											Ext.apply(container.style, { position: 'absolute' });
-											Ext.apply(container, cache);
-											container.scalrOptions = container.scalrOptions || {};
-											Ext.applyIf(container.scalrOptions, {
-												'reload': true, // close window before show other one
-												'modal': false, // mask prev window and show new one
-												'maximize': '' // maximize which sides (all, width, height, none (default))
-											});
+											var container = obj.create(param, result.moduleParams);
+											if (Ext.isObject(container)) {
+												container.style = container.style || {};
+												Ext.apply(container.style, { position: 'absolute' });
+												Ext.apply(container, cache);
+												container.scalrOptions = container.scalrOptions || {};
+												Ext.applyIf(container.scalrOptions, {
+													'reload': true, // close window before show other one
+													'modal': false, // mask prev window and show new one
+													'maximize': '' // maximize which sides (all, width, height, none (default))
+												});
 
-											Scalr.data.WindowContainer.add(container);
-											Scalr.data.WindowContainer.layout.setActiveItem(container);
+												Scalr.data.WindowContainer.add(container);
+												Scalr.data.WindowContainer.layout.setActiveItem(container);
+											}
+										} else {
+											var c = result.moduleName.page;
+
+											var p = function(c, response, result) {
+												var cache = cacheLink(link, cacheId);
+												Ext.apply(param, cache.scalrParamGets(link));
+
+												var container = Scalr.cache[c](param, result.moduleParams);
+												if (Ext.isObject(container)) {
+													container.style = container.style || {};
+													Ext.apply(container.style, { position: 'absolute' });
+													Ext.apply(container, cache);
+													container.scalrOptions = container.scalrOptions || {};
+													Ext.applyIf(container.scalrOptions, {
+														'reload': true, // close window before show other one
+														'modal': false, // mask prev window and show new one
+														'maximize': '' // maximize which sides (all, width, height, none (default))
+													});
+
+													Scalr.data.WindowContainer.add(container);
+													Scalr.data.WindowContainer.layout.setActiveItem(container);
+												}
+											}, n = p.createCallback(c, response, result);
+
+											if (Ext.isDefined(Scalr.cache[c])) {
+												n();
+											} else {
+												var sc = [ result.moduleName.file ];
+												if (result.moduleRequires)
+													sc = sc.concat(result.moduleRequires);
+
+												Ext.Loader.load(sc, function () {
+													n();
+												});
+											}
 										}
 
 									} else if (result.error) {

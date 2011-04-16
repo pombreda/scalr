@@ -51,7 +51,7 @@ class Scalr_UI_Controller_Tools_Aws_Ec2_Reserved extends Scalr_UI_Controller
 			$rows = array($rows);
 
 		foreach ($rows as $pv)
-			$rowz[] = (array)$vp;
+			$rowz[] = (array)$pv;
 
 		$response = $this->buildResponseFromData($rowz);
 

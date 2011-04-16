@@ -29,14 +29,12 @@ class Scalr_UI_Response
 
 	public function pageNotFound()
 	{
-		$this->template->messageError('Requested page not found');
-		$this->setRedirect('/');
+		throw new Exception('Requested page not found');
 	}
 
 	public function pageAccessDenied()
 	{
-		$this->template->messageError('Access denied');
-		$this->setRedirect('/');
+		throw new Exception('Access denied');
 	}
 
 	/*

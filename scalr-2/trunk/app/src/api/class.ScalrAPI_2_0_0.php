@@ -555,6 +555,15 @@
 			if (!$farminfo)
 				throw new Exception(sprintf("Farm #%s not found", $FarmID));
 			
+			/*
+			if ($FarmRoleID)
+			{
+				$dbFarmRole = DBFarmRole::LoadByID($FarmRoleID);
+				if (!$dbFarmRole->FarmID != $FarmID)
+					throw new Exception (sprintf("FarmRole #%s not found on farm #%s", $FarmRoleID, $FarmID));
+			}
+			*/
+				
 			if (!$Revision)
 				$Revision = 'latest';
 				
@@ -634,7 +643,10 @@
 					
 					$msg = new Scalr_Messaging_Msg_ExecScript($event_name);
 					$msg->meta[Scalr_Messaging_MsgMeta::EVENT_ID] = "FRSID-{$farm_rolescript_id}";
-					$DBServer->SendMessage($msg, true);
+					
+					$isEventNotice = !$DBServer->IsSupported("0.5");
+					
+					$DBServer->SendMessage($msg, $isEventNotice);
 				}
 			}
 			

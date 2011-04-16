@@ -601,10 +601,12 @@
 	        	
 				$vpcPrivateIp = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_PRIVATE_IP);
 		        $vpcSubnetId = $DBServer->GetFarmRoleObject()->GetSetting(DBFarmRole::SETTING_AWS_VPC_SUBNET_ID);
-		        if ($vpcPrivateIp && $vpcSubnetId)
+		        if ($vpcSubnetId)
 		        {
 		        	$RunInstancesType->subnetId = $vpcSubnetId;
-		        	$RunInstancesType->privateIpAddress = $vpcPrivateIp;
+		        	
+		        	if ($vpcPrivateIp)
+		        		$RunInstancesType->privateIpAddress = $vpcPrivateIp;
 		        }
 			}
 			else 
@@ -904,7 +906,7 @@
 		private function GetServerAvailZone(DBServer $DBServer, $EC2Client, Scalr_Server_LaunchOptions $launchOptions)
 		{
 			if ($DBServer->status == SERVER_STATUS::TEMPORARY)
-				return "{$launchOptions->cloudLocation}a";
+				return false;
 			
 			$server_avail_zone = $DBServer->GetProperty(EC2_SERVER_PROPERTIES::AVAIL_ZONE);
 			

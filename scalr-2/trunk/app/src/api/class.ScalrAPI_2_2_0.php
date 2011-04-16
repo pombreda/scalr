@@ -15,10 +15,10 @@
 				if ($dbFarmRole->GetRoleObject()->hasBehavior(ROLE_BEHAVIORS::MYSQL))
 				{
 					$itm->{"MySQLProperties"} = new stdClass();
-					$itm->{"MySQLProperties"}->{"LastBackupTime"} = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BCP_TS);
-					$itm->{"MySQLProperties"}->{"LastBundleTime"} = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BUNDLE_TS);
-					$itm->{"MySQLProperties"}->{"IsBackupRunning"} = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_IS_BCP_RUNNING);
-					$itm->{"MySQLProperties"}->{"IsBundleRunning"} = $DBFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING);
+					$itm->{"MySQLProperties"}->{"LastBackupTime"} = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BCP_TS);
+					$itm->{"MySQLProperties"}->{"LastBundleTime"} = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_LAST_BUNDLE_TS);
+					$itm->{"MySQLProperties"}->{"IsBackupRunning"} = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_IS_BCP_RUNNING);
+					$itm->{"MySQLProperties"}->{"IsBundleRunning"} = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_IS_BUNDLE_RUNNING);
 				}
 			}
 			

@@ -70,7 +70,7 @@
 					style: 'margin-bottom: 10px',
 					anchor:'-20'
 				}), new Scalr.Viewers.WarningPanel({
-					html: 'First line must contain shebang (#!/path/to/interpreter',
+					html: 'First line must contain shebang (#!/path/to/interpreter)',
 					style: 'margin-bottom: 10px',
 					anchor:'-20'
 				}), {

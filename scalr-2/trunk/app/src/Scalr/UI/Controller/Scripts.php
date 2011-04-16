@@ -17,7 +17,7 @@ class Scalr_UI_Controller_Scripts extends Scalr_UI_Controller
 	
 	public function hasAccess()
 	{
-		return $this->session->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER);
+		return $this->session->getAuthToken()->hasAccess(Scalr_AuthToken::ACCOUNT_USER | Scalr_AuthToken::SCALR_ADMIN);
 	}
 
     static public function getCustomVariables($template)

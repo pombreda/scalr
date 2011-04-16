@@ -585,6 +585,13 @@ div.viewers-listview-row-options-btn {
 	background-position: 0px -160px;
 }
 
+.scalr-menu-icon-mysql {
+	background: url('/images/ui-ng/icons/menu_icons_sprite.png') no-repeat;
+	height:16px;
+	width:16px;
+	background-position: 0px -176px;
+}
+
 .scalr-mb-icon-info {
 	background: url('/images/ui-ng/icons/mb_icons_sprite.png') no-repeat;
 	height:16px;

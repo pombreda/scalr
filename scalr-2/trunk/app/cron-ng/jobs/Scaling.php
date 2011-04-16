@@ -318,8 +318,6 @@
 					catch(Exception $e){
 						Logger::getLogger(LOG_CATEGORY::SCALING)->error($e->getMessage());
 					}
-			                                        
-            		break;
             	}
             }
 		}

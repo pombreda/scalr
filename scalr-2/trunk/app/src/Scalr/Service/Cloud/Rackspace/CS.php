@@ -3,9 +3,9 @@
 	class Scalr_Service_Cloud_Rackspace_CS extends Scalr_Service_Cloud_Rackspace_Connection
 	{
 
-		public function __construct ($user, $key)
+		public function __construct ($user, $key, $cloudLocation)
 		{
-			parent::__construct($user, $key);
+			parent::__construct($user, $key, $cloudLocation);
 		}
 		
  

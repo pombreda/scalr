@@ -188,8 +188,8 @@ class Scalr_UI_Controller_Core extends Scalr_UI_Controller
 			'environmentId' => array('type' => 'int')
 		));
 
-		$this->response->setJsonDump($this->getParam('environmentId'));
-		$this->response->setJsonDump($this->request->debugParams());
+		//$this->response->setJsonDump($this->getParam('environmentId'));
+		//$this->response->setJsonDump($this->request->debugParams());
 
 		$env = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadById($this->getParam('environmentId'));
 		// TODO: replace with authToken->hasAccessEnvironment()
@@ -204,5 +204,16 @@ class Scalr_UI_Controller_Core extends Scalr_UI_Controller
 				'success' => false,
 				'error' => _("Error switching environment: \"Access denied\"")
 			));
+	}
+
+	public function loadUIAction()
+	{
+		$this->response->setJsonResponse(array(
+			'success' => true,
+			'user' => array(
+				'userId' => $this->session->getUserId(),
+				'clientId' => $this->session->getClientId()
+			)
+		));
 	}
 }

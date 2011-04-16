@@ -308,8 +308,9 @@
        			elseif ($dbserver->platform == SERVER_PLATFORMS::RACKSPACE) {
 			       	$env = $dbserver->GetEnvironmentObject();
 			       	$cs = Scalr_Service_Cloud_Rackspace::newRackspaceCS(
-			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME),
-			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY)
+			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::USERNAME, true, $dbserver->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER)),
+			       		$env->getPlatformConfigValue(Modules_Platforms_Rackspace::API_KEY, true, $dbserver->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER)),
+			       		$dbserver->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER)
 			       	);
 			       	
 			       	$csServer = null;
@@ -336,7 +337,7 @@
        					RACKSPACE_SERVER_PROPERTIES::IMAGE_ID => $csServer->imageId,
        					RACKSPACE_SERVER_PROPERTIES::FLAVOR_ID => $csServer->flavorId,
        					RACKSPACE_SERVER_PROPERTIES::HOST_ID => $csServer->hostId,
-       					RACKSPACE_SERVER_PROPERTIES::DATACENTER => 'rs-ORD1',
+       					RACKSPACE_SERVER_PROPERTIES::DATACENTER => $dbserver->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER),
        					SERVER_PROPERTIES::ARCHITECTURE => $message->architecture,
        				));
        			}

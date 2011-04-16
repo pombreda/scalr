@@ -13,7 +13,7 @@
 	</node>
 
 	<node title="Server Farms" id='server_farms'>
-		<item href="/farms_builder.php">Build new</item>		
+		<item href="#/farms/build">Build new</item>		
 		<separator />
         <item href="#/farms/view" search="SELECT COUNT(*) FROM farms WHERE name LIKE '%s' AND env_id ='{ENV_ID}'">View all</item>
 	</node>
@@ -75,11 +75,6 @@
 		<separator />
 		<node title="Eucalyptus">
 			<item href="/sec_groups_view.php?platform=eucalyptus">Security groups</item>	
-			<!-- 
-			<node title="Elastic Block Storage">
-				<item href="/ebs_manage.php?platform=eucalyptus">Volumes &amp; Snapshots</item>
-			</node>
-			 -->
 		</node>
 		<separator />
 		<node title="Amazon Web Services">
@@ -94,9 +89,10 @@
 			<node title="Amazon EC2">
 				<item href="/sec_groups_view.php?platform=ec2">Security groups</item>
 				<separator />	
-				<item href="/elastic_ips.php">Elastic IPs</item>		
+				<item href="#/tools/aws/ec2/eips">Elastic IPs</item>	
 				<node title="Elastic Block Storage">
-					<item href="/ebs_manage.php?platform=ec2">Volumes &amp; Snapshots</item>
+					<item href="#/tools/aws/ec2/ebs/volumes">Manage volumes</item>
+					<item href="#/tools/aws/ec2/ebs/snapshots">Manage snapshots</item>
 				</node>
 		        <separator />
                 <node title="Spot instances">

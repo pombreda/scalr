@@ -26,9 +26,9 @@ new Scalr.Viewers.FarmRolesEditTab({
 		
 		this.loadMask.show();
 		Ext.Ajax.request({
-			url: '/server/grids/aws_vpc_subnet_list.php',
+			url: '/tools/aws/vpc/subnets/xListViewSubnets',
 			params: {
-				cloud_location: record.get('cloud_location')
+				cloudLocation: record.get('cloud_location')
 			},
 			success: function(response, options) {
 				var result = Ext.decode(response.responseText);

@@ -132,3 +132,4 @@ Scalr.data.createStore = function (data, config) {
 		data: data
 	});
 };
+Scalr.utils.CreateStore = Scalr.data.createStore;

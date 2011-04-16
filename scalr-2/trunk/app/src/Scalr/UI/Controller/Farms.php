@@ -28,6 +28,74 @@ class Scalr_UI_Controller_Farms extends Scalr_UI_Controller
 		));
 	}
 
+	public function editAction()
+	{
+		$this->buildAction();
+	}
+
+	public function buildAction()
+	{
+		$this->request->defineParams(array(
+			'farmId' => array('type' => 'int'),
+			'roleId' => array('type' => 'int')
+		));
+
+		$farmId = $this->getParam('farmId');
+		$roleId = $this->getParam('roleId');
+
+		$moduleParams = array(
+			'farmId' => $farmId,
+			'roleId' => $roleId,
+			'currentTimeZone' => @date_default_timezone_get(),
+			'currentTime' => date("D h:i a"),
+			'currentEnvId' => $this->session->getEnvironmentId(),
+			'groups' => ROLE_GROUPS::GetName(null, true)
+		);
+
+		$platforms = Scalr_UI_Controller_Platforms::getEnabledPlatforms();
+		$locationsList = array();
+
+		foreach ($platforms as $platform => $name) {
+			$locationsList[$platform] = PlatformFactory::NewPlatform($platform)->getLocations();
+		}
+
+		if (empty($platforms))
+			throw new Exception('Before building new farm you need to configure environment and setup cloud credentials');
+
+		$moduleParams['platforms'] = $platforms;
+		$moduleParams['locations'] = $locationsList;
+
+		$this->response->setJsonResponse(array(
+			'success' => true,
+			'moduleName' => $this->getModuleName('ui/farms/builder.js'),
+			'moduleParams' => $moduleParams,
+			'moduleRequires' => array(
+				$this->getModuleName('ui-ng/viewers/SelRolesViewer.js', true),
+				$this->getModuleName('ui-ng/viewers/AllRolesViewer.js', true),
+				//$this->getModuleName('highlight/highlight.pack.js') // TODO: enable when it's ready
+
+				$this->getModuleName('ui/farms/builder/tab.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/balancing.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/cloudwatch.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/dns.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/ebs.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/eips.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/euca.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/mysql.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/nimbula.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/params.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/placement.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/rsplacement.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/rds.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/scaling.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/scripting.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/servicesconfig.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/timeouts.js', true),
+				$this->getModuleName('ui/farms/builder/tabs/vpc.js', true)
+			)
+		));
+	}
+
 	public function xLaunchAction()
 	{
 		$this->request->defineParams(array(

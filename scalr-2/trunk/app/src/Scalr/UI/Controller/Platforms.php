@@ -28,4 +28,16 @@ class Scalr_UI_Controller_Platforms extends Scalr_UI_Controller
 		
 		return $locations;
 	}
+
+	static public function getEnabledPlatforms()
+	{
+		$ePlatforms = Scalr_Session::getInstance()->getEnvironment()->getEnabledPlatforms();
+		$lPlatforms = SERVER_PLATFORMS::GetList();
+		$platforms = array();
+
+		foreach ($ePlatforms as $platform)
+			$platforms[$platform] = $lPlatforms[$platform];
+
+		return $platforms;
+	}
 }

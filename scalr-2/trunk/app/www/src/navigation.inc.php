@@ -81,7 +81,7 @@
 				$itemFarm = $farmList->addChild('item','Manage');
 					$itemFarm->addAttribute('href', "#/farms/{$farm_row['id']}/view");
 				$itemFarm = $farmList->addChild('item','Edit');
-					$itemFarm->addAttribute('href', "/farms_builder.php?id={$farm_row['id']}");
+					$itemFarm->addAttribute('href', "#/farms/{$farm_row['id']}/edit");
 				$itemFarm = $farmList->addChild('separator');			
 				$itemFarm = $farmList->addChild('item',"List farm's roles");
 					$itemFarm->addAttribute('href', "#/farms/{$farm_row['id']}/roles");								

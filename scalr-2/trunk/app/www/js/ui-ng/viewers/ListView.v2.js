@@ -818,6 +818,7 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 		this.store.on({
 			scope: this,
 			beforeload: function () {
+				this.listView.getTemplateTarget().update();
 				Scalr.Utils.CreateProcessBox({
 					type: 'action',
 					msg: 'Loading data. Please wait...'
@@ -853,13 +854,11 @@ Scalr.Viewers.ListView = Ext.extend(Ext.Panel, {
 							e.preventDefault();
 
 						} else if (Ext.isObject(item.request)) {
-							var r = Ext.apply({}, item.request);
+							var r = Scalr.utils.CloneObject(item.request);
 							r.params = r.params || {};
 
-							if (Ext.isObject(r.confirmBox)) {
-								var tpl = new Ext.Template(r.confirmBox.msg).compile();
-								r.confirmBox.msg = tpl.apply(item.currentRecordData);
-							}
+							if (Ext.isObject(r.confirmBox))
+								r.confirmBox.msg = new Ext.Template(r.confirmBox.msg).applyTemplate(item.currentRecordData);
 
 							if (Ext.isFunction(r.dataHandler)) {
 								r.params = Ext.apply(r.params, r.dataHandler(item.currentRecord));

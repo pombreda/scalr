@@ -88,19 +88,17 @@
 				{itemId: "option.usageStats", text: 'Usage statistics', href: "/farm_usage_stats.php?farmid={id}"},
 				{itemId: "option.loadStats", iconCls: 'scalr-menu-icon-stats', text: 'Load statistics', href: "/monitoring.php?farmid={id}"},
 	
-				{itemId: "option.ebs",			text: 'EBS usage', 				href: "/ebs_manage.php?farmid={id}"},
-				{itemId: "option.eip",			text: 'Elastic IPs usage', 		href: "/elastic_ips.php?farmid={id}"},
 				{itemId: "option.events",		text: 'Events & Notifications', href: "#/farms/{id}/events"},
 	
 				new Ext.menu.Separator({itemId: "option.mysqlSep"}),
 	
-				{itemId: "option.mysql",		text: 'MySQL status', 			href: "/farm_mysql_info.php?farmid={id}"},
+				{itemId: "option.mysql", iconCls: 'scalr-menu-icon-mysql', text: 'MySQL status', href: "/farm_mysql_info.php?farmid={id}"},
 				{itemId: "option.script", iconCls: 'scalr-menu-icon-execute', text: 'Execute script', href: "#/scripts/execute?farmId={id}"},
 	
 				new Ext.menu.Separator({itemId: "option.logsSep"}),
 				{itemId: "option.logs", iconCls: 'scalr-menu-icon-logs', text: 'View log', href: "#/logs/system?farmId={id}"},
 				new Ext.menu.Separator({itemId: "option.editSep"}),
-				{itemId: "option.edit", iconCls: 'scalr-menu-icon-configure', text: 'Configure', href: "/farms_builder.php?id={id}"},
+				{itemId: "option.edit", iconCls: 'scalr-menu-icon-configure', text: 'Edit', href: "#/farms/{id}/edit"},
 			{
 				itemId: 'option.delete',
 				iconCls: 'scalr-menu-icon-delete',

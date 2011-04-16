@@ -29,8 +29,7 @@
 	{
        switch($object_type)
 		{
-			case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("ebs_manage.php"); 			break;
-			case AUTOSNAPSHOT_TYPE::EBSArraySnap:	UI::Redirect("ebs_arrays.php");				break;
+			case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("/#/tools/aws/ec2/ebs/volumes/view"); 			break;
 			case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("/#/tools/aws/rds/instances");	break;
 			default: break;				
 		}
@@ -54,7 +53,7 @@
 				catch(Exception $e)
 				{
 					$errmsg = $e->getMessage();
-					UI::Redirect("ebs_manage.php");
+					UI::Redirect("/#/tools/aws/ec2/ebs/volumes/view");
 				}	
 							
 				$display["volumeId"] = $objectId;
@@ -173,8 +172,7 @@
 		if($redirect)	
 			switch($object_type)
 				{
-					case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("ebs_manage.php"); 			break;
-					case AUTOSNAPSHOT_TYPE::EBSArraySnap:	UI::Redirect("ebs_arrays.php");				break;
+					case AUTOSNAPSHOT_TYPE::EBSSnap: 		UI::Redirect("/#/tools/aws/ec2/ebs/volumes/view"); 			break;
 					case AUTOSNAPSHOT_TYPE::RDSSnap:		UI::Redirect("/#/tools/aws/rds/instances");	break;	
 					default: break;				
 				}

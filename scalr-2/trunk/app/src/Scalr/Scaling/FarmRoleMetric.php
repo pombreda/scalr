@@ -87,7 +87,7 @@
 				}
 				catch(Exception $e)
 				{
-					$this->logger->error(new FarmLogMessage($dbFarmRole->FarmID, 
+					$this->logger->warn(new FarmLogMessage($dbFarmRole->FarmID, 
 						sprintf("Unable to read Scalimg Metric value: %s", $e->getMessage())
 					));
 					

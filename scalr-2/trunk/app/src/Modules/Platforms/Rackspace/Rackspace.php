@@ -6,17 +6,19 @@
 		/** Properties **/
 		const USERNAME 		= 'rackspace.username';
 		const API_KEY		= 'rackspace.api_key';
+		const IS_MANAGED	= 'rackspace.is_managed';
 		
 		private $instancesListCache = array();
 		
 		/**
 		 * @return Scalr_Service_Cloud_Rackspace_CS
 		 */
-		private function getRsClient(Scalr_Environment $environment)
+		private function getRsClient(Scalr_Environment $environment, $cloudLocation)
 		{
 			return Scalr_Service_Cloud_Rackspace::newRackspaceCS(
-				$environment->getPlatformConfigValue(self::USERNAME),
-				$environment->getPlatformConfigValue(self::API_KEY)
+				$environment->getPlatformConfigValue(self::USERNAME, true, $cloudLocation),
+				$environment->getPlatformConfigValue(self::API_KEY, true, $cloudLocation),
+				$cloudLocation
 			);
 		}
 		
@@ -27,20 +29,85 @@
 		
 		public function getRoleBuilderBaseImages()
 		{
-			return array(
-				'10'	=> array('name' => 'Ubuntu 8.04', 'os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
-				'49'	=> array('name' => 'Ubuntu 10.04','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
-				'69'	=> array('name' => 'Ubuntu 10.10','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
-				'51'	=> array('name' => 'CentOS 5.5',  'os_dist' => 'centos', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
-				'62'	=> array('name' => 'RHEL 5.5',    'os_dist' => 'rhel',   'location' => 'rs-ORD1', 'architecture' => 'x86_64')
-			);
+			try {
+				$env = Scalr_Session::getInstance()->getEnvironment();
+				$isManagedOrd1 = $env->getPlatformConfigValue(self::IS_MANAGED, true, 'rs-ORD1');
+				$isManagedLonx = $env->getPlatformConfigValue(self::IS_MANAGED, true, 'rs-LONx');
+			}
+			catch(Exception $e) {
+				return array();	
+			}
+			
+			if (!$isManagedOrd1) {
+				$images['rs-ORD1'] = array(
+					'10'	=> array('name' => 'Ubuntu 8.04', 'os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'49'	=> array('name' => 'Ubuntu 10.04','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'69'	=> array('name' => 'Ubuntu 10.10','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'51'	=> array('name' => 'CentOS 5.5',  'os_dist' => 'centos', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'62'	=> array('name' => 'RHEL 5.5',    'os_dist' => 'rhel',   'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+				);
+			} else {
+				$images['rs-ORD1'] = array(
+					'65'	=> array('name' => 'Ubuntu 10.04','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'73'	=> array('name' => 'Ubuntu 10.10','os_dist' => 'ubuntu', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'67'	=> array('name' => 'CentOS 5.5',  'os_dist' => 'centos', 'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+					'63'	=> array('name' => 'RHEL 5.5',    'os_dist' => 'rhel',   'location' => 'rs-ORD1', 'architecture' => 'x86_64'),
+				);
+			}
+				
+			if (!$isManagedLonx) {
+				$images['rs-LONx'] = array(
+					'lon10'	=> array('name' => 'Ubuntu 8.04', 'os_dist' => 'ubuntu', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon49'	=> array('name' => 'Ubuntu 10.04','os_dist' => 'ubuntu', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon69'	=> array('name' => 'Ubuntu 10.10','os_dist' => 'ubuntu', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon51'	=> array('name' => 'CentOS 5.5',  'os_dist' => 'centos', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon62'	=> array('name' => 'RHEL 5.5',    'os_dist' => 'rhel',   'location' => 'rs-LONx', 'architecture' => 'x86_64')
+				);	
+			}
+			else {
+				$images['rs-LONx'] = array(
+					'lon65'	=> array('name' => 'Ubuntu 10.04','os_dist' => 'ubuntu', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon73'	=> array('name' => 'Ubuntu 10.10','os_dist' => 'ubuntu', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon67'	=> array('name' => 'CentOS 5.5',  'os_dist' => 'centos', 'location' => 'rs-LONx', 'architecture' => 'x86_64'),
+					'lon63'	=> array('name' => 'RHEL 5.5',    'os_dist' => 'rhel',   'location' => 'rs-LONx', 'architecture' => 'x86_64')
+				);
+			}
+			
+			$locations = array_keys($this->getLocations());
+			$retval = array();
+			foreach ($locations as $location) {
+				$retval = $retval + $images[$location];
+			}
+			
+			return $retval;
 		}
 		
 		public function getLocations()
 		{
+			/*
 			return array(
-				'rs-ORD1' => 'Rackspace / ORD1'
+				'rs-ORD1' => 'Rackspace / ORD1',
+				'rs-LONx' => 'Rackspace / LONx'
 			);
+			*/
+			
+			try {
+				$envId = Scalr_Session::getInstance()->getEnvironmentId();
+			}
+			catch(Exception $e) {
+				return array();	
+			}
+			
+			//Eucalyptus locations defined by client. Admin cannot get them
+			$db = Core::GetDBInstance();
+			$locations = $db->GetAll("SELECT DISTINCT(`group`) as `name` FROM client_environment_properties WHERE `name` = ? AND env_id = ?", array(
+				self::API_KEY, $envId
+			));
+			$retval = array();
+			foreach ($locations as $location)
+				$retval[$location['name']] = "Rackspace / {$location['name']}";
+				
+			return $retval;
 		}
 		
 		public function getPropsList()
@@ -71,7 +138,7 @@
 		
 		public function GetServerIPAddresses(DBServer $DBServer)
 		{
-			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject());
+			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
 			
 			$result = $rsClient->getServerDetails($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::SERVER_ID));
 		    
@@ -85,7 +152,7 @@
 		{
 			if (!$this->instancesListCache[$environment->id][$cloudLocation] || $skipCache)
 			{
-				$rsClient = $this->getRsClient($environment);
+				$rsClient = $this->getRsClient($environment, $cloudLocation);
 				
 				$result = $rsClient->listServers(true);
 				foreach ($result->servers as $server)
@@ -107,7 +174,7 @@
 			}
 			elseif (!$this->instancesListCache[$environment->id][$cloudLocation][$iid])
 			{
-		        $rsClient = $this->getRsClient($environment);
+		        $rsClient = $this->getRsClient($environment, $cloudLocation);
 				
 		        try {
 					$result = $rsClient->getServerDetails($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::SERVER_ID));
@@ -129,7 +196,7 @@
 		
 		public function TerminateServer(DBServer $DBServer)
 		{
-			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject());
+			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
 	        
 	        $rsClient->deleteServer($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::SERVER_ID));
 	        
@@ -138,7 +205,7 @@
 		
 		public function RebootServer(DBServer $DBServer)
 		{
-			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject());
+			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
 	        
 	        $rsClient->rebootServer($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::SERVER_ID));
 	        
@@ -146,10 +213,10 @@
 		}
 		
 		public function RemoveServerSnapshot(DBRole $DBRole)
-		{
-			$rsClient = $this->getRsClient($DBRole->getEnvironmentObject());
-			
+		{			
 			foreach ($DBRole->getImageId(SERVER_PLATFORMS::RACKSPACE) as $location => $imageId) {
+
+				$rsClient = $this->getRsClient($DBRole->getEnvironmentObject(), $location);
 				
 				try {
 					$rsClient->deleteImage($imageId);
@@ -215,7 +282,7 @@
 			try
 			{
 				try	{
-					$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject());
+					$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject(), $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
 					$iinfo = $rsClient->getServerDetails($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::SERVER_ID));
 				}
 				catch(Exception $e){}
@@ -245,8 +312,6 @@
 		 */
 		public function LaunchServer(DBServer $DBServer, Scalr_Server_LaunchOptions $launchOptions = null)
 		{
-			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject());
-	        
 			if (!$launchOptions)
 			{
 				$launchOptions = new Scalr_Server_LaunchOptions();
@@ -263,6 +328,8 @@
 				
 				$launchOptions->architecture = 'x86_64';
 			}
+
+			$rsClient = $this->getRsClient($DBServer->GetEnvironmentObject(), $launchOptions->cloudLocation);
 			
 			$result = $rsClient->createServer(
 				$DBServer->serverId,
@@ -308,8 +375,19 @@
 			if ($put) {
 				$environment = $DBServer->GetEnvironmentObject();
 	        	$accessData = new stdClass();
-	        	$accessData->username = $environment->getPlatformConfigValue(self::USERNAME);
-	        	$accessData->apiKey = $environment->getPlatformConfigValue(self::API_KEY);
+	        	$accessData->username = $environment->getPlatformConfigValue(self::USERNAME, true, $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
+	        	$accessData->apiKey = $environment->getPlatformConfigValue(self::API_KEY, true, $DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER));
+	        	
+	        	switch ($DBServer->GetProperty(RACKSPACE_SERVER_PROPERTIES::DATACENTER))
+	        	{
+	        		case 'rs-ORD1':
+						$accessData->authHost = 'auth.api.rackspacecloud.com';
+					break;
+					
+					case 'rs-LONx':
+						$accessData->authHost = 'lon.auth.api.rackspacecloud.com';
+					break;
+	        	} 
 	        	
 	        	$message->platformAccessData = $accessData;
 			}

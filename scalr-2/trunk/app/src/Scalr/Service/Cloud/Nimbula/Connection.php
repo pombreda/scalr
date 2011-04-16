@@ -27,14 +27,14 @@
 		    
 			$httpRequest->addHeaders(array(
 				'Cookie'	   => $this->sessionCookie,
-				'Content-Type' => 'application/json'
+				'Content-Type' => 'application/nimbula-v1+json'
 		  	));
 			  	
 		    switch ($method) {
 		    	case HTTP_METH_POST:
 		    		$httpRequest->setRawPostData(json_encode($data));
 		    		$httpRequest->addHeaders(array(
-				  		'Content-Type' => 'application/json'
+				  		'Content-Type' => 'application/nimbula-v1+json'
 				  	));
 		    		break;
 		    }

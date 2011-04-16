@@ -86,7 +86,7 @@
 					}
 					catch(Exception $e) 
 					{
-						$this->Logger->error(sprintf(
+						$this->Logger->warn(sprintf(
 							_("Cannot create RDS snapshot: %s."),												
 							$e->getMessage()												
 						));

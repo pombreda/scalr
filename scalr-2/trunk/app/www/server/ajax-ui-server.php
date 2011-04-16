@@ -101,20 +101,6 @@
     		return $snmpClient->get('.1.3.6.1.4.1.2021.10.1.3.1');
     	}
 
-    	public function RemoveVolume($volume_id, $region = "")
-    	{
-    		$region = ($region) ? $region : $_SESSION['aws_region'];
-
-            $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2($region);
-			$AmazonEC2Client->SetAuthKeys(
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::PRIVATE_KEY),
-				Scalr_Session::getInstance()->getEnvironment()->getPlatformConfigValue(Modules_Platforms_Ec2::CERTIFICATE)
-			);
-    		$AmazonEC2Client->DeleteVolume($volume_id);
-
-    		return true;
-    	}
-
     	public function RemoveSnapshots(array $snapshots)
     	{
             $AmazonEC2Client = Scalr_Service_Cloud_Aws::newEc2($_SESSION['aws_region']);

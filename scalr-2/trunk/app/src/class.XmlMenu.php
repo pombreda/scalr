@@ -49,7 +49,8 @@ class XmlMenu
 			{
 				$xj_item = array
 				(
-					"text" => (string)$Item->attributes()->title 
+					"text" => (string)$Item->attributes()->title,
+					"hideOnClick" => false
 				);
 				$xj_item["menu"] = array();
 				$this->GetExtJSMenuItemsRecursive($Item, $xj_item["menu"]);

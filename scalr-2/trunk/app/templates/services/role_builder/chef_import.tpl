@@ -6,7 +6,7 @@ BEHAVIOURS="%BEHAVIOURS%"
 PLATFORM="%PLATFORM%"
 DEV="%DEV%"
 RECIPES="%RECIPES%"
-
+BUILD_ONLY="%BUILD_ONLY%"
 
 for recipe in $RECIPES; do
 	key=`echo $recipe | tr '=' ' ' | awk '{print $1}'`
@@ -93,11 +93,13 @@ action "Creating chef configuration file" "echo -e 'file_cache_path \"/tmp/chef-
 action "Unpacking cookbooks"	"tar zxf /tmp/recipes.tar.gz -C /tmp/chef-solo"
 action "Creating runlist" 		'echo $CHEF_RUNLIST | tee /tmp/soft.json'
 action "Installing software" "chef-solo -c /etc/solo.rb -j /tmp/soft.json"
-action "Starting importing to Scalr in background" "$SCALR_IMPORT_STRING &"
-echo "Scalarizr's log:"
-tail -f /var/log/scalarizr.log | while read LINE; do
-        [[ "${LINE}" =~ 'Rebundle complete!' ]] && break
-        echo $LINE
-done
+if [ "0" = "$BUILD_ONLY" ]; then
+	action "Starting importing to Scalr in background" "$SCALR_IMPORT_STRING &"
+	echo "Scalarizr's log:"
+	tail -f /var/log/scalarizr.log | while read LINE; do
+	        [[ "${LINE}" =~ 'Rebundle complete!' ]] && break
+	        echo $LINE
+	done
+fi
 echo "Done!"
 exit 0

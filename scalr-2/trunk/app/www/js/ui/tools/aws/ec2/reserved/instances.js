@@ -56,7 +56,7 @@
 					{ header: "Type", width: 35, dataIndex: 'instanceType', sortable: false, hidden: 'no' },
 					{ header: "Placement", width: 35, dataIndex: 'availabilityZone', sortable: true, hidden: 'no' },
 					{ header: "Duration", width: 35, dataIndex: 'duration', sortable: false, align:'center', hidden: 'no', tpl:
-						'<tpl if="duration == 1">{duration} year</tpl><tpl uf="duration != 1">{duration} years</tpl>'
+						'<tpl if="duration == 1">{duration} year</tpl><tpl if="duration != 1">{duration} years</tpl>'
 					},
 					{ header: "Usage Price", width: 40, dataIndex: 'usagePrice', sortable: false, align:'center', hidden: 'no', tpl: '${usagePrice}' },
 					{ header: "Fixed Price", width: 35, dataIndex: 'fixedPrice', sortable: false, align:'center', hidden: 'no', tpl: '${fixedPrice}' },

@@ -138,49 +138,49 @@
 						}
 					}
 					
-					if (!$volume)
+					/*** 
+					 * For Rackspace we ALWAYS need snapsjot_config for mysql
+					 * ***/
+					if ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID))
 					{
-						if ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID))
-						{
-							try {
-								$snapshotConfig = Scalr_Model::init(Scalr_Model::STORAGE_SNAPSHOT)->loadById(
-									$dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID)
-								);
-								
-								$msg->mysql->snapshotConfig = $snapshotConfig->getConfig();
-							} catch (Exception $e) {
-								$this->Logger->error(new FarmLogMessage($event->DBServer->farmId, "Cannot get snaphotConfig for hostInit message: {$e->getMessage()}"));
-							}
-						}
-						
-						if (!$msg->mysql->snapshotConfig && $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID))
-						{
-							$msg->mysql->snapshotConfig = new stdClass();
-							$msg->mysql->snapshotConfig->type = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE);
-							$msg->mysql->snapshotConfig->id = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID);
-						}
-						
-						if ($isMaster)
-						{
-							$msg->mysql->volumeConfig = new stdClass();
-							$msg->mysql->volumeConfig->type = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE);
+						try {
+							$snapshotConfig = Scalr_Model::init(Scalr_Model::STORAGE_SNAPSHOT)->loadById(
+								$dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SCALR_SNAPSHOT_ID)
+							);
 							
-							if (!$dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID))
-							{
-								if ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS) {
-									$msg->mysql->volumeConfig->size = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_VOLUME_SIZE);
-								}
-								elseif ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EPH) {
-									$msg->mysql->volumeConfig->snap_backend = "cf://mysql-data-bundle/scalr-{$dbFarmRole->GetFarmObject()->Hash}";
-									$msg->mysql->volumeConfig->vg = 'mysql';
-									$msg->mysql->volumeConfig->disk = new stdClass();
-									$msg->mysql->volumeConfig->disk->type = 'loop';
-									$msg->mysql->volumeConfig->disk->size = '75%root';
-								}
+							$msg->mysql->snapshotConfig = $snapshotConfig->getConfig();
+						} catch (Exception $e) {
+							$this->Logger->error(new FarmLogMessage($event->DBServer->farmId, "Cannot get snaphotConfig for hostInit message: {$e->getMessage()}"));
+						}
+					}
+					
+					if (!$msg->mysql->snapshotConfig && $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID))
+					{
+						$msg->mysql->snapshotConfig = new stdClass();
+						$msg->mysql->snapshotConfig->type = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE);
+						$msg->mysql->snapshotConfig->id = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_SNAPSHOT_ID);
+					}
+					
+					if ($isMaster && !$msg->mysql->volumeConfig)
+					{
+						$msg->mysql->volumeConfig = new stdClass();
+						$msg->mysql->volumeConfig->type = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE);
+						
+						if (!$dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID))
+						{
+							if ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EBS) {
+								$msg->mysql->volumeConfig->size = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_EBS_VOLUME_SIZE);
 							}
-							else {
-								$msg->mysql->volumeConfig->id = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
+							elseif ($dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_DATA_STORAGE_ENGINE) == MYSQL_STORAGE_ENGINE::EPH) {
+								$msg->mysql->volumeConfig->snap_backend = "cf://mysql-data-bundle/scalr-{$dbFarmRole->GetFarmObject()->Hash}";
+								$msg->mysql->volumeConfig->vg = 'mysql';
+								$msg->mysql->volumeConfig->disk = new stdClass();
+								$msg->mysql->volumeConfig->disk->type = 'loop';
+								$msg->mysql->volumeConfig->disk->size = '75%root';
 							}
+						}
+						else {
+							$msg->mysql->volumeConfig->id = $dbFarmRole->GetSetting(DBFarmRole::SETTING_MYSQL_MASTER_EBS_VOLUME_ID);
 						}
 					}
 				}

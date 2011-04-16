@@ -24,6 +24,8 @@
 		
     	public $Version;
     	
+    	protected $debug = array();
+    	
     	protected $LastTransactionID;
     	
 		function __construct($version)
@@ -37,6 +39,63 @@
 		    return strtolower($a)>strtolower($b); 
 		}
 		
+		private function AuthenticateRESTv2($request)
+		{
+			if (!$request['Signature'])
+				throw new Exception("Signature is missing");
+
+			if (!$request['KeyID'])
+				throw new Exception("KeyID is missing");
+				
+			if (!$request['Timestamp'] && !$request['TimeStamp'])
+				throw new Exception("Timestamp is missing");
+			
+			foreach ($request as $k=>$v)
+	    	{
+	    		if (is_array($v))
+	    		{
+	    			foreach ($v as $kk => $vv)
+	    				$request["{$k}[{$kk}]"] = $vv;
+	
+	    			unset($request[$k]);
+	    		}
+	    	}
+			
+			uksort($request, array($this, 'insensitiveUksort'));
+				
+			$string_to_sign = "";
+			foreach ($request as $k=>$v)
+    		{
+    			if (!in_array($k, array("Signature", "SysDebug"))) {
+    				if (is_array($v)) {
+    					foreach ($v as $kk => $vv) {
+    						$string_to_sign.= "{$k}[{$kk}]{$vv}";
+    					}
+    				}
+    				else {
+    					$string_to_sign.= "{$k}{$v}";
+    				}
+    			}
+    		}
+    		
+    		$this->debug['stringToSign'] = $string_to_sign;
+    		
+    		$this->Environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadByApiKeyId($request['KeyID']);
+    		$this->Client = Client::Load($this->Environment->clientId);
+    		
+    		$auth_key = $this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ACCESS_KEY, false);
+    		
+    		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, trim($string_to_sign), $auth_key, 1));
+
+    		$request['Signature'] = str_replace(" ", "+", $request['Signature']);
+    		
+    		$this->debug['reqSignature'] = $request['Signature'];
+    		$this->debug['validSignature'] = $valid_sign;
+    		
+    		if ($valid_sign != $request['Signature'])
+    			throw new Exception("Signature doesn't match");
+		}
+		
 		private function AuthenticateREST($request)
 		{
 			if (!$request['Signature'])
@@ -48,50 +107,28 @@
 			if (!$request['Timestamp'] && !$request['TimeStamp'])
 				throw new Exception("Timestamp is missing");
 			
-			//TODO: Validate TimeStamp
-			if ($request['AuthVersion'] == 2)	
-				uksort($request, array($this, 'insensitiveUksort'));
-			else
-				ksort($request);
+			ksort($request);
 				
 			$string_to_sign = "";
-			foreach ($request as $k=>$v)
-    		{
-    			if (!in_array($k, array("Signature", "SysDebug")))
-    			{
-    				if (is_array($v))
-    				{
-    					foreach ($v as $kk => $vv)
-    					{
-    						if ($request['AuthVersion'] == 2)
-    							$vv = urldecode($vv);
-    							
+			foreach ($request as $k=>$v) {
+    			if (!in_array($k, array("Signature"))) {
+    				if (is_array($v)) {
+    					foreach ($v as $kk => $vv) {
     						$string_to_sign.= "{$k}[{$kk}]{$vv}";
     					}
     				}
-    				else
-    				{
-    					if ($request['AuthVersion'] == 2)
-    						$v = urldecode($v);
-    						
+    				else {
     					$string_to_sign.= "{$k}{$v}";
     				}
     			}
     		}
     		
-    		if ($request['AuthVersion'] == 2) {
-    			$string_to_sign = urldecode($string_to_sign);
-    			$request['Signature'] = trim(urldecode($request['Signature']));
-    		}
+    		$this->debug['stringToSign'] = $string_to_sign;
     		
     		$this->Environment = Scalr_Model::init(Scalr_Model::ENVIRONMENT)->loadByApiKeyId($request['KeyID']);
     		$this->Client = Client::Load($this->Environment->clientId);
     		
     		$auth_key = $this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ACCESS_KEY, false);
-    		
-    		if ($request['SysDebug']) {
-    			//print "<b>String to sign:</b> ".trim($string_to_sign)."<br>";
-    		}
     		
     		$valid_sign = base64_encode(hash_hmac(self::HASH_ALGO, trim($string_to_sign), $auth_key, 1));    		
     		if ($valid_sign != $request['Signature'])
@@ -106,8 +143,11 @@
 				if ($Reflect->hasMethod($request['Action']))
 				{
 					//Authenticate
-					$this->AuthenticateREST($request);
-					
+					if ($request['AuthVersion'] == 2)
+						$this->AuthenticateRESTv2($request);
+					else
+						$this->AuthenticateREST($request);
+						
 					if ($this->Environment->getPlatformConfigValue(ENVIRONMENT_SETTINGS::API_ENABLED) != 1)
 						throw new Exception(_("API disabled for you. You can enable it at 'Settings -> Environments'"));
 					
@@ -147,13 +187,22 @@
 			}
 			catch(Exception $e)
 			{
+				
 				if (!$this->LastTransactionID)
 					$this->LastTransactionID = Scalr::GenerateUID();
 				
+				if ($request['SysDebug'])
+				{
+					$debugInfo = "<StringToSign>{$this->debug['stringToSign']}</StringToSign>";
+					$debugInfo .= "<reqSignature>{$this->debug['reqSignature']}</reqSignature>";
+					$debugInfo .= "<validSignature>{$this->debug['validSignature']}</validSignature>";
+				}
+					
 				$retval = "<?xml version=\"1.0\"?>\n".
 				"<Error>\n".
 					"\t<TransactionID>{$this->LastTransactionID}</TransactionID>\n".
 					"\t<Message>{$e->getMessage()}</Message>\n".
+					$debugInfo.
 				"</Error>\n";
 			}
 

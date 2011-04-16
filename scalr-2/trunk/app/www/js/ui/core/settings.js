@@ -76,6 +76,17 @@
 					boxLabel: 'Do not use IP address for session signature',
 					checked: moduleParams['system_auth_noip'] == 1 ? true : false
 				}]
+			}, {
+				xtype: 'fieldset',
+				title: 'UI settings',
+				items: [{
+					xtype: 'button',
+					text: 'Reset UI settings to defaults',
+					handler: function () {
+						localStorage.clear();
+						Scalr.message.Success('Settings successfully reset');
+					}
+				}]
 			}]
 		});
 

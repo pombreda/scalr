@@ -39,6 +39,20 @@
 			return true;
 		}
 
+		public function getModuleName($name, $onlyPath = false)
+		{
+			$tm = filemtime(APPPATH . "/www/js/{$name}");
+			$nameTm = str_replace('.js', "-{$tm}.js", $name);
+
+			if ($onlyPath)
+				return "/js/{$nameTm}";
+			else
+				return array(
+					'page' => "Scalr." . str_replace('/', '.', str_replace(".js", "", $name)),
+					'file' => "/js/{$nameTm}"
+				);
+		}
+
 		protected function sort($item1, $item2)
 		{
 			$f1 = $item1[$this->getParam('sort')];
@@ -46,13 +60,29 @@
 			
 			return strnatcmp($f1,$f2);
 		}
-		
-		protected function buildResponseFromData(array $data)
+
+		protected function buildResponseFromData(array $data, $filterFields = array())
 		{
 			$this->request->defineParams(array(
 				'start' => array('type' => 'int', 'default' => 0),
 				'limit' => array('type' => 'int', 'default' => 20)
 			));
+			
+			if ($this->getParam('query') && count($filterFields) > 0) {
+				foreach ($data as $k=>$v) {
+					$found = false;
+					foreach ($filterFields as $field)
+					{
+						if (stristr($v[$field], $this->getParam('query'))) {
+							$found = true;
+							break;
+						}
+					}
+					
+					if (!$found)
+						unset($data[$k]);
+				}
+			}
 			
 			$response['total'] = count($data);
 
@@ -66,7 +96,7 @@
 			$data = (count($data) > $this->getParam('limit')) ? array_slice($data, $this->getParam('start'), $this->getParam('limit')) : $data;
 
 			$response["success"] = true;
-			$response['data'] = $data;
+			$response['data'] = array_values($data);
 
 			return $response;
 		}

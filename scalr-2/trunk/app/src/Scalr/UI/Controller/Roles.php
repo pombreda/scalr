@@ -78,6 +78,10 @@ class Scalr_UI_Controller_Roles extends Scalr_UI_Controller
 				throw new Exception('Selected role name is already used. Please select another one.');
 			
 			$imageId = $this->getParam('imageId');
+			
+			if ($this->getParam('platform') == SERVER_PLATFORMS::RACKSPACE)
+				$imageId = str_replace('lon', '', $imageId);
+			
 			$behaviours = implode(",", array_values($this->getParam('behaviors')));
 			
 			// Create server
@@ -129,7 +133,7 @@ class Scalr_UI_Controller_Roles extends Scalr_UI_Controller
 			$bundleTask->cloudLocation = $launchOptions->cloudLocation;
 			$bundleTask->save();
 			
-			$bundleTask->Log("Launching temporary server");
+			$bundleTask->Log(sprintf("Launching temporary server (%s)", serialize($launchOptions)));
 			
 			$dbServer->SetProperty(SERVER_PROPERTIES::SZR_IMPORTING_BUNDLE_TASK_ID, $bundleTask->id);
 			

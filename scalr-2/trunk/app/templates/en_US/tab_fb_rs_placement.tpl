@@ -26,6 +26,7 @@ new Scalr.Viewers.FarmRolesEditTab({
 					id: 'id',
 					fields: [ 'id', 'name' ]
 				}),
+				params:{cloudLocation: record.get('cloud_location')},
 				success: function(response, options) {
 					var result = Ext.decode(response.responseText);
 

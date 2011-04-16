@@ -86,8 +86,11 @@ class Scalr_UI_Controller_Tools_Aws_Vpc_Subnets extends Scalr_UI_Controller
 		$aws_response = $amazonVPCClient->DescribeSubnets();
 		$rows = (array)$aws_response->subnetSet;
 		
+		if ($rows["item"] instanceof stdClass)
+			$rows["item"] = array($rows["item"]); // convert along  record to array		
+		
 		$rowz = array();
-		foreach ($rows as $row)
+		foreach ($rows["item"] as $row)
 			$rowz[]=(array)$row;
 		 		
 		
