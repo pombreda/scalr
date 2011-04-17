@@ -17,6 +17,8 @@ RewriteRule ^query-env/([0-9-]+)/(.*)$ environment.php?version=$1&operation=$2&%
 # New UI Controler
 RewriteRule ^$ /ui.php [NE,L]
 
+RewriteRule ^js/(.*)-[0-9]+\.js js/$1.js [NE,L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^.*$ /ui.php [L]
