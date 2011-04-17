@@ -1,4 +1,4 @@
-#labels Phase-Design
+#labels Phase-Design,Deprecated
 = A brief roadmap for Scalr 2 development =
 
 Most parts (except web client) will be rewritten in Java.
