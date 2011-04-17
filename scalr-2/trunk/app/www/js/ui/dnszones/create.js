@@ -376,7 +376,7 @@
 			fieldset.add(dnsField({ itemId: records[i].id, showRemoveButton: records[i].issystem == '0' || moduleParams['allowManageSystemRecords'] == '1' }, records[i]));
 		}
 
-		if (fieldset.items.getCount())
+		if (fieldset.items && fieldset.items.getCount())
 			fieldset.show();
 
 		form.addButton({
