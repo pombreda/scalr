@@ -1,4 +1,4 @@
 #summary Scalr.net API
 #labels Featured,API
 
-<a href="http://wiki.scalr.net/API_Documentation">http://wiki.scalr.net/API_Documentation</a>
+<a href="http://wiki.scalr.net/display/docs/API">http://wiki.scalr.net/display/docs/API</a>
