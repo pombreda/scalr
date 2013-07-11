@@ -1,3 +1,5 @@
 #summary How to download Scalr source code
 
-[http://scalr.net/features/open-source/ Request the latest release] from the Scalr.net website
+[https://github.com/Scalr/ Source code from github]
+
+[http://www.scalr.com/pricing/ Release from the Scalr.com website]
